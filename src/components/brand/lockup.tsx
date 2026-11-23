@@ -1,10 +1,10 @@
-/** Header lockup: mark + name + tagline (spec §7). The mark is a stand-in until the SVG redraw (Q59). */
+import { Mark } from "./mark";
+
+/** Header lockup (design system: SectionHeading): 40px mark, space-3, name in heading-md, tagline in eyebrow. */
 export function Lockup() {
   return (
     <div className="flex items-center gap-3">
-      <div aria-hidden className="grid size-10 place-items-center rounded-lg bg-brand-navy font-display text-lg font-bold text-white">
-        T
-      </div>
+      <Mark className="size-10 shrink-0" />
       <div>
         <p className="font-display text-xl font-semibold leading-7 text-ink-heading">Tallo CPA</p>
         <p className="-mt-0.5 text-[10px] leading-[15px] uppercase tracking-[0.05em] text-ink-subtle">Clear Numbers. Clean Compliance.</p>
