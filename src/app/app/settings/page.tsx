@@ -33,6 +33,7 @@ interface Rule {
   channel: "efps" | "ebirforms" | null;
   efps_group: string | null;
   calendar_year: boolean;
+  period_filter: "all" | "exclude_quarter_end_months" | "exclude_last_quarter";
   effective_from: string;
   source: string;
   verified_at: string | null;
@@ -40,6 +41,13 @@ interface Rule {
 
 const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
 const kindLabel: Record<string, string> = { regular: "Regular", special: "Special non-working", suspension: "Work suspension" };
+
+/** Which periods the rule files for, when it is not every period. */
+const periodNote: Record<Rule["period_filter"], string> = {
+  all: "",
+  exclude_quarter_end_months: " · 1st and 2nd month of each quarter only",
+  exclude_last_quarter: " · Q1 to Q3 only",
+};
 
 function appliesTo(r: Rule) {
   if (r.channel === "efps") return `eFPS · Group ${r.efps_group}`;
@@ -51,7 +59,7 @@ async function DeadlineSettings() {
   await requireOwner();
   const supabase = await supabaseServer();
   const [{ data: rules }, { data: holidays }] = await Promise.all([
-    supabase.from("deadline_rules").select("id, form, frequency, due, channel, efps_group, calendar_year, effective_from, source, verified_at").is("effective_to", null).order("form").order("channel", { nullsFirst: true }).order("efps_group", { nullsFirst: true }),
+    supabase.from("deadline_rules").select("id, form, frequency, due, channel, efps_group, calendar_year, period_filter, effective_from, source, verified_at").is("effective_to", null).order("form").order("channel", { nullsFirst: true }).order("efps_group", { nullsFirst: true }),
     supabase.from("holidays").select("date, name, kind, source").order("date"),
   ]);
   const all = (rules ?? []) as Rule[];
@@ -80,7 +88,7 @@ async function DeadlineSettings() {
                     <tr key={r.id} className="border-t border-border align-top">
                       <td className="py-3 pr-4">
                         <p className="font-medium text-ink-heading">{r.form}</p>
-                        <p className="text-xs text-ink-subtle">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}</p>
+                        <p className="text-xs text-ink-subtle">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}{periodNote[r.period_filter]}</p>
                       </td>
                       <td className="py-3 pr-4 text-ink-muted">{appliesTo(r)}</td>
                       <td className="py-3 pr-4 text-ink-heading">
