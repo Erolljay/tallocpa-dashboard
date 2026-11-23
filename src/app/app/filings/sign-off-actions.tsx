@@ -1,9 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
-import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { Badge, Button, Field, Input, Notice, peso, Textarea } from "@/components/ui";
 import { ACTION_LABEL, type SignOffAction } from "@/lib/filings/sign-off";
 import { advanceFilingAction, type SignOffState } from "./actions";
+
+/** From filing_payment_check(): what the client has paid, worked out from Collections. */
+export interface PaymentCheck {
+  status: "paid" | "partial" | "unpaid" | "not_applicable";
+  tax_status: "paid" | "partial" | "unpaid" | "not_applicable";
+  tax_due: number;
+  tax_paid: number;
+  other_open: number;
+}
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
 
@@ -15,6 +25,8 @@ export function SignOffActions(props: {
   paymentMode: string;
   /** "client" shows client-facing wording in the portal. */
   audience?: "staff" | "client";
+  paymentCheck?: PaymentCheck | null;
+  clientId?: string;
 }) {
   if (props.actions.length === 0) return null;
   return (
@@ -26,7 +38,7 @@ export function SignOffActions(props: {
   );
 }
 
-function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff" }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client" }) {
+function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string }) {
   const [state, run, pending] = useActionState(advanceFilingAction.bind(null, filingId, action), {} as SignOffState);
   const id = (n: string) => `${action}-${n}`;
   const secondary = action === "kick_back" || action === "client_query";
@@ -39,27 +51,7 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff" }:
         </Field>
       )}
 
-      {action === "owner_approve" && (
-        <>
-          <p className="text-sm text-ink-muted">
-            Payment check: tax due {taxDue == null ? "—" : `₱${taxDue.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`} ·{" "}
-            {paymentMode === "firm_remits" ? "we remit for the client" : "client pays BIR directly"}. Record what the client has paid (tax dues and retainer).
-          </p>
-          <Field label="Client payment" htmlFor={id("payment_status")}>
-            <Select id={id("payment_status")} name="payment_status" defaultValue="" required>
-              <option value="" disabled>Choose…</option>
-              <option value="paid">Paid</option>
-              <option value="partial">Partially paid</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="not_applicable">Nothing to pay</option>
-            </Select>
-          </Field>
-          <label className="flex items-center gap-2 text-sm text-ink-strong">
-            <input type="checkbox" name="approve_unpaid" className="size-4 accent-[var(--action)]" />
-            Approve even though unpaid (the balance becomes a client receivable)
-          </label>
-        </>
-      )}
+      {action === "owner_approve" && <PaymentCheckView check={paymentCheck ?? null} taxDue={taxDue} paymentMode={paymentMode} clientId={clientId} />}
 
       {action === "file" && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -121,4 +113,41 @@ function noteLabel(action: SignOffAction, audience: "staff" | "client") {
     default:
       return "Note (optional)";
   }
+}
+
+const checkTone = { paid: "done", partial: "waiting", unpaid: "blocked", not_applicable: "neutral" } as const;
+const checkWord = { paid: "Paid", partial: "Partly paid", unpaid: "Unpaid", not_applicable: "Nothing to pay" } as const;
+
+/** The payment check at the Owner's approval (Q21, Q25), with the tick to approve anyway. */
+function PaymentCheckView({ check, taxDue, paymentMode, clientId }: { check: PaymentCheck | null; taxDue: number | null; paymentMode: string; clientId?: string }) {
+  const short = check && (check.status === "partial" || check.status === "unpaid");
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-ink-strong">Payment check</span>
+        {check && <Badge tone={checkTone[check.status]}>{checkWord[check.status]}</Badge>}
+      </div>
+      <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+        <dt className="text-ink-muted">Tax on this return</dt>
+        <dd className="tabular-nums text-ink-heading">
+          {paymentMode !== "firm_remits"
+            ? `${taxDue ? peso.format(taxDue) : "—"} · client pays BIR directly`
+            : check
+              ? `${peso.format(check.tax_paid)} paid of ${peso.format(check.tax_due)}`
+              : "—"}
+        </dd>
+        <dt className="text-ink-muted">Other balances due (retainer, charges)</dt>
+        <dd className="tabular-nums text-ink-heading">{check ? (check.other_open > 0 ? `${peso.format(check.other_open)} unpaid` : "None") : "—"}</dd>
+      </dl>
+      {clientId && (
+        <Link href={`/app/collections/${clientId}`} className="text-sm text-link hover:underline">Open the client in Collections</Link>
+      )}
+      {short && (
+        <label className="flex items-center gap-2 text-sm text-ink-strong">
+          <input type="checkbox" name="approve_unpaid" className="size-4 accent-[var(--action)]" />
+          Approve even though unpaid (the balance stays a client receivable{paymentMode === "firm_remits" ? ": an advance to the client for taxes" : ""})
+        </label>
+      )}
+    </div>
+  );
 }

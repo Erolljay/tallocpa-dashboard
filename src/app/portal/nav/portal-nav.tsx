@@ -1,6 +1,6 @@
 "use client";
 
-import { FileCheck2, FolderOpen, Upload } from "lucide-react";
+import { FileCheck2, FolderOpen, Receipt, Upload } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,6 +8,7 @@ const tabs = [
   { href: "/portal", label: "Upload", icon: Upload },
   { href: "/portal/documents", label: "Documents", icon: FolderOpen },
   { href: "/portal/returns", label: "Returns", icon: FileCheck2 },
+  { href: "/portal/statement", label: "Statement", icon: Receipt },
 ] as const;
 
 export function PortalNav({ variant }: { variant: "top" | "bottom" }) {
@@ -15,7 +16,7 @@ export function PortalNav({ variant }: { variant: "top" | "bottom" }) {
   const active = (href: string) => (href === "/portal" ? path === "/portal" : path.startsWith(href));
   if (variant === "bottom") {
     return (
-      <ul className="grid grid-cols-3">
+      <ul className="grid grid-cols-4">
         {tabs.map(({ href, label, icon: Icon }) => (
           <li key={href}>
             <Link href={href} aria-current={active(href) ? "page" : undefined} className={`pressable flex min-h-[52px] flex-col items-center justify-center gap-1 text-[11px] leading-none font-medium ${active(href) ? "text-action" : "text-ink-subtle"}`}>

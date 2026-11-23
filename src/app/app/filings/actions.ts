@@ -19,7 +19,8 @@ function stepData(action: SignOffAction, form: FormData): { data: Record<string,
       return r.success ? { data: { tax_due: r.data } } : { error: r.error.issues[0].message };
     }
     case "owner_approve":
-      return { data: { payment_status: text(form.get("payment_status")), approve_unpaid: form.get("approve_unpaid") === "on" } };
+      // The payment check itself is worked out by the database from Collections.
+      return { data: { approve_unpaid: form.get("approve_unpaid") === "on" } };
     case "file":
       return { data: { filing_reference: text(form.get("filing_reference")), filed_on: text(form.get("filed_on")) || null } };
     case "pay":
@@ -46,5 +47,6 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   revalidatePath("/app/deadlines");
   revalidatePath("/app");
   revalidatePath("/portal");
+  revalidatePath("/app/collections");
   return { ok: "Saved." };
 }

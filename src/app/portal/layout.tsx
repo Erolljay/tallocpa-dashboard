@@ -6,7 +6,7 @@ import { PortalNav } from "./nav/portal-nav";
 export default function PortalLayout({ children }: LayoutProps<"/portal">) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="material material-edge-b sticky top-0 z-10">
+      <header className="material material-edge-b sticky top-0 z-10 print:hidden">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <Lockup />
           <form action="/auth/signout" method="post">
@@ -20,7 +20,7 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-28 sm:pb-10">{children}</main>
-      <nav aria-label="Portal" className="material material-edge-t fixed inset-x-0 bottom-0 z-10 pb-[env(safe-area-inset-bottom)] sm:hidden">
+      <nav aria-label="Portal" className="material material-edge-t fixed inset-x-0 bottom-0 z-10 pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden">
         <Suspense fallback={null}>
           <PortalNav variant="bottom" />
         </Suspense>
