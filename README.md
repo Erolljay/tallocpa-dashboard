@@ -15,7 +15,9 @@ Phase 1A in progress. Built so far:
 - Database schema for brands, staff, clients, engagements, deadline rules, holidays, obligations and filing instances, with row-level security and an audit log
 - BIR deadline engine (`src/lib/deadlines`) with tests
 - Sign-in with Google or an emailed link/code; staff area and a client portal placeholder
-- Clients: list, new client from the COR (obligations worked out from the tax types), client page with engagements and team
+- Clients: list, new client from the COR (obligations worked out from the tax types), client page with engagements, team and portal users
+- Staff page: add staff and reviewers, capacity and load (retainers ÷ ₱1,000)
+- Nightly job creates dated BIR filings 120 days ahead; Dashboard shows overdue and next 14 days
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

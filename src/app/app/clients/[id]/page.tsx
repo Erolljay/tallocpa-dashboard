@@ -5,7 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
-import { AssignForm, EngagementForm, StatusButton } from "./forms";
+import { AssignForm, ClientUserForm, EngagementForm, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
   return (
@@ -27,14 +27,18 @@ async function ClientDetail({ params }: { params: PageProps<"/app/clients/[id]">
   const { data: client } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (!client) notFound();
 
-  const [registration, obligations, engagements, team, serviceLines, staff] = await Promise.all([
+  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers] = await Promise.all([
     supabase.from("client_registrations").select("registration_date, tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("id, form, frequency, start_date, end_date").eq("client_id", id).order("form"),
     supabase.from("engagements").select("id, service_line, monthly_retainer, start_date, status, service_lines(name)").eq("client_id", id).order("start_date"),
     supabase.from("staff_assignments").select("user_id, role, staff_profiles(full_name)").eq("client_id", id),
     supabase.from("service_lines").select("code, name").eq("available", true).order("sort_order"),
     isOwner ? supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
+    supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
   ]);
+  const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
+  const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
+  const portalEmailOf = new Map(((portalEmails ?? []) as { user_id: string; email: string; last_sign_in_at: string | null }[]).map((e) => [e.user_id, e]));
 
   const taxTypes = ((registration.data?.tax_types ?? []) as TaxType[]).map((t) => TAX_TYPES[t] ?? t);
   const retainerTotal = (engagements.data ?? []).filter((e) => e.status === "active").reduce((s, e) => s + Number(e.monthly_retainer), 0);
@@ -121,6 +125,28 @@ async function ClientDetail({ params }: { params: PageProps<"/app/clients/[id]">
             </ul>
           )}
           {isOwner && <AssignForm clientId={id} staff={staff.data ?? []} />}
+        </Card>
+
+        <Card title="Portal users">
+          {(portalUsers.data ?? []).length === 0 ? (
+            <p className="text-sm text-ink-muted">Nobody from the client can sign in yet.</p>
+          ) : (
+            <ul className="divide-y divide-border text-sm">
+              {portalUsers.data!.map((u) => {
+                const info = portalEmailOf.get(u.user_id);
+                return (
+                  <li key={u.user_id} className="flex items-center justify-between gap-4 py-2">
+                    <div>
+                      <p className="font-medium text-ink-heading">{u.full_name}{u.position ? <span className="font-normal text-ink-muted"> · {u.position}</span> : null}</p>
+                      <p className="text-xs text-ink-subtle">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
+                    </div>
+                    {isOwner && <RemoveClientUserButton clientId={id} userId={u.user_id} />}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {isOwner && <ClientUserForm clientId={id} />}
         </Card>
       </div>
     </>

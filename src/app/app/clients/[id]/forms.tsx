@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import { addEngagementAction, assignStaffAction, setClientStatusAction, type FormState } from "../actions";
+import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
 export function EngagementForm({ clientId, serviceLines }: { clientId: string; serviceLines: { code: string; name: string }[] }) {
   const [state, action, pending] = useActionState(addEngagementAction.bind(null, clientId), {} as FormState);
@@ -54,6 +55,40 @@ export function StatusButton({ clientId, to, label }: { clientId: string; to: "a
     <form action={action}>
       <Button type="submit" variant={to === "active" ? "primary" : "secondary"} disabled={pending}>{label}</Button>
       {state.error && <p className="mt-2 text-xs text-danger-text">{state.error}</p>}
+    </form>
+  );
+}
+
+export function ClientUserForm({ clientId }: { clientId: string }) {
+  const [state, action, pending] = useActionState(addClientUserAction.bind(null, clientId), {} as StaffFormState);
+  const e = state.fieldErrors ?? {};
+  return (
+    <form action={action} className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+      <Field label="Full name" htmlFor="cu_full_name" error={e.full_name}>
+        <Input id="cu_full_name" name="full_name" required />
+      </Field>
+      <Field label="Email" htmlFor="cu_email" error={e.email}>
+        <Input id="cu_email" name="email" type="email" required />
+      </Field>
+      <Field label="Position (optional)" htmlFor="cu_position" error={e.position}>
+        <Input id="cu_position" name="position" placeholder="Owner, bookkeeper…" />
+      </Field>
+      <div className="flex items-end">
+        <Button type="submit" variant="secondary" disabled={pending} className="w-full">{pending ? "Adding…" : "Give portal access"}</Button>
+      </div>
+      {(state.ok || (state.error && !state.fieldErrors)) && (
+        <div className="sm:col-span-2"><Notice tone={state.ok ? "done" : "blocked"}>{state.ok ?? state.error}</Notice></div>
+      )}
+    </form>
+  );
+}
+
+export function RemoveClientUserButton({ clientId, userId }: { clientId: string; userId: string }) {
+  const [state, action, pending] = useActionState(async () => removeClientUserAction(clientId, userId), {} as StaffFormState);
+  return (
+    <form action={action}>
+      <button type="submit" disabled={pending} className="text-xs text-danger-text hover:underline">{pending ? "Removing…" : "Remove"}</button>
+      {state.error && <span className="ml-2 text-xs text-danger-text">{state.error}</span>}
     </form>
   );
 }

@@ -203,4 +203,18 @@ describe.skipIf(!url)("database", () => {
       await db.query("rollback");
     }
   });
+  it("only the Owner can look up a user by email", async () => {
+    await db.query("update auth.users set email = 'staff@example.com' where id = $1", [STAFF]);
+    expect(await as(OWNER, "select public.owner_find_user(' Staff@Example.com ') as id")).toEqual([{ id: STAFF }]);
+    expect(await as(OWNER, "select public.owner_find_user('nobody@example.com') as id")).toEqual([{ id: null }]);
+    await expect(as(REVIEWER, "select public.owner_find_user('staff@example.com')")).rejects.toThrow(/Only the Owner/);
+  });
+
+  it("shows emails of colleagues and own clients' users to staff, nothing to client users", async () => {
+    await db.query("update auth.users set email = 'client@example.com' where id = $1", [CLIENT_USER]);
+    const ids = [OWNER, STAFF, CLIENT_USER];
+    const staffSees = await as<{ user_id: string }>(STAFF, "select user_id from public.user_emails($1::uuid[]) order by user_id", [ids]);
+    expect(staffSees.map((r) => r.user_id)).toEqual([OWNER, STAFF, CLIENT_USER]);
+    expect(await as(CLIENT_USER, "select user_id from public.user_emails($1::uuid[])", [ids])).toEqual([]);
+  });
 });
