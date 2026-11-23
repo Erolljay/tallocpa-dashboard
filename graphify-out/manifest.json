@@ -426,10 +426,10 @@
     "semantic_hash": "66c9ca84bc3ffc6062458cb0922131dc"
   },
   "README.md": {
-    "mtime": 1795403312.2916083,
-    "seen": 1795403636.8836508,
-    "ast_hash": "e87b30cb2820b96d6496e6794f2c6297",
-    "semantic_hash": "e87b30cb2820b96d6496e6794f2c6297"
+    "mtime": 1795408089.4855506,
+    "seen": 1795408090.3790264,
+    "ast_hash": "ae4ca25068b6e11d6f633962bb6e487c",
+    "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
     "mtime": 1795403312.2916083,
@@ -444,9 +444,9 @@
     "semantic_hash": "bfe88bd02222eb775e89d6c429827b43"
   },
   "docs/SPEC.md": {
-    "mtime": 1795405976.2677908,
-    "seen": 1795405978.2640843,
-    "ast_hash": "fa68a80e6937f5fb1510492e7789f7fc",
+    "mtime": 1795408089.4876287,
+    "seen": 1795408090.379031,
+    "ast_hash": "a5c6ce113c96a5c68feb414847dcc687",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

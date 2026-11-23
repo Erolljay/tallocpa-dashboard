@@ -6,7 +6,7 @@
 | **Version** | 0.1 (2026-11-23) |
 | **Owner** | Lead Practitioner, Tallo CPA |
 | **Firm** | EJ Tallo Cloud Accounting and Auditing Services (brand: **Tallo CPA**), non-VAT |
-| **Source** | Decisions Q1–Q60 from the design interview — see [`DECISIONS.md`](./DECISIONS.md) |
+| **Source** | Decisions Q1–Q61 from the design interview — see [`DECISIONS.md`](./DECISIONS.md) |
 
 > **Rule of this document:** nothing here is built until the Owner signs off. Each section points to the decisions (Qn) it rests on, so a change in one decision shows what else must move.
 
