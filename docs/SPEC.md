@@ -330,7 +330,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure |
 | O10 | Which firm bank accounts / e-wallets appear on the SOA | Owner | SOA |
 | O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only |
-| O12 | Confirm the client compliance score thresholds (draft in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
+| O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
 
 ---
 
