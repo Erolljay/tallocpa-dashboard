@@ -137,6 +137,18 @@ Intake channel in v1: **portal upload only** (Q10). **Staff can also upload docu
 
 - Return figures are **computed from the ledger** (Phase 1B) or, until then, from approved documents. Nothing is retyped by hand.
 - The OS produces a **return worksheet** (figures by line of the BIR form) and the attachments (SAWT, QAP, SLSP data files). Filing itself stays in eFPS / eBIRForms and is done by staff; the OS records the filing reference and the proof.
+- **Built:** a Worksheet page on each filing for 0619-E, 1601-EQ (+ QAP), 2551Q, 2550Q (+ SLS/SLP), 1701Q, 1702Q (+ SAWT), 1601-C and 1604-C (+ alphalist Schedules 1 and 2). Rules, ATC table, effective-dated rates and DAT layouts are ported from the Owner's taxify extension (QAP and alphalist DAT match taxify byte for byte). Figures come from approved documents (status Posted with approved fields, counted in the document's own month) and from figures staff type in; worksheets are staff working papers (clients do not see them) and lock once the return is filed. Not yet: 1701/1702-RT annual, 1604-E, 2307 printing, and itemized deductions from a ledger (Phase 1B).
+
+### 3.7a Payroll (1601-C, 1604-C, alphalist)
+
+- Per client: **payslip items** (earning / deduction / employer contribution), each mapped to a BIR category (taxify's list; "none" for loans and cash advances), and an **employee list** with every alphalist field. Employees are added one by one or in bulk from an Excel template.
+- Each month's payroll is encoded in a **downloaded Excel register** (one column per payslip item, prefilled with the employees) and uploaded with a checked preview. Staff uploads are saved directly; **client uploads from the portal** wait for the assigned staff to post or return them.
+- From it: 1601-C (with the December / separation annualization), 1604-C, the alphalist DAT and CSV, and a 2316 worksheet per employee. A month locks once its 1601-C is filed.
+
+### 3.7b Parties directory
+
+- One firm-wide directory of customers and suppliers by **TIN + branch code**: registered name (or last / first / middle for individuals), address, ZIP, VAT status. Filled automatically when a document with a TIN is approved; verified entries (Owner or reviewer) are never overwritten by OCR.
+- OCR review offers "Use directory details" and warns when the scanned name differs. Worksheets and their attachments use the directory's registered name, address and branch code.
 
 ### 3.8 Sign-off chain (Q21, Q25, Q32, Q57, Q58)
 
@@ -334,6 +346,9 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
 | O13 | Brand details for Settings → Brand: TIN and branch code, RDO, COR, addresses, contact details, CPA / PRC-BOA / BIR tax agent / PTR / DTI numbers and validity, signatory name and title, Service Invoice method and series | Owner | Statements, quotes, engagement letters |
 | O14 | ~~Whether fee advances count toward the gross receipts watch~~ **Closed 23 Nov 2026:** no. Only collected retainer and other fees applied to a charge count; unapplied advances and client tax money are excluded (as built) | Owner | Gross receipts watch (§3.1) |
+| O15 | Confirm the tax treatments chosen when building the worksheets: separation pay always exempt; December annualization (over-withholding as a negative adjustment); 13th-month ceiling applied cumulatively; percentage tax rate by document month vs income-tax rates at year end; sales with only a total treated as VAT-inclusive; 8% option and ₱250,000 reduction; MCIT start year default; branch code 0000 for head office (0001 when unknown) | Owner | Worksheets (§3.7), payroll (§3.7a) |
+| O16 | Check form item numbers written from the BIR forms rather than ported from taxify: 2551Q items 13–24, 1604-C Part I items 4–7 and Part II; and whether the alphalist DAT needs D2 records for Schedule 2 | Owner / Staff | 2551Q, 1604-C, alphalist |
+| O17 | 2307s the client issued: OCR reads the "party" as the payor (the client), so reviewers must enter the payee's name and TIN until the OCR prompt is adjusted | Build | 0619-E, 1601-EQ, QAP |
 
 ---
 
