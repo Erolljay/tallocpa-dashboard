@@ -38,7 +38,7 @@ export function FilingTable({ rows, today, empty }: { rows: FilingListRow[]; tod
                 <td className="px-4 py-3">
                   {r.clients ? <Link href={`/app/clients/${r.clients.id}`} className="text-ink-heading hover:underline">{r.clients.name}</Link> : "—"}
                 </td>
-                <td className="px-4 py-3 font-medium text-ink-heading">{r.form}</td>
+                <td className="px-4 py-3 font-medium"><Link href={`/app/filings/${r.id}`} className="text-link hover:underline">{r.form}</Link></td>
                 <td className="px-4 py-3 tabular-nums text-ink-muted">{r.period_label}</td>
                 <td className="px-4 py-3">{overdue ? <Badge tone="blocked">Overdue</Badge> : <Badge tone={filingStatusTone[r.status]}>{filingStatusLabel[r.status]}</Badge>}</td>
               </tr>

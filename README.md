@@ -18,6 +18,8 @@ Phase 1A in progress. Built so far:
 - Clients: list, new client from the COR (obligations worked out from the tax types), client page with engagements, team and portal users
 - Staff page: add staff and reviewers, capacity and load (retainers ÷ ₱1,000)
 - Nightly job creates dated BIR filings 120 days ahead; Dashboard shows overdue and next 14 days
+- Sign-off chain on every filing: Prepared → Reviewed → Client approved (portal) → Owner approved (payment check) → Filed → Paid → Proof sent, with history
+- Settings: Owner edits BIR deadline rules and non-working days
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 
