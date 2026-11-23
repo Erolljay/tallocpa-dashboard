@@ -4,6 +4,8 @@ How to connect TalloCPA OS to Supabase, Google sign-in and Vercel. Done once by 
 
 ## 1. Supabase project
 
+> **Done (2026-11-23):** project **TalloCPA OS** (`fjimfmvfmwqmuekzocsw`, Singapore) is created, all migrations in `supabase/migrations/` are applied and `supabase/seed.sql` is loaded. Steps 1–3 below are for rebuilding it. New migrations are applied in order as they are merged.
+
 1. Create a project at supabase.com, **region: Southeast Asia (Singapore)** (spec §3.14).
 2. Apply the database: install the Supabase CLI, then from this repo:
    ```bash
