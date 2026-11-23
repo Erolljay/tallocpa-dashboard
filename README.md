@@ -5,7 +5,7 @@ The operating system of **Tallo CPA** (EJ Tallo Cloud Accounting and Auditing Se
 *Clear Numbers. Clean Compliance.*
 
 - [`docs/SPEC.md`](docs/SPEC.md) — product specification
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — the decisions (Q1–Q60) behind it
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — the decisions (Q1–Q61) behind it
 
 ## Status
 
