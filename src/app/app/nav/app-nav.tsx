@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CalendarRange, ClipboardCheck, FileText, LayoutDashboard, Settings, UserCog, Users, Wallet } from "lucide-react";
+import { CalendarClock, CalendarRange, ClipboardCheck, FileText, Gauge, LayoutDashboard, Settings, UserCog, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,6 +12,7 @@ const items = {
   cycle: { href: "/app/cycle", label: "Monthly cycle", icon: CalendarRange },
   review: { href: "/app/review", label: "Review", icon: ClipboardCheck },
   collections: { href: "/app/collections", label: "Collections", icon: Wallet },
+  scores: { href: "/app/scores", label: "Scores", icon: Gauge },
   staff: { href: "/app/staff", label: "Staff", icon: UserCog },
   settings: { href: "/app/settings", label: "Settings", icon: Settings },
 } as const;

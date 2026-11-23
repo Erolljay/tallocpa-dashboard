@@ -50,13 +50,13 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 | Phase | Scope | Target |
 |---|---|---|
-| **1A — Compliance core** | Brand/entity settings, clients & engagements, filing obligations, deadline engine, client portal + OCR intake + review queue, sign-off chain, Collections & SOA, owner dashboard, Moxie import | **Live for the January 2027 cycle** (December 2026 returns stay in the current tools) |
+| **1A — Compliance core** | Brand/entity settings, clients & engagements, filing obligations, deadline engine, client portal + OCR intake + review queue, sign-off chain, Collections & SOA, owner dashboard & scores | **Live for the January 2027 cycle** (December 2026 returns stay in the current tools) |
 | **1B — Bookkeeping** | Per-client ledger, chart-of-accounts templates, posting from reviewed documents, BIR loose-leaf books, returns computed from the ledger, period lock, client reports | A few weeks after 1A; **posts back to 1 January 2027** from opening trial balances as of 31 December 2026 |
 | **2 — Growth** | Public website (tallocpa.com) → lead → auto-quote from COR + fee schedule → proposal → e-signed engagement → client set up automatically | After Phase 1 runs one clean cycle |
 | **3 — Money** | Full billing, retainers, collections, reference-based automatic payment matching | After Phase 2 |
 | **Later** | Other service lines, Receivership & Liquidation module, nationwide brand, Viber/SMS | — |
 
-**Cutover rule (Q7, Q33):** Moxie stays read-only until the OS completes one full monthly cycle; then it is cancelled. Manager.io stays for 2026 books and is retired after the 2026 annual filings.
+**Cutover rule (Q7, Q33):** clients are entered in the OS from their COR (there is no Moxie import, §8); Moxie stays read-only for reference until the OS completes one full monthly cycle, then it is cancelled. Manager.io stays for 2026 books and is retired after the 2026 annual filings.
 
 ---
 
@@ -77,7 +77,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 ### 3.3 Filing obligations & deadline engine (Q6, Q20)
 
-- **Obligation:** client × form (e.g. 2550Q) × start date × end date. Created from the COR's registered tax types and the engagement; checked against the COR on import (Q14).
+- **Obligation:** client × form (e.g. 2550Q) × start date × end date. Created from the COR's registered tax types and the engagement.
 - **Deadline rules are data, not code:** form, frequency, due-day formula, filing channel (eFPS group / eBIRForms), effective-from / effective-to dates, source issuance (RR/RMC number). The Owner edits rules in Settings; a BIR change means adding a row with a new effective date.
 - **Withholding returns follow the calendar year** (0619-E, 1601-C, 1601-EQ, 1604-C, 1604-E), even for a fiscal-year client; income tax and business tax returns follow the client's taxable year. A rule's `calendar_year` flag records this.
 - **Due dates that fall on a weekend or holiday move to the next working day.** The holiday calendar is a table, kept up to date from Malacañang proclamations and BIR advisories; one-off work suspensions can be added as entries.
@@ -307,12 +307,11 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 
 ---
 
-## 8. Migration from Moxie (Q14, Q33)
+## 8. Moving off Moxie (Q14, Q33)
 
-- **Import:** 51 active clients and their contacts; the 24 services as the starting fee schedule; the 172 enabled recurring tasks turned into obligations, checked against each client's COR.
-- **Clean up on import:** test records ("Client 5", "Client 6", "Last Sample", "Don Dino Business"); the duplicate Thai Cuisine Iloilo Food Corp. (prospect + client); duplicate personal staff logins.
-- **Check:** about 20 enabled Moxie tasks are stuck in FAILED with 2025 run dates — the import report lists which clients' filings were not being tracked.
-- **Archive, do not import:** projects, time entries, history (kept as a downloadable export).
+- **No import (Owner, 23 Nov 2026).** The Moxie import was dropped. Each client is added in the OS from their COR (New client), which works out the obligations from the registered tax types; engagements, retainers and team are entered on the client page.
+- **Archive, do not import:** clients, projects, time entries and history stay in Moxie, read-only, and are kept as a downloadable export when Moxie is cancelled.
+- **Check while entering clients:** about 20 enabled Moxie tasks were stuck in FAILED with 2025 run dates, so compare each client's obligations in the OS against their COR rather than against Moxie.
 
 ---
 
@@ -331,6 +330,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure |
 | O10 | Which firm bank accounts / e-wallets appear on the SOA | Owner | SOA |
 | O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only |
+| O12 | Confirm the client compliance score thresholds (draft in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
 
 ---
 
