@@ -222,9 +222,13 @@ describe.skipIf(!url)("database", () => {
 
   describe("sign-off chain", () => {
     /** Runs steps as different people inside one transaction that is rolled back. */
-    async function chain(run: (step: (who: string, action: string, note?: string | null, data?: object) => Promise<Record<string, unknown>>) => Promise<void>) {
+    async function chain(
+      run: (step: (who: string, action: string, note?: string | null, data?: object) => Promise<Record<string, unknown>>) => Promise<void>,
+      opts: { firmRemits?: boolean } = {},
+    ) {
       await db.query("begin");
       try {
+        if (opts.firmRemits) await db.query(`update public.clients set payment_mode = 'firm_remits' where id = $1`, [clientA]);
         const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '2550Q', 'quarterly', '2026-01-01') returning id`, [clientA])).rows[0].id;
         const filing = (
           await db.query(
@@ -263,15 +267,19 @@ describe.skipIf(!url)("database", () => {
         expect(await step(CLIENT_USER, "client_query", "Why is output VAT higher?")).toMatchObject({ status: "reviewed", open_query: "Why is output VAT higher?" });
         expect(await step(STAFF, "answer_query", "Two large December sales.")).toMatchObject({ open_query: null });
         expect(await step(CLIENT_USER, "client_approve")).toMatchObject({ status: "client_approved" });
-        await expect(step(REVIEWER, "owner_approve", null, { payment_status: "paid" })).rejects.toThrow(/Only the Owner/);
-        await expect(step(OWNER, "owner_approve", null, { payment_status: "unpaid" })).rejects.toThrow(/approve even though unpaid/);
-        expect(await step(OWNER, "owner_approve", null, { payment_status: "unpaid", approve_unpaid: true })).toMatchObject({ status: "owner_approved" });
+        await expect(step(REVIEWER, "owner_approve")).rejects.toThrow(/Only the Owner/);
+        // The firm remits this client's tax and nothing has been paid: the check says unpaid,
+        // whatever the form claims, and approving needs the deliberate tick.
+        await expect(step(OWNER, "owner_approve", null, { payment_status: "paid" })).rejects.toThrow(/approve even though unpaid/);
+        expect(await step(OWNER, "owner_approve", null, { approve_unpaid: true })).toMatchObject({ status: "owner_approved" });
         await expect(step(STAFF, "file", null, { filed_on: "2027-04-20" })).rejects.toThrow(/filing reference/);
         expect(await step(STAFF, "file", null, { filing_reference: "EFPS-123456", filed_on: "2027-04-20" })).toMatchObject({ status: "filed", filing_reference: "EFPS-123456" });
         await expect(step(STAFF, "pay")).rejects.toThrow(/payment reference/);
         expect(await step(STAFF, "pay", null, { payment_reference: "LBP-998877", paid_on: "2027-04-21" })).toMatchObject({ status: "paid" });
         expect(await step(STAFF, "send_proof")).toMatchObject({ status: "proof_uploaded" });
-      });
+        const check = (await db.query(`select data -> 'payment_check' as c from public.filing_events where action = 'owner_approve' order by id desc limit 1`)).rows[0].c;
+        expect(check).toMatchObject({ status: "unpaid", tax_status: "unpaid", tax_due: 12500.5 });
+      }, { firmRemits: true });
     });
 
     it("a reviewer can send a return back with a reason, and cannot review their own work", async () => {
@@ -297,6 +305,165 @@ describe.skipIf(!url)("database", () => {
         await expect(step(OWNER, "file", null, { filing_reference: "X", filed_on: "2027-04-20" })).rejects.toThrow(/Only an approved return/);
         await expect(step(CLIENT_USER, "prepare", null, { tax_due: 0 })).rejects.toThrow(/assigned to this client/);
         await step(OWNER, "prepare", null, { tax_due: 0 });
+      });
+    });
+  });
+
+  describe("collections", () => {
+    /**
+     * Runs a money scenario inside one rolled-back transaction. `as` runs SQL as a
+     * signed-in person; `admin` runs setup SQL with full rights.
+     */
+    async function money(
+      run: (h: {
+        as: <T = Record<string, unknown>>(who: string, sql: string, params?: unknown[]) => Promise<T[]>;
+        admin: (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
+        withholding: string;
+        vat: string;
+      }) => Promise<void>,
+    ) {
+      await db.query("begin");
+      try {
+        await db.query(`update public.clients set payment_mode = 'firm_remits', billing_days = '{10,20}' where id = $1`, [clientA]);
+        await db.query(`insert into public.engagements (client_id, service_line, monthly_retainer, start_date) values ($1, 'tax_compliance', 3000, '2027-01-01')`, [clientA]);
+        const ob = async (form: string, frequency: string) =>
+          (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, $2, $3, '2027-01-17') returning id`, [clientA, form, frequency])).rows[0].id;
+        const filing = async (obligation: string, form: string, due: string, tax: number, status: string) =>
+          (
+            await db.query(
+              `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date, tax_due, status)
+               values ($1, $2, $3, 'Jan 2027', '2027-01-01', '2027-01-31', '2550Q', $4, $4, $5, $6) returning id`,
+              [obligation, clientA, form, due, tax, status],
+            )
+          ).rows[0].id;
+        const withholding = await filing(await ob("1601-C", "monthly"), "1601-C", "2027-02-10", 5000, "reviewed");
+        const vat = await filing(await ob("2550Q", "quarterly"), "2550Q", "2027-02-25", 8000, "prepared");
+        await db.query("set local role authenticated");
+        let n = 0;
+        const step = async (sql: string, params: unknown[]) => {
+          const sp = `s${n++}`;
+          await db.query(`savepoint ${sp}`);
+          try {
+            const r = await db.query(sql, params);
+            await db.query(`release savepoint ${sp}`);
+            return r.rows;
+          } catch (e) {
+            await db.query(`rollback to savepoint ${sp}`);
+            throw e;
+          }
+        };
+        await run({
+          withholding,
+          vat,
+          as: async (who, sql, params = []) => {
+            await db.query("select set_config('request.jwt.claim.sub', $1, true)", [who]);
+            return (await step(sql, params)) as never;
+          },
+          admin: async (sql, params = []) => {
+            await db.query("reset role");
+            try {
+              return await step(sql, params);
+            } finally {
+              await db.query("set local role authenticated");
+            }
+          },
+        });
+      } finally {
+        await db.query("rollback");
+      }
+    }
+
+    const open = `select kind, description, amount::text, open_amount::text from public.due_balances where client_id = $1 order by due_on, kind`;
+
+    it("bills on the billing days: retainer on the month's first statement, returns once reviewed", async () => {
+      await money(async ({ as, admin, vat }) => {
+        expect(await as(OWNER, `select public.run_billing('2027-02-10') as n`)).toEqual([{ n: 1 }]);
+        const soas = await as(OWNER, `select reference, billing_date::text, due_on::text from public.soas where client_id = $1`, [clientA]);
+        expect(soas).toEqual([{ reference: "TC-9001-2027-02-10", billing_date: "2027-02-10", due_on: "2027-02-15" }]);
+        expect(await as(OWNER, open, [clientA])).toEqual([
+          { kind: "tax", description: "Tax due, 1601-C Jan 2027", amount: "5000.00", open_amount: "5000.00" },
+          { kind: "retainer", description: "Monthly retainer, February 2027", amount: "3000.00", open_amount: "3000.00" },
+        ]);
+        // Running again adds nothing; a day that is not a billing day bills no one.
+        expect(await as(OWNER, `select public.run_billing('2027-02-10') as n`)).toEqual([{ n: 0 }]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-15') as n`)).toEqual([{ n: 0 }]);
+
+        // VAT is reviewed later and goes on the 20th, without a second retainer.
+        await admin(`update public.filing_instances set status = 'reviewed' where id = $1`, [vat]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-20') as n`)).toEqual([{ n: 1 }]);
+        const second = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-02-20'`);
+        expect(second).toEqual([{ kind: "tax", amount: "8000.00" }]);
+
+        // A client billed once a month is skipped on the 20th.
+        await as(OWNER, `select public.set_billing_days($1, '{10}')`, [clientA]);
+        await as(OWNER, `select public.add_client_charge($1, 'contribution', 'SSS contributions, January 2027', 1450, '2027-02-28')`, [clientA]);
+        expect(await as(OWNER, `select public.run_billing('2027-03-20') as n`)).toEqual([{ n: 0 }]);
+        expect(await as(OWNER, `select public.run_billing('2027-03-10') as n`)).toEqual([{ n: 1 }]);
+        const march = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-03-10' order by d.kind`);
+        expect(march).toEqual([{ kind: "contribution", amount: "1450.00" }, { kind: "retainer", amount: "3000.00" }]);
+      });
+    });
+
+    it("matches deposits oldest first; partials stay open, overpayments become credit, voids undo", async () => {
+      await money(async ({ as, admin, vat }) => {
+        await as(OWNER, `select public.run_billing('2027-02-10')`);
+        const ids = (await as<{ id: string }>(OWNER, `select id from public.client_dues where client_id = $1`, [clientA])).map((r) => r.id);
+        const deposit = (amount: number) =>
+          as<{ id: string }>(OWNER, `select public.record_deposit($1, '2026-11-20', $2, null, 'BDO-111', '0042', null, $3) as id`, [clientA, amount, ids]);
+
+        await deposit(4000);
+        expect((await as(OWNER, open, [clientA])).map((r) => r.open_amount)).toEqual(["1000.00", "3000.00"]);
+        const [{ id: second }] = await deposit(5000);
+        expect((await as(OWNER, open, [clientA])).map((r) => r.open_amount)).toEqual(["0.00", "0.00"]);
+        expect(await as(OWNER, `select unallocated::text from public.deposit_balances where id = $1`, [second])).toEqual([{ unallocated: "1000.00" }]);
+
+        // The credit is used on the next statement.
+        await admin(`update public.filing_instances set status = 'reviewed' where id = $1`, [vat]);
+        await as(OWNER, `select public.run_billing('2027-02-20')`);
+        expect(await as(OWNER, `select open_amount::text from public.due_balances where filing_instance_id = $1`, [vat])).toEqual([{ open_amount: "7000.00" }]);
+
+        await expect(as(OWNER, `select public.void_deposit($1, '')`, [second])).rejects.toThrow(/why the deposit is voided/);
+        await as(OWNER, `select public.void_deposit($1, 'Bounced cheque')`, [second]);
+        expect((await as(OWNER, open, [clientA])).map((r) => r.open_amount)).toEqual(["1000.00", "3000.00", "8000.00"]);
+
+        await expect(as(OWNER, `select public.record_deposit($1, '2999-01-01', 100, null, null, null, null, '{}')`, [clientA])).rejects.toThrow(/future/);
+        await expect(as(OWNER, `select public.record_deposit($1, '2026-11-20', 10.005, null, null, null, null, '{}')`, [clientA])).rejects.toThrow(/two decimals/);
+        await expect(as(OWNER, `select public.record_deposit($1, '2026-11-20', 100, null, null, null, null, '{}', 'check')`, [clientA])).rejects.toThrow(/check number/);
+        await expect(as(OWNER, `select public.record_deposit($1, '2026-11-20', 100, null, null, null, null, '{}', 'cash')`, [clientA])).rejects.toThrow(/who deposited the cash/);
+        const [{ id: cash }] = await as<{ id: string }>(OWNER, `select public.record_deposit($1, '2026-11-20', 100, null, null, null, null, '{}', 'cash', $2) as id`, [clientA, STAFF]);
+        expect(await as(OWNER, `select method, deposited_by from public.client_deposits where id = $1`, [cash])).toEqual([{ method: "cash", deposited_by: STAFF }]);
+      });
+    });
+
+    it("works out the payment check for the Owner's approval", async () => {
+      await money(async ({ as, withholding }) => {
+        const check = async () => (await as<{ c: Record<string, unknown> }>(OWNER, `select public.filing_payment_check($1) as c`, [withholding]))[0].c;
+        expect(await check()).toMatchObject({ status: "unpaid", tax_status: "unpaid", tax_due: 5000, tax_paid: 0 });
+        await as(OWNER, `select public.run_billing('2027-02-10')`);
+        const tax = (await as<{ id: string }>(OWNER, `select id from public.client_dues where filing_instance_id = $1`, [withholding]))[0].id;
+        await as(OWNER, `select public.record_deposit($1, '2026-11-20', 2000, null, null, null, null, $2)`, [clientA, [tax]]);
+        expect(await check()).toMatchObject({ status: "partial", tax_status: "partial", tax_paid: 2000 });
+        await as(OWNER, `select public.record_deposit($1, '2026-11-20', 3000, null, null, null, null, $2)`, [clientA, [tax]]);
+        // The retainer falls due in 2027, so it does not count yet.
+        expect(await check()).toMatchObject({ status: "paid", tax_status: "paid", other_open: 0 });
+        await expect(as(STAFF, `select public.filing_payment_check($1)`, [withholding])).rejects.toThrow(/Only the Owner/);
+      });
+    });
+
+    it("keeps money to the Owner and the client's own users", async () => {
+      await money(async ({ as }) => {
+        await as(OWNER, `select public.run_billing('2027-02-10')`);
+        expect(await as(CLIENT_USER, `select reference from public.soas`)).toEqual([{ reference: "TC-9001-2027-02-10" }]);
+        expect(await as(CLIENT_USER, `select count(*)::int as n from public.due_balances`)).toEqual([{ n: 2 }]);
+        expect(await as(STAFF, `select count(*)::int as n from public.client_dues`)).toEqual([{ n: 0 }]);
+        expect(await as(REVIEWER, `select count(*)::int as n from public.soas`)).toEqual([{ n: 0 }]);
+        await expect(as(STAFF, `select public.run_billing('2027-02-10')`)).rejects.toThrow(/Only the Owner/);
+        await expect(as(CLIENT_USER, `select public.record_deposit($1, '2026-11-20', 100, null, null, null, null, '{}')`, [clientA])).rejects.toThrow(/Only the Owner/);
+        await expect(as(OWNER, `select public.run_scheduled_billing('2027-02-10')`)).rejects.toThrow(/permission denied/);
+        await expect(as(OWNER, `insert into public.client_dues (client_id, kind, description, amount, due_on) values ($1, 'other', 'x', 1, '2027-01-01')`, [clientA])).rejects.toThrow(/row-level security/);
+        // Payment QR codes: everyone signed in can view them, only the Owner uploads.
+        await as(OWNER, `insert into storage.objects (bucket_id, name) values ('payment-qr', 'gcash.png')`);
+        await expect(as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-qr', 'fake.png')`)).rejects.toThrow(/row-level security/);
       });
     });
   });

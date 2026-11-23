@@ -8,7 +8,7 @@ import { availableActions, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "
 import { supabaseServer } from "@/lib/supabase/server";
 import { DocumentUpload } from "@/components/document-upload";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
-import { SignOffActions } from "../sign-off-actions";
+import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 
 export default function FilingPage(props: PageProps<"/app/filings/[id]">) {
   return (
@@ -81,6 +81,11 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
     },
   );
 
+  // The payment check the Owner sees before the final approval (spec §3.8), from Collections.
+  const paymentCheck = actions.includes("owner_approve")
+    ? (((await supabase.rpc("filing_payment_check", { p_filing: f.id })).data as PaymentCheck | null) ?? null)
+    : null;
+
   return (
     <>
       <PageHeader
@@ -113,7 +118,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             )}
             <div className="mt-4">
               {actions.length > 0 ? (
-                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} />
+                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} />
               ) : (
                 <p className="text-sm text-ink-muted">{status === "proof_uploaded" ? "This return is done." : "Nothing for you to do on this return right now."}</p>
               )}

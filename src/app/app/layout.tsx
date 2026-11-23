@@ -8,7 +8,7 @@ const nav = ["dashboard", "clients", "deadlines", "documents"] as const satisfie
 /** Shown to the Owner and to anyone who reviews a client's returns. */
 const reviewNav = ["review"] as const satisfies readonly NavKey[];
 /** Shown only to the Owner. */
-const ownerNav = ["staff", "settings"] as const satisfies readonly NavKey[];
+const ownerNav = ["collections", "staff", "settings"] as const satisfies readonly NavKey[];
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
 
@@ -16,7 +16,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       {/* Translucent sidebar material; on phones it sits above the page as a header. */}
-      <aside className="material material-edge-b z-20 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:material-edge-r">
+      <aside className="material material-edge-b z-20 print:hidden md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:material-edge-r">
         <div className="flex h-full flex-col gap-4 px-4 py-3 md:gap-8 md:px-3 md:py-5">
           <div className="md:px-2">
             <Lockup />

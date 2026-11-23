@@ -162,8 +162,9 @@ Prepared (Staff)
 
 ### 3.9 Collections & Statement of Account (Q24–Q27, Q31, Q32)
 
-- **SOA per client per month:** retainer + tax dues computed for the period (firm-remits clients) + carried balance − credits. Unique **payment reference** per SOA (e.g. `TC-0042-2026-11`).
-- **Collections screen (Owner only):** every open due by client. The Owner records a deposit (date, bank, amount, reference) and ticks which dues it covers. Partial payments leave the rest open; overpayments become a **client credit** applied on the next SOA.
+- **SOA per billing run (Q62):** each client has billing days (default the 10th and 20th; once a month for some). A run issues a statement with whatever is ready and not billed yet: the month's retainer (on the month's first statement), tax due on returns the firm remits once reviewed (withholding on the 10th, VAT on the 20th), SSS / PhilHealth / Pag-IBIG contributions and other charges — plus carried balance − credits. Nothing new means no statement. The nightly job runs each day's billing; the Owner can run it by hand. Unique **payment reference** per SOA (e.g. `TC-0042-2026-11-10`).
+- **Pay now (Q64):** the SOA lists the firm's bank and e-wallet accounts; the client picks one and sees its QR code, account name and number. Tax money goes to the client-tax-funds account when there is one.
+- **Collections screen (Owner only):** every open due by client. The Owner records a deposit (date, method — fund transfer, check, e-wallet, or cash deposited by staff (Q63) — bank, amount, reference) and ticks which dues it covers. Partial payments leave the rest open; overpayments become a **client credit** applied on the next SOA.
 - **The firm's own books (Q26):** client deposits for taxes are recorded as a liability, **"Client funds held for tax remittance"**, separate from retainer revenue. A separate bank account for client tax money is recommended.
 - **Receivables aging** 30/60/90+ days on the dashboard and the SOA.
 - The firm's BIR invoices are still issued **manually** from the registered booklet; the OS only records the invoice number against the payment (Q27).
