@@ -444,9 +444,15 @@
     "semantic_hash": "bfe88bd02222eb775e89d6c429827b43"
   },
   "docs/SPEC.md": {
+    "mtime": 1795405976.2677908,
+    "seen": 1795405978.2640843,
+    "ast_hash": "fa68a80e6937f5fb1510492e7789f7fc",
+    "semantic_hash": ""
+  },
+  "pnpm-lock.yaml": {
     "mtime": 1795403312.292082,
-    "seen": 1795403636.8836534,
-    "ast_hash": "64431597654fd9129688454161e361dd",
-    "semantic_hash": "64431597654fd9129688454161e361dd"
+    "seen": 1795405978.264087,
+    "ast_hash": "199d67785bce2b49e62b4bda97a1036d",
+    "semantic_hash": ""
   }
 }
