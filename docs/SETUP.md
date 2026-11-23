@@ -21,7 +21,9 @@ How to connect TalloCPA OS to Supabase, Google sign-in and Vercel. Done once by 
 ## 2. Sign-in settings (Authentication → Sign In / Providers)
 
 - **Turn off "Allow new users to sign up".** Only people the Owner invites can sign in. Anyone else who tries — by email or Google — gets no account.
-- **Email:** keep enabled. Edit the **Magic Link** email template so it carries both the link and the code:
+- **Email:** keep enabled. **The standard Magic Link email works as is** — its link returns to `/auth/callback` and signs the person in (open it in the same browser that asked for it).
+- **Sending email to clients and staff needs custom SMTP.** Supabase's built-in sender only delivers to members of the Supabase organization and a few messages an hour, and it does not let you edit the email templates. Set up **Resend** (Project Settings → Authentication → SMTP Settings) with a verified `tallocpa.com` domain; after that, the templates become editable.
+- **Optional, after SMTP:** edit the **Magic Link** template so the email also carries a 6-digit code (useful when someone opens the email on their phone but signs in on a computer):
   ```html
   <h2>Sign in to Tallo CPA</h2>
   <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
@@ -29,7 +31,6 @@ How to connect TalloCPA OS to Supabase, Google sign-in and Vercel. Done once by 
   <p>The link and code expire in one hour. If you did not ask to sign in, ignore this email.</p>
   ```
 - **URL Configuration:** Site URL `https://app.tallocpa.com`; add `http://localhost:3000/**` to Redirect URLs for development.
-- **Custom SMTP (recommended):** connect Resend with a verified `tallocpa.com` domain, so sign-in emails come from the firm and are not rate-limited.
 
 ## 3. Google sign-in
 
