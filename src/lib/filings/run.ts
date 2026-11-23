@@ -25,7 +25,7 @@ export async function runFilingGeneration(admin: SupabaseClient, today = manilaT
   const [obligations, clients, rules, holidays] = await Promise.all([
     all<ObligationRow>(admin, "obligations", "id, client_id, form, frequency, start_date, end_date"),
     all<ClientRow>(admin, "clients", "id, status, fiscal_year_end_month, filing_channel, efps_group"),
-    all<RuleRow>(admin, "deadline_rules", "id, form, frequency, period_filter, due, channel, efps_group, effective_from, effective_to"),
+    all<RuleRow>(admin, "deadline_rules", "id, form, frequency, period_filter, due, channel, efps_group, effective_from, effective_to, calendar_year"),
     all<{ date: string }>(admin, "holidays", "date"),
   ]);
   const { rows, missing } = buildFilingRows({ obligations, clients, rules, holidays: holidays.map((h) => h.date), today });

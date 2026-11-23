@@ -54,3 +54,19 @@ export function obligationsForTaxTypes(taxpayerType: TaxpayerType, taxTypes: rea
   }
   return out;
 }
+
+/**
+ * What changes when a client's tax setup changes: forms to start and forms to
+ * stop, compared by form name against the obligations still open.
+ */
+export function obligationChanges(
+  open: readonly { form: string }[],
+  planned: readonly PlannedObligation[],
+): { add: PlannedObligation[]; end: string[] } {
+  const openForms = new Set(open.map((o) => o.form));
+  const plannedForms = new Set(planned.map((o) => o.form));
+  return {
+    add: planned.filter((o) => !openForms.has(o.form)),
+    end: [...openForms].filter((f) => !plannedForms.has(f)).sort(),
+  };
+}

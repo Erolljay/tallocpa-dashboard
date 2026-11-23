@@ -8,8 +8,9 @@ const nav = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/clients", label: "Clients", icon: Users },
   { href: "/app/deadlines", label: "Deadlines", icon: CalendarClock },
-  { href: "/app/staff", label: "Staff", icon: UserCog },
-];
+] as const;
+/** Shown only to the Owner. */
+const ownerNav = [{ href: "/app/staff", label: "Staff", icon: UserCog }] as const;
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
 
@@ -20,12 +21,10 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
         <div className="flex h-full flex-col gap-6 p-4">
           <Lockup />
           <nav aria-label="Main" className="flex gap-1 overflow-x-auto md:flex-col">
-            {nav.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-strong hover:bg-surface-sunken">
-                <Icon aria-hidden className="size-4" strokeWidth={2} />
-                {label}
-              </Link>
-            ))}
+            <NavLinks items={nav} />
+            <Suspense fallback={null}>
+              <OwnerNavLinks />
+            </Suspense>
           </nav>
           <div className="md:mt-auto">
             <Suspense fallback={<div className="h-12 animate-pulse rounded-lg bg-surface-sunken" />}>
@@ -37,6 +36,20 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
       <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
     </div>
   );
+}
+
+function NavLinks({ items }: { items: readonly { href: string; label: string; icon: typeof Users }[] }) {
+  return items.map(({ href, label, icon: Icon }) => (
+    <Link key={href} href={href} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-strong hover:bg-surface-sunken">
+      <Icon aria-hidden className="size-4" strokeWidth={2} />
+      {label}
+    </Link>
+  ));
+}
+
+async function OwnerNavLinks() {
+  const id = await getIdentity();
+  return id.staff?.role === "owner" ? <NavLinks items={ownerNav} /> : null;
 }
 
 async function UserMenu() {

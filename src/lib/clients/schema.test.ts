@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { engagementSchema, formToObject, newClientSchema } from "./schema";
+import { editClientSchema, engagementSchema, formToObject, newClientSchema } from "./schema";
 
 const base = {
   name: "Iloilo Feast Food Corp.",
@@ -47,5 +47,17 @@ describe("engagementSchema", () => {
   it("accepts centavos but not fractions of a centavo", () => {
     expect(engagementSchema.safeParse({ service_line: "tax_compliance", monthly_retainer: "2500.50", start_date: "2027-01-01" }).success).toBe(true);
     expect(engagementSchema.safeParse({ service_line: "tax_compliance", monthly_retainer: "2500.505", start_date: "2027-01-01" }).success).toBe(false);
+  });
+});
+
+describe("editClientSchema", () => {
+  const edit = Object.fromEntries(Object.entries(base).filter(([k]) => k !== "registration_date"));
+  it("needs no registration date, and the effective date is optional", () => {
+    const r = editClientSchema.parse({ ...edit, effective_date: "" });
+    expect(r.effective_date).toBeUndefined();
+    expect(editClientSchema.parse({ ...edit, effective_date: "2027-01-01" }).effective_date).toBe("2027-01-01");
+  });
+  it("still requires a group for eFPS filers", () => {
+    expect(editClientSchema.safeParse({ ...edit, filing_channel: "efps" }).success).toBe(false);
   });
 });

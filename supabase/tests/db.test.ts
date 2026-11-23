@@ -173,6 +173,53 @@ describe.skipIf(!url)("database", () => {
     }
   });
 
+  it("Owner edits a client and switches it from percentage tax to VAT from a date", async () => {
+    await db.query("begin");
+    try {
+      const ob = `insert into public.obligations (client_id, form, frequency, start_date) values ($1, $2, 'quarterly', '2026-01-01') returning id`;
+      const pt = (await db.query(ob, [clientB, "2551Q"])).rows[0].id;
+      await db.query(ob, [clientB, "1702Q"]);
+      // A not-started filing after the switch is dropped; one already in progress stays.
+      await db.query(
+        `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date, status)
+         values ($1, $2, '2551Q', 'FY2027-Q1', '2027-01-01', '2027-03-31', '2551Q', '2027-04-25', '2027-04-26', 'not_started'),
+                ($1, $2, '2551Q', 'FY2027-Q2', '2027-04-01', '2027-06-30', '2551Q', '2027-07-25', '2027-07-26', 'prepared')`,
+        [pt, clientB],
+      );
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+      await db.query("set local role authenticated");
+      const updated = (
+        await db.query(
+          `select (c).name, (c).tin from public.update_client_with_obligations($1, $2::jsonb, '["income_tax","vat"]', '2027-01-01', $3::jsonb, array['2551Q']) as c`,
+          [
+            clientB,
+            JSON.stringify({ name: "Client B Inc.", taxpayer_type: "corporation", tin: "123-456-789-00000", fiscal_year_end_month: 12, filing_channel: "ebirforms", book_type: "manual", payment_mode: "client_pays_direct", submission_cutoff_day: 5 }),
+            JSON.stringify([{ form: "2550Q", frequency: "quarterly" }]),
+          ],
+        )
+      ).rows[0];
+      const obligations = (await db.query(`select form, start_date::text, end_date::text from public.obligations where client_id = $1 order by form`, [clientB])).rows;
+      const filings = (await db.query(`select period_label from public.filing_instances where client_id = $1`, [clientB])).rows;
+      expect(updated).toEqual({ name: "Client B Inc.", tin: "123-456-789-00000" });
+      expect(obligations).toEqual([
+        { form: "1702Q", start_date: "2026-01-01", end_date: null },
+        { form: "2550Q", start_date: "2027-01-01", end_date: null },
+        { form: "2551Q", start_date: "2026-01-01", end_date: "2026-12-31" },
+      ]);
+      expect(filings).toEqual([{ period_label: "FY2027-Q2" }]);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
+  it("staff and reviewers cannot edit clients through the edit function", async () => {
+    for (const who of [STAFF, REVIEWER]) {
+      await expect(
+        as(who, `select public.update_client_with_obligations($1, $2::jsonb, null, null, null, null)`, [clientA, JSON.stringify({ name: "X", taxpayer_type: "corporation" })]),
+      ).rejects.toThrow(/Only the Owner/);
+    }
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(

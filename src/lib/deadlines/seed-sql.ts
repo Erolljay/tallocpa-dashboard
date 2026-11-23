@@ -1,4 +1,4 @@
-import { seedDeadlineRules, seedHolidays2027 } from "./seed";
+import { seedDeadlineRules, seedHolidays } from "./seed";
 
 const q = (v: string | undefined | null) => (v == null ? "null" : `'${v.replace(/'/g, "''")}'`);
 
@@ -12,19 +12,19 @@ export function buildSeedSql(): string {
     "values ('TC', 'Tallo CPA', 'EJ Tallo Cloud Accounting and Auditing Services', 'percentage_tax_3', 'app.tallocpa.com')",
     "on conflict (code) do nothing;",
     "",
-    "insert into public.deadline_rules (id, form, frequency, period_filter, due, channel, efps_group, effective_from, effective_to, source) values",
+    "insert into public.deadline_rules (id, form, frequency, period_filter, calendar_year, due, channel, efps_group, effective_from, effective_to, source) values",
   ];
   lines.push(
     seedDeadlineRules
       .map(
         (r) =>
-          `  (${q(r.id)}, ${q(r.form)}, ${q(r.frequency)}, ${q(r.periodFilter)}, ${q(JSON.stringify(r.due))}::jsonb, ${q(r.channel)}, ${q(r.efpsGroup)}, ${q(r.effectiveFrom)}, ${q(r.effectiveTo)}, ${q(r.source)})`,
+          `  (${q(r.id)}, ${q(r.form)}, ${q(r.frequency)}, ${q(r.periodFilter)}, ${r.calendarYear ? "true" : "false"}, ${q(JSON.stringify(r.due))}::jsonb, ${q(r.channel)}, ${q(r.efpsGroup)}, ${q(r.effectiveFrom)}, ${q(r.effectiveTo)}, ${q(r.source)})`,
       )
       .join(",\n") + "\non conflict (id) do nothing;",
   );
   lines.push("", "insert into public.holidays (date, name, kind, source) values");
   lines.push(
-    seedHolidays2027.map((h) => `  (${q(h.date)}, ${q(h.name)}, ${q(h.kind)}, 'UNVERIFIED')`).join(",\n") +
+    seedHolidays.map((h) => `  (${q(h.date)}, ${q(h.name)}, ${q(h.kind)}, 'UNVERIFIED')`).join(",\n") +
       "\non conflict (date) do nothing;",
     "",
   );

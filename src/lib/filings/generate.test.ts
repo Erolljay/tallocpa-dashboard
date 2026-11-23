@@ -12,6 +12,7 @@ const rules: RuleRow[] = seedDeadlineRules.map((r) => ({
   efps_group: r.efpsGroup ?? null,
   effective_from: r.effectiveFrom,
   effective_to: r.effectiveTo ?? null,
+  calendar_year: r.calendarYear ?? false,
 }));
 
 const client = (over: Partial<ClientRow> = {}): ClientRow => ({

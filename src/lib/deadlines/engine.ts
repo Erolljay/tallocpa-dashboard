@@ -53,6 +53,12 @@ export interface DeadlineRule {
   effectiveTo?: IsoDate;
   /** BIR issuance the rule comes from, e.g. "RR 8-2024". */
   source?: string;
+  /**
+   * The form follows the calendar year whatever the client's taxable year
+   * (withholding returns such as 1601-EQ, 1604-C, 1604-E). Omitted = the
+   * client's taxable year.
+   */
+  calendarYear?: boolean;
 }
 
 export interface Period {
@@ -194,6 +200,11 @@ export function selectRule(
   return candidates[0];
 }
 
+/** Does the form follow the calendar year? True when any of its rules says so. */
+export function followsCalendarYear(rules: readonly DeadlineRule[], form: string, frequency: Frequency): boolean {
+  return rules.some((r) => r.form === form && r.frequency === frequency && r.calendarYear);
+}
+
 /**
  * Filing instances whose period overlaps the obligation and whose due date falls
  * in [from, to]. Periods with no rule in force are reported in `missingRules`
@@ -211,7 +222,8 @@ export function generateFilingInstances(
   // Look back far enough that periods whose due date falls in the window are included.
   const lookback = addDays(from, -400);
   for (const ob of obligations) {
-    const periods = periodsBetween(ob.frequency, ob.fiscalYearEndMonth, lookback, to);
+    const yearEndMonth = followsCalendarYear(rules, ob.form, ob.frequency) ? 12 : ob.fiscalYearEndMonth;
+    const periods = periodsBetween(ob.frequency, yearEndMonth, lookback, to);
     for (const period of periods) {
       if (compareIso(period.end, ob.startDate) < 0) continue;
       if (ob.endDate && compareIso(period.start, ob.endDate) > 0) continue;
@@ -222,7 +234,7 @@ export function generateFilingInstances(
         }
         continue;
       }
-      if (!periodApplies(rule.periodFilter, period, ob.fiscalYearEndMonth)) continue;
+      if (!periodApplies(rule.periodFilter, period, yearEndMonth)) continue;
       const statutory = statutoryDueDate(rule.due, period.end);
       const dueDate = nextWorkingDay(statutory, holidays);
       if (compareIso(dueDate, from) < 0 || compareIso(dueDate, to) > 0) continue;
