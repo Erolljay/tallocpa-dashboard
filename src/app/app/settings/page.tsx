@@ -19,6 +19,9 @@ export default function SettingsPage() {
         <Card title="Brand" actions={<Link href="/app/settings/brand" className="text-sm text-link hover:underline">Open</Link>}>
           <p className="text-sm text-ink-muted">Legal name, TIN and COR, contact details on statements, credentials, invoicing, tax on our fee and the gross receipts watch.</p>
         </Card>
+        <Card title="Fee schedule" actions={<Link href="/app/settings/fees" className="text-sm text-link hover:underline">Open</Link>}>
+          <p className="text-sm text-ink-muted">Prices for new clients, quote preview, and how current clients&apos; fees compare.</p>
+        </Card>
       </div>
       <Suspense fallback={<Skeleton rows={4} />}>
         <PaymentSettings />
