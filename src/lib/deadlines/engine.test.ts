@@ -87,9 +87,9 @@ describe("seed rules", () => {
   it("1601-C due on a Saturday moves to Monday", () => {
     expect(dueDates(ob("1601-C", "monthly"), "2027-04-01", "2027-04-30")).toEqual([["2027-03", "2027-04-12"]]);
   });
-  it("1601-C for eFPS filers follows the group's day", () => {
-    expect(dueDates(ob("1601-C", "monthly", { channel: "efps", efpsGroup: "A" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-15"]]);
-    expect(dueDates(ob("1601-C", "monthly", { channel: "efps", efpsGroup: "E" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-11"]]);
+  it("eFPS filers follow the same manual due date as everyone else", () => {
+    expect(dueDates(ob("1601-C", "monthly", { channel: "efps", efpsGroup: "A" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-10"]]);
+    expect(dueDates(ob("0619-E", "monthly", { channel: "efps", efpsGroup: "E" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-10"]]);
   });
   it("1701Q is filed for Q1–Q3 only, moving 15 May 2027 (Saturday) to Monday", () => {
     expect(dueDates(ob("1701Q", "quarterly"), "2027-01-01", "2028-03-31")).toEqual([

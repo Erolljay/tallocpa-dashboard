@@ -123,7 +123,7 @@ describe.skipIf(!url)("database", () => {
   it("filing instances cannot be written through the API", async () => {
     const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '1601-C', 'monthly', '2027-01-01') returning id`, [clientA])).rows[0].id;
     const sql = `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date)
-                 values ($1, $2, '1601-C', '2027-01', '2027-01-01', '2027-01-31', '1601C-ebir', '2027-02-10', '2027-02-10')`;
+                 values ($1, $2, '1601-C', '2027-01', '2027-01-01', '2027-01-31', '1601C', '2027-02-10', '2027-02-10')`;
     await expect(as(OWNER, sql, [ob, clientA])).rejects.toThrow(/row-level security/);
   });
 

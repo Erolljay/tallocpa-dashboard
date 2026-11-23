@@ -28,16 +28,16 @@ describe("buildFilingRows", () => {
     expect(rows.map((r) => [r.period_label, r.due_date])).toEqual([
       ["2027-01", "2027-02-10"], ["2027-02", "2027-03-10"], ["2027-03", "2027-04-12"], ["2027-04", "2027-05-10"],
     ]);
-    expect(rows[0]).toMatchObject({ obligation_id: "o1", client_id: "c1", form: "1601-C", rule_id: "1601C-ebir", period_start: "2027-01-01", period_end: "2027-01-31" });
+    expect(rows[0]).toMatchObject({ obligation_id: "o1", client_id: "c1", form: "1601-C", rule_id: "1601C", period_start: "2027-01-01", period_end: "2027-01-31" });
   });
 
-  it("uses the client's eFPS group and fiscal year", () => {
+  it("gives eFPS clients the manual due date and uses the fiscal year", () => {
     const { rows } = buildFilingRows({
       obligations: [ob(), ob({ id: "o2", form: "1702-RT", frequency: "annual", start_date: "2020-01-01" })],
       clients: [client({ filing_channel: "efps", efps_group: "A", fiscal_year_end_month: 6 })],
       rules, holidays: [], today: "2027-09-01",
     });
-    expect(rows.find((r) => r.form === "1601-C" && r.period_label === "2027-08")?.due_date).toBe("2027-09-15");
+    expect(rows.find((r) => r.form === "1601-C" && r.period_label === "2027-08")?.due_date).toBe("2027-09-10");
     expect(rows.find((r) => r.form === "1702-RT")).toMatchObject({ period_label: "FY2027", due_date: "2027-10-15" });
   });
 
@@ -62,7 +62,7 @@ describe("buildFilingRows", () => {
 describe("recomputeDueDates", () => {
   const filing = (over: Partial<OpenFilingRow> = {}): OpenFilingRow => ({
     id: "f1", obligation_id: "o1", client_id: "c1", form: "1601-C", period_label: "2026-11", period_start: "2026-11-01", period_end: "2026-11-30",
-    rule_id: "1601C-efps-C", statutory_due_date: "2026-12-13", due_date: "2026-12-14", ...over,
+    rule_id: "1601C", statutory_due_date: "2026-12-10", due_date: "2026-12-10", ...over,
   });
   const efpsC = client({ filing_channel: "efps", efps_group: "C" });
 
@@ -70,14 +70,14 @@ describe("recomputeDueDates", () => {
     expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules, holidays: [] })).toEqual([]);
   });
   it("moves the due date when the Owner changes the rule", () => {
-    const tenth = rules.map((r) => (r.id === "1601C-efps-C" ? { ...r, due: { kind: "day_of_month_after" as const, monthsAfter: 1, day: 10 } } : r));
-    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules: tenth, holidays: [] })).toEqual([
-      { id: "f1", rule_id: "1601C-efps-C", statutory_due_date: "2026-12-10", due_date: "2026-12-10" },
+    const twelfth = rules.map((r) => (r.id === "1601C" ? { ...r, due: { kind: "day_of_month_after" as const, monthsAfter: 1, day: 12 } } : r));
+    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules: twelfth, holidays: [] })).toEqual([
+      { id: "f1", rule_id: "1601C", statutory_due_date: "2026-12-12", due_date: "2026-12-14" },
     ]);
   });
   it("moves the due date when a holiday is added", () => {
-    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules, holidays: ["2026-12-14"] })).toEqual([
-      { id: "f1", rule_id: "1601C-efps-C", statutory_due_date: "2026-12-13", due_date: "2026-12-15" },
+    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules, holidays: ["2026-12-10"] })).toEqual([
+      { id: "f1", rule_id: "1601C", statutory_due_date: "2026-12-10", due_date: "2026-12-11" },
     ]);
   });
 });

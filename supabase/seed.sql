@@ -6,18 +6,8 @@ values ('TC', 'Tallo CPA', 'EJ Tallo Cloud Accounting and Auditing Services', 'p
 on conflict (code) do nothing;
 
 insert into public.deadline_rules (id, form, frequency, period_filter, calendar_year, due, channel, efps_group, effective_from, effective_to, source) values
-  ('0619E-ebir', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, 'ebirforms', null, '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-ebir', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, 'ebirforms', null, '2026-01-01', null, 'UNVERIFIED'),
-  ('0619E-efps-A', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":15}'::jsonb, 'efps', 'A', '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-efps-A', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":15}'::jsonb, 'efps', 'A', '2026-01-01', null, 'UNVERIFIED'),
-  ('0619E-efps-B', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":14}'::jsonb, 'efps', 'B', '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-efps-B', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":14}'::jsonb, 'efps', 'B', '2026-01-01', null, 'UNVERIFIED'),
-  ('0619E-efps-C', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":13}'::jsonb, 'efps', 'C', '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-efps-C', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":13}'::jsonb, 'efps', 'C', '2026-01-01', null, 'UNVERIFIED'),
-  ('0619E-efps-D', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":12}'::jsonb, 'efps', 'D', '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-efps-D', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":12}'::jsonb, 'efps', 'D', '2026-01-01', null, 'UNVERIFIED'),
-  ('0619E-efps-E', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":11}'::jsonb, 'efps', 'E', '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C-efps-E', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":11}'::jsonb, 'efps', 'E', '2026-01-01', null, 'UNVERIFIED'),
+  ('0619E', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
+  ('1601C', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('1601EQ', '1601-EQ', 'quarterly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":"last"}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('2550Q', '2550Q', 'quarterly', 'all', false, '{"kind":"day_of_month_after","monthsAfter":1,"day":25}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('2551Q', '2551Q', 'quarterly', 'all', false, '{"kind":"day_of_month_after","monthsAfter":1,"day":25}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
