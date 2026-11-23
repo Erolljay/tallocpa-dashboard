@@ -12,15 +12,12 @@ const FROM = "2026-01-01";
 const UNVERIFIED = "UNVERIFIED";
 
 export const seedDeadlineRules: DeadlineRule[] = [
+  // Every deadline applies to all clients whatever their filing channel. The firm
+  // follows the manual (eBIRForms) due dates, not the staggered eFPS group dates.
   // Monthly withholding remittance, first two months of each quarter.
-  { id: "0619E-ebir", calendarYear: true, form: "0619-E", frequency: "monthly", periodFilter: "exclude_quarter_end_months", channel: "ebirforms", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
+  { id: "0619E", calendarYear: true, form: "0619-E", frequency: "monthly", periodFilter: "exclude_quarter_end_months", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
   // Monthly compensation withholding.
-  { id: "1601C-ebir", calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "all", channel: "ebirforms", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
-  // eFPS filers file in staggered groups (Group A last, Group E first).
-  ...(["A", "B", "C", "D", "E"] as const).flatMap((group, i): DeadlineRule[] => [
-    { id: `0619E-efps-${group}`, calendarYear: true, form: "0619-E", frequency: "monthly", periodFilter: "exclude_quarter_end_months", channel: "efps", efpsGroup: group, due: { kind: "day_of_month_after", monthsAfter: 1, day: 15 - i }, effectiveFrom: FROM, source: UNVERIFIED },
-    { id: `1601C-efps-${group}`, calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "all", channel: "efps", efpsGroup: group, due: { kind: "day_of_month_after", monthsAfter: 1, day: 15 - i }, effectiveFrom: FROM, source: UNVERIFIED },
-  ]),
+  { id: "1601C", calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
   // Quarterly.
   { id: "1601EQ", calendarYear: true, form: "1601-EQ", frequency: "quarterly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: "last" }, effectiveFrom: FROM, source: UNVERIFIED },
   { id: "2550Q", form: "2550Q", frequency: "quarterly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: 25 }, effectiveFrom: FROM, source: UNVERIFIED },

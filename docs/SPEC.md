@@ -87,7 +87,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 | Form | Frequency | Starting rule (verify) |
 |---|---|---|
 | 0619-E | Monthly (first two months of the quarter) | 10th of the following month |
-| 1601-C | Monthly | 10th of the following month (eFPS: staggered by group) |
+| 1601-C | Monthly | 10th of the following month (all clients, eFPS included: the firm follows the manual deadline, not the eFPS group dates) |
 | 1601-EQ + QAP | Quarterly | Last day of the month after the quarter |
 | 2550Q + SLSP | Quarterly | 25th day after the quarter ends |
 | 2551Q | Quarterly | 25th day after the quarter ends |
