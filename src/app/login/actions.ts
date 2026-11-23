@@ -10,7 +10,7 @@ export type SignInState =
   | { step: "email"; error?: string; email?: string }
   | { step: "code"; email: string; error?: string };
 
-const email = z.email("Enter a valid email address.").transform((e) => e.trim().toLowerCase());
+const email = z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email("Enter a valid email address."));
 const code = z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code from the email.");
 
 

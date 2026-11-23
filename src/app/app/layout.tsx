@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { CalendarClock, LayoutDashboard, Users } from "lucide-react";
+import { CalendarClock, LayoutDashboard, UserCog, Users } from "lucide-react";
 import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
 
@@ -8,6 +8,7 @@ const nav = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/clients", label: "Clients", icon: Users },
   { href: "/app/deadlines", label: "Deadlines", icon: CalendarClock },
+  { href: "/app/staff", label: "Staff", icon: UserCog },
 ];
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
@@ -26,7 +27,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
               </Link>
             ))}
           </nav>
-          <div className="mt-auto hidden md:block">
+          <div className="md:mt-auto">
             <Suspense fallback={<div className="h-12 animate-pulse rounded-lg bg-surface-sunken" />}>
               <UserMenu />
             </Suspense>
@@ -41,8 +42,8 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
 async function UserMenu() {
   const id = await getIdentity();
   return (
-    <div className="space-y-2 border-t border-border pt-4">
-      <div>
+    <div className="flex items-center justify-between gap-3 border-t border-border pt-3 md:block md:space-y-2 md:pt-4">
+      <div className="min-w-0">
         <p className="truncate text-sm font-medium text-ink-heading">{id.staff?.fullName ?? id.email}</p>
         {id.staff && <p className="text-xs text-ink-subtle">{roleLabel[id.staff.role]}</p>}
       </div>

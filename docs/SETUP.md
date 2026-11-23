@@ -51,9 +51,16 @@ A Google account signs in to the same person as the email invite when the email 
    from auth.users u, public.brands b
    where u.email = '<owner email>' and b.code = 'TC';
    ```
-3. Sign in at `/login`. Inviting staff and client users from inside the app comes in a later release; until then, repeat these steps with `role` `'staff'` or `'reviewer'`, or insert into `public.client_users` for client users.
+3. Sign in at `/login`. After that, add staff on the **Staff** page and client portal users on each client's page — no SQL needed.
 
-## 5. Vercel
+## 5. Server-only keys
+
+Set these in Vercel (Settings → Environment Variables, Production) — never in the browser or in chat:
+
+- `SUPABASE_SECRET_KEY` — Supabase → Project Settings → API Keys → **Secret key**. Used to create logins when the Owner adds staff or client users, and by the nightly filing job.
+- `CRON_SECRET` — any long random string. Vercel sends it to `/api/cron/generate-filings` (scheduled in `vercel.json` at 02:00 Manila time) so nobody else can trigger the job.
+
+## 6. Vercel
 
 1. Import the GitHub repository into Vercel.
 2. Set the same environment variables as `.env.local` for Production and Preview.
