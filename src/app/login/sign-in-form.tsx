@@ -11,20 +11,24 @@ export function SignInForm({ next }: { next: string }) {
 
   if (state.step === "code") {
     return (
-      <form action={verifyAction} className="space-y-4">
+      <div className="space-y-4">
         <Notice tone="done">
-          If <strong>{state.email}</strong> has an account, we sent it a sign-in link and a 6-digit code. Open the link, or type
-          the code here.
+          If <strong>{state.email}</strong> has an account, we sent it a sign-in link. Open it on this device, in this browser.
         </Notice>
-        <input type="hidden" name="email" value={state.email} />
-        <input type="hidden" name="next" value={next} />
-        <Field label="Code" htmlFor="code" error={state.error}>
-          <Input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus />
-        </Field>
-        <Button type="submit" className="w-full" disabled={verifying}>
-          {verifying ? "Checking…" : "Sign in"}
-        </Button>
-      </form>
+        <details className="group text-sm" open={Boolean(state.error)}>
+          <summary className="cursor-pointer text-link">The email has a 6-digit code instead?</summary>
+          <form action={verifyAction} className="mt-4 space-y-4">
+            <input type="hidden" name="email" value={state.email} />
+            <input type="hidden" name="next" value={next} />
+            <Field label="Code" htmlFor="code" error={state.error}>
+              <Input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required />
+            </Field>
+            <Button type="submit" className="w-full" disabled={verifying}>
+              {verifying ? "Checking…" : "Sign in"}
+            </Button>
+          </form>
+        </details>
+      </div>
     );
   }
 

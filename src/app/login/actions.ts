@@ -23,8 +23,9 @@ export async function sendSignInEmail(_: SignInState, form: FormData): Promise<S
   const supabase = await supabaseServer();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data,
-    // Only people the Owner has invited can sign in.
-    options: { shouldCreateUser: false, emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}` },
+    // Only people the Owner has invited can sign in. The link in Supabase's standard email returns here with a
+    // one-time code (PKCE), so it works without a custom email template; open it in the same browser.
+    options: { shouldCreateUser: false, emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
   });
   // Same message whether or not the address is registered, so the form does not reveal who is a client.
   if (error && error.status !== 400 && error.status !== 422) {

@@ -8,6 +8,7 @@ const errors: Record<string, string> = {
   no_access: "Your account is not linked to Tallo CPA staff or a client yet. Ask the firm to invite you.",
   link_expired: "That sign-in link has expired or was already used. Request a new one.",
   google: "Google sign-in did not finish. Try again, or use your email instead.",
+  signin_failed: "Sign-in did not finish. The link may have expired or been opened in a different browser. Request a new one here.",
 };
 
 export default function LoginPage(props: PageProps<"/login">) {
