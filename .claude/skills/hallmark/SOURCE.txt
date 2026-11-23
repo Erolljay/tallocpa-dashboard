@@ -1,0 +1,1 @@
+Source: https://github.com/Nutlope/hallmark @ 04977e1 (MIT). Vendored copy; update by re-copying skills/hallmark from upstream.
