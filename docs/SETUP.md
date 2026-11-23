@@ -65,3 +65,11 @@ Set these in Vercel (Settings → Environment Variables, Production) — never i
 1. Import the GitHub repository into Vercel.
 2. Set the same environment variables as `.env.local` for Production and Preview.
 3. Add the domain `app.tallocpa.com`.
+
+## 7. Remove the test data (before go-live)
+
+Five test clients named **"TEST – …"** (TINs starting with 900) and their filings were added on 2026-11-23 to try the app. Delete them in the Supabase SQL Editor before real use; their obligations, filings and team assignments are deleted with them:
+
+```sql
+delete from public.clients where name like 'TEST – %';
+```

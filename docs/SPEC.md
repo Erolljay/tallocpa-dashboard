@@ -79,6 +79,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 - **Obligation:** client × form (e.g. 2550Q) × start date × end date. Created from the COR's registered tax types and the engagement; checked against the COR on import (Q14).
 - **Deadline rules are data, not code:** form, frequency, due-day formula, filing channel (eFPS group / eBIRForms), effective-from / effective-to dates, source issuance (RR/RMC number). The Owner edits rules in Settings; a BIR change means adding a row with a new effective date.
+- **Withholding returns follow the calendar year** (0619-E, 1601-C, 1601-EQ, 1604-C, 1604-E), even for a fiscal-year client; income tax and business tax returns follow the client's taxable year. A rule's `calendar_year` flag records this.
 - **Due dates that fall on a weekend or holiday move to the next working day.** The holiday calendar is a table, kept up to date from Malacañang proclamations and BIR advisories; one-off work suspensions can be added as entries.
 - A nightly job **generates filing instances** (client × form × period × due date) 120 days ahead, and keeps the past 60 days so overdue filings stay visible.
 - **Starting forms** (seed data, **every date must be checked against current BIR issuances before go-live** — see §9):

@@ -113,6 +113,26 @@ describe("seed rules", () => {
   });
 });
 
+describe("withholding returns follow the calendar year", () => {
+  // April year-end: taxable quarters end Jul, Oct, Jan, Apr — none line up with calendar quarters.
+  const april = { fiscalYearEndMonth: 4 };
+  it("1601-EQ uses calendar quarters for a fiscal-year client", () => {
+    expect(dueDates(ob("1601-EQ", "quarterly", april), "2026-10-01", "2027-02-28")).toEqual([
+      ["FY2026-Q3", "2026-11-02"], // 31 Oct is a Saturday
+      ["FY2026-Q4", "2027-02-01"], // 31 Jan is a Sunday
+    ]);
+  });
+  it("0619-E skips calendar quarter-end months for a fiscal-year client", () => {
+    expect(dueDates(ob("0619-E", "monthly", april), "2026-10-01", "2027-01-31").map(([p]) => p)).toEqual(["2026-10", "2026-11"]);
+  });
+  it("1604-E covers the calendar year for a fiscal-year client", () => {
+    expect(dueDates(ob("1604-E", "annual", { fiscalYearEndMonth: 6 }), "2027-01-01", "2027-03-31")).toEqual([["FY2026", "2027-03-01"]]);
+  });
+  it("income tax returns still follow the taxable year", () => {
+    expect(dueDates(ob("1702Q", "quarterly", april), "2026-09-01", "2026-09-30")).toEqual([["FY2027-Q1", "2026-09-29"]]);
+  });
+});
+
 describe("rules over time", () => {
   const changed: DeadlineRule[] = [
     { id: "old", form: "X", frequency: "monthly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: "2020-01-01", effectiveTo: "2026-12-31" },

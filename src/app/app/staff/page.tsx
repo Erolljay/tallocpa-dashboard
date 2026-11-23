@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
-import { requireStaff } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { loadPoints } from "@/lib/people/schema";
 import { supabaseServer } from "@/lib/supabase/server";
 import { InviteStaffForm, StaffRowForm } from "./forms";
@@ -19,8 +19,8 @@ export default function StaffPage() {
 const roleLabel: Record<string, string> = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" };
 
 async function StaffList() {
-  const me = await requireStaff();
-  const isOwner = me.staff.role === "owner";
+  // The Staff page is the Owner's: staff and reviewers are sent back to the Dashboard.
+  await requireOwner();
   const supabase = await supabaseServer();
   const [{ data: staff }, { data: assignments }, { data: engagements }] = await Promise.all([
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active").order("full_name"),
@@ -38,14 +38,12 @@ async function StaffList() {
 
   return (
     <div className="space-y-6">
-      {isOwner && (
-        <Card title="Add a staff member">
-          <p className="mb-4 text-sm text-ink-muted">
-            They sign in with this email using Google or an emailed link. No password or invite email is needed.
-          </p>
-          <InviteStaffForm />
-        </Card>
-      )}
+      <Card title="Add a staff member">
+        <p className="mb-4 text-sm text-ink-muted">
+          They sign in with this email using Google or an emailed link. No password or invite email is needed.
+        </p>
+        <InviteStaffForm />
+      </Card>
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-surface-sunken text-left text-ink-strong">
@@ -53,7 +51,7 @@ async function StaffList() {
               <th scope="col" className="px-4 py-3 font-medium">Name</th>
               <th scope="col" className="px-4 py-3 text-right font-medium">Clients</th>
               <th scope="col" className="px-4 py-3 font-medium">Load</th>
-              <th scope="col" className="px-4 py-3 font-medium">{isOwner ? "Role, capacity, status" : "Role"}</th>
+              <th scope="col" className="px-4 py-3 font-medium">Role, capacity, status</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +78,7 @@ async function StaffList() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {isOwner && s.role !== "owner" ? (
+                    {s.role !== "owner" ? (
                       <StaffRowForm userId={s.user_id} role={s.role} capacity={capacity} active={s.active} />
                     ) : (
                       <span className="text-ink-muted">{roleLabel[s.role]}</span>

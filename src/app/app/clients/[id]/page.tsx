@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
+import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
-import { AssignForm, ClientUserForm, EngagementForm, RemoveClientUserButton, StatusButton } from "./forms";
+import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
   return (
     <Suspense fallback={<Skeleton rows={8} />}>
-      <ClientDetail params={props.params} />
+      <ClientDetail params={props.params} searchParams={props.searchParams} />
     </Suspense>
   );
 }
@@ -18,8 +18,9 @@ export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
 const frequencyLabel: Record<string, string> = { monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
 const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
 
-async function ClientDetail({ params }: { params: PageProps<"/app/clients/[id]">["params"] }) {
+async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clients/[id]">, "params" | "searchParams">) {
   const { id } = await params;
+  const { error: pageError } = await searchParams;
   const me = await requireStaff();
   const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
@@ -51,10 +52,14 @@ async function ClientDetail({ params }: { params: PageProps<"/app/clients/[id]">
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone[client.status as keyof typeof statusTone]}>{statusLabel[client.status]}</Badge>
+            {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
             {isOwner && client.status === "onboarding" && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
         }
       />
+      {pageError === "assign_failed" && (
+        <div className="mb-6"><Notice tone="blocked">The client was saved, but the preparer or reviewer could not be assigned. Assign them under Team below.</Notice></div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Registration">
@@ -117,9 +122,12 @@ async function ClientDetail({ params }: { params: PageProps<"/app/clients/[id]">
           ) : (
             <ul className="divide-y divide-border text-sm">
               {team.data!.map((a) => (
-                <li key={`${a.user_id}-${a.role}`} className="flex justify-between py-2">
+                <li key={`${a.user_id}-${a.role}`} className="flex items-center justify-between gap-4 py-2">
                   <span className="text-ink-heading">{(a.staff_profiles as unknown as { full_name: string } | null)?.full_name}</span>
-                  <span className="text-ink-muted">{a.role === "preparer" ? "Preparer" : "Reviewer"}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-ink-muted">{a.role === "preparer" ? "Preparer" : "Reviewer"}</span>
+                    {isOwner && <RemoveAssignmentButton clientId={id} userId={a.user_id} role={a.role as "preparer" | "reviewer"} />}
+                  </span>
                 </li>
               ))}
             </ul>

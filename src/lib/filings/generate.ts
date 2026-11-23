@@ -40,6 +40,7 @@ export interface RuleRow {
   efps_group: EfpsGroup | null;
   effective_from: IsoDate;
   effective_to: IsoDate | null;
+  calendar_year: boolean;
 }
 
 export interface FilingRow {
@@ -75,6 +76,7 @@ export function toDeadlineRule(r: RuleRow): DeadlineRule {
     efpsGroup: r.efps_group ?? undefined,
     effectiveFrom: r.effective_from,
     effectiveTo: r.effective_to ?? undefined,
+    calendarYear: r.calendar_year,
   };
 }
 

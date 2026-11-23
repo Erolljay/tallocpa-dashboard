@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
-import { addEngagementAction, assignStaffAction, setClientStatusAction, type FormState } from "../actions";
+import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
 export function EngagementForm({ clientId, serviceLines }: { clientId: string; serviceLines: { code: string; name: string }[] }) {
@@ -31,6 +31,7 @@ export function AssignForm({ clientId, staff }: { clientId: string; staff: { use
   const [state, action, pending] = useActionState(assignStaffAction.bind(null, clientId), {} as FormState);
   return (
     <form action={action} className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
+      <p className="text-sm font-medium text-ink-heading sm:col-span-3">Assign a preparer or reviewer</p>
       <Field label="Staff member" htmlFor="user_id">
         <Select id="user_id" name="user_id" defaultValue="" required>
           <option value="" disabled>Choose…</option>
@@ -45,6 +46,16 @@ export function AssignForm({ clientId, staff }: { clientId: string; staff: { use
       </Field>
       <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Assigning…" : "Assign"}</Button>
       {state.error && <div className="sm:col-span-3"><Notice tone="blocked">{state.error}</Notice></div>}
+    </form>
+  );
+}
+
+export function RemoveAssignmentButton({ clientId, userId, role }: { clientId: string; userId: string; role: "preparer" | "reviewer" }) {
+  const [state, action, pending] = useActionState(async () => removeAssignmentAction(clientId, userId, role), {} as FormState);
+  return (
+    <form action={action}>
+      <button type="submit" disabled={pending} className="text-xs text-danger-text hover:underline">{pending ? "Removing…" : "Remove"}</button>
+      {state.error && <span className="ml-2 text-xs text-danger-text">{state.error}</span>}
     </form>
   );
 }

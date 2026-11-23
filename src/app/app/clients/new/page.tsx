@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { NewClientForm } from "./new-client-form";
+import { supabaseServer } from "@/lib/supabase/server";
+import { createClientAction } from "../actions";
+import { ClientForm } from "../client-form";
 
 export default function NewClientPage() {
   return (
@@ -16,5 +18,7 @@ export default function NewClientPage() {
 
 async function OwnerOnly() {
   await requireOwner();
-  return <NewClientForm />;
+  const supabase = await supabaseServer();
+  const { data: staff } = await supabase.from("staff_profiles").select("user_id, full_name, role").eq("active", true).order("full_name");
+  return <ClientForm mode="new" action={createClientAction} staff={staff ?? []} />;
 }
