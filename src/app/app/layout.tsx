@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { CalendarClock, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
+import { CalendarClock, ClipboardCheck, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
 import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
+import { supabaseServer } from "@/lib/supabase/server";
 
 const nav = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/clients", label: "Clients", icon: Users },
   { href: "/app/deadlines", label: "Deadlines", icon: CalendarClock },
 ] as const;
+/** Shown to the Owner and to anyone who reviews a client's returns. */
+const reviewNav = [{ href: "/app/review", label: "Review", icon: ClipboardCheck }] as const;
 /** Shown only to the Owner. */
 const ownerNav = [
   { href: "/app/staff", label: "Staff", icon: UserCog },
@@ -52,7 +55,13 @@ function NavLinks({ items }: { items: readonly { href: string; label: string; ic
 
 async function OwnerNavLinks() {
   const id = await getIdentity();
-  return id.staff?.role === "owner" ? <NavLinks items={ownerNav} /> : null;
+  if (!id.staff) return null;
+  if (id.staff.role === "owner") return <NavLinks items={[...reviewNav, ...ownerNav]} />;
+  if (id.staff.role === "reviewer") return <NavLinks items={reviewNav} />;
+  // A staff member assigned as a client's reviewer also gets the Review page.
+  const supabase = await supabaseServer();
+  const { count } = await supabase.from("staff_assignments").select("client_id", { count: "exact", head: true }).eq("user_id", id.userId).eq("role", "reviewer");
+  return count ? <NavLinks items={reviewNav} /> : null;
 }
 
 async function UserMenu() {
