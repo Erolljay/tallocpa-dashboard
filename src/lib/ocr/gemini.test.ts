@@ -23,8 +23,38 @@ describe("geminiProvider", () => {
   });
 
   it("reports API errors and replies in the wrong shape instead of saving them", async () => {
-    await expect(geminiProvider({ apiKey: "k", fetch: reply({ error: "quota" }, 429) }).extract(input)).rejects.toThrow(/Gemini 429/);
+    await expect(geminiProvider({ apiKey: "k", fallbackModel: "", fetch: reply({ error: "bad key" }, 400) }).extract(input)).rejects.toThrow(/Gemini 400/);
     await expect(geminiProvider({ apiKey: "k", fetch: reply({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }) }).extract(input)).rejects.toThrow(/did not return JSON/);
     await expect(geminiProvider({ apiKey: "k", fetch: reply({ candidates: [{ content: { parts: [{ text: '{"total": 5}' }] } }] }) }).extract(input)).rejects.toThrow(/unexpected shape/);
+  });
+});
+
+describe("geminiProvider when Gemini is busy", () => {
+  const ok = { candidates: [{ content: { parts: [{ text: JSON.stringify({ fields: { total: "100" }, confidence: {} }) }] } }] };
+  const respond = (body: unknown, status: number) => new Response(JSON.stringify(body), { status });
+  const busy = () => respond({ error: { code: 503, status: "UNAVAILABLE" } }, 503);
+
+  it("waits and tries again, then succeeds", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(busy()).mockResolvedValueOnce(respond(ok, 200));
+    const sleep = vi.fn(async () => {});
+    const out = await geminiProvider({ apiKey: "k", model: "main", fetch, sleep }).extract(input);
+    expect(out).toMatchObject({ fields: { total: "100.00" }, model: "main" });
+    expect(sleep).toHaveBeenCalledWith(2000);
+  });
+
+  it("switches to the fallback model when the main one stays busy", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(busy()).mockResolvedValueOnce(busy()).mockResolvedValueOnce(busy()).mockResolvedValueOnce(respond(ok, 200));
+    const out = await geminiProvider({ apiKey: "k", model: "main", fallbackModel: "backup", fetch, sleep: async () => {} }).extract(input);
+    expect(out.model).toBe("backup");
+    expect((fetch.mock.calls[3] as unknown as [string])[0]).toContain("/models/backup:");
+  });
+
+  it("gives a plain message when every try is busy, and does not retry other errors", async () => {
+    const allBusy = vi.fn(async () => busy());
+    await expect(geminiProvider({ apiKey: "k", model: "main", fallbackModel: "backup", fetch: allBusy, sleep: async () => {} }).extract(input)).rejects.toThrow(/busy right now/);
+    expect(allBusy).toHaveBeenCalledTimes(6);
+    const bad = vi.fn(async () => respond({ error: "bad request" }, 400));
+    await expect(geminiProvider({ apiKey: "k", fetch: bad, sleep: async () => {} }).extract(input)).rejects.toThrow(/Gemini 400/);
+    expect(bad).toHaveBeenCalledTimes(1);
   });
 });

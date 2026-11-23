@@ -33,7 +33,7 @@ export async function runOcr(admin: SupabaseClient, documentId: string, provider
       mimeType: doc.mime_type,
       docTypeHint: DOC_TYPES[doc.doc_type as DocType] ?? doc.doc_type,
     });
-    await admin.from("extractions").update({ status: "done", fields: out.fields, confidence: out.confidence, finished_at: new Date().toISOString() }).eq("document_id", documentId);
+    await admin.from("extractions").update({ status: "done", model: out.model ?? provider.model, fields: out.fields, confidence: out.confidence, finished_at: new Date().toISOString() }).eq("document_id", documentId);
     if (doc.status === "received") await admin.from("documents").update({ status: "under_review" }).eq("id", documentId).eq("status", "received");
     return { ok: true as const };
   } catch (e) {

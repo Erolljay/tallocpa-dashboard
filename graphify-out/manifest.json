@@ -432,9 +432,9 @@
     "semantic_hash": "82efc8aeb8c648a9eedde73bc22f0622"
   },
   "docs/SETUP.md": {
-    "mtime": 1795424824.8555381,
-    "seen": 1795424830.167884,
-    "ast_hash": "644826f6a4cce3f78e7abafbbab76af0",
+    "mtime": 1795425516.119495,
+    "seen": 1795425518.8489928,
+    "ast_hash": "eb42e76f8ce4e783511acc25fc12c8b9",
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
@@ -696,21 +696,21 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/fields.ts": {
-    "mtime": 1795424632.1563451,
-    "seen": 1795424830.1678417,
-    "ast_hash": "6e87f7433f61f68746e0a45083b8b603",
+    "mtime": 1795425482.955857,
+    "seen": 1795425518.8488715,
+    "ast_hash": "7212a0a92aabeafb0d7cac1021fc147b",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.test.ts": {
-    "mtime": 1795424657.2736154,
-    "seen": 1795424830.1678433,
-    "ast_hash": "c87634db2e653951a49551719065c76c",
+    "mtime": 1795425495.421377,
+    "seen": 1795425518.848875,
+    "ast_hash": "b800a7c60fb442b09c17688a9490bb03",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.ts": {
-    "mtime": 1795424657.2722216,
-    "seen": 1795424830.1678445,
-    "ast_hash": "96c3a52b118e005b85889f9a362b838e",
+    "mtime": 1795425482.955572,
+    "seen": 1795425518.8488781,
+    "ast_hash": "19c2323ff2473bda14b3a16d0647eecf",
     "semantic_hash": ""
   },
   "src/lib/ocr/provider.ts": {
@@ -720,9 +720,9 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/run.ts": {
-    "mtime": 1795424685.634746,
-    "seen": 1795424830.1678467,
-    "ast_hash": "f032906a482af62ad230b93a0ecf5880",
+    "mtime": 1795425482.9568913,
+    "seen": 1795425518.8488824,
+    "ast_hash": "45c81854e8009c469ad6c51fee8f4a5f",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000009_ocr.sql": {

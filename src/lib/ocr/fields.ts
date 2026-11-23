@@ -37,7 +37,8 @@ export const ocrOutputSchema = z.object({
   fields: z.object(Object.fromEntries(keys.map((k) => [k, value])) as Record<FieldKey, typeof value>),
   confidence: z.record(z.string(), z.number().min(0).max(1)).default({}),
 });
-export type OcrOutput = { fields: OcrFields; confidence: OcrConfidence };
+/** `model` is the model that actually read the document (the fallback, when the main one was busy). */
+export type OcrOutput = { fields: OcrFields; confidence: OcrConfidence; model?: string };
 
 /** "1,120.50" / "₱1120.5" / 1120.5 → "1120.50"; anything else → null. */
 export function normalizeAmount(v: string | null | undefined): string | null {
