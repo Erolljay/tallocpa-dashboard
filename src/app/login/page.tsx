@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Lockup } from "@/components/brand/lockup";
 import { Notice } from "@/components/ui";
+import { safeNextPath } from "@/lib/safe-redirect";
 import { SignInForm } from "./sign-in-form";
 
 const errors: Record<string, string> = {
@@ -28,7 +29,7 @@ export default function LoginPage(props: PageProps<"/login">) {
 
 async function Form({ searchParams }: { searchParams: PageProps<"/login">["searchParams"] }) {
   const sp = await searchParams;
-  const next = typeof sp.next === "string" ? sp.next : "/app";
+  const next = safeNextPath(sp.next);
   const error = typeof sp.error === "string" ? errors[sp.error] : undefined;
   return (
     <div className="space-y-4">

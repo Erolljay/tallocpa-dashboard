@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { safeNextPath as safeNext } from "@/lib/safe-redirect";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type SignInState =
@@ -12,11 +13,6 @@ export type SignInState =
 const email = z.email("Enter a valid email address.").transform((e) => e.trim().toLowerCase());
 const code = z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code from the email.");
 
-/** Safe in-app path to return to after sign-in. */
-function safeNext(value: FormDataEntryValue | null): string {
-  const v = typeof value === "string" ? value : "";
-  return v.startsWith("/") && !v.startsWith("//") ? v : "/app";
-}
 
 export async function sendSignInEmail(_: SignInState, form: FormData): Promise<SignInState> {
   const parsed = email.safeParse(form.get("email"));
