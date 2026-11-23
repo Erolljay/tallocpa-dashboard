@@ -1,5 +1,6 @@
 import { Lockup } from "@/components/brand/lockup";
 import { Badge, Card, peso } from "@/components/ui";
+import { firmBlockLines } from "@/lib/brand/profile";
 import { showDate } from "@/lib/filings/labels";
 import type { Statement } from "@/lib/collections/statement";
 import { PayNow } from "./pay-now";
@@ -12,12 +13,18 @@ export function StatementView({ s, today }: { s: Statement; today: string }) {
     <div className="space-y-6">
       <Card className="print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="space-y-2">
-            <Lockup />
-            <p className="text-xs text-ink-subtle">
-              {s.brand.legal_name}
-              {s.brand.tin ? ` · TIN ${s.brand.tin}` : ""}
-            </p>
+          <div className="min-w-0 max-w-sm space-y-2">
+            {s.brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
+              <img src={s.brand.logoUrl} alt={s.brand.display_name} className="h-12 w-auto max-w-56 object-contain object-left" />
+            ) : (
+              <Lockup />
+            )}
+            <address className="space-y-0.5 text-xs not-italic text-ink-subtle">
+              {firmBlockLines(s.brand).map((line, i) => (
+                <p key={i} className="break-words">{line}</p>
+              ))}
+            </address>
           </div>
           <div className="text-right">
             <p className="font-display text-lg font-semibold text-ink-heading">Statement of Account</p>
