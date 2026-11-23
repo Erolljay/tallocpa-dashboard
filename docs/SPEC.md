@@ -330,6 +330,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O8 | Separate bank account for client tax funds | Owner | Collections (§3.9) |
 | O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure |
 | O10 | Which firm bank accounts / e-wallets appear on the SOA | Owner | SOA |
+| O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only |
 
 ---
 
