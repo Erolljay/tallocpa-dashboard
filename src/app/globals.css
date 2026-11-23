@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/*
+ * Tallo CPA brand design system tokens (spec §7).
+ * Actions are navy; brand inks are for the logo, charts and print only.
+ */
+:root {
+  --action: #0f1742;
+  --action-hover: #0a0f32;
+  --ink-on-action: #fafafa;
+  --link: #2563eb;
+  --focus-ring: #1d4ed8;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-sunken: #f1f5f9;
+  --surface-tint: #eff6ff;
+  --ink: #0a0a0a;
+  --ink-heading: #0f172a;
+  --ink-strong: #334155;
+  --ink-muted: #475569;
+  --ink-subtle: #64748b;
+  --ink-on-tint: #0f1742;
+  --border: #e5e5e5;
+  --border-strong: #cbd5e1;
+  --success: #15803d;
+  --success-surface: #f0fdf4;
+  --warning: #b45309;
+  --warning-surface: #fffbeb;
+  --danger-text: #b91c1c;
+  --danger-surface: #fef2f2;
+  --brand-navy: #041a63;
+  --brand-blue: #0053fb;
+  --brand-sky: #1195f7;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --action: #8fc6ff;
+    --action-hover: #bcdcff;
+    --ink-on-action: #0a0f32;
+    --link: #93c5fd;
+    --focus-ring: #bfdbfe;
+    --surface: #0a0f32;
+    --surface-muted: #131a44;
+    --surface-sunken: #0f1742;
+    --surface-tint: #152055;
+    --ink: #f1f5f9;
+    --ink-heading: #ffffff;
+    --ink-strong: #dbe3ef;
+    --ink-muted: #cbd5e1;
+    --ink-subtle: #a7b4cc;
+    --ink-on-tint: #cbd5e1;
+    --border: #26306a;
+    --border-strong: #3d4a85;
+    --success: #86efac;
+    --success-surface: #0f2e24;
+    --warning: #fcd34d;
+    --warning-surface: #2e2410;
+    --danger-text: #fca5a5;
+    --danger-surface: #3a1620;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-ink-on-action: var(--ink-on-action);
+  --color-link: var(--link);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-tint: var(--surface-tint);
+  --color-ink: var(--ink);
+  --color-ink-heading: var(--ink-heading);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-on-tint: var(--ink-on-tint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger-text: var(--danger-text);
+  --color-danger-surface: var(--danger-surface);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-sky: var(--brand-sky);
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Peso amounts: right-aligned, tabular digits (spec §7). */
+.amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
