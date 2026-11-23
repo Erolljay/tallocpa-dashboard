@@ -5,6 +5,9 @@
 import { addDays, type IsoDate } from "@/lib/deadlines/dates";
 import {
   generateFilingInstances,
+  nextWorkingDay,
+  selectRule,
+  statutoryDueDate,
   type DeadlineRule,
   type DueRule,
   type EfpsGroup,
@@ -136,4 +139,58 @@ export function buildFilingRows(input: {
     }
   }
   return { rows, missing };
+}
+
+/** A filing not yet filed, as read for a due-date refresh. */
+export interface OpenFilingRow {
+  id: string;
+  obligation_id: string;
+  client_id: string;
+  form: string;
+  period_label: string;
+  period_start: IsoDate;
+  period_end: IsoDate;
+  rule_id: string;
+  statutory_due_date: IsoDate;
+  due_date: IsoDate;
+}
+
+export interface DueDateUpdate {
+  id: string;
+  rule_id: string;
+  statutory_due_date: IsoDate;
+  due_date: IsoDate;
+}
+
+/**
+ * New due dates for filings not yet filed, after the Owner changes a deadline rule
+ * or a holiday. Only the dates (and the rule used) change; the filing and its
+ * sign-off progress stay. Filings whose period has no rule in force keep their dates.
+ */
+export function recomputeDueDates(input: {
+  filings: readonly OpenFilingRow[];
+  obligations: readonly Pick<ObligationRow, "id" | "frequency">[];
+  clients: readonly ClientRow[];
+  rules: readonly RuleRow[];
+  holidays: readonly IsoDate[];
+}): DueDateUpdate[] {
+  const frequencyOf = new Map(input.obligations.map((o) => [o.id, o.frequency]));
+  const clients = new Map(input.clients.map((c) => [c.id, c]));
+  const rules = input.rules.map(toDeadlineRule);
+  const holidays = new Set(input.holidays);
+  const updates: DueDateUpdate[] = [];
+  for (const f of input.filings) {
+    const frequency = frequencyOf.get(f.obligation_id);
+    const client = clients.get(f.client_id);
+    if (!frequency || !client) continue;
+    const period = { frequency, start: f.period_start, end: f.period_end, label: f.period_label };
+    const rule = selectRule(rules, f.form, frequency, period, client.filing_channel, client.efps_group ?? undefined);
+    if (!rule) continue;
+    const statutory = statutoryDueDate(rule.due, f.period_end);
+    const due = nextWorkingDay(statutory, holidays);
+    if (rule.id !== f.rule_id || statutory !== f.statutory_due_date || due !== f.due_date) {
+      updates.push({ id: f.id, rule_id: rule.id, statutory_due_date: statutory, due_date: due });
+    }
+  }
+  return updates;
 }

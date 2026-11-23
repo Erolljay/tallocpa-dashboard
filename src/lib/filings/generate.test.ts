@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedDeadlineRules } from "@/lib/deadlines/seed";
-import { buildFilingRows, type ClientRow, type ObligationRow, type RuleRow } from "./generate";
+import { buildFilingRows, recomputeDueDates, type ClientRow, type ObligationRow, type OpenFilingRow, type RuleRow } from "./generate";
 
 const rules: RuleRow[] = seedDeadlineRules.map((r) => ({
   id: r.id,
@@ -56,5 +56,28 @@ describe("buildFilingRows", () => {
     const { rows, missing } = buildFilingRows({ obligations: [ob({ form: "9999" })], clients: [client()], rules, holidays: [], today: "2027-02-01" });
     expect(rows).toEqual([]);
     expect(missing[0]).toMatchObject({ obligationId: "o1", form: "9999" });
+  });
+});
+
+describe("recomputeDueDates", () => {
+  const filing = (over: Partial<OpenFilingRow> = {}): OpenFilingRow => ({
+    id: "f1", obligation_id: "o1", client_id: "c1", form: "1601-C", period_label: "2026-11", period_start: "2026-11-01", period_end: "2026-11-30",
+    rule_id: "1601C-efps-C", statutory_due_date: "2026-12-13", due_date: "2026-12-14", ...over,
+  });
+  const efpsC = client({ filing_channel: "efps", efps_group: "C" });
+
+  it("leaves a filing alone when nothing changed", () => {
+    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules, holidays: [] })).toEqual([]);
+  });
+  it("moves the due date when the Owner changes the rule", () => {
+    const tenth = rules.map((r) => (r.id === "1601C-efps-C" ? { ...r, due: { kind: "day_of_month_after" as const, monthsAfter: 1, day: 10 } } : r));
+    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules: tenth, holidays: [] })).toEqual([
+      { id: "f1", rule_id: "1601C-efps-C", statutory_due_date: "2026-12-10", due_date: "2026-12-10" },
+    ]);
+  });
+  it("moves the due date when a holiday is added", () => {
+    expect(recomputeDueDates({ filings: [filing()], obligations: [ob()], clients: [efpsC], rules, holidays: ["2026-12-14"] })).toEqual([
+      { id: "f1", rule_id: "1601C-efps-C", statutory_due_date: "2026-12-13", due_date: "2026-12-15" },
+    ]);
   });
 });
