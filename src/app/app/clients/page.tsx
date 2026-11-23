@@ -52,9 +52,9 @@ async function ClientList() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
           <table className="w-full min-w-[44rem] text-sm">
-            <thead className="bg-surface-sunken text-left text-ink-strong">
+            <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
               <tr>
                 <th scope="col" className="px-4 py-3 font-medium">Client</th>
                 <th scope="col" className="px-4 py-3 font-medium">Type</th>
@@ -66,7 +66,7 @@ async function ClientList() {
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className="border-t border-border hover:bg-surface-muted">
+                <tr key={c.id} className="border-t border-border transition-colors first:border-t-0 hover:bg-surface-muted">
                   <td className="px-4 py-3">
                     <Link href={`/app/clients/${c.id}`} className="font-medium text-ink-heading hover:underline">{c.name}</Link>
                     <p className="text-xs tabular-nums text-ink-subtle">{c.code}</p>

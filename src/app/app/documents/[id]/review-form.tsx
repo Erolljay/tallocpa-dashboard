@@ -26,7 +26,7 @@ export function ReviewForm(props: { documentId: string; fields: OcrFields; confi
 
   return (
     <div className="space-y-4">
-      <form action={approve} className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+      <form action={approve} className="space-y-3 rounded-2xl border border-border bg-surface shadow-sm p-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-display text-base font-semibold text-ink-heading">Figures</h2>
           <p className="text-xs text-ink-subtle">{lowCount ? `${lowCount} field(s) OCR was unsure of are highlighted.` : props.model ? `Read by ${props.model}.` : ""}</p>

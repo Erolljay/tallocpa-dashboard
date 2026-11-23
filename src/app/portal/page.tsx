@@ -21,7 +21,7 @@ async function Home() {
   const today = manilaToday();
   const first = id.clients[0];
   if (clients.length === 0) {
-    return <p className="rounded-2xl border border-border bg-surface p-6 text-sm text-ink-muted">Your portal is being set up. Please check back soon.</p>;
+    return <p className="rounded-2xl border border-border bg-surface shadow-sm p-6 text-sm text-ink-muted">Your portal is being set up. Please check back soon.</p>;
   }
   const [{ count: returned }, { count: approvals }] = await Promise.all([
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("status", "returned"),

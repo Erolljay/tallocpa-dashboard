@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Tallo CPA brand design system tokens (spec §7).
+ * Tallo CPA design system tokens (spec §7), with Apple's Human Interface rules
+ * layered on top: system type with size-specific tracking, translucent chrome,
+ * instant press feedback, and honouring reduce-motion / reduce-transparency /
+ * increase-contrast. Brand values come from the Tallo CPA design system;
+ * Apple's rules decide behaviour, depth and type detailing.
  * Actions are navy; brand inks are for the logo, charts and print only.
  */
 :root {
@@ -9,11 +13,14 @@
   --action-hover: #0a0f32;
   --ink-on-action: #fafafa;
   --link: #2563eb;
+  --link-hover: #1d4ed8;
+  --accent: #3b82f6;
   --focus-ring: #1d4ed8;
   --surface: #ffffff;
   --surface-muted: #f8fafc;
   --surface-sunken: #f1f5f9;
   --surface-tint: #eff6ff;
+  --surface-tint-strong: #dbeafe;
   --ink: #0a0a0a;
   --ink-heading: #0f172a;
   --ink-strong: #334155;
@@ -22,29 +29,43 @@
   --ink-on-tint: #0f1742;
   --border: #e5e5e5;
   --border-strong: #cbd5e1;
+  --border-input: #7d8ba1;
+  --border-brand: #bfdbfe;
   --success: #15803d;
   --success-surface: #f0fdf4;
   --warning: #b45309;
   --warning-surface: #fffbeb;
+  --danger: #ef4444;
   --danger-text: #b91c1c;
   --danger-surface: #fef2f2;
   --brand-navy: #041a63;
   --brand-blue: #0053fb;
   --brand-sky: #1195f7;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-action: 0 10px 15px -3px rgba(30, 58, 138, 0.2), 0 4px 6px -4px rgba(30, 58, 138, 0.2);
+  --shadow-lift: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Apple material: the translucent layer chrome floats on (sidebar, bars). */
+  --material: rgba(255, 255, 255, 0.72);
+  --material-edge: rgba(15, 23, 42, 0.08);
   color-scheme: light;
 }
 
+/* Dark (derived) theme from the design system: follows the device, or data-theme="dark". */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --action: #8fc6ff;
     --action-hover: #bcdcff;
     --ink-on-action: #0a0f32;
     --link: #93c5fd;
+    --link-hover: #bfdbfe;
     --focus-ring: #bfdbfe;
     --surface: #0a0f32;
     --surface-muted: #131a44;
     --surface-sunken: #0f1742;
     --surface-tint: #152055;
+    --surface-tint-strong: #1c2a6b;
     --ink: #f1f5f9;
     --ink-heading: #ffffff;
     --ink-strong: #dbe3ef;
@@ -53,14 +74,58 @@
     --ink-on-tint: #cbd5e1;
     --border: #26306a;
     --border-strong: #3d4a85;
+    --border-input: #6672ab;
+    --border-brand: #2f3f8c;
     --success: #86efac;
     --success-surface: #0f2e24;
     --warning: #fcd34d;
     --warning-surface: #2e2410;
+    --danger: #fca5a5;
     --danger-text: #fca5a5;
     --danger-surface: #3a1620;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-action: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+    --shadow-lift: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    --material: rgba(10, 15, 50, 0.72);
+    --material-edge: rgba(255, 255, 255, 0.08);
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --action: #8fc6ff;
+  --action-hover: #bcdcff;
+  --ink-on-action: #0a0f32;
+  --link: #93c5fd;
+  --link-hover: #bfdbfe;
+  --focus-ring: #bfdbfe;
+  --surface: #0a0f32;
+  --surface-muted: #131a44;
+  --surface-sunken: #0f1742;
+  --surface-tint: #152055;
+  --surface-tint-strong: #1c2a6b;
+  --ink: #f1f5f9;
+  --ink-heading: #ffffff;
+  --ink-strong: #dbe3ef;
+  --ink-muted: #cbd5e1;
+  --ink-subtle: #a7b4cc;
+  --ink-on-tint: #cbd5e1;
+  --border: #26306a;
+  --border-strong: #3d4a85;
+  --border-input: #6672ab;
+  --border-brand: #2f3f8c;
+  --success: #86efac;
+  --success-surface: #0f2e24;
+  --warning: #fcd34d;
+  --warning-surface: #2e2410;
+  --danger: #fca5a5;
+  --danger-text: #fca5a5;
+  --danger-surface: #3a1620;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-action: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --material: rgba(10, 15, 50, 0.72);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -68,10 +133,13 @@
   --color-action-hover: var(--action-hover);
   --color-ink-on-action: var(--ink-on-action);
   --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-accent: var(--accent);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-tint: var(--surface-tint);
+  --color-surface-tint-strong: var(--surface-tint-strong);
   --color-ink: var(--ink);
   --color-ink-heading: var(--ink-heading);
   --color-ink-strong: var(--ink-strong);
@@ -80,23 +148,42 @@
   --color-ink-on-tint: var(--ink-on-tint);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-input: var(--border-input);
+  --color-border-brand: var(--border-brand);
   --color-success: var(--success);
   --color-success-surface: var(--success-surface);
   --color-warning: var(--warning);
   --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
   --color-danger-text: var(--danger-text);
   --color-danger-surface: var(--danger-surface);
   --color-brand-navy: var(--brand-navy);
   --color-brand-blue: var(--brand-blue);
   --color-brand-sky: var(--brand-sky);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-action: var(--shadow-action);
+  --shadow-lift: var(--shadow-lift);
   --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  /* system-ui first: SF Pro on Apple devices, with its optical sizes and tracking tables. */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 body {
   background: var(--surface-muted);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  -webkit-tap-highlight-color: transparent;
+  /* Ease the light/dark switch instead of an abrupt brightness jump. */
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Apple type detailing: tracking is size-specific. Large display type tightens; body stays at 0. */
+.font-display {
+  letter-spacing: -0.02em;
+}
+h1.font-display {
+  letter-spacing: -0.025em;
 }
 
 :focus-visible {
@@ -108,4 +195,74 @@ body {
 .amount {
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Translucent material for floating chrome (sidebar, header, tab bar).
+ * Content scrolls underneath; a hairline edge stands in for a hard divider.
+ */
+@utility material {
+  background-color: var(--material);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+@utility material-edge-b {
+  box-shadow: inset 0 -1px 0 var(--material-edge);
+}
+@utility material-edge-t {
+  box-shadow: inset 0 1px 0 var(--material-edge);
+}
+@utility material-edge-r {
+  box-shadow: inset -1px 0 0 var(--material-edge);
+}
+
+/* Press feedback lands on pointer-down, instantly (Apple: respond on press, not release). */
+.pressable {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+.pressable:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+
+/* Accessibility settings: a gentler equivalent, never no feedback. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active:not(:disabled) {
+    transform: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .material {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .material-edge-b {
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+  }
+  .material-edge-t {
+    box-shadow: inset 0 1px 0 var(--border-strong);
+  }
+  .material-edge-r {
+    box-shadow: inset -1px 0 0 var(--border-strong);
+  }
 }

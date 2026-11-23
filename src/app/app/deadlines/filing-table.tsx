@@ -15,9 +15,9 @@ export interface FilingListRow {
 export function FilingTable({ rows, today, empty }: { rows: FilingListRow[]; today: string; empty: string }) {
   if (rows.length === 0) return <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">{empty}</p>;
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
       <table className="w-full min-w-[40rem] text-sm">
-        <thead className="bg-surface-sunken text-left text-ink-strong">
+        <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
           <tr>
             <th scope="col" className="px-4 py-3 font-medium">Due</th>
             <th scope="col" className="px-4 py-3 font-medium">Client</th>

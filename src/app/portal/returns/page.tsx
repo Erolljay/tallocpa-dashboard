@@ -50,7 +50,7 @@ async function Returns() {
           <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-sm text-ink-muted">Nothing to approve right now.</p>
         ) : (
           waiting.map((r) => (
-            <article key={r.id} className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+            <article key={r.id} className="space-y-4 rounded-2xl border border-border bg-surface shadow-sm p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
                   <p className="font-medium text-ink-heading">{r.form} · {r.period_label}</p>
@@ -71,7 +71,7 @@ async function Returns() {
       {recent.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-lg font-semibold text-ink-heading">Your returns</h2>
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm">
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm text-sm">
             {recent.map((r) => {
               const mine = (files ?? []).filter((f) => f.filing_instance_id === r.id);
               return (
