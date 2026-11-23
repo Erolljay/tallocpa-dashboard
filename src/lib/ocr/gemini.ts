@@ -34,49 +34,89 @@ function base64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString("base64");
 }
 
-export function geminiProvider(opts: { apiKey: string; model?: string; fetch?: typeof fetch }): OcrProvider {
+/** Gemini errors worth trying again: overloaded, rate-limited, or a passing server fault. */
+const RETRYABLE = new Set([429, 500, 503, 504]);
+/** Waits between tries of one model (ms). */
+const BACKOFF = [2000, 6000];
+/** Second model to try when the main one stays busy; set GEMINI_FALLBACK_MODEL to change it. */
+export const DEFAULT_FALLBACK_MODEL = "gemini-2.5-flash";
+
+class GeminiError extends Error {
+  constructor(readonly status: number, body: string) {
+    super(status === 503 || status === 429 ? `Gemini is busy right now (${status}); try again later.` : `Gemini ${status}: ${body.slice(0, 300)}`);
+  }
+}
+
+export function geminiProvider(opts: {
+  apiKey: string;
+  model?: string;
+  fallbackModel?: string;
+  fetch?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+}): OcrProvider {
   const model = opts.model || DEFAULT_GEMINI_MODEL;
+  const fallback = opts.fallbackModel === undefined ? DEFAULT_FALLBACK_MODEL : opts.fallbackModel;
+  const models = [model, ...(fallback && fallback !== model ? [fallback] : [])];
   const doFetch = opts.fetch ?? fetch;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+
+  async function call(name: string, input: OcrInput): Promise<OcrOutput> {
+    const res = await doFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(name)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": opts.apiKey },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: `${PROMPT}\n\nThe uploader says this is: ${input.docTypeHint}.` },
+              { inline_data: { mime_type: input.mimeType, data: base64(input.bytes) } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json",
+          responseSchema,
+          mediaResolution: "MEDIA_RESOLUTION_HIGH",
+        },
+      }),
+    });
+    if (!res.ok) throw new GeminiError(res.status, await res.text().catch(() => ""));
+    const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error("Gemini did not return JSON");
+    }
+    const out = ocrOutputSchema.safeParse(parsed);
+    if (!out.success) throw new Error(`Gemini returned an unexpected shape: ${out.error.issues[0]?.message}`);
+    return { fields: normalizeFields(out.data.fields), confidence: out.data.confidence, model: name };
+  }
+
   return {
     name: "gemini",
     model,
+    /**
+     * Tries the main model up to three times when Gemini is busy (waiting 2 s, then
+     * 6 s), then the fallback model the same way. Other errors stop at once.
+     */
     async extract(input: OcrInput): Promise<OcrOutput> {
-      const res = await doFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": opts.apiKey },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: `${PROMPT}\n\nThe uploader says this is: ${input.docTypeHint}.` },
-                { inline_data: { mime_type: input.mimeType, data: base64(input.bytes) } },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0,
-            responseMimeType: "application/json",
-            responseSchema,
-            mediaResolution: "MEDIA_RESOLUTION_HIGH",
-          },
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`Gemini ${res.status}: ${body.slice(0, 300)}`);
+      let last: unknown;
+      for (const name of models) {
+        for (let attempt = 0; attempt <= BACKOFF.length; attempt++) {
+          if (attempt > 0) await sleep(BACKOFF[attempt - 1]);
+          try {
+            return await call(name, input);
+          } catch (e) {
+            last = e;
+            if (!(e instanceof GeminiError && RETRYABLE.has(e.status))) throw e;
+          }
+        }
       }
-      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-      const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        throw new Error("Gemini did not return JSON");
-      }
-      const out = ocrOutputSchema.safeParse(parsed);
-      if (!out.success) throw new Error(`Gemini returned an unexpected shape: ${out.error.issues[0]?.message}`);
-      return { fields: normalizeFields(out.data.fields), confidence: out.data.confidence };
+      throw last;
     },
   };
 }
@@ -85,5 +125,5 @@ export function geminiProvider(opts: { apiKey: string; model?: string; fetch?: t
 export function ocrProviderFromEnv(): OcrProvider | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return geminiProvider({ apiKey, model: process.env.GEMINI_MODEL });
+  return geminiProvider({ apiKey, model: process.env.GEMINI_MODEL, fallbackModel: process.env.GEMINI_FALLBACK_MODEL });
 }

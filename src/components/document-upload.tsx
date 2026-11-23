@@ -1,9 +1,10 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { Camera, CheckCircle2, CircleAlert, FileUp, LoaderCircle } from "lucide-react";
+import { CheckCircle2, ScanLine, CircleAlert, FileUp, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { DocumentScanner } from "@/components/document-scanner";
 import { Field, Select } from "@/components/ui";
 import { finishUpload, startUpload } from "@/lib/documents/actions";
 import { DOC_TYPES, showMonth, type DocType } from "@/lib/documents/labels";
@@ -31,15 +32,22 @@ export function DocumentUpload(props: {
   const [month, setMonth] = useState(props.defaultMonth);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const camera = useRef<HTMLInputElement>(null);
   const files = useRef<HTMLInputElement>(null);
+  // Uploads run one after another, even when scans arrive while one is sending.
+  const queue = useRef<Promise<void>>(Promise.resolve());
 
   const fieldCount = [props.clients.length > 1, props.docTypes.length > 1, props.months.length > 1].filter(Boolean).length;
   const set = (key: string, patch: Partial<Item>) => setItems((cur) => cur.map((i) => (i.key === key ? { ...i, ...patch } : i)));
 
-  async function send(list: FileList | null) {
+  function send(list: FileList | File[] | null) {
     if (!list || list.length === 0) return;
     const picked = Array.from(list);
+    queue.current = queue.current.then(() => upload(picked));
+  }
+
+  async function upload(picked: File[]) {
     const batch = picked.map((f, n) => ({ key: `${Date.now()}-${n}-${f.name}`, name: f.name || "Photo", state: "waiting" as const }));
     setItems((cur) => [...batch, ...cur]);
     setBusy(true);
@@ -77,8 +85,16 @@ export function DocumentUpload(props: {
     router.refresh();
   }
 
+  // No camera access in the browser (or permission refused): use the phone's own camera app.
+  const cameraFallback = useCallback(() => {
+    setScanning(false);
+    camera.current?.click();
+  }, []);
+  const closeScanner = useCallback(() => setScanning(false), []);
+
   return (
     <div className="space-y-4">
+      {scanning && <DocumentScanner onScan={(f) => send([f])} onClose={closeScanner} onUnavailable={cameraFallback} />}
       <div className={`grid gap-3 ${fieldCount >= 3 && !props.compact ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         {props.clients.length > 1 && (
           <Field label="Business" htmlFor="up_client">
@@ -107,10 +123,10 @@ export function DocumentUpload(props: {
         <button
           type="button"
           disabled={busy || !clientId}
-          onClick={() => camera.current?.click()}
+          onClick={() => ("getUserMedia" in (navigator.mediaDevices ?? {}) ? setScanning(true) : camera.current?.click())}
           className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 text-base font-medium text-ink-on-action hover:bg-action-hover disabled:opacity-60"
         >
-          <Camera aria-hidden className="size-5" /> Take a photo
+          <ScanLine aria-hidden className="size-5" /> Scan document
         </button>
         <button
           type="button"

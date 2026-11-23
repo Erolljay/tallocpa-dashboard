@@ -12,10 +12,10 @@
     "semantic_hash": "b2d8b89faafdf02bf1f519c28a9a995e"
   },
   "eslint.config.mjs": {
-    "mtime": 1795403312.292082,
-    "seen": 1795403636.8835912,
-    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
-    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+    "mtime": 1795426979.375679,
+    "seen": 1795427156.176114,
+    "ast_hash": "a6775e3c61ebbaa93eb99abd6821cb45",
+    "semantic_hash": ""
   },
   "next.config.ts": {
     "mtime": 1795403312.292082,
@@ -24,10 +24,10 @@
     "semantic_hash": "59ace8843cd0f04a4328b2189aead87b"
   },
   "package.json": {
-    "mtime": 1795403312.292082,
-    "seen": 1795403636.8835938,
-    "ast_hash": "e49635a2a76d0989a7611e530e80e0fc",
-    "semantic_hash": "e49635a2a76d0989a7611e530e80e0fc"
+    "mtime": 1795426373.2324896,
+    "seen": 1795427156.1761212,
+    "ast_hash": "01c3ed4c96e64b0b396c33f03e4a4617",
+    "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
     "mtime": 1795403312.292082,
@@ -432,9 +432,9 @@
     "semantic_hash": "82efc8aeb8c648a9eedde73bc22f0622"
   },
   "docs/SETUP.md": {
-    "mtime": 1795424824.8555381,
-    "seen": 1795424830.167884,
-    "ast_hash": "644826f6a4cce3f78e7abafbbab76af0",
+    "mtime": 1795425516.119495,
+    "seen": 1795425518.8489928,
+    "ast_hash": "eb42e76f8ce4e783511acc25fc12c8b9",
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "src/components/document-upload.tsx": {
-    "mtime": 1795421747.5594559,
-    "seen": 1795424116.0613627,
-    "ast_hash": "a84a49b755443604b8832428bcdc4623",
+    "mtime": 1795426950.0326202,
+    "seen": 1795427156.1762314,
+    "ast_hash": "cb7c971227b6324f7b7075c24c2a8826",
     "semantic_hash": ""
   },
   "src/lib/documents/actions.ts": {
@@ -696,21 +696,21 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/fields.ts": {
-    "mtime": 1795424632.1563451,
-    "seen": 1795424830.1678417,
-    "ast_hash": "6e87f7433f61f68746e0a45083b8b603",
+    "mtime": 1795425482.955857,
+    "seen": 1795425518.8488715,
+    "ast_hash": "7212a0a92aabeafb0d7cac1021fc147b",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.test.ts": {
-    "mtime": 1795424657.2736154,
-    "seen": 1795424830.1678433,
-    "ast_hash": "c87634db2e653951a49551719065c76c",
+    "mtime": 1795425495.421377,
+    "seen": 1795425518.848875,
+    "ast_hash": "b800a7c60fb442b09c17688a9490bb03",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.ts": {
-    "mtime": 1795424657.2722216,
-    "seen": 1795424830.1678445,
-    "ast_hash": "96c3a52b118e005b85889f9a362b838e",
+    "mtime": 1795425482.955572,
+    "seen": 1795425518.8488781,
+    "ast_hash": "19c2323ff2473bda14b3a16d0647eecf",
     "semantic_hash": ""
   },
   "src/lib/ocr/provider.ts": {
@@ -720,9 +720,9 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/run.ts": {
-    "mtime": 1795424685.634746,
-    "seen": 1795424830.1678467,
-    "ast_hash": "f032906a482af62ad230b93a0ecf5880",
+    "mtime": 1795425482.9568913,
+    "seen": 1795425518.8488824,
+    "ast_hash": "45c81854e8009c469ad6c51fee8f4a5f",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000009_ocr.sql": {
@@ -731,10 +731,40 @@
     "ast_hash": "5f5a82d7a00186d00accb63e1302e381",
     "semantic_hash": ""
   },
+  "scripts/copy-opencv.mjs": {
+    "mtime": 1795426373.235635,
+    "seen": 1795427156.1761255,
+    "ast_hash": "f0e75af5bed6ffbde3906ff80bb3bc2f",
+    "semantic_hash": ""
+  },
+  "src/components/document-scanner.tsx": {
+    "mtime": 1795427074.8366191,
+    "seen": 1795427156.1762295,
+    "ast_hash": "e312591ee608caedadc8b0aa7715accf",
+    "semantic_hash": ""
+  },
+  "src/lib/scan/detect.test.ts": {
+    "mtime": 1795426801.7207704,
+    "seen": 1795427156.1763039,
+    "ast_hash": "57d9409217d62e5ae88b778dd1367cd8",
+    "semantic_hash": ""
+  },
+  "src/lib/scan/detect.ts": {
+    "mtime": 1795426386.327164,
+    "seen": 1795427156.176305,
+    "ast_hash": "18345a5a618995445b3de02220a87794",
+    "semantic_hash": ""
+  },
+  "src/lib/scan/geometry.ts": {
+    "mtime": 1795426058.4828372,
+    "seen": 1795427156.176306,
+    "ast_hash": "461174a36bcf6e07530828c7af21ace0",
+    "semantic_hash": ""
+  },
   "pnpm-lock.yaml": {
-    "mtime": 1795403312.292082,
-    "seen": 1795415626.0252695,
-    "ast_hash": "199d67785bce2b49e62b4bda97a1036d",
+    "mtime": 1795425644.8955917,
+    "seen": 1795427156.1763422,
+    "ast_hash": "b33fe5134d73135b50700f503fe42c7e",
     "semantic_hash": ""
   }
 }
