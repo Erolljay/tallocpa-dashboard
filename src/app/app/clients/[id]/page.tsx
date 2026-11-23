@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
+import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DocumentsCard } from "./documents-card";
 import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
@@ -29,7 +31,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const { data: client } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (!client) notFound();
 
-  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers] = await Promise.all([
+  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties] = await Promise.all([
     supabase.from("client_registrations").select("registration_date, tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("id, form, frequency, start_date, end_date").eq("client_id", id).order("form"),
     supabase.from("engagements").select("id, service_line, monthly_retainer, start_date, status, service_lines(name)").eq("client_id", id).order("start_date"),
@@ -37,6 +39,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("service_lines").select("code, name").eq("available", true).order("sort_order"),
     isOwner ? supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
     supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
+    supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
   ]);
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
@@ -53,6 +56,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone[client.status as keyof typeof statusTone]}>{statusLabel[client.status]}</Badge>
+            {(isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)) && <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>}
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
             {isOwner && client.status === "onboarding" && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
@@ -142,6 +146,27 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           cutoffDay={client.submission_cutoff_day}
           canAct={isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)}
         />
+
+        <Card title="Customers & suppliers" actions={<Link href={`/app/parties?client=${id}`} className="text-sm text-link hover:underline">See all</Link>}>
+          {(parties.data ?? []).length === 0 ? (
+            <p className="text-sm text-ink-muted">None yet. They are added when this client&rsquo;s documents are approved.</p>
+          ) : (
+            <ul className="divide-y divide-border text-sm">
+              {parties.data!.map((cp) => {
+                const p = cp.parties as unknown as { display_name: string; tin: string; branch_code: string } | null;
+                return (
+                  <li key={cp.party_id} className="flex items-center justify-between gap-4 py-2">
+                    <div className="min-w-0">
+                      <Link href={`/app/parties/${cp.party_id}`} className="font-medium text-ink-heading hover:underline">{p?.display_name}</Link>
+                      <p className="text-xs tabular-nums text-ink-subtle">{p?.tin}-{p?.branch_code} · last {fmtDate(cp.last_seen)}</p>
+                    </div>
+                    <span className="shrink-0 text-ink-muted">{PARTY_ROLES[cp.role as PartyRole]}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
 
         <Card title="Portal users">
           {(portalUsers.data ?? []).length === 0 ? (
