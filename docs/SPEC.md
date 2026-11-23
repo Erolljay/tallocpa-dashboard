@@ -333,7 +333,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only |
 | O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
 | O13 | Brand details for Settings → Brand: TIN and branch code, RDO, COR, addresses, contact details, CPA / PRC-BOA / BIR tax agent / PTR / DTI numbers and validity, signatory name and title, Service Invoice method and series | Owner | Statements, quotes, engagement letters |
-| O14 | Whether fee advances not yet applied to a charge count toward the gross receipts watch (now: only collected retainer and other fees count; client tax money is excluded) | Owner | Gross receipts watch (§3.1) |
+| O14 | ~~Whether fee advances count toward the gross receipts watch~~ **Closed 23 Nov 2026:** no. Only collected retainer and other fees applied to a charge count; unapplied advances and client tax money are excluded (as built) | Owner | Gross receipts watch (§3.1) |
 
 ---
 
