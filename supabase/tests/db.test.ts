@@ -301,6 +301,96 @@ describe.skipIf(!url)("database", () => {
     });
   });
 
+  describe("documents", () => {
+    it("places a document in its month, the next open month when late, or flags a prior taxable year", async () => {
+      const place = async (month: string, today: string, fye = 12) =>
+        (await db.query(`select period::text, late, prior_year from private.document_period($1, $2, 5, $3)`, [month, today, fye])).rows[0];
+      // November documents uploaded by the 5 December cutoff stay in November.
+      expect(await place("2026-11-01", "2026-12-05")).toEqual({ period: "2026-11-01", late: false, prior_year: false });
+      // After the cutoff they go to December, flagged late.
+      expect(await place("2026-11-01", "2026-12-06")).toEqual({ period: "2026-12-01", late: true, prior_year: false });
+      // This month's documents uploaded early stay in this month.
+      expect(await place("2026-12-01", "2026-12-15")).toEqual({ period: "2026-12-01", late: false, prior_year: false });
+      // A December 2026 receipt uploaded in February 2027 is from the prior taxable year: exceptions queue.
+      expect(await place("2026-12-01", "2027-02-10")).toEqual({ period: "2026-12-01", late: false, prior_year: true });
+      // Same receipt for a June year-end client is still the same taxable year: carried forward, late.
+      expect(await place("2026-12-01", "2027-02-10", 6)).toEqual({ period: "2027-02-01", late: true, prior_year: false });
+    });
+
+    /** Runs in one rolled-back transaction as the given user. */
+    async function asUser<T>(user: string, run: () => Promise<T>) {
+      await db.query("begin");
+      try {
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [user]);
+        await db.query("set local role authenticated");
+        return await run();
+      } finally {
+        await db.query("rollback");
+      }
+    }
+    const register = (client: string, type = "purchase_receipt") =>
+      db.query(`select (d).id, (d).source, (d).status, (d).storage_path from public.register_document($1, $2, date_trunc('month', now())::date, 'Receipt #1.jpg', 'image/jpeg', 12345) as d`, [client, type]);
+
+    it("lets the client and assigned staff upload, but not others", async () => {
+      await asUser(CLIENT_USER, async () => {
+        const d = (await register(clientA)).rows[0];
+        expect(d).toMatchObject({ source: "portal", status: "uploading" });
+        expect(d.storage_path).toMatch(new RegExp(`^${clientA}/[0-9a-f-]+/Receipt_1.jpg$`));
+      });
+      await asUser(STAFF, async () => expect((await register(clientA)).rows[0].source).toBe("staff"));
+      await asUser(CLIENT_USER, async () => expect(register(clientB)).rejects.toThrow(/cannot add documents/));
+      await asUser(STAFF, async () => expect(register(clientB)).rejects.toThrow(/cannot add documents/));
+      await asUser(CLIENT_USER, async () => expect(register(clientA, "filed_return")).rejects.toThrow(/Only staff/));
+    });
+
+    it("confirms only once the file is stored, then staff return it and the client replies", async () => {
+      await db.query("begin");
+      try {
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+        const d = (await register(clientA)).rows[0];
+        await db.query("savepoint s0");
+        await expect(db.query(`select public.confirm_document($1)`, [d.id])).rejects.toThrow(/has not arrived/);
+        await db.query("rollback to savepoint s0");
+        await db.query("reset role");
+        await db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1)`, [d.storage_path]);
+        await db.query("set local role authenticated");
+        expect((await db.query(`select (public.confirm_document($1)).status`, [d.id])).rows[0].status).toBe("received");
+
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        await db.query("savepoint s");
+        await expect(db.query(`select public.review_document($1, 'return')`, [d.id])).rejects.toThrow(/Say why/);
+        await db.query("rollback to savepoint s");
+        expect((await db.query(`select (public.review_document($1, 'return', 'Blurry, please retake')).status`, [d.id])).rows[0].status).toBe("returned");
+
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+        const replied = (await db.query(`select (d).status, (d).client_reply from public.reply_document($1, 'Retook it, see the new upload') as d`, [d.id])).rows[0];
+        expect(replied).toEqual({ status: "received", client_reply: "Retook it, see the new upload" });
+        await db.query("savepoint s2");
+        await expect(db.query(`select public.review_document($1, 'accept')`, [d.id])).rejects.toThrow(/Only staff assigned/);
+        await db.query("rollback to savepoint s2");
+      } finally {
+        await db.query("rollback");
+      }
+    });
+
+    it("keeps each client's files to people who can see that client", async () => {
+      await db.query("begin");
+      try {
+        await db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1), ('documents', $2)`, [`${clientA}/x/a.jpg`, `${clientB}/y/b.jpg`]);
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+        const seen = (await db.query(`select name from storage.objects where bucket_id = 'documents' order by name`)).rows.map((r) => r.name);
+        expect(seen).toEqual([`${clientA}/x/a.jpg`]);
+        await db.query("savepoint s");
+        await expect(db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1)`, [`${clientB}/z/c.jpg`])).rejects.toThrow(/row-level security/);
+        await db.query("rollback to savepoint s");
+      } finally {
+        await db.query("rollback");
+      }
+    });
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(

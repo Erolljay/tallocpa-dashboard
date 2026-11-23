@@ -20,6 +20,8 @@ Phase 1A in progress. Built so far:
 - Nightly job creates dated BIR filings 120 days ahead; Dashboard shows overdue and next 14 days
 - Sign-off chain on every filing: Prepared → Reviewed → Client approved (portal) → Owner approved (payment check) → Filed → Paid → Proof sent, with history
 - Settings: Owner edits BIR deadline rules and non-working days
+- Review page: returns waiting for a reviewer or the Owner's final approval
+- Documents: mobile-first client portal (camera or file upload, cutoff countdown, document status, returned documents with replies, return approvals); staff upload, accept, post or return documents; filed return and proof of payment on each filing; every view logged
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

@@ -6,6 +6,8 @@ import { requireStaff } from "@/lib/auth";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
 import { availableActions, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
 import { supabaseServer } from "@/lib/supabase/server";
+import { DocumentUpload } from "@/components/document-upload";
+import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions } from "../sign-off-actions";
 
 export default function FilingPage(props: PageProps<"/app/filings/[id]">) {
@@ -55,12 +57,15 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   if (!f) notFound();
   const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
 
-  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }] = await Promise.all([
+  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
     supabase.from("staff_assignments").select("user_id, role").eq("client_id", f.client_id),
     supabase.from("staff_profiles").select("user_id, full_name"),
     supabase.from("client_users").select("user_id, full_name").eq("client_id", f.client_id),
+    supabase.from("documents").select("id, doc_type, file_name, created_at").eq("filing_instance_id", id).neq("status", "uploading").order("created_at"),
   ]);
+  const canAttach = me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId);
+  const thisMonth = `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date()).slice(0, 7)}-01`;
   const nameOf = new Map([...(staff ?? []), ...(clientUsers ?? [])].map((p) => [p.user_id, p.full_name]));
   const history = (events ?? []) as Event[];
   const preparedBy = [...history].reverse().find((e) => e.action === "prepare")?.actor ?? null;
@@ -143,7 +148,24 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             <dt className="text-ink-subtle">Filing ref.</dt><dd className="text-ink-heading">{f.filing_reference ?? "—"}{f.filed_on ? ` · ${showDate(f.filed_on)}` : ""}</dd>
             <dt className="text-ink-subtle">Payment ref.</dt><dd className="text-ink-heading">{f.payment_reference ?? "—"}{f.paid_on ? ` · ${showDate(f.paid_on)}` : ""}</dd>
           </dl>
-          <p className="mt-4 text-xs text-ink-subtle">Uploading the filed return and proof of payment comes with the document upload feature.</p>
+          <div className="mt-4 space-y-3 border-t border-border pt-4">
+            <p className="text-sm font-medium text-ink-heading">Filed return and proof</p>
+            {(attachments ?? []).length === 0 ? (
+              <p className="text-xs text-ink-subtle">Nothing attached yet. The client sees these under Returns.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {(attachments ?? []).map((a) => (
+                  <li key={a.id}>
+                    <a href={`/files/${a.id}`} target="_blank" rel="noopener" className="text-link hover:underline">{DOC_TYPES[a.doc_type as DocType]}</a>
+                    <span className="text-xs text-ink-subtle"> · {a.file_name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canAttach && (
+              <DocumentUpload clients={[{ id: f.client_id, name: client.name }]} docTypes={["filed_return", "payment_proof"]} months={[thisMonth]} defaultMonth={thisMonth} filingId={f.id} compact />
+            )}
+          </div>
         </Card>
       </div>
     </>
