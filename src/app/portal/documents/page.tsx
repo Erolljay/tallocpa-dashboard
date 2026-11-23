@@ -51,7 +51,7 @@ async function Documents() {
         <section className="space-y-3">
           <h2 className="font-medium text-danger-text">Returned to you</h2>
           {returned.map((d) => (
-            <article key={d.id} className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+            <article key={d.id} className="space-y-3 rounded-2xl border border-border bg-surface shadow-sm p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate font-medium text-link underline">{d.file_name}</a>
@@ -73,7 +73,7 @@ async function Documents() {
         [...byMonth.entries()].map(([month, list]) => (
           <section key={month} className="space-y-2">
             <h2 className="font-medium text-ink-heading">{showMonth(month)} <span className="text-sm font-normal text-ink-subtle">· {list.length}</span></h2>
-            <ul className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm">
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm text-sm">
               {list.map((d) => (
                 <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">

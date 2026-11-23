@@ -44,9 +44,9 @@ async function StaffList() {
         </p>
         <InviteStaffForm />
       </Card>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
         <table className="w-full min-w-[48rem] text-sm">
-          <thead className="bg-surface-sunken text-left text-ink-strong">
+          <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">Name</th>
               <th scope="col" className="px-4 py-3 text-right font-medium">Clients</th>

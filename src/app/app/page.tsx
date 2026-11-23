@@ -35,16 +35,16 @@ async function Summary() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
         <Card title={me.staff.role === "owner" ? "Active clients" : "My clients"}>
-          <p className="font-display text-3xl font-bold tabular-nums text-ink-heading">{clients.count ?? 0}</p>
-          <LinkButton href="/app/clients" variant="ghost" className="mt-2 -ml-4">View clients</LinkButton>
+          <p className="text-4xl leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{clients.count ?? 0}</p>
+          <LinkButton href="/app/clients" variant="ghost" className="mt-3 -ml-5">View clients</LinkButton>
         </Card>
         <Card title="Overdue">
-          <p className={`font-display text-3xl font-bold tabular-nums ${(overdue.count ?? 0) > 0 ? "text-danger-text" : "text-ink-heading"}`}>{overdue.count ?? 0}</p>
+          <p className={`text-4xl leading-none font-semibold tracking-tight tabular-nums ${(overdue.count ?? 0) > 0 ? "text-danger-text" : "text-ink-heading"}`}>{overdue.count ?? 0}</p>
           <p className="mt-2 text-sm text-ink-muted">Past due and not filed.</p>
         </Card>
         <Card title="Due in 14 days">
-          <p className="font-display text-3xl font-bold tabular-nums text-ink-heading">{next14.count ?? 0}</p>
-          <LinkButton href="/app/deadlines" variant="ghost" className="mt-2 -ml-4">All deadlines</LinkButton>
+          <p className="text-4xl leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{next14.count ?? 0}</p>
+          <LinkButton href="/app/deadlines" variant="ghost" className="mt-3 -ml-5">All deadlines</LinkButton>
         </Card>
       </div>
       <section>

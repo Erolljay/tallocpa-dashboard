@@ -7,7 +7,7 @@ export function Lockup() {
       </div>
       <div>
         <p className="font-display text-xl font-semibold leading-7 text-ink-heading">Tallo CPA</p>
-        <p className="text-[10px] uppercase tracking-[0.05em] text-ink-subtle">Clear Numbers. Clean Compliance.</p>
+        <p className="-mt-0.5 text-[10px] leading-[15px] uppercase tracking-[0.05em] text-ink-subtle">Clear Numbers. Clean Compliance.</p>
       </div>
     </div>
   );

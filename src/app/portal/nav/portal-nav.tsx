@@ -18,8 +18,8 @@ export function PortalNav({ variant }: { variant: "top" | "bottom" }) {
       <ul className="grid grid-cols-3">
         {tabs.map(({ href, label, icon: Icon }) => (
           <li key={href}>
-            <Link href={href} aria-current={active(href) ? "page" : undefined} className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium ${active(href) ? "text-action" : "text-ink-muted"}`}>
-              <Icon aria-hidden className="size-5" />
+            <Link href={href} aria-current={active(href) ? "page" : undefined} className={`pressable flex min-h-[52px] flex-col items-center justify-center gap-1 text-[11px] leading-none font-medium ${active(href) ? "text-action" : "text-ink-subtle"}`}>
+              <Icon aria-hidden className="size-6" strokeWidth={active(href) ? 2.25 : 1.75} />
               {label}
             </Link>
           </li>
@@ -31,7 +31,7 @@ export function PortalNav({ variant }: { variant: "top" | "bottom" }) {
     <ul className="flex gap-1">
       {tabs.map(({ href, label, icon: Icon }) => (
         <li key={href}>
-          <Link href={href} aria-current={active(href) ? "page" : undefined} className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium ${active(href) ? "border-action text-ink-heading" : "border-transparent text-ink-muted hover:text-ink-heading"}`}>
+          <Link href={href} aria-current={active(href) ? "page" : undefined} className={`pressable my-2 flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ${active(href) ? "bg-surface-tint-strong text-ink-on-tint" : "text-ink-muted hover:bg-surface-sunken hover:text-ink-heading"}`}>
             <Icon aria-hidden className="size-4" />
             {label}
           </Link>

@@ -16,7 +16,7 @@ export default function LoginPage(props: PageProps<"/login">) {
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-8">
         <Lockup />
-        <div className="rounded-2xl border border-border bg-surface p-6">
+        <div className="rounded-2xl border border-border bg-surface shadow-sm p-6">
           <h1 className="font-display text-xl font-semibold text-ink-heading">Sign in</h1>
           <p className="mt-1 mb-6 text-sm text-ink-muted">For Tallo CPA staff and clients. Use your Google account or get a link by email.</p>
           <Suspense>
