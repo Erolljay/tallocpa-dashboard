@@ -61,8 +61,8 @@ describe.skipIf(!url)("database", () => {
       [OWNER, STAFF, REVIEWER, brand],
     );
     const ins = `insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, $2, $3, 'corporation') returning id`;
-    clientA = (await db.query(ins, [brand, "TC-0001", "Client A"])).rows[0].id;
-    clientB = (await db.query(ins, [brand, "TC-0002", "Client B"])).rows[0].id;
+    clientA = (await db.query(ins, [brand, "TC-9001", "Client A"])).rows[0].id;
+    clientB = (await db.query(ins, [brand, "TC-9002", "Client B"])).rows[0].id;
     await db.query(`insert into public.staff_assignments (client_id, user_id, role) values ($1, $2, 'preparer'), ($1, $3, 'reviewer')`, [clientA, STAFF, REVIEWER]);
     await db.query(`insert into public.client_users (user_id, client_id, full_name) values ($1, $2, 'Client A owner')`, [CLIENT_USER, clientA]);
   });
@@ -88,15 +88,15 @@ describe.skipIf(!url)("database", () => {
   });
 
   it("Owner sees every client", async () => {
-    expect(await as(OWNER, "select code from public.clients order by code")).toEqual([{ code: "TC-0001" }, { code: "TC-0002" }]);
+    expect(await as(OWNER, "select code from public.clients order by code")).toEqual([{ code: "TC-9001" }, { code: "TC-9002" }]);
   });
 
   it("staff see only assigned clients", async () => {
-    expect(await as(STAFF, "select code from public.clients order by code")).toEqual([{ code: "TC-0001" }]);
+    expect(await as(STAFF, "select code from public.clients order by code")).toEqual([{ code: "TC-9001" }]);
   });
 
   it("a client user sees only their own client and no staff", async () => {
-    expect(await as(CLIENT_USER, "select code from public.clients")).toEqual([{ code: "TC-0001" }]);
+    expect(await as(CLIENT_USER, "select code from public.clients")).toEqual([{ code: "TC-9001" }]);
     expect(await as(CLIENT_USER, "select user_id from public.staff_profiles")).toEqual([]);
     expect(await as(CLIENT_USER, "select id from public.deadline_rules")).toEqual([]);
   });
@@ -115,7 +115,7 @@ describe.skipIf(!url)("database", () => {
 
   it("an assigned Reviewer can edit the client, staff cannot", async () => {
     const sql = `update public.clients set registered_address = 'Iloilo City' where id = $1 returning code`;
-    expect(await as(REVIEWER, sql, [clientA])).toEqual([{ code: "TC-0001" }]);
+    expect(await as(REVIEWER, sql, [clientA])).toEqual([{ code: "TC-9001" }]);
     expect(await as(STAFF, sql, [clientA])).toEqual([]);
     expect(await as(REVIEWER, sql, [clientB])).toEqual([]);
   });
@@ -147,5 +147,60 @@ describe.skipIf(!url)("database", () => {
     await db.query("rollback");
     expect(row).toEqual({ actor: REVIEWER, action: "UPDATE", old_name: "Client A", new_name: "Client A Corp." });
     expect(await as(STAFF, "select id from public.audit_log")).toEqual([]);
+  });
+  it("Owner creates a client with obligations in one step, numbered per brand", async () => {
+    const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+    const call = `select (c).code, (c).status from public.create_client_with_obligations($1::jsonb, $2::jsonb, '2027-01-04', $3::jsonb) as c`;
+    const client = JSON.stringify({ brand_id: brand, name: "Iloilo Feast Food Corp.", taxpayer_type: "corporation", tin: "123-456-789-00000" });
+    const obligations = JSON.stringify([
+      { form: "1702Q", frequency: "quarterly", start_date: "2027-01-04" },
+      { form: "2550Q", frequency: "quarterly", start_date: "2027-01-04" },
+    ]);
+    await db.query("begin");
+    try {
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+      await db.query("set local role authenticated");
+      const first = (await db.query(call, [client, '["income_tax","vat"]', obligations])).rows[0];
+      const second = (await db.query(call, [client, "[]", "[]"])).rows[0];
+      const forms = (await db.query(`select o.form from public.obligations o join public.clients c on c.id = o.client_id where c.code = $1 order by o.form`, [first.code])).rows;
+      const reg = (await db.query(`select r.tax_types from public.client_registrations r join public.clients c on c.id = r.client_id where c.code = $1`, [first.code])).rows[0];
+      expect(first).toEqual({ code: "TC-0001", status: "onboarding" });
+      expect(second.code).toBe("TC-0002");
+      expect(forms).toEqual([{ form: "1702Q" }, { form: "2550Q" }]);
+      expect(reg.tax_types).toEqual(["income_tax", "vat"]);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
+  it("staff cannot create clients through the onboarding function", async () => {
+    const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+    await expect(
+      as(STAFF, `select public.create_client_with_obligations($1::jsonb, '[]', null, '[]')`, [JSON.stringify({ brand_id: brand, name: "X", taxpayer_type: "individual" })]),
+    ).rejects.toThrow(/Only the Owner/);
+  });
+
+  it("reports who is signed in", async () => {
+    const [owner] = await as<{ id: { staff: { role: string }; clients: unknown[] } }>(OWNER, "select public.current_identity() as id");
+    expect(owner.id.staff.role).toBe("owner");
+    const [client] = await as<{ id: { staff: null; clients: { client_name: string }[] } }>(CLIENT_USER, "select public.current_identity() as id");
+    expect(client.id.staff).toBeNull();
+    expect(client.id.clients.map((c) => c.client_name)).toEqual(["Client A"]);
+  });
+  it("a person linked to two businesses sees both, and only those", async () => {
+    await db.query("begin");
+    try {
+      const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+      const third = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9003', 'Client C', 'individual') returning id`, [brand])).rows[0].id;
+      await db.query(`insert into public.client_users (user_id, client_id, full_name) values ($1, $2, 'Client A owner')`, [CLIENT_USER, third]);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+      await db.query("set local role authenticated");
+      const seen = (await db.query("select code from public.clients order by code")).rows;
+      const id = (await db.query("select public.current_identity() as id")).rows[0].id;
+      expect(seen).toEqual([{ code: "TC-9001" }, { code: "TC-9003" }]);
+      expect(id.clients.map((c: { client_name: string }) => c.client_name).sort()).toEqual(["Client A", "Client C"]);
+    } finally {
+      await db.query("rollback");
+    }
   });
 });

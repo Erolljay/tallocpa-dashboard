@@ -64,3 +64,4 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q58 | Owner away | Acting approver with limits; cannot override the payment check; daily digest |
 | Q59 | Logo | Redraw the T-grid mark as SVG for approval if originals are not available |
 | Q60 | Multi-brand | Brand and legal entity are settings in the database; only Tallo CPA configured now |
+| Q61 | Users & businesses | A business can have several client users; one person can be linked to several businesses. **Staff can upload and run OCR for their assigned clients.** (Owner, during Phase 1A build) |

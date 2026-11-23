@@ -30,7 +30,7 @@ TalloCPA OS is the firm's own operating system. It **replaces Moxie (CRM, projec
 | **Acting Approver** | Named by the Owner while away | Approves returns under a peso limit set by the Owner. **Cannot** override the payment check. Every action goes into a daily digest to the Owner (Q58). |
 | **Reviewer** | Senior staff | Reviews and kicks back staff work. |
 | **Staff** | Preparers | Works only on assigned clients: reviews OCR, posts entries, prepares returns. |
-| **Client User** | Client's owner, bookkeeper, etc. (several per client) | Portal only: upload documents, approve returns, view filings, reports and SOA. |
+| **Client User** | Client's owner, bookkeeper, etc. **Several users per business, and one person can be linked to several businesses** (business switcher in the portal) | Portal only, for the businesses they are linked to: upload documents, approve returns, view filings, reports and SOA. |
 
 Access is enforced in the database with Postgres row-level security (RLS), not only in the screens (Q13).
 
@@ -111,7 +111,7 @@ Mobile first, with the Tallo CPA brand. Screens:
 5. **Reports:** monthly summary, quarterly and annual statements — **shown only after the Owner releases them** (Q42).
 6. **Statement of Account:** what is due (retainer + tax dues), payment reference, the brand's bank / InstaPay / PESONet / GCash / Maya details, payment history (Q27, Q56).
 
-Intake channel in v1: **portal upload only** (Q10).
+Intake channel in v1: **portal upload only** (Q10). **Staff can also upload documents and run OCR on behalf of the clients assigned to them** (e.g. documents handed over in person or sent by email); these go through the same review queue and are marked as staff-uploaded.
 
 ### 3.5 OCR intake & review queue (Q8, Q9, Q15)
 
