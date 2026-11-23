@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { FirmBlock } from "@/lib/brand/profile";
 
 export interface StatementLine {
   id: string;
@@ -26,7 +27,8 @@ export interface PayAccount {
 export interface Statement {
   soa: { id: string; reference: string; billing_date: string; due_on: string };
   client: { id: string; name: string; code: string; tin: string | null; registered_address: string | null };
-  brand: { display_name: string; legal_name: string; tin: string | null };
+  /** The firm block in the header (spec §3.1); blanks are left out when printed. */
+  brand: FirmBlock & { logoUrl: string | null };
   lines: StatementLine[];
   /** Still open on earlier statements. */
   earlierOpen: number;
@@ -50,7 +52,11 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
   ]);
   if (!client) return null;
   const [{ data: brand }, { data: accounts }] = await Promise.all([
-    supabase.from("brands").select("display_name, legal_name, tin").eq("id", client.brand_id).single(),
+    supabase
+      .from("brands")
+      .select("display_name, legal_name, tin, tin_branch_code, registered_address, business_address, phone, reply_to_email, tax_on_fee, logo_path")
+      .eq("id", client.brand_id)
+      .single(),
     supabase.from("brand_payment_accounts").select("id, kind, institution, account_name, account_number, purpose, instructions, qr_path, sort_order").eq("brand_id", client.brand_id).eq("active", true).order("sort_order").order("institution"),
   ]);
 
@@ -66,15 +72,27 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
   const rows = accounts ?? [];
   const paths = rows.map((a) => a.qr_path).filter((p): p is string => Boolean(p));
   const signed = new Map<string, string>();
-  if (paths.length) {
-    const { data } = await supabase.storage.from("payment-qr").createSignedUrls(paths, 3600);
-    for (const s of data ?? []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl);
-  }
+  const [qr, logo] = await Promise.all([
+    paths.length ? supabase.storage.from("payment-qr").createSignedUrls(paths, 3600) : null,
+    brand?.logo_path ? supabase.storage.from("brand-files").createSignedUrl(brand.logo_path, 3600) : null,
+  ]);
+  for (const s of qr?.data ?? []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl);
 
   return {
     soa: { id: soa.id, reference: soa.reference, billing_date: soa.billing_date, due_on: soa.due_on },
     client: { id: client.id, name: client.name, code: client.code, tin: client.tin, registered_address: client.registered_address },
-    brand: brand ?? { display_name: "Tallo CPA", legal_name: "", tin: null },
+    brand: {
+      display_name: brand?.display_name ?? "Tallo CPA",
+      legal_name: brand?.legal_name ?? "",
+      tin: brand?.tin ?? null,
+      tin_branch_code: brand?.tin_branch_code ?? null,
+      registered_address: brand?.registered_address ?? null,
+      business_address: brand?.business_address ?? null,
+      phone: brand?.phone ?? null,
+      reply_to_email: brand?.reply_to_email ?? null,
+      tax_on_fee: brand?.tax_on_fee === "vat_12" ? "vat_12" : "percentage_tax_3",
+      logoUrl: logo?.data?.signedUrl ?? null,
+    },
     lines,
     earlierOpen,
     credit,

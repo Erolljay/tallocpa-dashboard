@@ -1,0 +1,262 @@
+"use client";
+
+import { useActionState, useMemo, useState, useTransition } from "react";
+import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { COMPONENTS, type ComponentLetter } from "@/lib/fees/types";
+import {
+  activateAction,
+  createFromTemplateAction,
+  deleteDraftAction,
+  saveSettingsAction,
+  savePricesAction,
+  startNewVersionAction,
+  type FeeFormState,
+} from "./actions";
+
+function Result({ state }: { state: FeeFormState }) {
+  if (state.error) {
+    return (
+      <Notice tone="blocked">
+        {state.error}
+        {state.unpriced && state.unpriced.length > 0 && (
+          <ul className="mt-2 list-disc space-y-0.5 pl-5">
+            {state.unpriced.map((u) => <li key={u}>{u}</li>)}
+          </ul>
+        )}
+      </Notice>
+    );
+  }
+  if (state.ok) return <Notice tone="done">{state.ok}</Notice>;
+  return null;
+}
+
+function NewDraftForm({ action, label, defaultName, defaultDate, hint }: { action: typeof createFromTemplateAction; label: string; defaultName: string; defaultDate: string; hint: string }) {
+  const [state, run, pending] = useActionState(action, {} as FeeFormState);
+  const id = label.replace(/\W+/g, "-").toLowerCase();
+  return (
+    <details className="rounded-xl border border-border">
+      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-link hover:underline">{label}</summary>
+      <form action={run} className="grid gap-3 border-t border-border bg-surface-muted p-4 sm:grid-cols-2">
+        <p className="text-sm text-ink-muted sm:col-span-2">{hint}</p>
+        <Field label="Name" htmlFor={`${id}-name`}>
+          <Input id={`${id}-name`} name="name" defaultValue={defaultName} required />
+        </Field>
+        <Field label="Takes effect" htmlFor={`${id}-date`}>
+          <Input id={`${id}-date`} name="effective_from" type="date" defaultValue={defaultDate} required />
+        </Field>
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <Button type="submit" disabled={pending}>{pending ? "Creating…" : label}</Button>
+          <Result state={state} />
+        </div>
+      </form>
+    </details>
+  );
+}
+
+export function CreateFromTemplateForm({ defaultDate }: { defaultDate: string }) {
+  return (
+    <NewDraftForm
+      action={createFromTemplateAction}
+      label="Create draft from template"
+      defaultName={`Fee schedule ${defaultDate.slice(0, 4)}`}
+      defaultDate={defaultDate}
+      hint="Adds every component and band of the draft structure (spec Appendix A) with no prices. You enter the prices, then activate."
+    />
+  );
+}
+
+export function StartNewVersionForm({ defaultDate, activeName }: { defaultDate: string; activeName: string }) {
+  return (
+    <NewDraftForm
+      action={startNewVersionAction}
+      label="Start new version"
+      defaultName={`Fee schedule from ${defaultDate}`}
+      defaultDate={defaultDate}
+      hint={`Copies “${activeName}” with its prices into a new draft. It must take effect after the current schedule; activating it retires the current one. Existing clients keep their fees until their renewal.`}
+    />
+  );
+}
+
+export interface SettingsValues {
+  name: string;
+  effective_from: string;
+  prices_include_tax: boolean;
+  quote_valid_days: number;
+  minimum_monthly_retainer: number | null;
+  late_surcharge_amount: number | null;
+  late_surcharge_auto: boolean;
+  notes: string | null;
+}
+
+export function ScheduleSettingsForm({ scheduleId, values, taxLabel }: { scheduleId: string; values: SettingsValues; taxLabel: string }) {
+  const [state, run, pending] = useActionState(saveSettingsAction.bind(null, scheduleId), {} as FeeFormState);
+  return (
+    <form action={run} className="grid gap-4 sm:grid-cols-2">
+      <Field label="Name" htmlFor="fs-name">
+        <Input id="fs-name" name="name" defaultValue={values.name} required />
+      </Field>
+      <Field label="Takes effect" htmlFor="fs-date">
+        <Input id="fs-date" name="effective_from" type="date" defaultValue={values.effective_from} required />
+      </Field>
+      <Field label="Prices include tax on our fee" htmlFor="fs-tax" hint={`Our fee is currently subject to ${taxLabel}.`}>
+        <Select id="fs-tax" name="prices_include_tax" defaultValue={values.prices_include_tax ? "1" : "0"}>
+          <option value="1">Yes, prices include it</option>
+          <option value="0">No, it is added on top</option>
+        </Select>
+      </Field>
+      <Field label="Quotes valid for (days)" htmlFor="fs-valid">
+        <Input id="fs-valid" name="quote_valid_days" type="number" min={1} max={365} defaultValue={values.quote_valid_days} required className="tabular-nums" />
+      </Field>
+      <Field label="Minimum monthly retainer (₱)" htmlFor="fs-min" hint="Leave empty for no minimum.">
+        <Input id="fs-min" name="minimum_monthly_retainer" inputMode="decimal" defaultValue={values.minimum_monthly_retainer ?? ""} className="text-right tabular-nums" />
+      </Field>
+      <Field label="Late-submission surcharge (₱ a month)" htmlFor="fs-late" hint="Component J. Leave empty for no surcharge.">
+        <Input id="fs-late" name="late_surcharge_amount" inputMode="decimal" defaultValue={values.late_surcharge_amount ?? ""} className="text-right tabular-nums" />
+      </Field>
+      <Field label="Surcharge goes on the statement" htmlFor="fs-auto">
+        <Select id="fs-auto" name="late_surcharge_auto" defaultValue={values.late_surcharge_auto ? "1" : "0"}>
+          <option value="0">After I approve it</option>
+          <option value="1">Automatically</option>
+        </Select>
+      </Field>
+      <div className="sm:col-span-2">
+        <Field label="Notes (optional)" htmlFor="fs-notes">
+          <Textarea id="fs-notes" name="notes" rows={2} defaultValue={values.notes ?? ""} />
+        </Field>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+        <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Settings"}</Button>
+        <Result state={state} />
+      </div>
+    </form>
+  );
+}
+
+export interface PriceRow {
+  id: string;
+  component: ComponentLetter;
+  label: string;
+  band: string | null;
+  billing: string;
+  unit: string | null;
+  isCustomQuote: boolean;
+  price: number | null;
+}
+
+const billingHint: Record<string, string> = {
+  monthly: "a month",
+  annual: "a year",
+  one_time: "once",
+  per_unit_monthly: "a month each",
+  multiplier: "factor",
+};
+
+/** Every price of a draft in one form, grouped by component; one Save for all. */
+export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: PriceRow[] }) {
+  const [state, run, pending] = useActionState(savePricesAction.bind(null, scheduleId), {} as FeeFormState);
+  const [values, setValues] = useState(() => Object.fromEntries(rows.map((r) => [r.id, r.price === null ? "" : String(r.price)])));
+  const groups = useMemo(() => {
+    const map = new Map<ComponentLetter, PriceRow[]>();
+    for (const r of rows) map.set(r.component, [...(map.get(r.component) ?? []), r]);
+    return [...map.entries()];
+  }, [rows]);
+  const empty = rows.filter((r) => !r.isCustomQuote && (values[r.id] ?? "").trim() === "").length;
+
+  return (
+    <form action={run} className="space-y-6">
+      {groups.map(([letter, items]) => (
+        <section key={letter} className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-6">
+          <h2 className="font-display text-lg leading-7 font-semibold text-ink-heading">
+            <span className="text-ink-subtle">{letter}.</span> {COMPONENTS[letter].title}
+          </h2>
+          <p className="mb-3 text-sm text-ink-muted">{COMPONENTS[letter].hint}</p>
+          <ul className="divide-y divide-border">
+            {items.map((r) => {
+              const factor = r.billing === "multiplier";
+              return (
+                <li key={r.id} className="flex items-center justify-between gap-3 py-3">
+                  <label htmlFor={`p-${r.id}`} className="min-w-0 flex-1 text-sm">
+                    <span className="block font-medium text-ink-heading">{r.band ?? r.label}</span>
+                    <span className="block text-xs text-ink-subtle">
+                      {r.band ? `${r.label} · ` : ""}
+                      {factor ? (r.unit === "month" ? "× monthly retainer, per month" : "× bookkeeping fee") : `${billingHint[r.billing]}${r.unit && r.billing !== "multiplier" ? ` · per ${r.unit}` : ""}`}
+                    </span>
+                  </label>
+                  {r.isCustomQuote ? (
+                    <span className="shrink-0 rounded-full bg-surface-sunken px-3 py-1 text-xs font-medium text-ink-strong">Price on request</span>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span aria-hidden className="w-3 text-right text-sm text-ink-subtle">{factor ? "×" : "₱"}</span>
+                      <Input
+                        id={`p-${r.id}`}
+                        name={`price:${r.id}`}
+                        inputMode="decimal"
+                        autoComplete="off"
+                        placeholder="Not set"
+                        value={values[r.id] ?? ""}
+                        onChange={(e) => setValues((v) => ({ ...v, [r.id]: e.target.value }))}
+                        className="w-28 text-right tabular-nums sm:w-32"
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+        <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Prices"}</Button>
+        <span className="text-sm text-ink-muted">{empty === 0 ? "Every item has a price." : `${empty} item${empty === 1 ? "" : "s"} without a price.`}</span>
+        <Result state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function ActivateForm({ scheduleId, unpriced }: { scheduleId: string; unpriced: string[] }) {
+  const [state, run, pending] = useActionState(activateAction.bind(null, scheduleId), {} as FeeFormState);
+  return (
+    <form action={run} className="space-y-3">
+      {unpriced.length > 0 ? (
+        <Notice tone="waiting">
+          {unpriced.length} item{unpriced.length === 1 ? "" : "s"} still need{unpriced.length === 1 ? "s" : ""} a price before this schedule can be activated. Enter 0 for anything included at no charge.
+          <ul className="mt-2 list-disc space-y-0.5 pl-5">
+            {unpriced.map((u) => <li key={u}>{u}</li>)}
+          </ul>
+        </Notice>
+      ) : (
+        <p className="text-sm text-ink-muted">Every item has a price. Activating makes this the schedule quotes use and retires the current one. An active schedule cannot be edited; you start a new version instead.</p>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending}>{pending ? "Activating…" : "Activate"}</Button>
+        <Result state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function DeleteDraftButton({ scheduleId }: { scheduleId: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={pending}
+        onClick={() => {
+          if (!window.confirm("Delete this draft and its prices?")) return;
+          start(async () => {
+            const r = await deleteDraftAction(scheduleId);
+            if (r?.error) setError(r.error);
+          });
+        }}
+      >
+        {pending ? "Deleting…" : "Delete Draft"}
+      </Button>
+      {error && <Notice tone="blocked">{error}</Notice>}
+    </div>
+  );
+}

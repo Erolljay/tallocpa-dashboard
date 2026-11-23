@@ -216,6 +216,7 @@ Per client per month:
 - **Existing clients keep their fees until their annual renewal**; the OS shows a **current fee vs computed fee** gap report (Q52).
 - Quotes state the tax on the fee (currently non-VAT, 3% percentage tax) and that **clients may withhold EWT on the fee** (Q53).
 - **The prices themselves are the Owner's decision and are not final.** A draft band structure for discussion is in Appendix A.
+- **Built (Settings → Fee schedule):** versioned schedules with an effective date; the Owner enters prices on a draft and activates it once every band is priced (activating retires the previous one). A quote preview gives monthly retainer + annual package + one-time = first-year total, with the tax-on-fee and EWT notes. A gap report estimates each current client's schedule fee against their retainer (a floor: headcount, withholding kind and bookkeeping load are not recorded yet) and flags document volume above the included band. Audit, AUP, systems implementation, AI & automation and BIR audit support are price-on-request (component K). Not yet: saved quotes/proposals (Phase 2) and putting the late-submission surcharge on statements.
 
 ### 3.13 Notifications & automation (Q11, Q12, Q38)
 
@@ -331,6 +332,8 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O10 | Which firm bank accounts / e-wallets appear on the SOA | Owner | SOA |
 | O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only |
 | O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
+| O13 | Brand details for Settings → Brand: TIN and branch code, RDO, COR, addresses, contact details, CPA / PRC-BOA / BIR tax agent / PTR / DTI numbers and validity, signatory name and title, Service Invoice method and series | Owner | Statements, quotes, engagement letters |
+| O14 | Whether fee advances not yet applied to a charge count toward the gross receipts watch (now: only collected retainer and other fees count; client tax money is excluded) | Owner | Gross receipts watch (§3.1) |
 
 ---
 

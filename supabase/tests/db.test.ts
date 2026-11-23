@@ -466,6 +466,92 @@ describe.skipIf(!url)("database", () => {
         await expect(as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-qr', 'fake.png')`)).rejects.toThrow(/row-level security/);
       });
     });
+
+    it("totals the brand's receipts by month and kind for the gross receipts watch, Owner only", async () => {
+      await money(async ({ as }) => {
+        const brand = (await as<{ id: string }>(OWNER, `select id from public.brands where code = 'TC'`))[0].id;
+        await as(OWNER, `select public.run_billing('2027-02-10')`);
+        const [{ id: other }] = await as<{ id: string }>(OWNER, `select public.add_client_charge($1, 'other', 'Registration of books', 1500, '2026-12-01') as id`, [clientA]);
+        const dues = (await as<{ id: string }>(OWNER, `select id from public.client_dues where client_id = $1`, [clientA])).map((d) => d.id);
+        expect(dues).toHaveLength(3);
+        await as(OWNER, `select public.record_deposit($1, '2026-11-20', 10000, null, 'BDO-1', null, null, $2)`, [clientA, dues]);
+        // A voided deposit does not count.
+        const [{ id: bounced }] = await as<{ id: string }>(OWNER, `select public.record_deposit($1, '2026-11-21', 700, null, 'CHK-9', null, null, '{}', 'check') as id`, [clientA]);
+        await as(OWNER, `select public.void_deposit($1, 'Bounced cheque')`, [bounced]);
+        const receipts = `select month::text, kind, amount::text from public.brand_receipts_by_month($1, $2)`;
+        expect(await as(OWNER, receipts, [brand, 2026])).toEqual([
+          { month: "2026-11-01", kind: "other", amount: "1500.00" },
+          { month: "2026-11-01", kind: "retainer", amount: "3000.00" },
+          { month: "2026-11-01", kind: "tax", amount: "5000.00" },
+          { month: "2026-11-01", kind: "unallocated", amount: "500.00" },
+        ]);
+        expect(await as(OWNER, receipts, [brand, 2025])).toEqual([]);
+        expect(other).toBeTruthy();
+        await expect(as(STAFF, receipts, [brand, 2026])).rejects.toThrow(/Only the Owner/);
+        await expect(as(CLIENT_USER, receipts, [brand, 2026])).rejects.toThrow(/Only the Owner/);
+      });
+    });
+  });
+
+  describe("brand profile", () => {
+    const brandId = async () => (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id as string;
+
+    it("the Owner saves the profile; others cannot; everyone signed in can read it", async () => {
+      const brand = await brandId();
+      const sql = `update public.brands set tin = '123-456-789', tin_branch_code = '00000', registered_address = 'Jaro, Iloilo City',
+                   reply_to_email = 'billing@tallocpa.com', website = 'https://tallocpa.com', facebook_url = 'https://facebook.com/tallocpa',
+                   boa_firm_accreditation_valid_until = '2027-01-01', ptr_date = '2026-01-05', invoice_method = 'booklet',
+                   signatory_name = 'E. J. Tallo, CPA'
+                   where id = $1 returning tin_branch_code`;
+      expect(await as(OWNER, sql, [brand])).toEqual([{ tin_branch_code: "00000" }]);
+      expect(await as(STAFF, sql, [brand])).toEqual([]);
+      expect(await as(REVIEWER, sql, [brand])).toEqual([]);
+      expect(await as(CLIENT_USER, sql, [brand])).toEqual([]);
+      expect(await as(CLIENT_USER, `select display_name, cor_path from public.brands where id = $1`, [brand])).toEqual([{ display_name: "Tallo CPA", cor_path: null }]);
+    });
+
+    it("rejects a badly formed TIN, branch code, email, link or invoice method", async () => {
+      const brand = await brandId();
+      for (const [col, value] of [
+        ["tin", "123456789"],
+        ["tin", "123-456-789-000"],
+        ["tin_branch_code", "12"],
+        ["tin_branch_code", "000000"],
+        ["reply_to_email", "billing@"],
+        ["website", "tallocpa"],
+        ["facebook_url", "https://example.com/tallocpa"],
+        ["invoice_method", "receipt"],
+      ]) {
+        await expect(as(OWNER, `update public.brands set ${col} = $2 where id = $1`, [brand, value]), `${col} = ${value}`).rejects.toThrow(/check constraint/);
+      }
+      await expect(as(OWNER, `update public.brands set gross_receipts_warning = 0 where id = $1`, [brand])).rejects.toThrow(/check constraint/);
+    });
+
+    it("keeps brand files to staff, the logo also to clients, and changes to the Owner", async () => {
+      const brand = await brandId();
+      const cor = `${brand}/cor/1.pdf`;
+      const logo = `${brand}/logo/1.svg`;
+      await db.query("begin");
+      try {
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+        await db.query("set local role authenticated");
+        await db.query(`insert into storage.objects (bucket_id, name) values ('brand-files', $1), ('brand-files', $2)`, [cor, logo]);
+        const seen = async (who: string) => {
+          await db.query("select set_config('request.jwt.claim.sub', $1, true)", [who]);
+          return (await db.query(`select name from storage.objects where bucket_id = 'brand-files' order by name`)).rows.map((r) => r.name);
+        };
+        expect(await seen(STAFF)).toEqual([cor, logo]);
+        expect(await seen(CLIENT_USER)).toEqual([logo]);
+        expect(await seen("00000000-0000-0000-0000-0000000000ff")).toEqual([logo]);
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        expect((await db.query(`delete from storage.objects where bucket_id = 'brand-files' returning name`)).rows).toEqual([]);
+        await expect(db.query(`insert into storage.objects (bucket_id, name) values ('brand-files', $1)`, [`${brand}/cor/2.pdf`])).rejects.toThrow(/row-level security/);
+      } finally {
+        await db.query("rollback");
+      }
+      const bucket = (await db.query(`select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'brand-files'`)).rows[0];
+      expect(bucket).toEqual({ public: false, file_size_limit: "5242880", allowed_mime_types: ["application/pdf", "image/png", "image/jpeg", "image/svg+xml"] });
+    });
   });
 
   describe("documents", () => {
