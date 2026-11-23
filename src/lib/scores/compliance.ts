@@ -4,7 +4,7 @@
  *
  * Four parts, each rated on its own; the client's score is the worst part that
  * has data. Red clients are flagged for a talk, repricing or offboarding.
- * The thresholds are a first draft for the Owner to confirm (spec §9, O12).
+ * The thresholds were approved by the Owner on 23 Nov 2026 (spec §9, O12).
  */
 
 export type Tone = "green" | "yellow" | "red";
