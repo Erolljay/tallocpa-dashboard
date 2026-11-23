@@ -22,6 +22,7 @@ Phase 1A in progress. Built so far:
 - Settings: Owner edits BIR deadline rules and non-working days
 - Review page: returns waiting for a reviewer or the Owner's final approval
 - Documents: mobile-first client portal (camera or file upload, cutoff countdown, document status, returned documents with replies, return approvals); staff upload, accept, post or return documents; filed return and proof of payment on each filing; every view logged
+- Monthly cycle: each active client's month is opened nightly; document request on the 1st and a reminder the day before the cutoff (email through Resend, and the portal); missed cutoffs recorded and shown on the Dashboard; "nothing to submit" from the portal; closing a month (nightly two months on, or by staff after the cutoff) carries unposted documents to the next month of the same taxable year as late-recorded; prior-year documents go to an exceptions queue for the Reviewer or Owner
 - OCR (Gemini) reads each uploaded document; review queue with the image beside the figures, low-confidence fields highlighted, checks (TIN, VAT 12%, totals, duplicates, dates); approval logs every correction
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).

@@ -24,6 +24,7 @@ interface Row {
   period: string;
   late: boolean;
   prior_year: boolean;
+  carried_from: string | null;
   file_name: string;
   status: keyof typeof docStatusTone;
   created_at: string;
@@ -39,7 +40,7 @@ async function Queue() {
   const [{ data }, { data: assignments }] = await Promise.all([
     supabase
       .from("documents")
-      .select("id, client_id, doc_type, period, late, prior_year, file_name, status, created_at, clients(name), extractions(status, confidence, error)")
+      .select("id, client_id, doc_type, period, late, prior_year, carried_from, file_name, status, created_at, clients(name), extractions(status, confidence, error)")
       .in("status", ["received", "under_review"])
       .not("doc_type", "in", "(filed_return,payment_proof)")
       .order("created_at")
@@ -80,6 +81,7 @@ async function Queue() {
                     <td className="py-2 pr-4 text-ink-muted">
                       {showMonth(r.period)}
                       {r.late && <span className="ml-1 text-xs text-warning">late</span>}
+                      {r.carried_from && <span className="ml-1 text-xs text-warning" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
                       {r.prior_year && <span className="ml-1 text-xs text-danger-text">prior year</span>}
                     </td>
                     <td className="py-2">
