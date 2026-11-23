@@ -22,6 +22,7 @@ Phase 1A in progress. Built so far:
 - Settings: Owner edits BIR deadline rules and non-working days
 - Review page: returns waiting for a reviewer or the Owner's final approval
 - Documents: mobile-first client portal (camera or file upload, cutoff countdown, document status, returned documents with replies, return approvals); staff upload, accept, post or return documents; filed return and proof of payment on each filing; every view logged
+- OCR (Gemini) reads each uploaded document; review queue with the image beside the figures, low-confidence fields highlighted, checks (TIN, VAT 12%, totals, duplicates, dates); approval logs every correction
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

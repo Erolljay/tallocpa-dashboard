@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { CalendarClock, ClipboardCheck, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
+import { CalendarClock, ClipboardCheck, FileText, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
 import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -9,6 +9,7 @@ const nav = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/clients", label: "Clients", icon: Users },
   { href: "/app/deadlines", label: "Deadlines", icon: CalendarClock },
+  { href: "/app/documents", label: "Documents", icon: FileText },
 ] as const;
 /** Shown to the Owner and to anyone who reviews a client's returns. */
 const reviewNav = [{ href: "/app/review", label: "Review", icon: ClipboardCheck }] as const;

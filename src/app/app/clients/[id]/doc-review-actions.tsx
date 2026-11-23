@@ -1,24 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { reviewDocumentAction, type DocActionState } from "@/lib/documents/actions";
 
-/** Staff actions on one document: accept, mark posted, or return with a reason. */
+/** Staff actions on one document: open it to check and approve the figures, or return it with a reason. */
 export function DocReviewActions({ documentId, status }: { documentId: string; status: string }) {
   const [returning, setReturning] = useState(false);
-  const [accState, accept, accPending] = useActionState(reviewDocumentAction.bind(null, documentId, "accept"), {} as DocActionState);
-  const [postState, post, postPending] = useActionState(reviewDocumentAction.bind(null, documentId, "post"), {} as DocActionState);
   const [retState, ret, retPending] = useActionState(reviewDocumentAction.bind(null, documentId, "return"), {} as DocActionState);
-  const error = accState.error ?? postState.error ?? retState.error;
   if (!["received", "under_review"].includes(status)) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {status === "received" && (
-        <form action={accept}><Button type="submit" variant="secondary" className="px-3 py-1 text-xs" disabled={accPending}>Accept</Button></form>
-      )}
-      <form action={post}><Button type="submit" variant="secondary" className="px-3 py-1 text-xs" disabled={postPending}>Mark posted</Button></form>
+    <div className="flex flex-wrap items-center gap-3">
+      <Link href={`/app/documents/${documentId}`} className="text-xs font-medium text-link hover:underline">Review figures</Link>
       {returning ? (
         <form action={ret} className="flex flex-1 flex-wrap items-center gap-2">
           <label htmlFor={`reason-${documentId}`} className="sr-only">Reason</label>
@@ -28,7 +23,7 @@ export function DocReviewActions({ documentId, status }: { documentId: string; s
       ) : (
         <button type="button" onClick={() => setReturning(true)} className="text-xs text-danger-text hover:underline">Return…</button>
       )}
-      {error && <span className="text-xs text-danger-text">{error}</span>}
+      {retState.error && <span className="text-xs text-danger-text">{retState.error}</span>}
     </div>
   );
 }

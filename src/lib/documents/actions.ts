@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { runOcr } from "@/lib/ocr/run";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getIdentity } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { DocType } from "./labels";
@@ -49,6 +52,14 @@ export async function finishUpload(documentId: string): Promise<{ ok: true } | {
   const supabase = await supabaseServer();
   const { error } = await supabase.rpc("confirm_document", { p_document: documentId });
   if (error) return { error: error.message };
+  // Read the document with OCR once the client has their answer (spec §3.5).
+  after(async () => {
+    try {
+      await runOcr(supabaseAdmin(), documentId);
+    } catch {
+      // The nightly job retries documents OCR has not read.
+    }
+  });
   revalidatePath("/portal", "layout");
   revalidatePath("/app", "layout");
   return { ok: true };
@@ -76,4 +87,18 @@ export async function replyDocumentAction(documentId: string, _: DocActionState,
   revalidatePath("/portal", "layout");
   revalidatePath("/app", "layout");
   return { ok: "Sent. We will check it again." };
+}
+
+/** Staff: read (or re-read) a document with OCR now. */
+export async function runOcrAction(documentId: string): Promise<DocActionState> {
+  const supabase = await supabaseServer();
+  // RLS: only staff who can see the document get a row back.
+  const { data } = await supabase.from("documents").select("id, client_id").eq("id", documentId).maybeSingle();
+  const { data: me } = await supabase.rpc("current_identity");
+  if (!data || !(me as { staff: unknown } | null)?.staff) return { error: "Document not found." };
+  const r = await runOcr(supabaseAdmin(), documentId);
+  revalidatePath("/app", "layout");
+  if ("error" in r) return { error: r.error };
+  if ("skipped" in r) return { error: r.skipped };
+  return { ok: "Read." };
 }
