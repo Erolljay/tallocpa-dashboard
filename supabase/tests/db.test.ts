@@ -595,6 +595,114 @@ describe.skipIf(!url)("database", () => {
     });
   });
 
+  describe("monthly cycle", () => {
+    const doc = (client: string, month: string, period: string, status: string, uploaded: string, extra = "") =>
+      db.query(
+        `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status, created_at${extra ? ", prior_year" : ""})
+         values ($1::uuid, $2, 'portal', 'purchase_receipt', $3, $4, 'r.jpg', 'image/jpeg', 10, $1::text || '/' || gen_random_uuid() || '/r.jpg', $5, $6${extra ? `, ${extra}` : ""})
+         returning id, period::text, carried_from::text, exception_status`,
+        [client, CLIENT_USER, period, month, status, uploaded],
+      ).then((r) => r.rows[0]);
+    const cycle = (client: string, period: string) =>
+      db.query(`select missed_cutoff, closed_at is not null as closed, carried_forward, to_exceptions, cutoff_date::text from public.document_cycles where client_id = $1 and period = $2`, [client, period]).then((r) => r.rows[0]);
+    const notices = (today: string) =>
+      db.query(`select client_id, kind from public.cycle_notices_due($1) order by kind, client_id`, [today]).then((r) => r.rows.map((x) => `${x.client_id === clientA ? "A" : "B"}:${x.kind}`).sort());
+    const docRow = (id: string) => db.query(`select period::text, carried_from::text, exception_status from public.documents where id = $1`, [id]).then((r) => r.rows[0]);
+
+    it("opens the month, requests and reminds, records missed cutoffs and carries unposted documents forward", async () => {
+      await db.query("begin");
+      try {
+        await db.query(`delete from public.document_cycles`);
+        // 23 November: November is open for documents, due 5 December.
+        expect((await db.query(`select public.run_document_cycles('2026-11-23') r`)).rows[0].r).toEqual({ opened: 2, missed: 0, closed: 0 });
+        expect(await cycle(clientA, "2026-11-01")).toMatchObject({ cutoff_date: "2026-12-05", missed_cutoff: null, closed: false });
+        // No request while the month is still running; on 1 December both clients get one.
+        expect(await notices("2026-11-23")).toEqual([]);
+        expect(await notices("2026-12-01")).toEqual(["A:request", "B:request"]);
+        await db.query(`update public.document_cycles set requested_at = '2026-12-01 08:00+08'`);
+        expect(await notices("2026-12-02")).toEqual([]);
+
+        // Client A sends one receipt on 3 December (still in review) and one posted; B sends nothing.
+        const open = await doc(clientA, "2026-11-01", "2026-11-01", "received", "2026-12-03 09:00+08");
+        const posted = await doc(clientA, "2026-11-01", "2026-11-01", "posted", "2026-12-03 09:00+08");
+        // The day before the cutoff only B is reminded.
+        expect(await notices("2026-12-04")).toEqual(["B:reminder"]);
+
+        // 6 December: B missed the cutoff, A did not; December opens.
+        expect((await db.query(`select public.run_document_cycles('2026-12-06') r`)).rows[0].r).toEqual({ opened: 2, missed: 1, closed: 0 });
+        expect((await cycle(clientA, "2026-11-01")).missed_cutoff).toBe(false);
+        expect((await cycle(clientB, "2026-11-01")).missed_cutoff).toBe(true);
+
+        // 1 January: November closes. The unposted receipt moves to December, late-recorded; the posted one stays.
+        expect((await db.query(`select public.run_document_cycles('2027-01-01') r`)).rows[0].r).toMatchObject({ closed: 2 });
+        expect(await cycle(clientA, "2026-11-01")).toMatchObject({ closed: true, carried_forward: 1, to_exceptions: 0 });
+        expect(await docRow(open.id)).toEqual({ period: "2026-12-01", carried_from: "2026-11-01", exception_status: null });
+        expect(await docRow(posted.id)).toEqual({ period: "2026-11-01", carried_from: null, exception_status: null });
+
+        // A document placed in a closed month is moved to the next open one.
+        expect(await doc(clientA, "2026-11-01", "2026-11-01", "received", "2026-12-20 09:00+08")).toMatchObject({ period: "2026-12-01", carried_from: "2026-11-01" });
+
+        // December is the last month of the taxable year: on close, unposted documents go to the exceptions queue.
+        expect((await db.query(`select public.run_document_cycles('2027-02-01') r`)).rows[0].r).toMatchObject({ closed: 2 });
+        expect(await cycle(clientA, "2026-12-01")).toMatchObject({ closed: true, carried_forward: 0, to_exceptions: 2 });
+        expect(await docRow(open.id)).toEqual({ period: "2026-12-01", carried_from: "2026-11-01", exception_status: "open" });
+      } finally {
+        await db.query("rollback");
+      }
+    });
+
+    it("sends prior-year documents to the exceptions queue for the Reviewer or Owner to decide", async () => {
+      await db.query("begin");
+      try {
+        const d = await doc(clientA, "2026-12-01", "2026-12-01", "received", "2027-02-10 09:00+08", "true");
+        expect(d.exception_status).toBe("open");
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        await db.query("savepoint s");
+        await expect(db.query(`select public.decide_exception($1, 'amend', 'x')`, [d.id])).rejects.toThrow(/Reviewer or the Owner/);
+        await db.query("rollback to savepoint s");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [REVIEWER]);
+        await db.query("savepoint s2");
+        await expect(db.query(`select public.decide_exception($1, 'amend', ' ')`, [d.id])).rejects.toThrow(/Add a note/);
+        await db.query("rollback to savepoint s2");
+        const decided = (await db.query(`select (d).exception_status from public.decide_exception($1, 'non_deductible', 'No 2307, claim disallowed') d`, [d.id])).rows[0];
+        expect(decided.exception_status).toBe("non_deductible");
+      } finally {
+        await db.query("rollback");
+      }
+    });
+
+    it("lets the client say there is nothing to submit, and staff close a month only after its cutoff", async () => {
+      await db.query("begin");
+      try {
+        await db.query(`delete from public.document_cycles`);
+        await db.query(
+          `insert into public.document_cycles (client_id, period, cutoff_date) values ($1, '2099-01-01', '2099-02-05'), ($2, '2099-01-01', '2099-02-05')`,
+          [clientA, clientB],
+        );
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+        const y = (await db.query(`select (y).nothing_to_submit_at is not null as nil from public.declare_nothing_to_submit($1, '2099-01-01') y`, [clientA])).rows[0];
+        expect(y.nil).toBe(true);
+        await db.query("savepoint s");
+        await expect(db.query(`select public.declare_nothing_to_submit($1, '2099-01-01')`, [clientB])).rejects.toThrow(/cannot do this/);
+        await db.query("rollback to savepoint s");
+        await expect(db.query(`select public.close_document_cycle($1, '2099-01-01')`, [clientA])).rejects.toThrow(/Only staff assigned/);
+        await db.query("rollback");
+        await db.query("begin");
+        await db.query(`insert into public.document_cycles (client_id, period, cutoff_date) values ($1, '2099-01-01', '2099-02-05')`, [clientA]);
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        await db.query("savepoint s3");
+        await expect(db.query(`select public.close_document_cycle($1, '2099-01-01')`, [clientA])).rejects.toThrow(/only after its cutoff/);
+        await db.query("rollback to savepoint s3");
+        await expect(db.query(`select public.run_document_cycles('2099-01-01')`)).rejects.toThrow(/permission denied/);
+      } finally {
+        await db.query("rollback");
+      }
+    });
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(

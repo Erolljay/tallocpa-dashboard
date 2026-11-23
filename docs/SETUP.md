@@ -62,6 +62,7 @@ Set these in Vercel (Settings → Environment Variables, Production) — never i
 - `GEMINI_MODEL` (optional) — the Gemini model OCR uses; default `gemini-3.8-flash`. Change it to compare models on real receipts (open item O4).
 - `GEMINI_FALLBACK_MODEL` (optional) — second model OCR tries when the main one is busy; default `gemini-2.5-flash`. OCR retries busy errors (503/429) twice per model before falling back.
 - `CRON_SECRET` — any long random string. Vercel sends it to `/api/cron/generate-filings` (scheduled in `vercel.json` at 02:00 Manila time) so nobody else can trigger the job.
+- `RESEND_API_KEY` and `EMAIL_FROM` (optional) — send the monthly document request (the 1st) and reminder (day before the cutoff) by email through Resend. `EMAIL_FROM` must be on a domain verified in Resend, e.g. `Tallo CPA <documents@tallocpa.com>`. Without them the request shows in the client portal only.
 
 ## 6. Vercel
 

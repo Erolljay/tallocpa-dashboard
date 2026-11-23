@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { DocumentUpload } from "@/components/document-upload";
-import { Card, Notice, Skeleton } from "@/components/ui";
+import { Badge, Card, Notice, Skeleton } from "@/components/ui";
+import { NothingToSubmitButton } from "@/components/cycle-forms";
 import { monthChoices, nextCutoff } from "@/lib/documents/cutoff";
 import { CLIENT_DOC_TYPES, showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
@@ -29,6 +30,17 @@ async function Home() {
   ]);
   const main = clients[0];
   const c = nextCutoff(today, main.submission_cutoff_day);
+  // This month's cycle for each business: whether something came in, or "nothing to submit" (spec §3.10).
+  const months = clients.map((x) => ({ client: x, month: nextCutoff(today, x.submission_cutoff_day).month }));
+  const [{ data: cycles }, { data: sent }] = await Promise.all([
+    supabase.from("document_cycles").select("client_id, period, nothing_to_submit_at, closed_at").in("period", [...new Set(months.map((m) => m.month))]),
+    supabase.from("documents").select("client_id, document_month").in("document_month", [...new Set(months.map((m) => m.month))]).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof,cor)").limit(1000),
+  ]);
+  const status = months.map(({ client, month }) => {
+    const y = (cycles ?? []).find((r) => r.client_id === client.id && r.period === month);
+    const count = (sent ?? []).filter((d) => d.client_id === client.id && d.document_month === month).length;
+    return { client, month, open: !!y && !y.closed_at, nothing: !!y?.nothing_to_submit_at, count };
+  });
 
   return (
     <div className="space-y-6">
@@ -54,6 +66,23 @@ async function Home() {
           {c.daysLeft > 0 ? ` — ${c.daysLeft} day${c.daysLeft === 1 ? "" : "s"} left.` : " — today is the last day."}
           {" "}Take a clear photo of each receipt, flat and in good light.
         </p>
+        <ul className="mb-4 space-y-2">
+          {status.map((x) => (
+            <li key={x.client.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+              {clients.length > 1 && <span className="font-medium text-ink-heading">{x.client.name}:</span>}
+              {x.nothing ? (
+                <Badge tone="done">Nothing to submit for {showMonth(x.month)}</Badge>
+              ) : x.count > 0 ? (
+                <Badge tone="done">{x.count} document{x.count === 1 ? "" : "s"} sent for {showMonth(x.month)}</Badge>
+              ) : (
+                <>
+                  <span className="text-ink-muted">Nothing sent yet for {showMonth(x.month)}.</span>
+                  {x.open && <NothingToSubmitButton clientId={x.client.id} period={x.month} label="No transactions this month" />}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
         <DocumentUpload clients={clients.map((x) => ({ id: x.id, name: x.name }))} docTypes={CLIENT_DOC_TYPES} months={monthChoices(today, 6)} defaultMonth={c.month} />
       </Card>
     </div>
