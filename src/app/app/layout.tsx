@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { CalendarClock, LayoutDashboard, UserCog, Users } from "lucide-react";
+import { CalendarClock, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
 import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
 
@@ -10,7 +10,10 @@ const nav = [
   { href: "/app/deadlines", label: "Deadlines", icon: CalendarClock },
 ] as const;
 /** Shown only to the Owner. */
-const ownerNav = [{ href: "/app/staff", label: "Staff", icon: UserCog }] as const;
+const ownerNav = [
+  { href: "/app/staff", label: "Staff", icon: UserCog },
+  { href: "/app/settings", label: "Settings", icon: Settings },
+] as const;
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
 

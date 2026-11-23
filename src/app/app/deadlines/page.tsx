@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { Notice, PageHeader, Skeleton } from "@/components/ui";
 import { addDays } from "@/lib/deadlines/dates";
@@ -31,7 +32,11 @@ async function Deadlines() {
   const rows = [...((overdue.data ?? []) as unknown as FilingListRow[]), ...((upcoming.data ?? []) as unknown as FilingListRow[])];
   return (
     <div className="space-y-6">
-      <Notice>Deadline rules and holidays are starting figures and have not been checked against current BIR issuances yet.</Notice>
+      {me.staff.role === "owner" && (
+        <Notice>
+          Deadline rules and holidays are starting figures until checked. Review and edit them in <Link href="/app/settings" className="text-link underline">Settings</Link>.
+        </Notice>
+      )}
       {me.staff.role === "owner" && <GenerateButton />}
       <FilingTable rows={rows} today={today} empty="No filings yet. Add clients with tax types, then generate filings." />
     </div>

@@ -1,17 +1,17 @@
 # Graph Report - tallocpa-dashboard  (2026-11-23)
 
 ## Corpus Check
-- 200 files · ~226,754 words
+- 207 files · ~230,116 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 7 file(s) not represented in the graph (top: .css 3, (none) 2, .example 1)
 
 ## Summary
-- 1830 nodes · 3060 edges · 139 communities (119 shown, 20 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 122 edges (avg confidence: 0.85)
+- 1869 nodes · 3220 edges · 141 communities (121 shown, 20 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 124 edges (avg confidence: 0.85)
 - Token cost: 120,842 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4a9d73eb`
+- Built from commit: `39a8410b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -53,7 +53,6 @@
 - twGroup
 - picture.mjs
 - Craft
-- SKILL.md
 - Anatomy
 - Flow branches
 - Scroll choreography: the one earned pattern
@@ -139,7 +138,7 @@
 - design.md: the locked system
 - Microinteractions
 - src/app/layout.tsx
-- tailwind-pass/Hero.tsx
+- settings/page.tsx
 - 05-workbench.md
 - 07-manifesto.md
 - 09-quote-led.md
@@ -150,18 +149,20 @@
 - Feature.vue
 - headings
 - walk
+- people/schema.ts
+- Brand truth: never theme a real brand from memory
 
 ## God Nodes (most connected - your core abstractions)
 1. `report()` - 90 edges
-2. `trunc()` - 44 edges
-3. `resolveVars()` - 42 edges
-4. `supabaseServer()` - 40 edges
-5. `getAttr()` - 25 edges
-6. `next` - 24 edges
-7. `requireOwner()` - 22 edges
-8. `isTokenRule()` - 21 edges
-9. `innerOf()` - 20 edges
-10. `Notice()` - 20 edges
+2. `supabaseServer()` - 46 edges
+3. `trunc()` - 44 edges
+4. `resolveVars()` - 42 edges
+5. `requireOwner()` - 28 edges
+6. `next` - 26 edges
+7. `getAttr()` - 25 edges
+8. `Notice()` - 23 edges
+9. `isTokenRule()` - 21 edges
+10. `react` - 21 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Stack: Next.js/Vercel, Supabase Singapore, Gemini OCR, n8n, Resend` --semantically_similar_to--> `Technology Choices & Running Cost`  [INFERRED] [semantically similar]
@@ -183,11 +184,11 @@
 - **Deadline rules to dated filing instances** — docs_spec_deadline_engine, readme_bir_deadline_engine, readme_nightly_filing_job, docs_setup_generate_filings_cron, docs_setup_server_only_keys [INFERRED 0.85]
 - **Return preparation and approval flow** — docs_spec_ocr_review_queue, docs_spec_tax_computation_returns, docs_spec_signoff_chain, docs_spec_payment_check, docs_spec_period_lock [INFERRED 0.85]
 
-## Communities (139 total, 20 thin omitted)
+## Communities (141 total, 20 thin omitted)
 
 ### Community 0 - "Deadline Engine & Dates"
 Cohesion: 0.09
-Nodes (46): addDays(), addMonths(), compareIso(), IsoDate, isWeekend(), lastDayOfMonth(), parseIso(), toIso() (+38 more)
+Nodes (48): PlannedObligation, addDays(), addMonths(), compareIso(), IsoDate, isWeekend(), lastDayOfMonth(), parseIso() (+40 more)
 
 ### Community 1 - "Core Schema & RLS"
 Cohesion: 0.09
@@ -195,31 +196,31 @@ Nodes (32): filing_instances_client_idx, filing_instances_due_idx, private.audit
 
 ### Community 2 - "client-form.tsx"
 Cohesion: 0.11
-Nodes (30): createClientAction(), fieldErrors(), FormState, updateClientAction(), ClientForm(), ClientValues, frequencyLabel, Props (+22 more)
+Nodes (21): HeroProps, react, ClientValues, frequencyLabel, Props, obligationChanges(), obligationsForTaxTypes(), TAX_TYPES (+13 more)
 
 ### Community 3 - "Decisions & Setup"
 Cohesion: 0.06
 Nodes (31): First Owner Bootstrap (staff_profiles insert), /api/cron/generate-filings (02:00 Manila), Google OAuth Sign-In, Invite-Only Sign-In (signups disabled), Resend Custom SMTP, Server-Only Keys (SUPABASE_SECRET_KEY, CRON_SECRET), Supabase Project Setup (Singapore), Vercel Deployment (app.tallocpa.com) (+23 more)
 
 ### Community 4 - "Dev Tooling Deps"
-Cohesion: 0.13
-Nodes (21): devDependencies, tailwindcss@4.3.3, @tailwindcss/turbopack@4.3.3, tsx@^4.23.15, @types/node@^20, @types/pg@^8.23.1, @types/react@^19, @types/react-dom@^19 (+13 more)
+Cohesion: 0.12
+Nodes (23): devDependencies, pg@^8.23.1, tailwindcss@4.3.3, @tailwindcss/turbopack@4.3.3, tsx@^4.23.15, @types/node@^20, @types/pg@^8.23.1, @types/react@^19 (+15 more)
 
 ### Community 5 - "Client & Deadline Pages"
-Cohesion: 0.14
-Nodes (33): react, ClientPage(), fmtDate(), frequencyLabel, ClientList(), ClientsPage(), Row, FilingListRow (+25 more)
+Cohesion: 0.12
+Nodes (31): EditClientPage(), ClientPage(), fmtDate(), frequencyLabel, NewClientPage(), OwnerOnly(), ClientList(), ClientsPage() (+23 more)
 
 ### Community 6 - "[id]/forms.tsx"
-Cohesion: 0.26
-Nodes (19): removeAssignmentAction(), AssignForm(), ClientUserForm(), EngagementForm(), RemoveAssignmentButton(), RemoveClientUserButton(), StatusButton(), ClientDetail() (+11 more)
+Cohesion: 0.25
+Nodes (24): ClientForm(), AssignForm(), ClientUserForm(), EngagementForm(), StatusButton(), ClientDetail(), HolidayForm(), periodWord (+16 more)
 
 ### Community 7 - "sign-in-form.tsx"
-Cohesion: 0.20
-Nodes (14): GET(), GET(), code, email, sendSignInEmail(), SignInState, signInWithGoogle(), verifySignInCode() (+6 more)
+Cohesion: 0.14
+Nodes (17): nextConfig, next, GET(), GET(), POST(), code, email, sendSignInEmail() (+9 more)
 
 ### Community 8 - "Runtime Deps & Cron Route"
-Cohesion: 0.15
-Nodes (13): nextConfig, @supabase/supabase-js@^2.119.2, next, server-only, @supabase/supabase-js, GET(), generateFilingsNow(), GenerateState (+5 more)
+Cohesion: 0.23
+Nodes (10): lucide-react@^1.77.0, lucide-react, server-only, @supabase/supabase-js, GET(), generateFilingsNow(), GenerateState, supabaseEnv() (+2 more)
 
 ### Community 9 - "TypeScript Config"
 Cohesion: 0.11
@@ -230,8 +231,8 @@ Cohesion: 0.12
 Nodes (15): runs-on, steps, jobs, check, name, on, pull_request, push (+7 more)
 
 ### Community 11 - "vitest"
-Cohesion: 0.22
-Nodes (5): pg@^8.23.1, vitest@^5.1.1, pg, vitest, root
+Cohesion: 0.27
+Nodes (7): vitest@^5.1.1, vitest, checkbox, dayBefore(), holidaySchema, ruleEditSchema, base
 
 ### Community 12 - "App Shell & Login"
 Cohesion: 0.19
@@ -251,7 +252,7 @@ Nodes (4): Decisions Log (Q1-Q61), Migration from Moxie, TalloCPA OS Product Spe
 
 ### Community 23 - "sloplint.mjs"
 Cohesion: 0.03
-Nodes (71): ANSWERED, APP_SKIP, args, BUILD_DIRS, check25(), check62(), check76(), CHECKS (+63 more)
+Nodes (72): ANSWERED, APP_SKIP, args, BUILD_DIRS, check25(), check62(), check76(), CHECKS (+64 more)
 
 ### Community 24 - "refcheck.mjs"
 Cohesion: 0.04
@@ -278,8 +279,8 @@ Cohesion: 0.10
 Nodes (34): bannedGradient(), check1(), check2(), check29Glow(), check37(), check48(), check65(), check7() (+26 more)
 
 ### Community 30 - "ref_node_fs"
-Cohesion: 0.12
-Nodes (10): globalRoot(), script, png, script, main(), OK(), script, dir (+2 more)
+Cohesion: 0.09
+Nodes (13): globalRoot(), script, png, script, main(), OK(), script, dir (+5 more)
 
 ### Community 31 - "macrostructures.md"
 Cohesion: 0.08
@@ -290,8 +291,8 @@ Cohesion: 0.18
 Nodes (21): CHROMES, contrast(), focusRing(), frames(), hideStyles(), inventory(), isUrl(), lineBreaks() (+13 more)
 
 ### Community 33 - "supabaseServer"
-Cohesion: 0.22
-Nodes (18): addEngagementAction(), assignStaffAction(), setClientStatusAction(), addClientUserAction(), fieldErrors(), inviteStaffAction(), removeClientUserAction(), updateStaffAction() (+10 more)
+Cohesion: 0.18
+Nodes (29): addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), FormState, removeAssignmentAction(), setClientStatusAction(), updateClientAction() (+21 more)
 
 ### Community 34 - "capture.mjs"
 Cohesion: 0.10
@@ -302,8 +303,8 @@ Cohesion: 0.13
 Nodes (14): args, copyDir(), DRY, explicit, FLAGS, has(), HERE, HOME (+6 more)
 
 ### Community 36 - "clsLits"
-Cohesion: 0.22
-Nodes (17): braceEnd(), classCalls(), clsLits(), cutGlued(), docOf(), jsxPseudo(), el(), js() (+9 more)
+Cohesion: 0.24
+Nodes (16): braceEnd(), classCalls(), clsLits(), cutGlued(), jsxPseudo(), el(), js(), jsScan() (+8 more)
 
 ### Community 37 - "4. The gates"
 Cohesion: 0.12
@@ -320,10 +321,6 @@ Nodes (11): chrome, CHROMES, cssPath, HERE, out, page, roots, [slug, pageArg, yA
 ### Community 40 - "Craft"
 Cohesion: 0.15
 Nodes (11): 1. Type, 2. Colour, 3. Surfaces, 4. The hero's motion, 5. Motion, 6. Copy, 7. Opening a section, 8. Missing facts (+3 more)
-
-### Community 41 - "SKILL.md"
-Cohesion: 0.18
-Nodes (5): Brand truth: never theme a real brand from memory, Caching and staleness, The protocol, What this protocol never does, When fetching is impossible
 
 ### Community 42 - "Anatomy"
 Cohesion: 0.17
@@ -574,8 +571,8 @@ Cohesion: 0.22
 Nodes (6): args, HERE, hookEntry, ourHook(), settings, withoutOurs()
 
 ### Community 104 - "dependencies"
-Cohesion: 0.20
-Nodes (10): dependencies, lucide-react@^1.77.0, next@16.4.6, react@19.3.0, react-dom@19.3.0, server-only@^0.0.1, zod@^4.6.7, lucide-react (+2 more)
+Cohesion: 0.22
+Nodes (9): dependencies, next@16.4.6, react@19.3.0, react-dom@19.3.0, server-only@^0.0.1, @supabase/supabase-js@^2.119.2, zod@^4.6.7, react-dom (+1 more)
 
 ### Community 105 - "Custom: a page of its own"
 Cohesion: 0.22
@@ -661,29 +658,41 @@ Nodes (4): After the file exists, design.md: the locked system, Format, Triggers
 Cohesion: 0.40
 Nodes (4): Microinteractions, Motion character, Principles, Recipes
 
+### Community 127 - "settings/page.tsx"
+Cohesion: 0.22
+Nodes (14): RemoveHolidayButton(), appliesTo(), DeadlineSettings(), fmtDate(), kindLabel, Rule, SettingsPage(), describeDue() (+6 more)
+
+### Community 139 - "people/schema.ts"
+Cohesion: 0.39
+Nodes (6): clientUserSchema, email, inviteStaffSchema, loadPoints(), name, updateStaffSchema
+
+### Community 140 - "Brand truth: never theme a real brand from memory"
+Cohesion: 0.40
+Nodes (5): Brand truth: never theme a real brand from memory, Caching and staleness, The protocol, What this protocol never does, When fetching is impossible
+
 ## Ambiguous Edges - Review These
 - `Filing Obligations & Deadline Engine` → `Nightly Filing Job (120 days ahead)`  [AMBIGUOUS]
   README.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
 - **14 isolated node(s):** `Collections & Statement of Account`, `Tax Computation & Return Worksheet`, `Tallo CPA Brand Design System`, `Gross Receipts Watch (warn at PHP 2.5M)`, `Appendix A: Draft Fee Bands & Calculator Review` (+9 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1071 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1078 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vitest` connect `vitest` to `Deadline Engine & Dates`, `supabaseServer`, `client-form.tsx`, `Dev Tooling Deps`, `sign-in-form.tsx`?**
-  _High betweenness centrality (0.080) - this node is a cross-community bridge._
+- **Why does `vitest` connect `vitest` to `Deadline Engine & Dates`, `client-form.tsx`, `Dev Tooling Deps`, `sign-in-form.tsx`, `people/schema.ts`, `ref_node_fs`, `settings/page.tsx`?**
+  _High betweenness centrality (0.083) - this node is a cross-community bridge._
 - **What connects `Collections & Statement of Account`, `Tax Computation & Return Worksheet`, `Tallo CPA Brand Design System` to the rest of the system?**
   _14 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Deadline Engine & Dates` be split into smaller, more focused modules?**
-  _Cohesion score 0.08521303258145363 - nodes in this community are weakly interconnected._
-- **Why does `pg` connect `vitest` to `Dev Tooling Deps`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+  _Cohesion score 0.08892921960072596 - nodes in this community are weakly interconnected._
+- **Why does `next` connect `sign-in-form.tsx` to `supabaseServer`, `client-form.tsx`, `Dev Tooling Deps`, `Client & Deadline Pages`, `[id]/forms.tsx`, `dependencies`, `Runtime Deps & Cron Route`, `App Shell & Login`, `proxy.ts`, `tailwind-fail/Hero.tsx`, `src/app/layout.tsx`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Should `Core Schema & RLS` be split into smaller, more focused modules?**
   _Cohesion score 0.09178743961352658 - nodes in this community are weakly interconnected._
-- **Why does `next` connect `Runtime Deps & Cron Route` to `supabaseServer`, `client-form.tsx`, `Dev Tooling Deps`, `Client & Deadline Pages`, `sign-in-form.tsx`, `dependencies`, `App Shell & Login`, `proxy.ts`, `tailwind-fail/Hero.tsx`, `src/app/layout.tsx`?**
+- **Why does `pg` connect `Dev Tooling Deps` to `ref_node_fs`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
 
 ### Low-confidence Hints
