@@ -391,6 +391,43 @@ describe.skipIf(!url)("database", () => {
     });
   });
 
+  describe("OCR review", () => {
+    it("approves a document, logs each correction, re-places it by its date and marks it posted", async () => {
+      await db.query("begin");
+      try {
+        const doc = (
+          await db.query(
+            `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status, created_at)
+             values ($1, $2, 'portal', 'purchase_receipt', '2026-11-01', '2026-11-01', 'r.jpg', 'image/jpeg', 10, $3, 'under_review', '2026-12-03 09:00+08') returning id`,
+            [clientA, CLIENT_USER, `${clientA}/ocr-test/r.jpg`],
+          )
+        ).rows[0].id;
+        await db.query(
+          `insert into public.extractions (document_id, status, fields, confidence) values ($1, 'done', $2, '{}')`,
+          [doc, JSON.stringify({ date: "2026-10-28", number: "0012", party_tin: "123-456-789-000", total: "1120.00", vat: "120.00" })],
+        );
+        await db.query("set local role authenticated");
+
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [CLIENT_USER]);
+        expect((await db.query(`select count(*)::int n from public.extractions`)).rows[0].n).toBe(0);
+        await db.query("savepoint s");
+        await expect(db.query(`select public.approve_document($1, '{}')`, [doc])).rejects.toThrow(/Only staff assigned/);
+        await db.query("rollback to savepoint s");
+
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        const approved = { date: "2026-10-28", number: "0021", party_tin: "123-456-789-000", total: "1120.00", vat: "120.00" };
+        const d = (await db.query(`select (d).status, (d).period::text, (d).late from public.approve_document($1, $2::jsonb) as d`, [doc, JSON.stringify(approved)])).rows[0];
+        // October receipt uploaded 3 Dec, after the 5 Nov cutoff: counted in the open month, November, as late.
+        expect(d).toEqual({ status: "posted", period: "2026-11-01", late: true });
+        const corrections = (await db.query(`select field, ocr_value, approved_value from public.extraction_corrections where document_id = $1`, [doc])).rows;
+        expect(corrections).toEqual([{ field: "number", ocr_value: "0012", approved_value: "0021" }]);
+        expect((await db.query(`select approved_fields ->> 'number' n from public.extractions where document_id = $1`, [doc])).rows[0].n).toBe("0021");
+      } finally {
+        await db.query("rollback");
+      }
+    });
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(

@@ -58,6 +58,8 @@ A Google account signs in to the same person as the email invite when the email 
 Set these in Vercel (Settings → Environment Variables, Production) — never in the browser or in chat:
 
 - `SUPABASE_SECRET_KEY` — Supabase → Project Settings → API Keys → **Secret key**. Used to create logins when the Owner adds staff or client users, and by the nightly filing job.
+- `GEMINI_API_KEY` — Gemini API key for OCR, from aistudio.google.com on a Google Cloud project **with billing on** (paid tier: the free tier may use data for training). Without it, uploads still work and staff type the figures themselves.
+- `GEMINI_MODEL` (optional) — the Gemini model OCR uses; default `gemini-3.8-flash`. Change it to compare models on real receipts (open item O4).
 - `CRON_SECRET` — any long random string. Vercel sends it to `/api/cron/generate-filings` (scheduled in `vercel.json` at 02:00 Manila time) so nobody else can trigger the job.
 
 ## 6. Vercel
