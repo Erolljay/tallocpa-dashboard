@@ -318,7 +318,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 
 | # | Item | Owner | Needed for |
 |---|---|---|---|
-| O1 | All-in monthly cost per staff member | Owner | Break-even check on entry prices; capacity target (§3.11) |
+| O1 | ~~All-in monthly cost per staff member~~ **Closed:** ₱20,000 → capacity target 60 load points (₱60,000 of retainers) per staff member | Owner | Break-even check on entry prices; capacity target (§3.11) |
 | O2 | Final prices for each fee band (Appendix A is a draft) | Owner | Fee schedule, quotes, website calculator |
 | O3 | Check every deadline rule in §3.3 against current BIR issuances (EOPT Act RRs, eFPS group dates) and the 2027 holiday proclamation | Staff, Owner review | Deadline engine go-live |
 | O4 | Gemini test on ~50 real receipts (Flash vs Pro), confidence thresholds | Build | OCR go-live |
