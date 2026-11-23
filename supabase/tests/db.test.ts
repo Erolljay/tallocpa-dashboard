@@ -220,6 +220,87 @@ describe.skipIf(!url)("database", () => {
     }
   });
 
+  describe("sign-off chain", () => {
+    /** Runs steps as different people inside one transaction that is rolled back. */
+    async function chain(run: (step: (who: string, action: string, note?: string | null, data?: object) => Promise<Record<string, unknown>>) => Promise<void>) {
+      await db.query("begin");
+      try {
+        const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '2550Q', 'quarterly', '2026-01-01') returning id`, [clientA])).rows[0].id;
+        const filing = (
+          await db.query(
+            `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date)
+             values ($1, $2, '2550Q', 'FY2027-Q1', '2027-01-01', '2027-03-31', '2550Q', '2027-04-25', '2027-04-26') returning id`,
+            [ob, clientA],
+          )
+        ).rows[0].id;
+        await db.query("set local role authenticated");
+        await run(async (who, action, note = null, data = {}) => {
+          await db.query("select set_config('request.jwt.claim.sub', $1, true)", [who]);
+          await db.query("savepoint step");
+          try {
+            const r = await db.query(`select (f).status, (f).tax_due::text, (f).open_query, (f).filing_reference from public.advance_filing($1, $2, $3, $4::jsonb) as f`, [filing, action, note, JSON.stringify(data)]);
+            await db.query("release savepoint step");
+            return r.rows[0];
+          } catch (e) {
+            await db.query("rollback to savepoint step");
+            throw e;
+          }
+        });
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+        const events = (await db.query(`select from_status, to_status, action from public.filing_events where filing_instance_id = $1 order by id`, [filing])).rows;
+        expect(events.length).toBeGreaterThan(0);
+        expect(events[0].from_status).toBe("not_started");
+      } finally {
+        await db.query("rollback");
+      }
+    }
+
+    it("runs a return from preparation to done, each step by the right person", async () => {
+      await chain(async (step) => {
+        expect(await step(STAFF, "prepare", null, { tax_due: "12500.50" })).toMatchObject({ status: "prepared", tax_due: "12500.50" });
+        await expect(step(STAFF, "review")).rejects.toThrow(/reviewer or the Owner/);
+        expect(await step(REVIEWER, "review")).toMatchObject({ status: "reviewed" });
+        expect(await step(CLIENT_USER, "client_query", "Why is output VAT higher?")).toMatchObject({ status: "reviewed", open_query: "Why is output VAT higher?" });
+        expect(await step(STAFF, "answer_query", "Two large December sales.")).toMatchObject({ open_query: null });
+        expect(await step(CLIENT_USER, "client_approve")).toMatchObject({ status: "client_approved" });
+        await expect(step(REVIEWER, "owner_approve", null, { payment_status: "paid" })).rejects.toThrow(/Only the Owner/);
+        await expect(step(OWNER, "owner_approve", null, { payment_status: "unpaid" })).rejects.toThrow(/approve even though unpaid/);
+        expect(await step(OWNER, "owner_approve", null, { payment_status: "unpaid", approve_unpaid: true })).toMatchObject({ status: "owner_approved" });
+        await expect(step(STAFF, "file", null, { filed_on: "2027-04-20" })).rejects.toThrow(/filing reference/);
+        expect(await step(STAFF, "file", null, { filing_reference: "EFPS-123456", filed_on: "2027-04-20" })).toMatchObject({ status: "filed", filing_reference: "EFPS-123456" });
+        await expect(step(STAFF, "pay")).rejects.toThrow(/payment reference/);
+        expect(await step(STAFF, "pay", null, { payment_reference: "LBP-998877", paid_on: "2027-04-21" })).toMatchObject({ status: "paid" });
+        expect(await step(STAFF, "send_proof")).toMatchObject({ status: "proof_uploaded" });
+      });
+    });
+
+    it("a reviewer can send a return back with a reason, and cannot review their own work", async () => {
+      await chain(async (step) => {
+        await step(REVIEWER, "prepare", null, { tax_due: 0 });
+        await expect(step(REVIEWER, "review")).rejects.toThrow(/another person must review/);
+        await expect(step(REVIEWER, "kick_back")).rejects.toThrow(/what needs fixing/);
+        expect(await step(REVIEWER, "kick_back", "Input VAT missing November receipts")).toMatchObject({ status: "not_started" });
+      });
+    });
+
+    it("the Owner can record a client's approval on their behalf, with a note", async () => {
+      await chain(async (step) => {
+        await step(OWNER, "prepare", null, { tax_due: 0 });
+        await step(OWNER, "review");
+        await expect(step(OWNER, "client_approve")).rejects.toThrow(/how the client approved/);
+        expect(await step(OWNER, "client_approve", "Approved by email, 20 Apr")).toMatchObject({ status: "client_approved" });
+      });
+    });
+
+    it("steps cannot be skipped and strangers cannot act", async () => {
+      await chain(async (step) => {
+        await expect(step(OWNER, "file", null, { filing_reference: "X", filed_on: "2027-04-20" })).rejects.toThrow(/Only an approved return/);
+        await expect(step(CLIENT_USER, "prepare", null, { tax_due: 0 })).rejects.toThrow(/assigned to this client/);
+        await step(OWNER, "prepare", null, { tax_due: 0 });
+      });
+    });
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(

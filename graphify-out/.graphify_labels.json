@@ -1,10 +1,8 @@
 {
-  "0": "Deadline Engine & Dates",
   "1": "Core Schema & RLS",
   "3": "Decisions & Setup",
   "4": "Dev Tooling Deps",
   "5": "Client & Deadline Pages",
-  "8": "Runtime Deps & Cron Route",
   "9": "TypeScript Config",
   "10": "CI Workflow",
   "12": "App Shell & Login",
