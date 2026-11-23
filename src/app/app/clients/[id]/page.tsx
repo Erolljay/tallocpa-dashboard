@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
+import { DocumentsCard } from "./documents-card";
 import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
@@ -134,6 +135,13 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           )}
           {isOwner && <AssignForm clientId={id} staff={staff.data ?? []} />}
         </Card>
+
+        <DocumentsCard
+          clientId={id}
+          clientName={client.name}
+          cutoffDay={client.submission_cutoff_day}
+          canAct={isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)}
+        />
 
         <Card title="Portal users">
           {(portalUsers.data ?? []).length === 0 ? (
