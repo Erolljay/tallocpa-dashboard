@@ -8,7 +8,7 @@ const nav = ["dashboard", "clients", "deadlines", "documents", "cycle"] as const
 /** Shown to the Owner and to anyone who reviews a client's returns. */
 const reviewNav = ["review"] as const satisfies readonly NavKey[];
 /** Shown only to the Owner. */
-const ownerNav = ["collections", "staff", "settings"] as const satisfies readonly NavKey[];
+const ownerNav = ["collections", "scores", "staff", "settings"] as const satisfies readonly NavKey[];
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
 

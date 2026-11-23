@@ -7,6 +7,7 @@ import { showMonth } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
+import { OwnerSections } from "./owner-sections";
 
 export default function DashboardPage() {
   return (
@@ -15,7 +16,21 @@ export default function DashboardPage() {
       <Suspense fallback={<Skeleton rows={6} />}>
         <Summary />
       </Suspense>
+      <Suspense fallback={null}>
+        <OwnerView />
+      </Suspense>
     </>
+  );
+}
+
+/** The Owner's firm-wide figures (spec §3.11); nothing for staff and reviewers. */
+async function OwnerView() {
+  const me = await requireStaff();
+  if (me.staff.role !== "owner") return null;
+  return (
+    <Suspense fallback={<div className="mt-6"><Skeleton rows={6} /></div>}>
+      <OwnerSections />
+    </Suspense>
   );
 }
 

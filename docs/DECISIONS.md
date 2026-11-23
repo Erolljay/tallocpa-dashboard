@@ -17,7 +17,7 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q11 | n8n role | Plumbing only; business rules stay in the app |
 | Q12 | n8n hosting | Self-hosted on a VPS |
 | Q13 | Data / privacy | Supabase Singapore; Data Privacy Act basics from day one |
-| Q14 | Seed data | Import clients, obligations, fee schedule from Moxie |
+| Q14 | Seed data | ~~Import clients, obligations, fee schedule from Moxie~~ **Changed 23 Nov 2026:** no Moxie import; clients are entered from their COR (spec §8) |
 | Q15 | OCR testing | Swappable OCR; test on ~50 real receipts to choose model and thresholds |
 | Q16 | Tech stack | Next.js/Vercel, Supabase, Tailwind + shadcn/ui, Supabase Queues, n8n, Resend, HTML→PDF, Vitest/Playwright/Sentry |
 | Q17 | Phase 1 scope | Minimal engagement record; full lead → proposal pipeline in Phase 2; service lines in the data model now |
@@ -36,7 +36,7 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q30 | Period lock | Filed periods are locked; changes only through Owner-approved amendment |
 | Q31 | Collections screen | Owner-only; partials stay open; overpayments become client credit |
 | Q32 | Approved but unpaid | Firm-remits → "Advances to clients – taxes"; client-pays-direct → "BIR payment pending"; aging shown |
-| Q33 | Moxie migration | One-time import; Moxie read-only for one cycle, then cancelled |
+| Q33 | Moxie migration | ~~One-time import;~~ no import (see Q14); Moxie read-only for one cycle, then cancelled |
 | Q34 | Go-live | Taxable year 2027; compliance + portal in January, bookkeeping a few weeks later posting back to 1 Jan; opening TB as of 31 Dec 2026 |
 | Q35 | Client portal | Upload, document status, filing calendar, SOA — **plus returns and reports**; no chat |
 | Q36 | Owner dashboard | Deadlines, overdue, missed cutoffs, review queue, receivables, exceptions, OCR correction rate — **plus clients per staff (capacity), clients not following the system, late filings, per-staff KPIs** |

@@ -48,7 +48,7 @@ async function ClientList() {
         <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
           <p className="font-medium text-ink-heading">No clients yet</p>
           <p className="mt-1 text-sm text-ink-muted">
-            {isOwner ? "Add the first client from their COR, or wait for the Moxie import." : "The Owner has not assigned any clients to you."}
+            {isOwner ? "Add the first client from their COR." : "The Owner has not assigned any clients to you."}
           </p>
         </div>
       ) : (

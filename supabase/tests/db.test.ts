@@ -703,6 +703,88 @@ describe.skipIf(!url)("database", () => {
     });
   });
 
+  describe("scores", () => {
+    it("splits late returns into client- and staff-caused and sums the score inputs, for the Owner only", async () => {
+      await db.query("begin");
+      try {
+        // November 2026 1601-C for both clients, due 10 December. Today: 15 December.
+        const filing = async (client: string) => {
+          const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '1601-C', 'monthly', '2026-01-01') returning id`, [client])).rows[0].id;
+          return (
+            await db.query(
+              `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date)
+               values ($1, $2, '1601-C', '2026-11', '2026-11-01', '2026-11-30', '1601C', '2026-12-10', '2026-12-10') returning id`,
+              [ob, client],
+            )
+          ).rows[0].id as string;
+        };
+        const fa = await filing(clientA);
+        const fb = await filing(clientB);
+        await db.query(`delete from public.document_cycles`);
+        // A sent nothing by the 5 December cutoff; B did. B's return was prepared by Staff and filed on the 12th.
+        await db.query(
+          `insert into public.document_cycles (client_id, period, cutoff_date, missed_cutoff) values ($1, '2026-11-01', '2026-12-05', true), ($2, '2026-11-01', '2026-12-05', false)`,
+          [clientA, clientB],
+        );
+        await db.query(
+          `insert into public.filing_events (filing_instance_id, from_status, to_status, actor, action, created_at) values ($1, 'not_started', 'prepared', $2, 'prepare', '2026-12-11 09:00+08')`,
+          [fb, STAFF],
+        );
+        await db.query(`update public.filing_instances set status = 'filed', filed_on = '2026-12-12' where id = $1`, [fb]);
+        // One of A's November receipts was returned once; it is waiting for staff again.
+        const doc = (
+          await db.query(
+            `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status, return_reason)
+             values ($1::uuid, $2, 'portal', 'purchase_receipt', '2026-12-01', '2026-11-01', 'r.jpg', 'image/jpeg', 10, $1::text || '/x/r.jpg', 'received', 'Blurry') returning id`,
+            [clientA, CLIENT_USER],
+          )
+        ).rows[0].id;
+        await db.query(
+          `insert into public.extractions (document_id, status, fields, approved_fields, approved_by, approved_at) values ($1, 'done', '{"total":"100"}', '{"total":"110"}', $2, '2026-12-14 10:00+08')`,
+          [doc, STAFF],
+        );
+        await db.query(`insert into public.extraction_corrections (document_id, field, ocr_value, approved_value, corrected_by, corrected_at) values ($1, 'total', '100', '110', $2, '2026-12-14 10:00+08')`, [doc, STAFF]);
+
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        for (const sql of [
+          `select * from public.late_filings('2026-12-01', '2026-12-31', '2026-12-15')`,
+          `select * from public.client_scorecard('2026-11-01', '2026-12-01', '2026-12-15')`,
+          `select * from public.staff_scorecard('2026-11-01', '2026-12-01', '2026-12-15')`,
+          `select * from public.ocr_correction_rates('2026-01-01')`,
+          `select * from public.work_queues()`,
+        ]) {
+          await db.query("savepoint s");
+          await expect(db.query(sql)).rejects.toThrow(/Only the Owner/);
+          await db.query("rollback to savepoint s");
+        }
+
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+        const late = (await db.query(`select filing_id, cause, missed_cutoff, preparer from public.late_filings('2026-12-01', '2026-12-31', '2026-12-15')`)).rows;
+        expect(late).toHaveLength(2);
+        expect(late.find((r) => r.filing_id === fa)).toMatchObject({ cause: "client", missed_cutoff: true, preparer: STAFF });
+        expect(late.find((r) => r.filing_id === fb)).toMatchObject({ cause: "staff", missed_cutoff: false, preparer: STAFF });
+
+        const cards = (await db.query(`select * from public.client_scorecard('2026-11-01', '2026-12-01', '2026-12-15')`)).rows;
+        expect(cards.find((r) => r.client_id === clientA && r.cycles_due === 1)).toMatchObject({ cycles_missed: 1, documents: 1, documents_returned: 1 });
+        expect(cards.find((r) => r.client_id === clientA && r.filings_due === 1)).toMatchObject({ filings_late: 1, late_client: 1 });
+        expect(cards.find((r) => r.client_id === clientB && r.filings_due === 1)).toMatchObject({ filings_late: 1, late_client: 0 });
+
+        const staff = (await db.query(`select * from public.staff_scorecard('2026-12-01', '2026-12-01', '2026-12-15')`)).rows;
+        expect(staff).toHaveLength(1);
+        expect(staff[0]).toMatchObject({ user_id: STAFF, filings_due: 2, late_staff: 1, late_client: 1, prepared: 1, filed: 1, days_to_file: "7.0", documents_processed: 1, ocr_corrections: 1 });
+
+        expect((await db.query(`select * from public.ocr_correction_rates('2026-12-01')`)).rows).toEqual([
+          { client_id: clientA, doc_type: "purchase_receipt", read_by_ocr: 1, corrected: 1, fields_corrected: 1 },
+        ]);
+        const queues = (await db.query(`select user_id, queue, items from public.work_queues() order by queue`)).rows;
+        expect(queues).toEqual([{ user_id: STAFF, queue: "documents", items: 1 }]);
+      } finally {
+        await db.query("rollback");
+      }
+    });
+  });
+
   it("staff cannot create clients through the onboarding function", async () => {
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await expect(
