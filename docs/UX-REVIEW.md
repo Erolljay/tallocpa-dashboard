@@ -24,6 +24,7 @@ Screens were read from the source. This review has not yet been tested with staf
 | F10 | Low | Deadlines, Monthly cycle, Documents and Review overlap in the sidebar. |
 | F11 | High | Nothing warns anyone before a filing is late. No staff member is named on a filing, there is no internal target ahead of the BIR date, and the nightly job reminds clients only. |
 | F12 | Medium | Documents don't carry the firm's worksheet columns: no SC/PWD discount, no CWT per invoice, no EWT per supplier, so no net receipt or net paid. |
+| F13 | High | Cash is posted at the invoice total, not the net receipt. `book_document` debits Cash on hand for the total of a cash sale; the CWT leaves cash only when the 2307 is approved (Dr CWT / Cr Cash). Purchases credit Cash at the gross; EWT payable appears only when a 2307 is issued. The SC/PWD discount is never recorded, cash sales never go to a bank account, and payroll posts nothing to the books. |
 
 ## Recommendations
 
@@ -36,6 +37,16 @@ Screens were read from the source. This review has not yet been tested with staf
 7. **Period strip** on the client page linking Documents, Books, Workpapers, Returns and Filed.
 8. **Deadline safeguards** (see below).
 9. **Registers in the firm's worksheet format**: B Sales (gross, SC/PWD discount, VATable, exempt, output VAT, invoice total, CWT, net receipt), C Purchases & expenses (gross, VATable, non-VAT, input VAT, EWT, net paid, account), F Payroll (from the existing register: basic, OT, de minimis, gross, contributions, taxable, tax withheld, net pay). Needs a new OCR field for the SC/PWD discount, each supplier's ATC in the parties directory for EWT, and CWT per invoice from the collection receipt or the customer's 2307. Each register downloads to Excel in the same layout.
+
+10. **Post each register line as its entry, with the net receipt in cash.** The net receipt is what reaches the bank and is the basis of the cash debit in the trial balance.
+
+    | Register | Debit | Credit |
+    |---|---|---|
+    | Sales | Cash in bank / on hand (net receipt); CWT – awaiting 2307 (CWT); Sales discount – SC/PWD (discount) | Sales – VATable; Sales – VAT-exempt (before discount); Output VAT |
+    | Purchases | Expense or purchases; Input VAT | Cash in bank / on hand (net paid); EWT payable |
+    | Payroll | Salaries and wages; de minimis benefits | Cash in bank (net pay); Withholding tax on compensation payable; SSS, PhilHealth, Pag-IBIG payable |
+
+    A 2307 received later moves the amount from "CWT – awaiting 2307" to "CWT – supported" with no cash entry; only supported CWT is claimed on the income tax return, and what is unsupported at year end goes to the Owner. EWT payable is booked at payment, so it ties to the 0619-E and 1601-EQ. Each line names its cash account (client default, changeable per line) so cash in bank reconciles to the bank statement. Charge sales keep Dr AR at the invoice total; the collection line of the AR/AP update then gets a CWT column (Dr Cash net, Dr CWT – awaiting 2307, Cr AR).
 
 ## Deadline safeguards
 
@@ -64,4 +75,5 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 - W/P reference letters: A–T as drafted, or match the firm's audit working-paper index?
 - Tie-out tolerance before "Mark prepared" is blocked (₱1 rounding? ₱100?)
 - Must every schedule be reviewer-signed, or only B, C and T?
+- The account and BIR line for the SC/PWD discount, and what happens to CWT still without a 2307 at year end.
 - Step targets per form (the 1601-C example uses one working day between steps), and the hour of the morning email.
