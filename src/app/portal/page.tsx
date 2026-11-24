@@ -22,7 +22,7 @@ async function Home() {
   const today = manilaToday();
   const first = id.clients[0];
   if (clients.length === 0) {
-    return <p className="rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
+    return <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
   }
   const [{ count: returned }, { count: approvals }] = await Promise.all([
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("status", "returned"),
@@ -45,7 +45,7 @@ async function Home() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-title-1-bold text-text-primary">Hi{first ? `, ${first.fullName.split(" ")[0]}` : ""}</h1>
+        <h1 className="text-title-1-medium text-text-primary">Hi{first ? `, ${first.fullName.split(" ")[0]}` : ""}</h1>
         <p className="mt-1 text-body-regular text-text-secondary">{clients.map((x) => x.name).join(" · ")}</p>
       </div>
 

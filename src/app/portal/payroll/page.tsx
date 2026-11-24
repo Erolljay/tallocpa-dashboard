@@ -41,9 +41,9 @@ async function Payroll() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-title-2-semibold text-text-primary">Payroll</h1>
+      <h1 className="text-title-1-medium text-text-primary">Payroll</h1>
       {ready.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Payroll is not set up for your business yet. We will tell you when you can send it here.</p>
+        <p className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Payroll is not set up for your business yet. We will tell you when you can send it here.</p>
       ) : (
         <Card title="Send your payroll">
           <PortalPayrollUpload clients={ready.map((c) => ({ id: c.id, name: c.name }))} months={months} />
@@ -51,14 +51,14 @@ async function Payroll() {
       )}
       {(releases ?? []).length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-medium text-text-primary">BIR 2316 certificates</h2>
+          <h2 className="text-title-3-semibold text-text-primary">BIR 2316 certificates</h2>
           <p className="text-body-regular text-text-secondary">Your employees&rsquo; Certificates of Compensation Payment / Tax Withheld, ready to print, sign and give to each employee.</p>
-          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular shadow-xs">
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular">
             {releases!.map((r) => (
               <li key={`${r.client_id}:${r.year}`} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-text-primary">{r.year}{clients.length > 1 ? ` · ${nameOf.get(r.client_id)}` : ""}</p>
-                  <p className="text-caption-1-regular text-text-tertiary">released {when(r.released_at)}</p>
+                  <p className="text-caption-1-regular text-text-secondary">released {when(r.released_at)}</p>
                 </div>
                 <Link href={`/portal/payroll/2316/${r.client_id}/${r.year}`} className="text-button-ghost-foreground hover:underline">Print 2316s</Link>
               </li>
@@ -68,8 +68,8 @@ async function Payroll() {
       )}
       {(subs ?? []).length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-medium text-text-primary">Sent</h2>
-          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular shadow-xs">
+          <h2 className="text-title-3-semibold text-text-primary">Sent</h2>
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular">
             {subs!.map((s) => {
               const [label, tone] = STATUS[s.status as keyof typeof STATUS];
               return (
@@ -77,7 +77,7 @@ async function Payroll() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-text-primary">{showMonth(s.pay_month)} · {s.file_name}</p>
-                      <p className="text-caption-1-regular text-text-tertiary">sent {when(s.created_at)}{s.late ? " · late" : ""}{clients.length > 1 ? ` · ${nameOf.get(s.client_id)}` : ""}</p>
+                      <p className="text-caption-1-regular text-text-secondary">sent {when(s.created_at)}{s.late ? " · late" : ""}{clients.length > 1 ? ` · ${nameOf.get(s.client_id)}` : ""}</p>
                     </div>
                     <Badge tone={tone}>{label}</Badge>
                   </div>

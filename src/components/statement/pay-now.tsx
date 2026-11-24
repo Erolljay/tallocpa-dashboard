@@ -52,7 +52,7 @@ export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]
             // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
             <img src={account.qrUrl} alt={`QR code for ${account.institution}`} className="mx-auto size-48 rounded-xl border border-separator-border bg-white object-contain p-2 sm:mx-0" />
           ) : (
-            <div className="mx-auto grid size-48 place-items-center rounded-xl border border-dashed border-border-button-default p-4 text-center text-body-regular text-text-secondary sm:mx-0">No QR code for this account</div>
+            <div className="grid place-items-center rounded-xl border border-dashed border-border-button-default px-3 py-2 text-center text-caption-1-regular text-text-secondary sm:size-48 sm:p-4 sm:text-body-regular">No QR code for this account</div>
           )}
           <dl className="space-y-3">
             <Detail label="Account name" value={account.account_name} />

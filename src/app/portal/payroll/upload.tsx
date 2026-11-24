@@ -51,7 +51,7 @@ export function PortalPayrollUpload({ clients, months }: { clients: { id: string
               <ul className="list-disc space-y-0.5 pl-5">{p.errors.map((x, i) => <li key={i}>{x.line ? `Row ${x.line}: ` : ""}{x.message}</li>)}</ul>
             </Notice>
           )}
-          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular shadow-xs">
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular">
             {p.rows.map((r, i) => (
               <li key={i} className="flex items-center justify-between gap-3 px-4 py-2">
                 <span className="min-w-0 text-text-primary">{r.name} {r.isNew && <Badge tone="waiting">New</Badge>}</span>

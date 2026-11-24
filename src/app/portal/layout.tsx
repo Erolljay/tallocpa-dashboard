@@ -17,7 +17,7 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
             <form action="/auth/signout" method="post">
               <button className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-body-medium text-text-secondary transition-colors hover:bg-background-secondary-hover hover:text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring pointer-coarse:min-h-11">
                 <RiLogoutBoxRLine aria-hidden className="size-[18px]" />
-                Sign out
+                <span className="max-sm:sr-only">Sign out</span>
               </button>
             </form>
           </div>
