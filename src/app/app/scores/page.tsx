@@ -73,37 +73,37 @@ async function Scores() {
 
   return (
     <div className="space-y-6">
-      {failed && <p className="text-sm text-danger-text">Could not load the scores: {failed.error?.message}</p>}
+      {failed && <p className="text-body-regular text-text-error-primary">Could not load the scores: {failed.error?.message}</p>}
 
-      <Card title="Client compliance" actions={<span className="text-xs text-ink-subtle">Last {SCORE_RULES.months} months</span>}>
-        <p className="mb-4 text-sm text-ink-muted">
+      <Card title="Client compliance" actions={<span className="text-caption-1-regular text-text-tertiary">Last {SCORE_RULES.months} months</span>}>
+        <p className="mb-4 text-body-regular text-text-secondary">
           Each part is rated on its own and the client takes the worst. Green: documents by the cutoff at least {pct(SCORE_RULES.submission.green)} of months,
           at most {pct(SCORE_RULES.returned.green)} of documents returned, at least {pct(SCORE_RULES.payment.green)} paid on time, and no late returns the
           client caused. Red clients need a talk, repricing or offboarding.
         </p>
         {scored.length === 0 ? (
-          <p className="text-sm text-ink-muted">No active clients yet.</p>
+          <p className="text-body-regular text-text-secondary">No active clients yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[52rem] text-sm">
-              <thead className="text-left text-ink-subtle">
+            <table className="w-full min-w-[52rem] text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="pb-2 font-medium">Client</th>
-                  <th scope="col" className="pb-2 font-medium">Score</th>
-                  <th scope="col" className="pb-2 font-medium">Documents by the cutoff</th>
-                  <th scope="col" className="pb-2 font-medium">Returned documents</th>
-                  <th scope="col" className="pb-2 font-medium">Paid on time</th>
-                  <th scope="col" className="pb-2 font-medium">Late returns (client)</th>
+                  <th scope="col" className="text-start pb-2">Client</th>
+                  <th scope="col" className="text-start pb-2">Score</th>
+                  <th scope="col" className="text-start pb-2">Documents by the cutoff</th>
+                  <th scope="col" className="text-start pb-2">Returned documents</th>
+                  <th scope="col" className="text-start pb-2">Paid on time</th>
+                  <th scope="col" className="text-start pb-2">Late returns (client)</th>
                 </tr>
               </thead>
               <tbody>
                 {scored.map(({ client, score }) => (
-                  <tr key={client.id} className="border-t border-border align-top">
+                  <tr key={client.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                     <td className="py-2 pr-4">
-                      <Link href={`/app/clients/${client.id}`} className="font-medium text-link hover:underline">{client.name}</Link>
-                      <p className="text-xs text-ink-subtle">{client.code}</p>
+                      <Link href={`/app/clients/${client.id}`} className="font-medium text-button-ghost-foreground hover:underline">{client.name}</Link>
+                      <p className="text-caption-1-regular text-text-tertiary">{client.code}</p>
                     </td>
-                    <td className="py-2 pr-4">{score.overall ? <Badge tone={toneBadge[score.overall]}>{toneLabel[score.overall]}</Badge> : <span className="text-ink-subtle">No data yet</span>}</td>
+                    <td className="py-2 pr-4">{score.overall ? <Badge tone={toneBadge[score.overall]}>{toneLabel[score.overall]}</Badge> : <span className="text-text-tertiary">No data yet</span>}</td>
                     <PartCell part={score.submission} show={pct} />
                     <PartCell part={score.quality} show={pct} />
                     <PartCell part={score.payment} show={pct} />
@@ -116,40 +116,40 @@ async function Scores() {
         )}
       </Card>
 
-      <Card title={`Late returns (${lateRows.length})`} actions={<span className="text-xs text-ink-subtle">Due in the last 12 months</span>}>
-        <p className="mb-4 text-sm text-ink-muted">
+      <Card title={`Late returns (${lateRows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Due in the last 12 months</span>}>
+        <p className="mb-4 text-body-regular text-text-secondary">
           Client-caused: the client missed the cutoff, sent documents after it, had not approved the reviewed return, or had not paid the tax the firm remits,
           by the due date. Everything else is staff-caused.
         </p>
         {lateRows.length === 0 ? (
-          <p className="text-sm text-ink-muted">No late returns.</p>
+          <p className="text-body-regular text-text-secondary">No late returns.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[48rem] text-sm">
-              <thead className="text-left text-ink-subtle">
+            <table className="w-full min-w-[48rem] text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="pb-2 font-medium">Due</th>
-                  <th scope="col" className="pb-2 font-medium">Filed</th>
-                  <th scope="col" className="pb-2 font-medium">Client</th>
-                  <th scope="col" className="pb-2 font-medium">Return</th>
-                  <th scope="col" className="pb-2 font-medium">Caused by</th>
-                  <th scope="col" className="pb-2 font-medium">Prepared by</th>
+                  <th scope="col" className="text-start pb-2">Due</th>
+                  <th scope="col" className="text-start pb-2">Filed</th>
+                  <th scope="col" className="text-start pb-2">Client</th>
+                  <th scope="col" className="text-start pb-2">Return</th>
+                  <th scope="col" className="text-start pb-2">Caused by</th>
+                  <th scope="col" className="text-start pb-2">Prepared by</th>
                 </tr>
               </thead>
               <tbody>
                 {lateRows.map((l) => (
-                  <tr key={l.filing_id} className="border-t border-border align-top">
-                    <td className="py-2 pr-4 tabular-nums text-ink-heading">{showDate(l.due_date)}</td>
-                    <td className="py-2 pr-4 tabular-nums">{l.filed_on ? showDate(l.filed_on) : <span className="font-medium text-danger-text">Not filed</span>}</td>
-                    <td className="py-2 pr-4 text-ink-heading">{clientName.get(l.client_id) ?? "—"}</td>
+                  <tr key={l.filing_id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
+                    <td className="py-2 pr-4 tabular-nums text-text-primary">{showDate(l.due_date)}</td>
+                    <td className="py-2 pr-4 tabular-nums">{l.filed_on ? showDate(l.filed_on) : <span className="font-medium text-text-error-primary">Not filed</span>}</td>
+                    <td className="py-2 pr-4 text-text-primary">{clientName.get(l.client_id) ?? "—"}</td>
                     <td className="py-2 pr-4">
-                      <Link href={`/app/filings/${l.filing_id}`} className="font-medium text-link hover:underline">{l.form} · {l.period_label}</Link>
+                      <Link href={`/app/filings/${l.filing_id}`} className="font-medium text-button-ghost-foreground hover:underline">{l.form} · {l.period_label}</Link>
                     </td>
                     <td className="py-2 pr-4">
                       <Badge tone={l.cause === "client" ? "waiting" : "blocked"}>{l.cause === "client" ? "Client" : "Staff"}</Badge>
-                      <p className="mt-1 text-xs text-ink-muted">{lateReason(l)}</p>
+                      <p className="mt-1 text-caption-1-regular text-text-secondary">{lateReason(l)}</p>
                     </td>
-                    <td className="py-2 text-ink-muted">{(l.preparer && nameOf.get(l.preparer)) ?? "—"}</td>
+                    <td className="py-2 text-text-secondary">{(l.preparer && nameOf.get(l.preparer)) ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -158,26 +158,26 @@ async function Scores() {
         )}
       </Card>
 
-      <Card title="Staff" actions={<span className="text-xs text-ink-subtle">This month · last 12 months</span>}>
-        <p className="mb-4 text-sm text-ink-muted">
+      <Card title="Staff" actions={<span className="text-caption-1-regular text-text-tertiary">This month · last 12 months</span>}>
+        <p className="mb-4 text-body-regular text-text-secondary">
           On time counts returns due, by who prepared them; a late return the client caused does not count against staff. Days to file: from the cutoff of the
           period&apos;s last month to the filing date.
         </p>
         {people.length === 0 ? (
-          <p className="text-sm text-ink-muted">No staff yet.</p>
+          <p className="text-body-regular text-text-secondary">No staff yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[60rem] text-sm">
-              <thead className="text-left text-ink-subtle">
+            <table className="w-full min-w-[60rem] text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="pb-2 font-medium">Name</th>
-                  <th scope="col" className="pb-2 font-medium">On time</th>
-                  <th scope="col" className="pb-2 font-medium">On time, by month</th>
-                  <th scope="col" className="pb-2 font-medium">Sent back</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Days to file</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Documents</th>
-                  <th scope="col" className="pb-2 text-right font-medium">OCR fixes</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Load</th>
+                  <th scope="col" className="text-start pb-2">Name</th>
+                  <th scope="col" className="text-start pb-2">On time</th>
+                  <th scope="col" className="text-start pb-2">On time, by month</th>
+                  <th scope="col" className="text-start pb-2">Sent back</th>
+                  <th scope="col" className="pb-2 text-end">Days to file</th>
+                  <th scope="col" className="pb-2 text-end">Documents</th>
+                  <th scope="col" className="pb-2 text-end">OCR fixes</th>
+                  <th scope="col" className="pb-2 text-end">Load</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,34 +190,34 @@ async function Scores() {
                   const capacity = Number(s.capacity_points);
                   const trend = year.map((m) => ({ month: m, k: kpis(rows.filter((r) => r.month.slice(0, 7) === m.slice(0, 7))) }));
                   return (
-                    <tr key={s.user_id} className="border-t border-border align-top">
+                    <tr key={s.user_id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                       <td className="py-2 pr-4">
-                        <p className="font-medium text-ink-heading">{s.full_name}</p>
-                        <p className="text-xs text-ink-subtle">{s.role === "reviewer" ? "Reviewer" : "Staff"}{s.active ? "" : " · inactive"}</p>
+                        <p className="font-medium text-text-primary">{s.full_name}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">{s.role === "reviewer" ? "Reviewer" : "Staff"}{s.active ? "" : " · inactive"}</p>
                       </td>
                       <td className="py-2 pr-4 tabular-nums">
-                        <span className="text-ink-heading">{pct(now.onTimeRate)}</span>
-                        <span className="text-ink-subtle"> · {pct(all.onTimeRate)}</span>
-                        {all.lateStaff > 0 && <p className="text-xs text-ink-muted">{all.lateStaff} late in 12 months</p>}
+                        <span className="text-text-primary">{pct(now.onTimeRate)}</span>
+                        <span className="text-text-tertiary"> · {pct(all.onTimeRate)}</span>
+                        {all.lateStaff > 0 && <p className="text-caption-1-regular text-text-secondary">{all.lateStaff} late in 12 months</p>}
                       </td>
                       <td className="py-2 pr-4"><Trend points={trend.map((t) => ({ month: t.month, value: t.k.onTimeRate, due: t.k.filingsDue }))} /></td>
                       <td className="py-2 pr-4 tabular-nums">
-                        <span className="text-ink-heading">{pct(now.kickbackRate)}</span>
-                        <span className="text-ink-subtle"> · {pct(all.kickbackRate)}</span>
+                        <span className="text-text-primary">{pct(now.kickbackRate)}</span>
+                        <span className="text-text-tertiary"> · {pct(all.kickbackRate)}</span>
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums">
-                        <span className="text-ink-heading">{now.daysToFile ?? "—"}</span>
-                        <span className="text-ink-subtle"> · {all.daysToFile ?? "—"}</span>
+                      <td className="py-2 pr-4 text-end tabular-nums">
+                        <span className="text-text-primary">{now.daysToFile ?? "—"}</span>
+                        <span className="text-text-tertiary"> · {all.daysToFile ?? "—"}</span>
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums">
-                        <span className="text-ink-heading">{now.documentsProcessed}</span>
-                        <span className="text-ink-subtle"> · {all.documentsProcessed}</span>
+                      <td className="py-2 pr-4 text-end tabular-nums">
+                        <span className="text-text-primary">{now.documentsProcessed}</span>
+                        <span className="text-text-tertiary"> · {all.documentsProcessed}</span>
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums">
-                        <span className="text-ink-heading">{now.ocrCorrections}</span>
-                        <span className="text-ink-subtle"> · {all.ocrCorrections}</span>
+                      <td className="py-2 pr-4 text-end tabular-nums">
+                        <span className="text-text-primary">{now.ocrCorrections}</span>
+                        <span className="text-text-tertiary"> · {all.ocrCorrections}</span>
                       </td>
-                      <td className="py-2 text-right tabular-nums text-ink-heading">{load} / {capacity}</td>
+                      <td className="py-2 text-end tabular-nums text-text-primary">{load} / {capacity}</td>
                     </tr>
                   );
                 })}
@@ -234,9 +234,9 @@ function PartCell({ part, show }: { part: Part; show: (v: number | null) => stri
   return (
     <td className="py-2 pr-4">
       <div className="flex items-center gap-2">
-        {part.tone ? <Badge tone={toneBadge[part.tone]}>{show(part.value)}</Badge> : <span className="text-ink-subtle">—</span>}
+        {part.tone ? <Badge tone={toneBadge[part.tone]}>{show(part.value)}</Badge> : <span className="text-text-tertiary">—</span>}
       </div>
-      <p className="mt-1 text-xs text-ink-muted">{part.detail}</p>
+      <p className="mt-1 text-caption-1-regular text-text-secondary">{part.detail}</p>
     </td>
   );
 }
@@ -255,9 +255,9 @@ function Trend({ points }: { points: { month: string; value: number | null; due:
           <li key={p.month} title={text} className="flex h-full w-2.5 items-end">
             <span className="sr-only">{text}</span>
             {p.value === null ? (
-              <span aria-hidden className="h-0.5 w-full rounded-sm bg-border" />
+              <span aria-hidden className="h-0.5 w-full rounded-sm bg-separator-border" />
             ) : (
-              <span aria-hidden className="w-full rounded-t-[4px] bg-action" style={{ height: `${Math.max(8, Math.round(p.value * 100))}%` }} />
+              <span aria-hidden className="w-full rounded-t-[4px] bg-accent-600" style={{ height: `${Math.max(8, Math.round(p.value * 100))}%` }} />
             )}
           </li>
         );

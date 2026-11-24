@@ -39,19 +39,19 @@ async function StaffList() {
   return (
     <div className="space-y-6">
       <Card title="Add a staff member">
-        <p className="mb-4 text-sm text-ink-muted">
+        <p className="mb-4 text-body-regular text-text-secondary">
           They sign in with this email using Google or an emailed link. No password or invite email is needed.
         </p>
         <InviteStaffForm />
       </Card>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-        <table className="w-full min-w-[48rem] text-sm">
-          <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+      <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+        <table className="w-full min-w-[48rem] text-body-regular">
+          <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium">Name</th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">Clients</th>
-              <th scope="col" className="px-4 py-3 font-medium">Load</th>
-              <th scope="col" className="px-4 py-3 font-medium">Role, capacity, status</th>
+              <th scope="col" className="text-start px-4 py-3">Name</th>
+              <th scope="col" className="px-4 py-3 text-end">Clients</th>
+              <th scope="col" className="text-start px-4 py-3">Load</th>
+              <th scope="col" className="text-start px-4 py-3">Role, capacity, status</th>
             </tr>
           </thead>
           <tbody>
@@ -63,16 +63,16 @@ async function StaffList() {
               const tone = pct > 100 ? "blocked" : pct >= 85 ? "waiting" : "done";
               const info = emailOf.get(s.user_id);
               return (
-                <tr key={s.user_id} className="border-t border-border align-middle">
+                <tr key={s.user_id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-middle">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-ink-heading">{s.full_name}{!s.active && <span className="ml-2"><Badge>Inactive</Badge></span>}</p>
-                    <p className="text-xs text-ink-subtle">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
+                    <p className="font-medium text-text-primary">{s.full_name}{!s.active && <span className="ml-2"><Badge>Inactive</Badge></span>}</p>
+                    <p className="text-caption-1-regular text-text-tertiary">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-heading">{s.role === "owner" ? "All" : mine.length}</td>
+                  <td className="px-4 py-3 text-end tabular-nums text-text-primary">{s.role === "owner" ? "All" : mine.length}</td>
                   <td className="px-4 py-3">
-                    {s.role === "owner" ? <span className="text-ink-subtle">—</span> : (
+                    {s.role === "owner" ? <span className="text-text-tertiary">—</span> : (
                       <div className="flex items-center gap-2">
-                        <span className="tabular-nums text-ink-heading">{load} / {capacity}</span>
+                        <span className="tabular-nums text-text-primary">{load} / {capacity}</span>
                         <Badge tone={tone}>{pct}%</Badge>
                       </div>
                     )}
@@ -81,7 +81,7 @@ async function StaffList() {
                     {s.role !== "owner" ? (
                       <StaffRowForm userId={s.user_id} role={s.role} capacity={capacity} active={s.active} />
                     ) : (
-                      <span className="text-ink-muted">{roleLabel[s.role]}</span>
+                      <span className="text-text-secondary">{roleLabel[s.role]}</span>
                     )}
                   </td>
                 </tr>

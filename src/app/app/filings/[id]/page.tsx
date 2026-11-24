@@ -92,7 +92,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
         title={`${f.form} · ${f.period_label}`}
         description={
           <span>
-            <Link href={`/app/clients/${client.id}`} className="text-link hover:underline">{client.name}</Link> · due {showDate(f.due_date)}
+            <Link href={`/app/clients/${client.id}`} className="text-button-ghost-foreground hover:underline">{client.name}</Link> · due {showDate(f.due_date)}
             {f.due_date !== f.statutory_due_date ? ` (moved from ${showDate(f.statutory_due_date)})` : ""}
           </span>
         }
@@ -106,7 +106,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
               {SIGN_OFF_STEPS.map((s, i) => {
                 const state = i < done ? "done" : i === done ? "current" : "todo";
                 return (
-                  <li key={s.status} className={`rounded-lg border px-3 py-2 text-xs ${state === "done" ? "border-success bg-success-surface text-success" : state === "current" ? "border-action bg-surface-tint text-ink-heading" : "border-border text-ink-subtle"}`}>
+                  <li key={s.status} className={`rounded-lg border px-3 py-2 text-caption-1-regular ${state === "done" ? "border-status-lime-text bg-status-lime-background text-status-lime-text" : state === "current" ? "border-accent-500 bg-button-ghost-background text-text-primary" : "border-separator-border text-text-tertiary"}`}>
                     <p className="font-medium">{s.label}</p>
                     <p>{s.by}</p>
                   </li>
@@ -120,24 +120,24 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
               {actions.length > 0 ? (
                 <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} />
               ) : (
-                <p className="text-sm text-ink-muted">{status === "proof_uploaded" ? "This return is done." : "Nothing for you to do on this return right now."}</p>
+                <p className="text-body-regular text-text-secondary">{status === "proof_uploaded" ? "This return is done." : "Nothing for you to do on this return right now."}</p>
               )}
             </div>
           </Card>
 
           <Card title="History">
             {history.length === 0 ? (
-              <p className="text-sm text-ink-muted">No steps taken yet.</p>
+              <p className="text-body-regular text-text-secondary">No steps taken yet.</p>
             ) : (
-              <ol className="space-y-3 text-sm">
+              <ol className="space-y-3 text-body-regular">
                 {history.map((e) => (
-                  <li key={e.id} className="border-l-2 border-border pl-3">
-                    <p className="text-ink-heading">
+                  <li key={e.id} className="border-l-2 border-separator-border pl-3">
+                    <p className="text-text-primary">
                       <span className="font-medium">{(e.actor && nameOf.get(e.actor)) ?? "Someone"}</span> {eventText[e.action ?? ""] ?? `moved it to ${filingStatusLabel[e.to_status] ?? e.to_status}`}
                       {e.action === "owner_approve" && typeof e.data.payment_status === "string" ? ` · payment: ${paymentText[e.data.payment_status] ?? e.data.payment_status}${e.data.approve_unpaid ? " (approved unpaid)" : ""}` : ""}
                     </p>
-                    {e.note && <p className="text-ink-muted">“{e.note}”</p>}
-                    <p className="text-xs text-ink-subtle">{when(e.created_at)}</p>
+                    {e.note && <p className="text-text-secondary">“{e.note}”</p>}
+                    <p className="text-caption-1-regular text-text-tertiary">{when(e.created_at)}</p>
                   </li>
                 ))}
               </ol>
@@ -145,24 +145,24 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
           </Card>
         </div>
 
-        <Card title="Return" actions={<Link href={`/app/filings/${f.id}/worksheet`} className="text-sm text-link hover:underline">Worksheet</Link>}>
-          <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
-            <dt className="text-ink-subtle">Period</dt><dd className="tabular-nums text-ink-heading">{showDate(f.period_start)} – {showDate(f.period_end)}</dd>
-            <dt className="text-ink-subtle">Tax due</dt><dd className="amount tabular-nums text-ink-heading">{f.tax_due == null ? "—" : peso.format(Number(f.tax_due))}</dd>
-            <dt className="text-ink-subtle">BIR payment</dt><dd className="text-ink-heading">{client.payment_mode === "firm_remits" ? "We remit" : "Client pays directly"}</dd>
-            <dt className="text-ink-subtle">Filing ref.</dt><dd className="text-ink-heading">{f.filing_reference ?? "—"}{f.filed_on ? ` · ${showDate(f.filed_on)}` : ""}</dd>
-            <dt className="text-ink-subtle">Payment ref.</dt><dd className="text-ink-heading">{f.payment_reference ?? "—"}{f.paid_on ? ` · ${showDate(f.paid_on)}` : ""}</dd>
+        <Card title="Return" actions={<Link href={`/app/filings/${f.id}/worksheet`} className="text-body-regular text-button-ghost-foreground hover:underline">Worksheet</Link>}>
+          <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-body-regular">
+            <dt className="text-text-tertiary">Period</dt><dd className="tabular-nums text-text-primary">{showDate(f.period_start)} – {showDate(f.period_end)}</dd>
+            <dt className="text-text-tertiary">Tax due</dt><dd className="amount tabular-nums text-text-primary">{f.tax_due == null ? "—" : peso.format(Number(f.tax_due))}</dd>
+            <dt className="text-text-tertiary">BIR payment</dt><dd className="text-text-primary">{client.payment_mode === "firm_remits" ? "We remit" : "Client pays directly"}</dd>
+            <dt className="text-text-tertiary">Filing ref.</dt><dd className="text-text-primary">{f.filing_reference ?? "—"}{f.filed_on ? ` · ${showDate(f.filed_on)}` : ""}</dd>
+            <dt className="text-text-tertiary">Payment ref.</dt><dd className="text-text-primary">{f.payment_reference ?? "—"}{f.paid_on ? ` · ${showDate(f.paid_on)}` : ""}</dd>
           </dl>
-          <div className="mt-4 space-y-3 border-t border-border pt-4">
-            <p className="text-sm font-medium text-ink-heading">Filed return and proof</p>
+          <div className="mt-4 space-y-3 border-t border-separator-border pt-4">
+            <p className="text-body-medium text-text-primary">Filed return and proof</p>
             {(attachments ?? []).length === 0 ? (
-              <p className="text-xs text-ink-subtle">Nothing attached yet. The client sees these under Returns.</p>
+              <p className="text-caption-1-regular text-text-tertiary">Nothing attached yet. The client sees these under Returns.</p>
             ) : (
-              <ul className="space-y-1 text-sm">
+              <ul className="space-y-1 text-body-regular">
                 {(attachments ?? []).map((a) => (
                   <li key={a.id}>
-                    <a href={`/files/${a.id}`} target="_blank" rel="noopener" className="text-link hover:underline">{DOC_TYPES[a.doc_type as DocType]}</a>
-                    <span className="text-xs text-ink-subtle"> · {a.file_name}</span>
+                    <a href={`/files/${a.id}`} target="_blank" rel="noopener" className="text-button-ghost-foreground hover:underline">{DOC_TYPES[a.doc_type as DocType]}</a>
+                    <span className="text-caption-1-regular text-text-tertiary"> · {a.file_name}</span>
                   </li>
                 ))}
               </ul>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/react";
 import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { submission, submissionLabel, submissionTone, parseMonth } from "@/lib/cycle/summary";
@@ -111,32 +111,32 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Link href={`/app/cycle?month=${shift(period, -1)}`} className="pressable inline-flex size-10 items-center justify-center rounded-[8px] text-ink-muted hover:bg-surface-muted" aria-label="Previous month">
-          <ChevronLeft aria-hidden className="size-4" />
+        <Link href={`/app/cycle?month=${shift(period, -1)}`} className="pressable inline-flex size-10 items-center justify-center rounded-2lg text-text-secondary hover:bg-background-secondary-hover" aria-label="Previous month">
+          <RiArrowLeftSLine aria-hidden className="size-4" />
         </Link>
-        <h2 className="min-w-44 text-center font-display text-lg font-semibold text-ink-heading">{showMonth(period)}</h2>
-        <Link href={`/app/cycle?month=${shift(period, 1)}`} className="pressable inline-flex size-10 items-center justify-center rounded-[8px] text-ink-muted hover:bg-surface-muted" aria-label="Next month">
-          <ChevronRight aria-hidden className="size-4" />
+        <h2 className="min-w-44 text-center text-title-3-semibold text-text-primary">{showMonth(period)}</h2>
+        <Link href={`/app/cycle?month=${shift(period, 1)}`} className="pressable inline-flex size-10 items-center justify-center rounded-2lg text-text-secondary hover:bg-background-secondary-hover" aria-label="Next month">
+          <RiArrowRightSLine aria-hidden className="size-4" />
         </Link>
-        <span className="ml-auto text-sm text-ink-muted">
+        <span className="ml-auto text-body-regular text-text-secondary">
           {rows.length} client{rows.length === 1 ? "" : "s"} · {missed} missed the cutoff · {waiting} waiting
         </span>
       </div>
 
       <Card title="Clients">
         {rows.length === 0 ? (
-          <p className="text-sm text-ink-muted">No cycle for {showMonth(period)}. The nightly job opens each active client&apos;s month as it starts.</p>
+          <p className="text-body-regular text-text-secondary">No cycle for {showMonth(period)}. The nightly job opens each active client&apos;s month as it starts.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[52rem] text-sm">
-              <thead className="text-left text-ink-subtle">
+            <table className="w-full min-w-[52rem] text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="pb-2 font-medium">Client</th>
-                  <th scope="col" className="pb-2 font-medium">Cutoff</th>
-                  <th scope="col" className="pb-2 font-medium">Submission</th>
-                  <th scope="col" className="pb-2 font-medium">Documents</th>
-                  <th scope="col" className="pb-2 font-medium">Not posted</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Month</th>
+                  <th scope="col" className="text-start pb-2">Client</th>
+                  <th scope="col" className="text-start pb-2">Cutoff</th>
+                  <th scope="col" className="text-start pb-2">Submission</th>
+                  <th scope="col" className="text-start pb-2">Documents</th>
+                  <th scope="col" className="text-start pb-2">Not posted</th>
+                  <th scope="col" className="pb-2 text-end">Month</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,14 +144,14 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
                   const s = byClient.get(y.client_id) ?? { total: 0, pending: 0, late: 0, carried: 0 };
                   const canAct = owner || mine.has(y.client_id);
                   return (
-                    <tr key={y.id} className="border-t border-border align-top">
+                    <tr key={y.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                       <td className="py-2.5 pr-4">
-                        <Link href={`/app/clients/${y.client_id}`} className="font-medium text-link hover:underline">{y.clients?.name ?? "—"}</Link>
-                        <p className="text-xs text-ink-subtle">{y.clients?.code}</p>
+                        <Link href={`/app/clients/${y.client_id}`} className="font-medium text-button-ghost-foreground hover:underline">{y.clients?.name ?? "—"}</Link>
+                        <p className="text-caption-1-regular text-text-tertiary">{y.clients?.code}</p>
                       </td>
-                      <td className="py-2.5 pr-4 tabular-nums text-ink-muted">
+                      <td className="py-2.5 pr-4 tabular-nums text-text-secondary">
                         {showDate(y.cutoff_date)}
-                        <p className="text-xs text-ink-subtle">{y.requested_at ? (y.reminded_at ? "Requested, reminded" : "Requested") : "Not requested yet"}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">{y.requested_at ? (y.reminded_at ? "Requested, reminded" : "Requested") : "Not requested yet"}</p>
                       </td>
                       <td className="py-2.5 pr-4">
                         <Badge tone={submissionTone[states[i]]}>{submissionLabel[states[i]]}</Badge>
@@ -159,18 +159,18 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
                           <div className="mt-1.5"><NothingToSubmitButton clientId={y.client_id} period={period} label="Client has nothing" /></div>
                         )}
                       </td>
-                      <td className="py-2.5 pr-4 tabular-nums text-ink">
+                      <td className="py-2.5 pr-4 tabular-nums text-text-primary">
                         {s.total}
-                        {s.late > 0 && <span className="ml-1.5 text-xs text-warning">{s.late} late</span>}
-                        {s.carried > 0 && <span className="ml-1.5 text-xs text-warning">{s.carried} carried in</span>}
+                        {s.late > 0 && <span className="ml-1.5 text-caption-1-regular text-status-yellow-text">{s.late} late</span>}
+                        {s.carried > 0 && <span className="ml-1.5 text-caption-1-regular text-status-yellow-text">{s.carried} carried in</span>}
                       </td>
-                      <td className="py-2.5 pr-4 tabular-nums">{s.pending > 0 ? <span className="text-warning">{s.pending}</span> : <span className="text-ink-subtle">0</span>}</td>
-                      <td className="py-2.5 text-right">
+                      <td className="py-2.5 pr-4 tabular-nums">{s.pending > 0 ? <span className="text-status-yellow-text">{s.pending}</span> : <span className="text-text-tertiary">0</span>}</td>
+                      <td className="py-2.5 text-end">
                         {y.closed_at ? (
                           <div>
                             <Badge tone="done">Closed</Badge>
                             {(y.carried_forward > 0 || y.to_exceptions > 0) && (
-                              <p className="mt-1 text-xs text-ink-subtle">
+                              <p className="mt-1 text-caption-1-regular text-text-tertiary">
                                 {y.carried_forward > 0 && `${y.carried_forward} moved on`}
                                 {y.carried_forward > 0 && y.to_exceptions > 0 && " · "}
                                 {y.to_exceptions > 0 && `${y.to_exceptions} to exceptions`}
@@ -180,7 +180,7 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
                         ) : today > y.cutoff_date && canAct ? (
                           <CloseCycleButton clientId={y.client_id} period={period} />
                         ) : (
-                          <span className="text-xs text-ink-subtle">Open</span>
+                          <span className="text-caption-1-regular text-text-tertiary">Open</span>
                         )}
                       </td>
                     </tr>
@@ -193,22 +193,22 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
       </Card>
 
       <Card title={`Prior-year exceptions (${exceptionRows.length})`}>
-        <p className="mb-4 text-sm text-ink-muted">
+        <p className="mb-4 text-body-regular text-text-secondary">
           Documents from a closed taxable year are never carried forward. The client&apos;s Reviewer or the Owner decides: amend the prior-year return, treat the item as non-deductible, or record it in the current period.
         </p>
         {exceptionRows.length === 0 ? (
-          <p className="text-sm text-ink-muted">Nothing waiting for a decision.</p>
+          <p className="text-body-regular text-text-secondary">Nothing waiting for a decision.</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-separator-border">
             {exceptionRows.map((d) => (
               <li key={d.id} className="flex flex-wrap items-start gap-x-6 gap-y-2 py-3">
                 <div className="min-w-56 flex-1">
-                  <Link href={`/app/documents/${d.id}`} className="font-medium text-link hover:underline">{DOC_TYPES[d.doc_type]}</Link>
-                  <p className="text-sm text-ink-heading">{d.clients?.name ?? "—"}</p>
-                  <p className="text-xs text-ink-subtle">{showMonth(d.document_month)} · {d.exception_reason ?? "Prior taxable year"} · {d.file_name}</p>
+                  <Link href={`/app/documents/${d.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[d.doc_type]}</Link>
+                  <p className="text-body-regular text-text-primary">{d.clients?.name ?? "—"}</p>
+                  <p className="text-caption-1-regular text-text-tertiary">{showMonth(d.document_month)} · {d.exception_reason ?? "Prior taxable year"} · {d.file_name}</p>
                 </div>
                 <div className="min-w-72 flex-1">
-                  {owner || reviewing.has(d.client_id) ? <DecideExceptionForm documentId={d.id} /> : <span className="text-xs text-ink-subtle">Waiting for the Reviewer or Owner</span>}
+                  {owner || reviewing.has(d.client_id) ? <DecideExceptionForm documentId={d.id} /> : <span className="text-caption-1-regular text-text-tertiary">Waiting for the Reviewer or Owner</span>}
                 </div>
               </li>
             ))}

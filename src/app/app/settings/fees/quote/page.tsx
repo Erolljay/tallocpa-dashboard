@@ -19,7 +19,7 @@ export default function QuotePreviewPage(props: PageProps<"/app/settings/fees/qu
         description={
           <>
             Work out what a new client would pay. Nothing is saved; proposals come in Phase 2.{" "}
-            <Link href="/app/settings/fees" className="text-link hover:underline">Fee schedule</Link>
+            <Link href="/app/settings/fees" className="text-button-ghost-foreground hover:underline">Fee schedule</Link>
           </>
         }
       />
@@ -76,7 +76,7 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
   const annual = items.filter((i) => i.billing === "annual");
   const oneTime = items.filter((i) => i.billing === "one_time" || (i.billing === "multiplier" && i.conditions.of === "monthly_retainer"));
   const qty = new Map(profile.oneTimeItems.map((o) => [o.code, o.quantity]));
-  const checkbox = "size-4 shrink-0 accent-[var(--action)]";
+  const checkbox = "size-4 shrink-0";
   return (
     <form method="get" className="space-y-4">
       <input type="hidden" name="q" value="1" />
@@ -93,7 +93,7 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
           {TAXPAYER_TYPES.map((t) => <option key={t} value={t}>{TAXPAYER_LABEL[t]}</option>)}
         </Select>
       </Field>
-      <label className="flex items-center gap-2 text-sm text-ink-strong">
+      <label className="flex items-center gap-2 text-body-regular text-text-primary">
         <input type="checkbox" name="vat" value="1" defaultChecked={profile.vatRegistered} className={checkbox} /> VAT-registered
       </label>
       <Field label="Expanded withholding" htmlFor="qp-ewt">
@@ -111,7 +111,7 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
           <Input id="qp-docs" name="documents" type="number" min={0} defaultValue={profile.documentsPerMonth} className="tabular-nums" />
         </Field>
       </div>
-      <label className="flex items-center gap-2 text-sm text-ink-strong">
+      <label className="flex items-center gap-2 text-body-regular text-text-primary">
         <input type="checkbox" name="contributions" value="1" defaultChecked={profile.remitsContributions} className={checkbox} /> We remit SSS, PhilHealth, Pag-IBIG
       </label>
       <div className="grid grid-cols-2 gap-3">
@@ -128,18 +128,18 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
         </Field>
       </div>
       <fieldset className="space-y-1.5">
-        <legend className="text-sm font-medium text-ink-strong">Business</legend>
+        <legend className="text-body-medium text-text-primary">Business</legend>
         {COMPLEXITY_FLAGS.map((c) => (
-          <label key={c} className="flex items-center gap-2 text-sm text-ink-strong">
+          <label key={c} className="flex items-center gap-2 text-body-regular text-text-primary">
             <input type="checkbox" name="complexity" value={c} defaultChecked={profile.complexity.includes(c)} className={checkbox} /> {COMPLEXITY_LABEL[c]}
           </label>
         ))}
       </fieldset>
       {annual.length > 0 && (
         <fieldset className="space-y-1.5">
-          <legend className="text-sm font-medium text-ink-strong">Annual package</legend>
+          <legend className="text-body-medium text-text-primary">Annual package</legend>
           {annual.map((i) => (
-            <label key={i.code} className="flex items-start gap-2 text-sm text-ink-strong">
+            <label key={i.code} className="flex items-start gap-2 text-body-regular text-text-primary">
               <input type="checkbox" name="annual" value={i.code} defaultChecked={profile.annualItems.includes(i.code)} className={`${checkbox} mt-0.5`} /> {itemName(i)}
             </label>
           ))}
@@ -147,15 +147,15 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
       )}
       {oneTime.length > 0 && (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-ink-strong">One-time and other work</legend>
+          <legend className="text-body-medium text-text-primary">One-time and other work</legend>
           {oneTime.map((i) => (
             <div key={i.code} className="flex items-center justify-between gap-3">
-              <label htmlFor={`qp-${i.code}`} className="min-w-0 flex-1 text-sm text-ink-strong">
+              <label htmlFor={`qp-${i.code}`} className="min-w-0 flex-1 text-body-regular text-text-primary">
                 {itemName(i)}
-                {i.unit === "month" && <span className="block text-xs text-ink-subtle">Months behind</span>}
-                {i.isCustomQuote && <span className="block text-xs text-ink-subtle">Price on request</span>}
+                {i.unit === "month" && <span className="block text-caption-1-regular text-text-tertiary">Months behind</span>}
+                {i.isCustomQuote && <span className="block text-caption-1-regular text-text-tertiary">Price on request</span>}
               </label>
-              <Input id={`qp-${i.code}`} name={`once.${i.code}`} type="number" min={0} defaultValue={qty.get(i.code) ?? 0} className="w-20 text-right tabular-nums" />
+              <Input id={`qp-${i.code}`} name={`once.${i.code}`} type="number" min={0} defaultValue={qty.get(i.code) ?? 0} className="w-20 text-end tabular-nums" />
             </div>
           ))}
         </fieldset>
@@ -167,19 +167,19 @@ function ProfileForm({ profile, items, scheduleId, schedules }: { profile: Clien
 
 function Lines({ lines }: { lines: QuoteLine[] }) {
   return (
-    <ul className="divide-y divide-border text-sm">
+    <ul className="divide-y divide-separator-border text-body-regular">
       {lines.map((l) => (
         <li key={l.code} className="flex items-start justify-between gap-4 py-2">
           <span className="min-w-0 flex-1">
-            <span className="block text-ink-heading">{l.band ? `${l.label} — ${l.band}` : l.label}</span>
+            <span className="block text-text-primary">{l.band ? `${l.label} — ${l.band}` : l.label}</span>
             {l.quantity !== 1 && l.unitPrice !== null && l.billing !== "multiplier" && (
-              <span className="block text-xs text-ink-subtle">{l.quantity} × {peso.format(l.unitPrice)}</span>
+              <span className="block text-caption-1-regular text-text-tertiary">{l.quantity} × {peso.format(l.unitPrice)}</span>
             )}
             {l.billing === "multiplier" && l.unitPrice !== null && (
-              <span className="block text-xs text-ink-subtle">{l.code.startsWith("I.") ? `${l.quantity} month${l.quantity === 1 ? "" : "s"} × ${l.unitPrice} × monthly retainer` : `Bookkeeping × ${l.unitPrice}`}</span>
+              <span className="block text-caption-1-regular text-text-tertiary">{l.code.startsWith("I.") ? `${l.quantity} month${l.quantity === 1 ? "" : "s"} × ${l.unitPrice} × monthly retainer` : `Bookkeeping × ${l.unitPrice}`}</span>
             )}
           </span>
-          <span className="amount shrink-0 tabular-nums text-ink-heading">{l.amount === null ? <Badge tone="waiting">No price</Badge> : peso.format(l.amount)}</span>
+          <span className="amount shrink-0 tabular-nums text-text-primary">{l.amount === null ? <Badge tone="waiting">No price</Badge> : peso.format(l.amount)}</span>
         </li>
       ))}
     </ul>
@@ -188,9 +188,9 @@ function Lines({ lines }: { lines: QuoteLine[] }) {
 
 function Total({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-4 border-t border-border pt-3 ${strong ? "text-base font-semibold" : "text-sm"}`}>
-      <span className="text-ink-heading">{label}</span>
-      <span className="amount tabular-nums text-ink-heading">{peso.format(value)}</span>
+    <div className={`flex items-center justify-between gap-4 border-t border-separator-border pt-3 ${strong ? "text-headline-semibold" : "text-body-regular"}`}>
+      <span className="text-text-primary">{label}</span>
+      <span className="amount tabular-nums text-text-primary">{peso.format(value)}</span>
     </div>
   );
 }
@@ -201,14 +201,14 @@ function QuoteView({ quote, scheduleName, draft }: { quote: Quote; scheduleName:
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
-          <p className="text-sm font-medium text-ink-muted">Monthly retainer{draft ? " (DRAFT)" : ""}</p>
-          <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(quote.monthlyRetainer)}</p>
-          <p className="mt-2 text-sm text-ink-muted">{quote.minimumTopUp > 0 ? "Minimum retainer applies." : "Every month."}</p>
+          <p className="text-body-medium text-text-secondary">Monthly retainer{draft ? " (DRAFT)" : ""}</p>
+          <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(quote.monthlyRetainer)}</p>
+          <p className="mt-2 text-body-regular text-text-secondary">{quote.minimumTopUp > 0 ? "Minimum retainer applies." : "Every month."}</p>
         </Card>
         <Card>
-          <p className="text-sm font-medium text-ink-muted">First-year total{draft ? " (DRAFT)" : ""}</p>
-          <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(quote.firstYearTotal)}</p>
-          <p className="mt-2 text-sm text-ink-muted">12 × monthly + annual package + one-time.</p>
+          <p className="text-body-medium text-text-secondary">First-year total{draft ? " (DRAFT)" : ""}</p>
+          <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(quote.firstYearTotal)}</p>
+          <p className="mt-2 text-body-regular text-text-secondary">12 × monthly + annual package + one-time.</p>
         </Card>
       </div>
 
@@ -225,18 +225,18 @@ function QuoteView({ quote, scheduleName, draft }: { quote: Quote; scheduleName:
       )}
 
       <Card title="Monthly">
-        {quote.monthly.length ? <Lines lines={quote.monthly} /> : <p className="text-sm text-ink-muted">Nothing monthly applies.</p>}
+        {quote.monthly.length ? <Lines lines={quote.monthly} /> : <p className="text-body-regular text-text-secondary">Nothing monthly applies.</p>}
         {quote.minimumTopUp > 0 && (
-          <div className="flex items-center justify-between gap-4 border-t border-border py-2 text-sm">
-            <span className="text-ink-heading">Up to the minimum monthly retainer</span>
-            <span className="amount tabular-nums text-ink-heading">{peso.format(quote.minimumTopUp)}</span>
+          <div className="flex items-center justify-between gap-4 border-t border-separator-border py-2 text-body-regular">
+            <span className="text-text-primary">Up to the minimum monthly retainer</span>
+            <span className="amount tabular-nums text-text-primary">{peso.format(quote.minimumTopUp)}</span>
           </div>
         )}
         <Total label="Monthly retainer" value={quote.monthlyRetainer} strong />
       </Card>
 
       <Card title="Annual package">
-        {quote.annual.length ? <Lines lines={quote.annual} /> : <p className="text-sm text-ink-muted">None chosen.</p>}
+        {quote.annual.length ? <Lines lines={quote.annual} /> : <p className="text-body-regular text-text-secondary">None chosen.</p>}
         <Total label="Annual package" value={quote.annualTotal} />
       </Card>
 
@@ -249,13 +249,13 @@ function QuoteView({ quote, scheduleName, draft }: { quote: Quote; scheduleName:
 
       <Card title="First year">
         <div className="space-y-3">
-          <div className="flex justify-between gap-4 text-sm"><span className="text-ink-muted">12 × {peso.format(quote.monthlyRetainer)}</span><span className="amount tabular-nums">{peso.format(Math.round(quote.monthlyRetainer * 1200) / 100)}</span></div>
-          <div className="flex justify-between gap-4 text-sm"><span className="text-ink-muted">Annual package</span><span className="amount tabular-nums">{peso.format(quote.annualTotal)}</span></div>
-          <div className="flex justify-between gap-4 text-sm"><span className="text-ink-muted">One-time</span><span className="amount tabular-nums">{peso.format(quote.oneTimeTotal)}</span></div>
+          <div className="flex justify-between gap-4 text-body-regular"><span className="text-text-secondary">12 × {peso.format(quote.monthlyRetainer)}</span><span className="amount tabular-nums">{peso.format(Math.round(quote.monthlyRetainer * 1200) / 100)}</span></div>
+          <div className="flex justify-between gap-4 text-body-regular"><span className="text-text-secondary">Annual package</span><span className="amount tabular-nums">{peso.format(quote.annualTotal)}</span></div>
+          <div className="flex justify-between gap-4 text-body-regular"><span className="text-text-secondary">One-time</span><span className="amount tabular-nums">{peso.format(quote.oneTimeTotal)}</span></div>
           <Total label="First-year total" value={quote.firstYearTotal} strong />
           {!t.inclusive && <Total label={`First year with ${t.kind === "vat_12" ? "VAT" : "percentage tax"}`} value={t.firstYearWithTax} />}
         </div>
-        <ul className="mt-5 space-y-2 text-sm text-ink-muted">
+        <ul className="mt-5 space-y-2 text-body-regular text-text-secondary">
           <li>
             {t.note} {t.inclusive ? `Of the first-year total, ${peso.format(t.firstYear)} is that tax.` : `That is ${peso.format(t.monthly)} on the monthly retainer.`}
           </li>

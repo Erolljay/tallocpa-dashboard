@@ -29,8 +29,8 @@ async function Latest() {
   if (rows.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-[28px] leading-[34px] font-bold text-ink-heading">Statement</h1>
-        <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-sm text-ink-muted">No statements yet. Your first statement appears here on your billing day.</p>
+        <h1 className="text-title-1-bold text-text-primary">Statement</h1>
+        <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">No statements yet. Your first statement appears here on your billing day.</p>
       </div>
     );
   }
@@ -50,27 +50,27 @@ async function Latest() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-[28px] leading-[34px] font-bold text-ink-heading">Statement</h1>
+      <h1 className="text-title-1-bold text-text-primary">Statement</h1>
       {statements.map((s) =>
         s ? (
           <section key={s.soa.id} className="space-y-3">
-            {several && <h2 className="font-display text-lg font-semibold text-ink-heading">{s.client.name}</h2>}
+            {several && <h2 className="text-title-3-semibold text-text-primary">{s.client.name}</h2>}
             <StatementView s={s} today={today} />
           </section>
         ) : null,
       )}
 
       <section className="space-y-3 print:hidden">
-        <h2 className="font-display text-lg font-semibold text-ink-heading">All statements</h2>
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm shadow-sm">
+        <h2 className="text-title-3-semibold text-text-primary">All statements</h2>
+        <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular shadow-xs">
           {rows.map((r) => {
             const open = openBySoa.get(r.id) ?? 0;
             return (
               <li key={r.id}>
-                <Link href={`/portal/statement/${r.id}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface-muted pointer-coarse:min-h-14">
+                <Link href={`/portal/statement/${r.id}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 hover:bg-background-secondary-hover pointer-coarse:min-h-14">
                   <span className="min-w-0">
-                    <span className="block font-medium tabular-nums text-ink-heading">{r.reference}</span>
-                    <span className="block text-xs text-ink-subtle">{several ? `${nameOf.get(r.client_id)} · ` : ""}{showDate(r.billing_date)}</span>
+                    <span className="block font-medium tabular-nums text-text-primary">{r.reference}</span>
+                    <span className="block text-caption-1-regular text-text-tertiary">{several ? `${nameOf.get(r.client_id)} · ` : ""}{showDate(r.billing_date)}</span>
                   </span>
                   {open <= 0 ? <Badge tone="done">Paid</Badge> : r.due_on < today ? <Badge tone="blocked">{peso.format(open)} overdue</Badge> : <Badge tone="neutral">{peso.format(open)} due {showDate(r.due_on)}</Badge>}
                 </Link>

@@ -34,10 +34,10 @@ function NewDraftForm({ action, label, defaultName, defaultDate, hint }: { actio
   const [state, run, pending] = useActionState(action, {} as FeeFormState);
   const id = label.replace(/\W+/g, "-").toLowerCase();
   return (
-    <details className="rounded-xl border border-border">
-      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-link hover:underline">{label}</summary>
-      <form action={run} className="grid gap-3 border-t border-border bg-surface-muted p-4 sm:grid-cols-2">
-        <p className="text-sm text-ink-muted sm:col-span-2">{hint}</p>
+    <details className="rounded-xl border border-separator-border">
+      <summary className="cursor-pointer list-none px-4 py-3 text-body-medium text-button-ghost-foreground hover:underline">{label}</summary>
+      <form action={run} className="grid gap-3 border-t border-separator-border bg-background-secondary-default p-4 sm:grid-cols-2">
+        <p className="text-body-regular text-text-secondary sm:col-span-2">{hint}</p>
         <Field label="Name" htmlFor={`${id}-name`}>
           <Input id={`${id}-name`} name="name" defaultValue={defaultName} required />
         </Field>
@@ -108,10 +108,10 @@ export function ScheduleSettingsForm({ scheduleId, values, taxLabel }: { schedul
         <Input id="fs-valid" name="quote_valid_days" type="number" min={1} max={365} defaultValue={values.quote_valid_days} required className="tabular-nums" />
       </Field>
       <Field label="Minimum monthly retainer (₱)" htmlFor="fs-min" hint="Leave empty for no minimum.">
-        <Input id="fs-min" name="minimum_monthly_retainer" inputMode="decimal" defaultValue={values.minimum_monthly_retainer ?? ""} className="text-right tabular-nums" />
+        <Input id="fs-min" name="minimum_monthly_retainer" inputMode="decimal" defaultValue={values.minimum_monthly_retainer ?? ""} className="text-end tabular-nums" />
       </Field>
       <Field label="Late-submission surcharge (₱ a month)" htmlFor="fs-late" hint="Component J. Leave empty for no surcharge.">
-        <Input id="fs-late" name="late_surcharge_amount" inputMode="decimal" defaultValue={values.late_surcharge_amount ?? ""} className="text-right tabular-nums" />
+        <Input id="fs-late" name="late_surcharge_amount" inputMode="decimal" defaultValue={values.late_surcharge_amount ?? ""} className="text-end tabular-nums" />
       </Field>
       <Field label="Surcharge goes on the statement" htmlFor="fs-auto">
         <Select id="fs-auto" name="late_surcharge_auto" defaultValue={values.late_surcharge_auto ? "1" : "0"}>
@@ -165,28 +165,28 @@ export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: Pri
   return (
     <form action={run} className="space-y-6">
       {groups.map(([letter, items]) => (
-        <section key={letter} className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-6">
-          <h2 className="font-display text-lg leading-7 font-semibold text-ink-heading">
-            <span className="text-ink-subtle">{letter}.</span> {COMPONENTS[letter].title}
+        <section key={letter} className="rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-xs sm:p-6">
+          <h2 className="text-title-3-semibold text-text-primary">
+            <span className="text-text-tertiary">{letter}.</span> {COMPONENTS[letter].title}
           </h2>
-          <p className="mb-3 text-sm text-ink-muted">{COMPONENTS[letter].hint}</p>
-          <ul className="divide-y divide-border">
+          <p className="mb-3 text-body-regular text-text-secondary">{COMPONENTS[letter].hint}</p>
+          <ul className="divide-y divide-separator-border">
             {items.map((r) => {
               const factor = r.billing === "multiplier";
               return (
                 <li key={r.id} className="flex items-center justify-between gap-3 py-3">
-                  <label htmlFor={`p-${r.id}`} className="min-w-0 flex-1 text-sm">
-                    <span className="block font-medium text-ink-heading">{r.band ?? r.label}</span>
-                    <span className="block text-xs text-ink-subtle">
+                  <label htmlFor={`p-${r.id}`} className="min-w-0 flex-1 text-body-regular">
+                    <span className="block font-medium text-text-primary">{r.band ?? r.label}</span>
+                    <span className="block text-caption-1-regular text-text-tertiary">
                       {r.band ? `${r.label} · ` : ""}
                       {factor ? (r.unit === "month" ? "× monthly retainer, per month" : "× bookkeeping fee") : `${billingHint[r.billing]}${r.unit && r.billing !== "multiplier" ? ` · per ${r.unit}` : ""}`}
                     </span>
                   </label>
                   {r.isCustomQuote ? (
-                    <span className="shrink-0 rounded-full bg-surface-sunken px-3 py-1 text-xs font-medium text-ink-strong">Price on request</span>
+                    <span className="shrink-0 rounded-full bg-background-tertiary-default px-3 py-1 text-caption-1-medium text-text-primary">Price on request</span>
                   ) : (
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <span aria-hidden className="w-3 text-right text-sm text-ink-subtle">{factor ? "×" : "₱"}</span>
+                      <span aria-hidden className="w-3 text-end text-body-regular text-text-tertiary">{factor ? "×" : "₱"}</span>
                       <Input
                         id={`p-${r.id}`}
                         name={`price:${r.id}`}
@@ -195,7 +195,7 @@ export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: Pri
                         placeholder="Not set"
                         value={values[r.id] ?? ""}
                         onChange={(e) => setValues((v) => ({ ...v, [r.id]: e.target.value }))}
-                        className="w-28 text-right tabular-nums sm:w-32"
+                        className="w-28 text-end tabular-nums sm:w-32"
                       />
                     </div>
                   )}
@@ -205,9 +205,9 @@ export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: Pri
           </ul>
         </section>
       ))}
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-separator-border bg-background-primary-default/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
         <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Prices"}</Button>
-        <span className="text-sm text-ink-muted">{empty === 0 ? "Every item has a price." : `${empty} item${empty === 1 ? "" : "s"} without a price.`}</span>
+        <span className="text-body-regular text-text-secondary">{empty === 0 ? "Every item has a price." : `${empty} item${empty === 1 ? "" : "s"} without a price.`}</span>
         <Result state={state} />
       </div>
     </form>
@@ -226,7 +226,7 @@ export function ActivateForm({ scheduleId, unpriced }: { scheduleId: string; unp
           </ul>
         </Notice>
       ) : (
-        <p className="text-sm text-ink-muted">Every item has a price. Activating makes this the schedule quotes use and retires the current one. An active schedule cannot be edited; you start a new version instead.</p>
+        <p className="text-body-regular text-text-secondary">Every item has a price. Activating makes this the schedule quotes use and retires the current one. An active schedule cannot be edited; you start a new version instead.</p>
       )}
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>{pending ? "Activating…" : "Activate"}</Button>

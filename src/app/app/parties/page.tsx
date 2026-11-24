@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { RiAddLine } from "@remixicon/react";
 import { Badge, Button, Input, LinkButton, PageHeader, Select, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { PARTY_KINDS, VAT_STATUSES, partyTinLabel, type Party } from "@/lib/parties/format";
@@ -61,7 +61,7 @@ async function PartyList({ searchParams }: Pick<PageProps<"/app/parties">, "sear
       <PageHeader
         title="Customers & suppliers"
         description={clientName ? `Parties ${clientName} deals with.` : "Every customer and supplier our clients deal with, by TIN. Registered names here go on the BIR attachments."}
-        actions={<LinkButton href="/app/parties/new"><Plus aria-hidden className="size-4" />New party</LinkButton>}
+        actions={<LinkButton href="/app/parties/new"><RiAddLine aria-hidden className="size-4" />New party</LinkButton>}
       />
       <form className="mb-6 grid gap-3 sm:grid-cols-[1fr_10rem_10rem_10rem_auto] sm:items-end" role="search">
         {clientId && <input type="hidden" name="client" value={clientId} />}
@@ -94,44 +94,44 @@ async function PartyList({ searchParams }: Pick<PageProps<"/app/parties">, "sear
         <Button type="submit" variant="secondary">Filter</Button>
       </form>
       {clientName && (
-        <p className="mb-4 text-sm text-ink-muted">
-          Showing {clientName}&rsquo;s parties. <Link href="/app/parties" className="text-link hover:underline">Show everyone</Link>
+        <p className="mb-4 text-body-regular text-text-secondary">
+          Showing {clientName}&rsquo;s parties. <Link href="/app/parties" className="text-button-ghost-foreground hover:underline">Show everyone</Link>
         </p>
       )}
 
       {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
-          <p className="font-medium text-ink-heading">No parties found</p>
-          <p className="mt-1 text-sm text-ink-muted">Parties are added when a document is approved, or you can add one from its COR.</p>
+        <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
+          <p className="font-medium text-text-primary">No parties found</p>
+          <p className="mt-1 text-body-regular text-text-secondary">Parties are added when a document is approved, or you can add one from its COR.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+        <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+          <table className="w-full min-w-[44rem] text-body-regular">
+            <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="px-4 py-3 font-medium">Name</th>
-                <th scope="col" className="px-4 py-3 font-medium">TIN</th>
-                <th scope="col" className="px-4 py-3 font-medium">Kind</th>
-                <th scope="col" className="px-4 py-3 font-medium">VAT</th>
-                <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                <th scope="col" className="text-start px-4 py-3">Name</th>
+                <th scope="col" className="text-start px-4 py-3">TIN</th>
+                <th scope="col" className="text-start px-4 py-3">Kind</th>
+                <th scope="col" className="text-start px-4 py-3">VAT</th>
+                <th scope="col" className="text-start px-4 py-3">Status</th>
               </tr>
             </thead>
             <tbody>
               {rows.slice(0, LIMIT).map((p) => (
-                <tr key={p.id} className="border-t border-border transition-colors first:border-t-0 hover:bg-surface-muted">
+                <tr key={p.id} className="border-t border-separator-border transition-colors first:border-t-0 hover:bg-background-secondary-hover">
                   <td className="px-4 py-3">
-                    <Link href={`/app/parties/${p.id}`} className="font-medium text-ink-heading hover:underline">{p.display_name}</Link>
-                    {p.trade_name && <p className="text-xs text-ink-subtle">{p.trade_name}</p>}
+                    <Link href={`/app/parties/${p.id}`} className="font-medium text-text-primary hover:underline">{p.display_name}</Link>
+                    {p.trade_name && <p className="text-caption-1-regular text-text-tertiary">{p.trade_name}</p>}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-ink-muted">{partyTinLabel(p)}</td>
-                  <td className="px-4 py-3 text-ink-muted">{PARTY_KINDS[p.kind]}</td>
-                  <td className="px-4 py-3 text-ink-muted">{VAT_STATUSES[p.vat_status]}</td>
+                  <td className="px-4 py-3 tabular-nums text-text-secondary">{partyTinLabel(p)}</td>
+                  <td className="px-4 py-3 text-text-secondary">{PARTY_KINDS[p.kind]}</td>
+                  <td className="px-4 py-3 text-text-secondary">{VAT_STATUSES[p.vat_status]}</td>
                   <td className="px-4 py-3">{p.verified_at ? <Badge tone="done">Verified</Badge> : <Badge tone="neutral">Not verified</Badge>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {more && <p className="border-t border-border px-4 py-3 text-sm text-ink-muted">Showing the first {LIMIT}. Search to narrow the list.</p>}
+          {more && <p className="border-t border-separator-border px-4 py-3 text-body-regular text-text-secondary">Showing the first {LIMIT}. Search to narrow the list.</p>}
         </div>
       )}
     </>

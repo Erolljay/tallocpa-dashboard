@@ -74,18 +74,18 @@ async function Certificates({ params, searchParams }: Pick<PageProps<"/app/clien
         <Notice tone="waiting">No payroll for {year}.</Notice>
       ) : (
         <Card>
-          <ul className="divide-y divide-border text-sm">
+          <ul className="divide-y divide-separator-border text-body-regular">
             {set.forms.map((f) => (
               <li key={f.employeeId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
                 <div className="min-w-0">
-                  <Link href={`${base}/2316?employee=${f.employeeId}`} className="font-medium text-link hover:underline">{f.employeeName}</Link>
-                  <p className="text-xs text-ink-subtle">
+                  <Link href={`${base}/2316?employee=${f.employeeId}`} className="font-medium text-button-ghost-foreground hover:underline">{f.employeeName}</Link>
+                  <p className="text-caption-1-regular text-text-tertiary">
                     {f.mwe.isMwe ? "MWE · " : ""}gross {formatAmount(f.amounts["19"])} · taxable {formatAmount(f.amounts["23"])} · tax due {formatAmount(f.amounts["24"])} · withheld {formatAmount(f.amounts["28"])}
                     {f.previous ? " · with previous employer" : ""}
                   </p>
-                  {f.warnings.length > 0 && <p className="text-xs text-warning">{f.warnings.join(" ")}</p>}
+                  {f.warnings.length > 0 && <p className="text-caption-1-regular text-status-yellow-text">{f.warnings.join(" ")}</p>}
                 </div>
-                <Link href={`${base}/2316?employee=${f.employeeId}`} className="text-link hover:underline">View / print</Link>
+                <Link href={`${base}/2316?employee=${f.employeeId}`} className="text-button-ghost-foreground hover:underline">View / print</Link>
               </li>
             ))}
           </ul>

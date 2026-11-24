@@ -23,7 +23,7 @@ export function PeriodFilter({ period, from, to }: { period: PeriodKey; from: st
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="w-48">
-        <label htmlFor="doc-period" className="mb-1.5 block text-sm font-medium text-ink-strong">Filter by period</label>
+        <label htmlFor="doc-period" className="mb-1.5 block text-body-medium text-text-primary">Filter by period</label>
         <Select
           id="doc-period"
           name="period"
@@ -40,11 +40,11 @@ export function PeriodFilter({ period, from, to }: { period: PeriodKey; from: st
       {custom && (
         <>
           <div className="w-44">
-            <label htmlFor="doc-from" className="mb-1.5 block text-sm font-medium text-ink-strong">From</label>
+            <label htmlFor="doc-from" className="mb-1.5 block text-body-medium text-text-primary">From</label>
             <Input id="doc-from" name="from" type="month" defaultValue={from} required />
           </div>
           <div className="w-44">
-            <label htmlFor="doc-to" className="mb-1.5 block text-sm font-medium text-ink-strong">To</label>
+            <label htmlFor="doc-to" className="mb-1.5 block text-body-medium text-text-primary">To</label>
             <Input id="doc-to" name="to" type="month" defaultValue={to} required />
           </div>
           <Button type="submit" variant="secondary">Apply</Button>

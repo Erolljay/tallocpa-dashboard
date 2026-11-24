@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RiRefreshLine } from "@remixicon/react";
 import { Button, Notice } from "@/components/ui";
 import { generateFilingsNow, type GenerateState } from "./actions";
 
@@ -11,7 +11,7 @@ export function GenerateButton() {
     <div className="space-y-3">
       <form action={action}>
         <Button type="submit" variant="secondary" disabled={pending}>
-          <RefreshCw aria-hidden className={`size-4 ${pending ? "animate-spin" : ""}`} />
+          <RiRefreshLine aria-hidden className={`size-4 ${pending ? "animate-spin" : ""}`} />
           {pending ? "Generating…" : "Generate filings now"}
         </Button>
       </form>

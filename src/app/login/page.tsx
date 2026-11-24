@@ -13,12 +13,15 @@ const errors: Record<string, string> = {
 
 export default function LoginPage(props: PageProps<"/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm space-y-8">
-        <Lockup />
-        <div className="rounded-2xl border border-border bg-surface shadow-sm p-6">
-          <h1 className="font-display text-xl font-semibold text-ink-heading">Sign in</h1>
-          <p className="mt-1 mb-6 text-sm text-ink-muted">For Tallo CPA staff and clients. Use your Google account or get a link by email.</p>
+    <main className="flex flex-1 items-center justify-center bg-background-full px-4 py-12">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <div className="flex justify-center">
+          <Lockup />
+        </div>
+        {/* BoardUI auth card: rounded-3xl panel on the page ground. */}
+        <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 shadow-xs">
+          <h1 className="text-title-2-medium text-text-primary">Sign in</h1>
+          <p className="mt-1 mb-6 text-body-regular text-text-secondary">For Tallo CPA staff and clients. Use your Google account or get a link by email.</p>
           <Suspense>
             <Form searchParams={props.searchParams} />
           </Suspense>
@@ -33,7 +36,7 @@ async function Form({ searchParams }: { searchParams: PageProps<"/login">["searc
   const next = safeNextPath(sp.next);
   const error = typeof sp.error === "string" ? errors[sp.error] : undefined;
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {error && <Notice tone="blocked">{error}</Notice>}
       <SignInForm next={next} />
     </div>

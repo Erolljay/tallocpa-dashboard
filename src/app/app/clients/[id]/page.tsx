@@ -68,33 +68,33 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Registration">
-          <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-ink-subtle">RDO</dt><dd className="text-ink-heading">{client.rdo_code ?? "—"}</dd>
-            <dt className="text-ink-subtle">Address</dt><dd className="text-ink-heading">{client.registered_address ?? "—"}</dd>
-            <dt className="text-ink-subtle">Registered</dt><dd className="text-ink-heading">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
-            <dt className="text-ink-subtle">Tax types</dt><dd className="text-ink-heading">{taxTypes.join(", ") || "—"}</dd>
-            <dt className="text-ink-subtle">Taxable year</dt><dd className="text-ink-heading">Ends {months[client.fiscal_year_end_month - 1]}</dd>
-            <dt className="text-ink-subtle">Filing</dt><dd className="text-ink-heading">{client.filing_channel === "efps" ? `eFPS, Group ${client.efps_group}` : "eBIRForms"}</dd>
-            <dt className="text-ink-subtle">Books</dt><dd className="text-ink-heading">{client.book_type === "loose_leaf" ? "Loose-leaf" : "Manual"}</dd>
-            <dt className="text-ink-subtle">BIR payment</dt><dd className="text-ink-heading">{client.payment_mode === "firm_remits" ? "We remit for the client" : "Client pays directly"}</dd>
-            <dt className="text-ink-subtle">Document cutoff</dt><dd className="text-ink-heading">Day {client.submission_cutoff_day} of the following month</dd>
+          <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-body-regular">
+            <dt className="text-text-tertiary">RDO</dt><dd className="text-text-primary">{client.rdo_code ?? "—"}</dd>
+            <dt className="text-text-tertiary">Address</dt><dd className="text-text-primary">{client.registered_address ?? "—"}</dd>
+            <dt className="text-text-tertiary">Registered</dt><dd className="text-text-primary">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
+            <dt className="text-text-tertiary">Tax types</dt><dd className="text-text-primary">{taxTypes.join(", ") || "—"}</dd>
+            <dt className="text-text-tertiary">Taxable year</dt><dd className="text-text-primary">Ends {months[client.fiscal_year_end_month - 1]}</dd>
+            <dt className="text-text-tertiary">Filing</dt><dd className="text-text-primary">{client.filing_channel === "efps" ? `eFPS, Group ${client.efps_group}` : "eBIRForms"}</dd>
+            <dt className="text-text-tertiary">Books</dt><dd className="text-text-primary">{client.book_type === "loose_leaf" ? "Loose-leaf" : "Manual"}</dd>
+            <dt className="text-text-tertiary">BIR payment</dt><dd className="text-text-primary">{client.payment_mode === "firm_remits" ? "We remit for the client" : "Client pays directly"}</dd>
+            <dt className="text-text-tertiary">Document cutoff</dt><dd className="text-text-primary">Day {client.submission_cutoff_day} of the following month</dd>
           </dl>
         </Card>
 
         <Card title="Filing obligations">
           {(obligations.data ?? []).length === 0 ? (
-            <p className="text-sm text-ink-muted">No obligations yet.</p>
+            <p className="text-body-regular text-text-secondary">No obligations yet.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-ink-subtle">
-                <tr><th scope="col" className="pb-2 font-medium">Form</th><th scope="col" className="pb-2 font-medium">Frequency</th><th scope="col" className="pb-2 font-medium">From</th></tr>
+            <table className="w-full text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
+                <tr><th scope="col" className="text-start pb-2">Form</th><th scope="col" className="text-start pb-2">Frequency</th><th scope="col" className="text-start pb-2">From</th></tr>
               </thead>
               <tbody>
                 {obligations.data!.map((o) => (
-                  <tr key={o.id} className="border-t border-border">
-                    <td className="py-2 font-medium text-ink-heading">{o.form}</td>
-                    <td className="py-2 text-ink-muted">{frequencyLabel[o.frequency]}</td>
-                    <td className="py-2 tabular-nums text-ink-muted">{fmtDate(o.start_date)}</td>
+                  <tr key={o.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                    <td className="py-2 font-medium text-text-primary">{o.form}</td>
+                    <td className="py-2 text-text-secondary">{frequencyLabel[o.frequency]}</td>
+                    <td className="py-2 tabular-nums text-text-secondary">{fmtDate(o.start_date)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -102,18 +102,18 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           )}
         </Card>
 
-        <Card title="Engagements" actions={<span className="text-sm tabular-nums text-ink-muted">{peso.format(retainerTotal)} / month</span>}>
+        <Card title="Engagements" actions={<span className="text-body-regular tabular-nums text-text-secondary">{peso.format(retainerTotal)} / month</span>}>
           {(engagements.data ?? []).length === 0 ? (
-            <p className="text-sm text-ink-muted">No engagement recorded yet.</p>
+            <p className="text-body-regular text-text-secondary">No engagement recorded yet.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {engagements.data!.map((e) => (
                 <li key={e.id} className="flex items-center justify-between gap-4 py-2">
                   <div>
-                    <p className="font-medium text-ink-heading">{(e.service_lines as unknown as { name: string } | null)?.name ?? e.service_line}</p>
-                    <p className="text-xs text-ink-subtle">From {fmtDate(e.start_date)}</p>
+                    <p className="font-medium text-text-primary">{(e.service_lines as unknown as { name: string } | null)?.name ?? e.service_line}</p>
+                    <p className="text-caption-1-regular text-text-tertiary">From {fmtDate(e.start_date)}</p>
                   </div>
-                  <span className="amount tabular-nums text-ink-heading">{peso.format(Number(e.monthly_retainer))}</span>
+                  <span className="amount tabular-nums text-text-primary">{peso.format(Number(e.monthly_retainer))}</span>
                 </li>
               ))}
             </ul>
@@ -123,14 +123,14 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
 
         <Card title="Team">
           {(team.data ?? []).length === 0 ? (
-            <p className="text-sm text-ink-muted">Nobody is assigned yet.</p>
+            <p className="text-body-regular text-text-secondary">Nobody is assigned yet.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {team.data!.map((a) => (
                 <li key={`${a.user_id}-${a.role}`} className="flex items-center justify-between gap-4 py-2">
-                  <span className="text-ink-heading">{(a.staff_profiles as unknown as { full_name: string } | null)?.full_name}</span>
+                  <span className="text-text-primary">{(a.staff_profiles as unknown as { full_name: string } | null)?.full_name}</span>
                   <span className="flex items-center gap-3">
-                    <span className="text-ink-muted">{a.role === "preparer" ? "Preparer" : "Reviewer"}</span>
+                    <span className="text-text-secondary">{a.role === "preparer" ? "Preparer" : "Reviewer"}</span>
                     {isOwner && <RemoveAssignmentButton clientId={id} userId={a.user_id} role={a.role as "preparer" | "reviewer"} />}
                   </span>
                 </li>
@@ -147,20 +147,20 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           canAct={isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)}
         />
 
-        <Card title="Customers & suppliers" actions={<Link href={`/app/parties?client=${id}`} className="text-sm text-link hover:underline">See all</Link>}>
+        <Card title="Customers & suppliers" actions={<Link href={`/app/parties?client=${id}`} className="text-body-regular text-button-ghost-foreground hover:underline">See all</Link>}>
           {(parties.data ?? []).length === 0 ? (
-            <p className="text-sm text-ink-muted">None yet. They are added when this client&rsquo;s documents are approved.</p>
+            <p className="text-body-regular text-text-secondary">None yet. They are added when this client&rsquo;s documents are approved.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {parties.data!.map((cp) => {
                 const p = cp.parties as unknown as { display_name: string; tin: string; branch_code: string } | null;
                 return (
                   <li key={cp.party_id} className="flex items-center justify-between gap-4 py-2">
                     <div className="min-w-0">
-                      <Link href={`/app/parties/${cp.party_id}`} className="font-medium text-ink-heading hover:underline">{p?.display_name}</Link>
-                      <p className="text-xs tabular-nums text-ink-subtle">{p?.tin}-{p?.branch_code} · last {fmtDate(cp.last_seen)}</p>
+                      <Link href={`/app/parties/${cp.party_id}`} className="font-medium text-text-primary hover:underline">{p?.display_name}</Link>
+                      <p className="text-caption-1-regular tabular-nums text-text-tertiary">{p?.tin}-{p?.branch_code} · last {fmtDate(cp.last_seen)}</p>
                     </div>
-                    <span className="shrink-0 text-ink-muted">{PARTY_ROLES[cp.role as PartyRole]}</span>
+                    <span className="shrink-0 text-text-secondary">{PARTY_ROLES[cp.role as PartyRole]}</span>
                   </li>
                 );
               })}
@@ -170,16 +170,16 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
 
         <Card title="Portal users">
           {(portalUsers.data ?? []).length === 0 ? (
-            <p className="text-sm text-ink-muted">Nobody from the client can sign in yet.</p>
+            <p className="text-body-regular text-text-secondary">Nobody from the client can sign in yet.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {portalUsers.data!.map((u) => {
                 const info = portalEmailOf.get(u.user_id);
                 return (
                   <li key={u.user_id} className="flex items-center justify-between gap-4 py-2">
                     <div>
-                      <p className="font-medium text-ink-heading">{u.full_name}{u.position ? <span className="font-normal text-ink-muted"> · {u.position}</span> : null}</p>
-                      <p className="text-xs text-ink-subtle">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
+                      <p className="font-medium text-text-primary">{u.full_name}{u.position ? <span className="font-normal text-text-secondary"> · {u.position}</span> : null}</p>
+                      <p className="text-caption-1-regular text-text-tertiary">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
                     </div>
                     {isOwner && <RemoveClientUserButton clientId={id} userId={u.user_id} />}
                   </li>

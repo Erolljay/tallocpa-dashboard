@@ -58,24 +58,24 @@ async function PartyDetail({ params }: { params: PageProps<"/app/parties/[id]">[
             </div>
           )}
           <PartyForm party={party} disabled={locked} />
-          <p className="mt-4 text-xs text-ink-subtle">Source: {PARTY_SOURCES[party.source]}.</p>
+          <p className="mt-4 text-caption-1-regular text-text-tertiary">Source: {PARTY_SOURCES[party.source]}.</p>
         </Card>
 
         <div className="space-y-6">
           <Card title="Clients dealing with this party">
             {(links ?? []).length === 0 ? (
-              <p className="text-sm text-ink-muted">None of the clients you can see yet.</p>
+              <p className="text-body-regular text-text-secondary">None of the clients you can see yet.</p>
             ) : (
-              <ul className="divide-y divide-border text-sm">
+              <ul className="divide-y divide-separator-border text-body-regular">
                 {links!.map((l) => {
                   const c = l.clients as unknown as { name: string; code: string } | null;
                   return (
                     <li key={l.client_id} className="flex items-center justify-between gap-4 py-2">
                       <div>
-                        <Link href={`/app/clients/${l.client_id}`} className="font-medium text-ink-heading hover:underline">{c?.name}</Link>
-                        <p className="text-xs tabular-nums text-ink-subtle">{fmtDate(l.first_seen)} – {fmtDate(l.last_seen)}</p>
+                        <Link href={`/app/clients/${l.client_id}`} className="font-medium text-text-primary hover:underline">{c?.name}</Link>
+                        <p className="text-caption-1-regular tabular-nums text-text-tertiary">{fmtDate(l.first_seen)} – {fmtDate(l.last_seen)}</p>
                       </div>
-                      <span className="text-ink-muted">{PARTY_ROLES[l.role as PartyRole]}</span>
+                      <span className="text-text-secondary">{PARTY_ROLES[l.role as PartyRole]}</span>
                     </li>
                   );
                 })}
@@ -84,10 +84,10 @@ async function PartyDetail({ params }: { params: PageProps<"/app/parties/[id]">[
           </Card>
 
           <Card title="On BIR attachments">
-            <dl className="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-ink-subtle">TIN / branch</dt><dd className="tabular-nums text-ink-heading">{tin9(party.tin)} / {branch4(party.branch_code)}</dd>
-              <dt className="text-ink-subtle">Registered name</dt><dd className="text-ink-heading">{dat.registeredName || "—"}</dd>
-              <dt className="text-ink-subtle">Last, first, middle</dt><dd className="text-ink-heading">{[dat.lastName, dat.firstName, dat.middleName].filter(Boolean).join(", ") || "—"}</dd>
+            <dl className="grid grid-cols-[9rem_1fr] gap-x-4 gap-y-2 text-body-regular">
+              <dt className="text-text-tertiary">TIN / branch</dt><dd className="tabular-nums text-text-primary">{tin9(party.tin)} / {branch4(party.branch_code)}</dd>
+              <dt className="text-text-tertiary">Registered name</dt><dd className="text-text-primary">{dat.registeredName || "—"}</dd>
+              <dt className="text-text-tertiary">Last, first, middle</dt><dd className="text-text-primary">{[dat.lastName, dat.firstName, dat.middleName].filter(Boolean).join(", ") || "—"}</dd>
             </dl>
           </Card>
 

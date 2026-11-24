@@ -34,7 +34,7 @@ export function WorksheetInputsForm({ filingId, inputs, values, canEdit }: { fil
                     autoComplete="off"
                     inputMode={d.kind === "amount" ? "decimal" : d.kind === "count" ? "numeric" : undefined}
                     placeholder={d.kind === "amount" ? "0.00" : undefined}
-                    className={d.kind === "amount" || d.kind === "count" ? "text-right tabular-nums" : undefined}
+                    className={d.kind === "amount" || d.kind === "count" ? "text-end tabular-nums" : undefined}
                   />
                 )}
               </Field>

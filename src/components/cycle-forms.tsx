@@ -6,8 +6,8 @@ import { closeCycleAction, decideExceptionAction, nothingToSubmitAction, type Cy
 import { EXCEPTION_DECISIONS } from "@/lib/cycle/summary";
 
 function Message({ state }: { state: CycleState }) {
-  if (state.error) return <span role="alert" className="text-xs text-danger-text">{state.error}</span>;
-  if (state.ok) return <span role="status" className="text-xs text-success">{state.ok}</span>;
+  if (state.error) return <span role="alert" className="text-caption-1-regular text-text-error-primary">{state.error}</span>;
+  if (state.ok) return <span role="status" className="text-caption-1-regular text-status-lime-text">{state.ok}</span>;
   return null;
 }
 
@@ -20,12 +20,12 @@ export function CloseCycleButton({ clientId, period }: { clientId: string; perio
     <div className="flex flex-wrap items-center justify-end gap-2">
       {asking ? (
         <form action={run} className="flex items-center gap-2">
-          <span className="text-xs text-ink-muted">Unposted documents move to next month.</span>
+          <span className="text-caption-1-regular text-text-secondary">Unposted documents move to next month.</span>
           <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Closing…" : "Close month"}</Button>
-          <button type="button" onClick={() => setAsking(false)} className="text-xs text-ink-muted hover:underline">Cancel</button>
+          <button type="button" onClick={() => setAsking(false)} className="text-caption-1-regular text-text-secondary hover:underline">Cancel</button>
         </form>
       ) : (
-        <button type="button" onClick={() => setAsking(true)} className="text-xs font-medium text-link hover:underline">Close month…</button>
+        <button type="button" onClick={() => setAsking(true)} className="text-caption-1-medium text-button-ghost-foreground hover:underline">Close month…</button>
       )}
       <Message state={state} />
     </div>
@@ -51,12 +51,12 @@ export function DecideExceptionForm({ documentId }: { documentId: string }) {
   return (
     <form action={run} className="flex flex-wrap items-center gap-2">
       <label htmlFor={`decision-${documentId}`} className="sr-only">Decision</label>
-      <Select id={`decision-${documentId}`} name="decision" required defaultValue="" className="w-auto text-xs">
+      <Select id={`decision-${documentId}`} name="decision" required defaultValue="" className="w-auto text-caption-1-regular">
         <option value="" disabled>Decide…</option>
         {Object.entries(EXCEPTION_DECISIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </Select>
       <label htmlFor={`note-${documentId}`} className="sr-only">Note</label>
-      <Input id={`note-${documentId}`} name="note" required placeholder="Note for the file" className="min-w-40 flex-1 text-xs" />
+      <Input id={`note-${documentId}`} name="note" required placeholder="Note for the file" className="min-w-40 flex-1 text-caption-1-regular" />
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>Save</Button>
       <Message state={state} />
     </form>

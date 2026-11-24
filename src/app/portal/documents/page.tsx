@@ -45,22 +45,22 @@ async function Documents() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-xl font-semibold text-ink-heading">Your documents</h1>
+      <h1 className="text-title-2-semibold text-text-primary">Your documents</h1>
 
       {returned.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-medium text-danger-text">Returned to you</h2>
+          <h2 className="font-medium text-text-error-primary">Returned to you</h2>
           {returned.map((d) => (
-            <article key={d.id} className="space-y-3 rounded-2xl border border-border bg-surface shadow-sm p-4">
+            <article key={d.id} className="space-y-3 rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate font-medium text-link underline">{d.file_name}</a>
-                  <p className="text-xs text-ink-subtle">{DOC_TYPES[d.doc_type]} · {showMonth(d.period)}{several ? ` · ${nameOf.get(d.client_id)}` : ""}</p>
+                  <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate font-medium text-button-ghost-foreground underline">{d.file_name}</a>
+                  <p className="text-caption-1-regular text-text-tertiary">{DOC_TYPES[d.doc_type]} · {showMonth(d.period)}{several ? ` · ${nameOf.get(d.client_id)}` : ""}</p>
                 </div>
                 <Badge tone="blocked">Returned</Badge>
               </div>
-              <p className="text-sm text-ink-heading">Reason: “{d.return_reason}”</p>
-              <p className="text-xs text-ink-muted">Upload a new copy from the Upload tab if needed, then tell us here.</p>
+              <p className="text-body-regular text-text-primary">Reason: “{d.return_reason}”</p>
+              <p className="text-caption-1-regular text-text-secondary">Upload a new copy from the Upload tab if needed, then tell us here.</p>
               <ReplyForm documentId={d.id} />
             </article>
           ))}
@@ -68,17 +68,17 @@ async function Documents() {
       )}
 
       {docs.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-sm text-ink-muted">No documents yet. Use the Upload tab to send your first receipts.</p>
+        <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">No documents yet. Use the Upload tab to send your first receipts.</p>
       ) : (
         [...byMonth.entries()].map(([month, list]) => (
           <section key={month} className="space-y-2">
-            <h2 className="font-medium text-ink-heading">{showMonth(month)} <span className="text-sm font-normal text-ink-subtle">· {list.length}</span></h2>
-            <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm text-sm">
+            <h2 className="font-medium text-text-primary">{showMonth(month)} <span className="text-body-regular text-text-tertiary">· {list.length}</span></h2>
+            <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs text-body-regular">
               {list.map((d) => (
                 <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
-                    <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate text-ink-heading hover:underline">{d.file_name}</a>
-                    <p className="text-xs text-ink-subtle">
+                    <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate text-text-primary hover:underline">{d.file_name}</a>
+                    <p className="text-caption-1-regular text-text-tertiary">
                       {DOC_TYPES[d.doc_type]} · sent {when(d.created_at)}{d.late ? " · late" : ""}{several ? ` · ${nameOf.get(d.client_id)}` : ""}
                     </p>
                   </div>

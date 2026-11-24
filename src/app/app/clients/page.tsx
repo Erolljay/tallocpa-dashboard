@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
@@ -42,39 +42,39 @@ async function ClientList() {
       <PageHeader
         title="Clients"
         description={isOwner ? "Every client of the firm." : "Clients assigned to you."}
-        actions={isOwner && <LinkButton href="/app/clients/new"><Plus aria-hidden className="size-4" />New client</LinkButton>}
+        actions={isOwner && <LinkButton href="/app/clients/new"><RiAddLine aria-hidden className="size-4" />New client</LinkButton>}
       />
       {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
-          <p className="font-medium text-ink-heading">No clients yet</p>
-          <p className="mt-1 text-sm text-ink-muted">
+        <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
+          <p className="font-medium text-text-primary">No clients yet</p>
+          <p className="mt-1 text-body-regular text-text-secondary">
             {isOwner ? "Add the first client from their COR." : "The Owner has not assigned any clients to you."}
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+        <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+          <table className="w-full min-w-[44rem] text-body-regular">
+            <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="px-4 py-3 font-medium">Client</th>
-                <th scope="col" className="px-4 py-3 font-medium">Type</th>
-                <th scope="col" className="px-4 py-3 font-medium">TIN</th>
-                <th scope="col" className="px-4 py-3 font-medium">Filing</th>
-                <th scope="col" className="px-4 py-3 font-medium">Preparer</th>
-                <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                <th scope="col" className="text-start px-4 py-3">Client</th>
+                <th scope="col" className="text-start px-4 py-3">Type</th>
+                <th scope="col" className="text-start px-4 py-3">TIN</th>
+                <th scope="col" className="text-start px-4 py-3">Filing</th>
+                <th scope="col" className="text-start px-4 py-3">Preparer</th>
+                <th scope="col" className="text-start px-4 py-3">Status</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className="border-t border-border transition-colors first:border-t-0 hover:bg-surface-muted">
+                <tr key={c.id} className="border-t border-separator-border transition-colors first:border-t-0 hover:bg-background-secondary-hover">
                   <td className="px-4 py-3">
-                    <Link href={`/app/clients/${c.id}`} className="font-medium text-ink-heading hover:underline">{c.name}</Link>
-                    <p className="text-xs tabular-nums text-ink-subtle">{c.code}</p>
+                    <Link href={`/app/clients/${c.id}`} className="font-medium text-text-primary hover:underline">{c.name}</Link>
+                    <p className="text-caption-1-regular tabular-nums text-text-tertiary">{c.code}</p>
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{taxpayerTypeLabel[c.taxpayer_type]}</td>
-                  <td className="px-4 py-3 tabular-nums text-ink-muted">{c.tin ?? "—"}</td>
-                  <td className="px-4 py-3 text-ink-muted">{c.filing_channel === "efps" ? `eFPS · Group ${c.efps_group}` : "eBIRForms"}</td>
-                  <td className="px-4 py-3 text-ink-muted">
+                  <td className="px-4 py-3 text-text-secondary">{taxpayerTypeLabel[c.taxpayer_type]}</td>
+                  <td className="px-4 py-3 tabular-nums text-text-secondary">{c.tin ?? "—"}</td>
+                  <td className="px-4 py-3 text-text-secondary">{c.filing_channel === "efps" ? `eFPS · Group ${c.efps_group}` : "eBIRForms"}</td>
+                  <td className="px-4 py-3 text-text-secondary">
                     {c.staff_assignments.filter((a) => a.role === "preparer").map((a) => a.staff_profiles?.full_name).join(", ") || "—"}
                   </td>
                   <td className="px-4 py-3"><Badge tone={statusTone[c.status]}>{statusLabel[c.status]}</Badge></td>

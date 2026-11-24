@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowDown, ArrowUp, Check, Lock } from "lucide-react";
+import { RiArrowDownLine, RiArrowUpLine, RiCheckLine, RiLockLine } from "@remixicon/react";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
@@ -8,6 +8,7 @@ import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } fro
 import { manilaToday } from "@/lib/filings/run";
 import { LOW_CONFIDENCE } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
+import { cx } from "@/utils/cx";
 import { ClientSelect, PeriodFilter } from "./filters";
 import { periodRange } from "./period";
 
@@ -103,15 +104,25 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
         actions={<ClientSelect form={FORM_ID} value={clientId} clients={clients} />}
       />
 
-      <nav aria-label="Document lists" className="mb-5 flex gap-1 border-b border-border">
-        {([["pending", `Pending review (${pendingTotal})`], ["approved", "Approved history"]] as const).map(([t, label]) => (
+      {/* BoardUI underline tabs (components/base/tabs), as links so each list has its own URL. */}
+      <nav aria-label="Document lists" className="mb-5 flex gap-1 border-b border-separator-border">
+        {([["pending", "Pending review", pendingTotal], ["approved", "Approved history", null]] as const).map(([t, label, count]) => (
           <Link
             key={t}
             href={link({ tab: t })}
             aria-current={tab === t ? "page" : undefined}
-            className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium ${tab === t ? "border-action text-ink-heading" : "border-transparent text-ink-muted hover:text-ink-heading"}`}
+            className={cx(
+              "-mb-px inline-flex items-center gap-2.5 border-b-2 px-2.5 py-2 whitespace-nowrap transition-colors duration-150",
+              "outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+              tab === t ? "border-accent-600 text-body-medium text-accent-600" : "border-transparent text-body-regular text-text-primary hover:text-text-secondary",
+            )}
           >
             {label}
+            {count != null && (
+              <span className={cx("rounded-sm px-1 py-px text-caption-1-medium tabular-nums", tab === t ? "bg-tab-count-selected-background text-accent-600" : "bg-background-tertiary-default text-text-secondary")}>
+                {count}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
@@ -120,7 +131,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
         {tab === "approved" && <input type="hidden" name="tab" value="approved" />}
         {sort !== "name" && <input type="hidden" name="sort" value={sort} />}
         <PeriodFilter period={range?.key ?? "all"} from={range ? range.from.slice(0, 7) : ""} to={range ? range.to.slice(0, 7) : ""} />
-        {tab === "approved" && <p className="mt-2 text-xs text-ink-subtle">Approved figures can be corrected until the return for their month is filed. After that the month is locked.</p>}
+        {tab === "approved" && <p className="mt-2 text-caption-1-regular text-text-tertiary">Approved figures can be corrected until the return for their month is filed. After that the month is locked.</p>}
       </form>
 
       {!client ? (
@@ -157,18 +168,18 @@ function ClientList({ clients, tab, sort, link, counts }: { clients: { id: strin
   return (
     <Card>
       {clients.length === 0 ? (
-        <p className="text-sm text-ink-muted">No clients assigned to you.</p>
+        <p className="text-body-regular text-text-secondary">No clients assigned to you.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="text-left text-ink-subtle">
+        <table className="w-full text-body-regular">
+          <thead className="text-start text-body-medium text-text-tertiary">
             <tr>
-              <th scope="col" aria-sort={sort === "name" ? "ascending" : sort === "-name" ? "descending" : undefined} className="pb-2 font-medium">
-                <Link href={link({ sort: sort === "name" ? "-name" : "" })} className="inline-flex items-center gap-1 hover:text-ink-heading">
+              <th scope="col" aria-sort={sort === "name" ? "ascending" : sort === "-name" ? "descending" : undefined} className="text-start pb-2">
+                <Link href={link({ sort: sort === "name" ? "-name" : "" })} className="inline-flex items-center gap-1 hover:text-text-primary">
                   Client name <SortIcon on={sort === "name" || sort === "-name"} desc={sort === "-name"} />
                 </Link>
               </th>
-              <th scope="col" aria-sort={sort === "count" ? "ascending" : sort === "-count" ? "descending" : undefined} className="pb-2 text-right font-medium">
-                <Link href={link({ sort: sort === "-count" ? "count" : "-count" })} className="inline-flex items-center gap-1 hover:text-ink-heading">
+              <th scope="col" aria-sort={sort === "count" ? "ascending" : sort === "-count" ? "descending" : undefined} className="pb-2 text-end">
+                <Link href={link({ sort: sort === "-count" ? "count" : "-count" })} className="inline-flex items-center gap-1 hover:text-text-primary">
                   {countLabel} <SortIcon on={sort === "count" || sort === "-count"} desc={sort === "-count"} />
                 </Link>
               </th>
@@ -178,18 +189,18 @@ function ClientList({ clients, tab, sort, link, counts }: { clients: { id: strin
             {sorted.map((c) => {
               const count = n(c.id);
               return (
-                <tr key={c.id} className="border-t border-border">
-                  <td className="py-2.5 pr-4">
-                    <Link href={link({ client: c.id })} className="font-medium text-link hover:underline">{c.name}</Link>
+                <tr key={c.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                  <td className="py-2.5 pe-4">
+                    <Link href={link({ client: c.id })} className="font-medium text-button-ghost-foreground hover:underline">{c.name}</Link>
                   </td>
-                  <td className="py-2.5 text-right tabular-nums">
+                  <td className="py-2.5 text-end tabular-nums">
                     {tab === "pending" && count === 0 ? (
-                      <span className="inline-flex items-center gap-1 text-success" title="Nothing waiting for review">
-                        <Check aria-hidden className="size-4" strokeWidth={3} />
+                      <span className="inline-flex items-center gap-1 text-status-lime-text" title="Nothing waiting for review">
+                        <RiCheckLine aria-hidden className="size-4" />
                         <span className="sr-only">Nothing waiting</span>
                       </span>
                     ) : (
-                      <span className={tab === "pending" ? "font-semibold text-ink-heading" : "text-ink-muted"}>({count})</span>
+                      <span className={tab === "pending" ? "font-semibold text-text-primary" : "text-text-secondary"}>({count})</span>
                     )}
                   </td>
                 </tr>
@@ -204,34 +215,34 @@ function ClientList({ clients, tab, sort, link, counts }: { clients: { id: strin
 
 function SortIcon({ on, desc }: { on: boolean; desc: boolean }) {
   if (!on) return null;
-  return desc ? <ArrowDown aria-hidden className="size-3.5" /> : <ArrowUp aria-hidden className="size-3.5" />;
+  return desc ? <RiArrowDownLine aria-hidden className="size-3.5" /> : <RiArrowUpLine aria-hidden className="size-3.5" />;
 }
 
 function MonthCell({ r }: { r: Row }) {
   return (
-    <td className="py-2 pr-4 text-ink-muted">
+    <td className="py-2 pe-4 text-text-secondary">
       {showMonth(r.period)}
-      {r.late && <span className="ml-1 text-xs text-warning">late</span>}
-      {r.carried_from && <span className="ml-1 text-xs text-warning" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
-      {r.prior_year && <span className="ml-1 text-xs text-danger-text">prior year</span>}
+      {r.late && <span className="ms-1 text-caption-1-regular text-status-yellow-text">late</span>}
+      {r.carried_from && <span className="ms-1 text-caption-1-regular text-status-yellow-text" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
+      {r.prior_year && <span className="ms-1 text-caption-1-regular text-text-error-primary">prior year</span>}
     </td>
   );
 }
 
 function PendingTable({ rows }: { rows: Row[] }) {
   return (
-    <Card title={`Waiting for review (${rows.length})`} actions={<span className="text-xs text-ink-subtle">Oldest first</span>}>
+    <Card title={`Waiting for review (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Oldest first</span>}>
       {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">Nothing waiting for this period. New uploads appear here.</p>
+        <p className="text-body-regular text-text-secondary">Nothing waiting for this period. New uploads appear here.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-sm">
-            <thead className="text-left text-ink-subtle">
+          <table className="w-full min-w-[40rem] text-body-regular">
+            <thead className="text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="pb-2 font-medium">Received</th>
-                <th scope="col" className="pb-2 font-medium">Document</th>
-                <th scope="col" className="pb-2 font-medium">Month</th>
-                <th scope="col" className="pb-2 font-medium">OCR</th>
+                <th scope="col" className="text-start pb-2">Received</th>
+                <th scope="col" className="text-start pb-2">Document</th>
+                <th scope="col" className="text-start pb-2">Month</th>
+                <th scope="col" className="text-start pb-2">OCR</th>
               </tr>
             </thead>
             <tbody>
@@ -239,11 +250,11 @@ function PendingTable({ rows }: { rows: Row[] }) {
                 const e = r.extractions;
                 const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
                 return (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-2 pr-4 tabular-nums text-ink-muted">{when(r.created_at)}</td>
-                    <td className="py-2 pr-4">
-                      <Link href={`/app/documents/${r.id}`} className="font-medium text-link hover:underline">{DOC_TYPES[r.doc_type]}</Link>
-                      <p className="max-w-56 truncate text-xs text-ink-subtle">{r.file_name}</p>
+                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                    <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(r.created_at)}</td>
+                    <td className="py-2 pe-4">
+                      <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[r.doc_type]}</Link>
+                      <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.file_name}</p>
                     </td>
                     <MonthCell r={r} />
                     <td className="py-2">
@@ -272,19 +283,19 @@ async function ApprovedTable({ rows, clientId }: { rows: Row[]; clientId: string
   const sorted = [...rows].sort((a, b) => (b.extractions?.approved_at ?? b.created_at).localeCompare(a.extractions?.approved_at ?? a.created_at));
 
   return (
-    <Card title={`Approved (${rows.length})`} actions={<span className="text-xs text-ink-subtle">Newest approval first</span>}>
+    <Card title={`Approved (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Newest approval first</span>}>
       {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">No approved documents for this period.</p>
+        <p className="text-body-regular text-text-secondary">No approved documents for this period.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead className="text-left text-ink-subtle">
+          <table className="w-full min-w-[44rem] text-body-regular">
+            <thead className="text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="pb-2 font-medium">Approved</th>
-                <th scope="col" className="pb-2 font-medium">Document</th>
-                <th scope="col" className="pb-2 font-medium">Month</th>
-                <th scope="col" className="pb-2 text-right font-medium">Total</th>
-                <th scope="col" className="pb-2 pl-4 font-medium">Edit</th>
+                <th scope="col" className="text-start pb-2">Approved</th>
+                <th scope="col" className="text-start pb-2">Document</th>
+                <th scope="col" className="text-start pb-2">Month</th>
+                <th scope="col" className="pb-2 text-end">Total</th>
+                <th scope="col" className="text-start pb-2 ps-4">Edit</th>
               </tr>
             </thead>
             <tbody>
@@ -293,21 +304,21 @@ async function ApprovedTable({ rows, clientId }: { rows: Row[]; clientId: string
                 const total = f.total != null && f.total !== "" ? Number(f.total) : null;
                 const lock = lockingFiling(r.client_id, r.document_month, filings);
                 return (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-2 pr-4 tabular-nums text-ink-muted">{when(r.extractions?.approved_at ?? r.created_at)}</td>
-                    <td className="py-2 pr-4">
-                      <Link href={`/app/documents/${r.id}`} className="font-medium text-link hover:underline">{DOC_TYPES[r.doc_type]}{f.number ? ` ${f.number}` : ""}</Link>
-                      <p className="max-w-56 truncate text-xs text-ink-subtle">{f.party_name ?? r.file_name}</p>
+                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                    <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(r.extractions?.approved_at ?? r.created_at)}</td>
+                    <td className="py-2 pe-4">
+                      <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[r.doc_type]}{f.number ? ` ${f.number}` : ""}</Link>
+                      <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{f.party_name ?? r.file_name}</p>
                     </td>
                     <MonthCell r={r} />
-                    <td className="amount py-2 pr-4 text-right tabular-nums text-ink-heading">{total == null || Number.isNaN(total) ? "—" : peso.format(total)}</td>
-                    <td className="py-2 pl-4">
+                    <td className="amount py-2 pe-4 text-end tabular-nums text-text-primary">{total == null || Number.isNaN(total) ? "—" : peso.format(total)}</td>
+                    <td className="py-2 ps-4">
                       {lock ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted" title={`${lock.form} ${lock.period_label} has been filed`}>
-                          <Lock aria-hidden className="size-3.5" /> Locked · {lock.form} {lock.period_label} filed
+                        <span className="inline-flex items-center gap-1.5 text-caption-1-regular text-text-secondary" title={`${lock.form} ${lock.period_label} has been filed`}>
+                          <RiLockLine aria-hidden className="size-3.5" /> Locked · {lock.form} {lock.period_label} filed
                         </span>
                       ) : (
-                        <Link href={`/app/documents/${r.id}`} className="text-xs font-medium text-link hover:underline">Edit figures</Link>
+                        <Link href={`/app/documents/${r.id}`} className="text-caption-1-medium text-button-ghost-foreground hover:underline">Edit figures</Link>
                       )}
                     </td>
                   </tr>

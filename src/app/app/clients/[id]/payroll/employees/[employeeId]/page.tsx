@@ -37,13 +37,13 @@ async function EmployeeDetail({ params, searchParams }: Pick<PageProps<"/app/cli
         <Card
           title={`Previous employer in ${year}`}
           actions={
-            <div className="flex gap-3 text-sm">
-              <a href={`?year=${year - 1}`} className="text-link hover:underline">{year - 1}</a>
-              <a href={`?year=${year + 1}`} className="text-link hover:underline">{year + 1}</a>
+            <div className="flex gap-3 text-body-regular">
+              <a href={`?year=${year - 1}`} className="text-button-ghost-foreground hover:underline">{year - 1}</a>
+              <a href={`?year=${year + 1}`} className="text-button-ghost-foreground hover:underline">{year + 1}</a>
             </div>
           }
         >
-          <p className="mb-4 text-sm text-ink-muted">
+          <p className="mb-4 text-body-regular text-text-secondary">
             If {employee.firstName} worked for another employer earlier in {year}, enter it from that employer&rsquo;s BIR 2316. It prints in Part III of this client&rsquo;s 2316
             (items 16–18), adds to taxable compensation (item 22) and tax withheld (item 25B), enters the year-end adjustment, and fills the alphalist&rsquo;s previous-employer columns.
             An employee with a previous employer is not qualified for substituted filing.

@@ -54,7 +54,7 @@ export function PartyForm({ party, disabled }: { party?: Party; disabled?: boole
       {!disabled && (
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={pending}>{pending ? "Saving…" : party ? "Save" : "Add party"}</Button>
-          {state.ok && <span className="text-sm text-success">{state.ok}</span>}
+          {state.ok && <span className="text-body-regular text-status-lime-text">{state.ok}</span>}
         </div>
       )}
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
@@ -69,7 +69,7 @@ export function VerifyButton({ partyId, verified }: { partyId: string; verified:
       <Button type="submit" variant={verified ? "ghost" : "secondary"} size="sm" disabled={pending}>
         {verified ? "Undo verification" : "Mark verified"}
       </Button>
-      {state.error && <span className="text-sm text-danger-text">{state.error}</span>}
+      {state.error && <span className="text-body-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }
@@ -78,7 +78,7 @@ export function MergeForm({ partyId }: { partyId: string }) {
   const [state, action, pending] = useActionState(mergePartyAction.bind(null, partyId), {} as PartyFormState);
   return (
     <form action={action} className="space-y-3">
-      <p className="text-sm text-ink-muted">
+      <p className="text-body-regular text-text-secondary">
         Moves the duplicate&rsquo;s client links here, fills blanks from it, then deletes it. A verified party is always the one kept.
         Documents already approved keep the TIN they were approved with.
       </p>

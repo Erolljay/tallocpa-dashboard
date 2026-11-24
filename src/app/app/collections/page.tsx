@@ -106,32 +106,32 @@ async function Overview() {
       <section className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <Card title="Next billing">
           {upcoming.length === 0 ? (
-            <p className="text-sm text-ink-muted">No active clients.</p>
+            <p className="text-body-regular text-text-secondary">No active clients.</p>
           ) : (
             <ul className="space-y-3">
               {upcoming.map(([d, n]) => (
                 <li key={d} className="flex items-baseline justify-between gap-4">
-                  <span className="text-[15px] font-medium text-ink-heading">{showDate(d)}</span>
-                  <span className="text-sm text-ink-muted">{n} client{n === 1 ? "" : "s"} scheduled</span>
+                  <span className="text-headline-medium text-text-primary">{showDate(d)}</span>
+                  <span className="text-body-regular text-text-secondary">{n} client{n === 1 ? "" : "s"} scheduled</span>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-4 text-sm text-ink-muted">
+          <p className="mt-4 text-body-regular text-text-secondary">
             Billing runs by itself early each billing day. A statement is issued only when there is something new on it: the month&apos;s retainer, a reviewed return the firm remits, or a contribution or charge you added.
           </p>
         </Card>
-        <Card title="Returns not ready to bill" actions={<span className="text-xs text-ink-subtle">Firm-remits clients, due in the next 20 days</span>}>
+        <Card title="Returns not ready to bill" actions={<span className="text-caption-1-regular text-text-tertiary">Firm-remits clients, due in the next 20 days</span>}>
           {notReadyRows.length === 0 ? (
-            <p className="text-sm text-ink-muted">Every return due soon is reviewed and ready to bill.</p>
+            <p className="text-body-regular text-text-secondary">Every return due soon is reviewed and ready to bill.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {notReadyRows.map((f) => (
                 <li key={f.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
                   <span className="min-w-0">
-                    <Link href={`/app/filings/${f.id}`} className="font-medium text-link hover:underline">{f.form}</Link>{" "}
-                    <span className="text-ink-heading">{f.clients.name}</span>
-                    <span className="block text-xs text-ink-subtle">{f.period_label} · due {showDate(f.due_date)}</span>
+                    <Link href={`/app/filings/${f.id}`} className="font-medium text-button-ghost-foreground hover:underline">{f.form}</Link>{" "}
+                    <span className="text-text-primary">{f.clients.name}</span>
+                    <span className="block text-caption-1-regular text-text-tertiary">{f.period_label} · due {showDate(f.due_date)}</span>
                   </span>
                   <Badge tone={filingStatusTone[f.status]}>{filingStatusLabel[f.status]}</Badge>
                 </li>
@@ -142,41 +142,41 @@ async function Overview() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-semibold text-ink-heading">Receivables by client</h2>
+        <h2 className="mb-3 text-title-3-semibold text-text-primary">Receivables by client</h2>
         {byClient.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">No client owes anything right now.</p>
+          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">No client owes anything right now.</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-            <table className="w-full min-w-[56rem] text-sm">
-              <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+          <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+            <table className="w-full min-w-[56rem] text-body-regular">
+              <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">Client</th>
+                  <th scope="col" className="text-start px-4 py-3">Client</th>
                   {AGING_BUCKETS.map((b) => (
-                    <th key={b} scope="col" className="px-4 py-3 text-right font-medium">{agingLabel[b]}</th>
+                    <th key={b} scope="col" className="px-4 py-3 text-end">{agingLabel[b]}</th>
                   ))}
-                  <th scope="col" className="px-4 py-3 text-right font-medium">Total open</th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">Credit</th>
+                  <th scope="col" className="px-4 py-3 text-end">Total open</th>
+                  <th scope="col" className="px-4 py-3 text-end">Credit</th>
                 </tr>
               </thead>
               <tbody>
                 {byClient.map(({ client, aging, credit }) => (
-                  <tr key={client.id} className="border-t border-border first:border-t-0 hover:bg-surface-muted">
+                  <tr key={client.id} className="border-t border-separator-border first:border-t-0 hover:bg-background-secondary-hover">
                     <td className="px-4 py-3">
-                      <Link href={`/app/collections/${client.id}`} className="font-medium text-ink-heading hover:underline">{client.name}</Link>
-                      <p className="text-xs text-ink-subtle">{client.code} · billed {describeBillingDays(client.billing_days)}</p>
+                      <Link href={`/app/collections/${client.id}`} className="font-medium text-text-primary hover:underline">{client.name}</Link>
+                      <p className="text-caption-1-regular text-text-tertiary">{client.code} · billed {describeBillingDays(client.billing_days)}</p>
                     </td>
                     {AGING_BUCKETS.map((b) => (
-                      <td key={b} className={`amount px-4 py-3 ${b !== "current" && aging.buckets[b] > 0 ? "font-medium text-danger-text" : "text-ink"}`}>
+                      <td key={b} className={`amount px-4 py-3 ${b !== "current" && aging.buckets[b] > 0 ? "font-medium text-text-error-primary" : "text-text-primary"}`}>
                         {aging.buckets[b] ? peso.format(aging.buckets[b]) : "—"}
                       </td>
                     ))}
-                    <td className="amount px-4 py-3 font-semibold text-ink-heading">{peso.format(aging.total)}</td>
-                    <td className="amount px-4 py-3 text-ink-muted">{credit ? peso.format(credit) : "—"}</td>
+                    <td className="amount px-4 py-3 font-semibold text-text-primary">{peso.format(aging.total)}</td>
+                    <td className="amount px-4 py-3 text-text-secondary">{credit ? peso.format(credit) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t border-border-strong bg-surface-muted font-semibold text-ink-heading">
+                <tr className="border-t border-border-button-default bg-background-secondary-default font-semibold text-text-primary">
                   <td className="px-4 py-3">Total</td>
                   {AGING_BUCKETS.map((b) => (
                     <td key={b} className="amount px-4 py-3">{peso.format(all.buckets[b])}</td>
@@ -191,30 +191,30 @@ async function Overview() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-semibold text-ink-heading">Recent statements</h2>
+        <h2 className="mb-3 text-title-3-semibold text-text-primary">Recent statements</h2>
         {soaRows.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">No statements yet. The first ones are issued on the next billing day.</p>
+          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">No statements yet. The first ones are issued on the next billing day.</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-            <table className="w-full min-w-[40rem] text-sm">
-              <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+          <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+            <table className="w-full min-w-[40rem] text-body-regular">
+              <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">Reference</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Client</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Billed</th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">Amount</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                  <th scope="col" className="text-start px-4 py-3">Reference</th>
+                  <th scope="col" className="text-start px-4 py-3">Client</th>
+                  <th scope="col" className="text-start px-4 py-3">Billed</th>
+                  <th scope="col" className="px-4 py-3 text-end">Amount</th>
+                  <th scope="col" className="text-start px-4 py-3">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {soaRows.map((s) => {
                   const t = soaTotals.get(s.id) ?? { total: 0, open: 0 };
                   return (
-                    <tr key={s.id} className="border-t border-border first:border-t-0">
-                      <td className="px-4 py-3"><Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-link hover:underline">{s.reference}</Link></td>
-                      <td className="px-4 py-3 text-ink-heading">{s.clients?.name}</td>
-                      <td className="px-4 py-3 tabular-nums text-ink-muted">{showDate(s.billing_date)}</td>
-                      <td className="amount px-4 py-3 text-ink-heading">{peso.format(t.total)}</td>
+                    <tr key={s.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover first:border-t-0">
+                      <td className="px-4 py-3"><Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-button-ghost-foreground hover:underline">{s.reference}</Link></td>
+                      <td className="px-4 py-3 text-text-primary">{s.clients?.name}</td>
+                      <td className="px-4 py-3 tabular-nums text-text-secondary">{showDate(s.billing_date)}</td>
+                      <td className="amount px-4 py-3 text-text-primary">{peso.format(t.total)}</td>
                       <td className="px-4 py-3">
                         {t.open <= 0 ? <Badge tone="done">Paid</Badge> : t.open < t.total ? <Badge tone="waiting">Partly paid</Badge> : s.due_on < today ? <Badge tone="blocked">Overdue</Badge> : <Badge tone="neutral">Due {showDate(s.due_on)}</Badge>}
                       </td>
@@ -233,9 +233,9 @@ async function Overview() {
 function Stat({ label, value, note, tone }: { label: string; value: number; note: string; tone?: "blocked" }) {
   return (
     <Card>
-      <p className="text-sm font-medium text-ink-muted">{label}</p>
-      <p className={`mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums ${tone === "blocked" ? "text-danger-text" : "text-ink-heading"}`}>{peso.format(value)}</p>
-      <p className="mt-2 text-sm text-ink-muted">{note}</p>
+      <p className="text-body-medium text-text-secondary">{label}</p>
+      <p className={`mt-2 text-title-1-semibold tabular-nums ${tone === "blocked" ? "text-text-error-primary" : "text-text-primary"}`}>{peso.format(value)}</p>
+      <p className="mt-2 text-body-regular text-text-secondary">{note}</p>
     </Card>
   );
 }

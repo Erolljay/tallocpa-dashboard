@@ -49,10 +49,10 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
 
   return (
     <div className="space-y-4">
-      <form ref={formRef} action={approve} className="space-y-3 rounded-2xl border border-border bg-surface shadow-sm p-4">
+      <form ref={formRef} action={approve} className="space-y-3 rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-base font-semibold text-ink-heading">Figures</h2>
-          <p className="text-xs text-ink-subtle">{lowCount ? `${lowCount} field(s) OCR was unsure of are highlighted.` : props.model ? `Read by ${props.model}.` : ""}</p>
+          <h2 className="text-headline-semibold text-text-primary">Figures</h2>
+          <p className="text-caption-1-regular text-text-tertiary">{lowCount ? `${lowCount} field(s) OCR was unsure of are highlighted.` : props.model ? `Read by ${props.model}.` : ""}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {OCR_FIELDS.map((f) => {
@@ -62,7 +62,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
             const id = `f-${f.key}`;
             const wide = f.key === "party_name" || f.key === "party_address";
             return (
-              <div key={f.key} className={`${wide ? "sm:col-span-2" : ""} ${low ? "rounded-lg bg-warning-surface p-2" : ""}`}>
+              <div key={f.key} className={`${wide ? "sm:col-span-2" : ""} ${low ? "rounded-lg bg-status-yellow-background p-2" : ""}`}>
                 <Field label={`${f.label}${low ? ` · ${Math.round((conf ?? 0) * 100)}% sure` : ""}`} htmlFor={id} error={issue || undefined}>
                   {f.kind === "doc_type" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
@@ -77,7 +77,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
                       inputMode={f.kind === "amount" ? "decimal" : undefined}
                       defaultValue={props.fields[f.key] ?? ""}
                       disabled={!props.canAct}
-                      className={f.kind === "amount" ? "text-right tabular-nums" : undefined}
+                      className={f.kind === "amount" ? "text-end tabular-nums" : undefined}
                     />
                   )}
                 </Field>
@@ -86,14 +86,14 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
           })}
         </div>
         {dir && (
-          <div className={`rounded-xl p-3 text-sm ${dir.warning && !usedDirectory ? "bg-warning-surface text-warning" : "bg-surface-muted text-ink-strong"}`}>
+          <div className={`rounded-xl p-3 text-body-regular ${dir.warning && !usedDirectory ? "bg-status-yellow-background text-status-yellow-text" : "bg-background-secondary-default text-text-primary"}`}>
             <p>
               <Link href={`/app/parties/${dir.partyId}`} className="font-medium hover:underline">{dir.name}</Link>
               {dir.verified ? " (verified)" : ""} · {dir.tin}{dir.address ? ` · ${dir.address}` : ""}
             </p>
             {dir.warning && !usedDirectory && <p className="mt-1">{dir.warning}</p>}
             {props.canAct && (
-              <button type="button" onClick={applyDirectory} className="mt-2 text-sm font-medium text-link hover:underline">
+              <button type="button" onClick={applyDirectory} className="mt-2 text-body-medium text-button-ghost-foreground hover:underline">
                 {usedDirectory ? "Directory details filled in" : "Use directory details"}
               </button>
             )}
@@ -117,7 +117,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
               <label htmlFor="return-reason" className="sr-only">Reason</label>
               <Input id="return-reason" name="reason" required placeholder="Blurry, please retake" className="min-w-56 flex-1" />
               <Button type="submit" variant="secondary" disabled={retPending}>Return to client</Button>
-              {retState.error && <span className="text-sm text-danger-text">{retState.error}</span>}
+              {retState.error && <span className="text-body-regular text-text-error-primary">{retState.error}</span>}
             </form>
           ) : (
             <Button type="button" variant="secondary" onClick={() => setReturning(true)}>Return to client…</Button>
@@ -125,7 +125,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
           {props.canRead && (
             <form action={read}>
               <Button type="submit" variant="ghost" disabled={readPending}>{readPending ? "Reading…" : "Read again with OCR"}</Button>
-              {(readState.error || readState.ok) && <span className={`ml-2 text-sm ${readState.error ? "text-danger-text" : "text-success"}`}>{readState.error ?? readState.ok}</span>}
+              {(readState.error || readState.ok) && <span className={`ml-2 text-body-regular ${readState.error ? "text-text-error-primary" : "text-status-lime-text"}`}>{readState.error ?? readState.ok}</span>}
             </form>
           )}
         </div>

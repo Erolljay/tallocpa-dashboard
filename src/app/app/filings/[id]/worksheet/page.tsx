@@ -25,22 +25,22 @@ const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "med
 
 const lineStyle: Record<NonNullable<WorksheetLine["emphasis"]> | "none", string> = {
   none: "",
-  subtotal: "border-t border-border font-medium text-ink-heading",
-  total: "border-t-2 border-border-strong font-semibold text-ink-heading",
-  payable: "border-t-2 border-border-strong bg-surface-tint font-bold text-ink-heading",
+  subtotal: "border-t border-separator-border font-medium text-text-primary",
+  total: "border-t-2 border-border-button-default font-semibold text-text-primary",
+  payable: "border-t-2 border-border-button-default bg-button-ghost-background font-bold text-text-primary",
 };
 
 function Lines({ lines }: { lines: WorksheetLine[] }) {
   return (
-    <ol className="text-sm">
+    <ol className="text-body-regular">
       {lines.map((l) => (
         <li key={`${l.key}-${l.line}`} className={`grid grid-cols-[3.5rem_1fr_auto] items-baseline gap-x-3 px-2 py-2 ${lineStyle[l.emphasis ?? "none"]}`}>
-          <span className="text-xs tabular-nums text-ink-subtle">{l.line}</span>
+          <span className="text-caption-1-regular tabular-nums text-text-tertiary">{l.line}</span>
           <span className="min-w-0">
             {l.label}
-            {l.amount != null && l.basis && <span className="block text-xs font-normal text-ink-muted">{l.basis}</span>}
+            {l.amount != null && l.basis && <span className="block text-caption-1-regular text-text-secondary">{l.basis}</span>}
           </span>
-          <span className={`text-right ${l.amount == null ? "max-w-[12rem] break-words text-ink-heading" : "amount tabular-nums whitespace-nowrap"}`}>
+          <span className={`text-end ${l.amount == null ? "max-w-[12rem] break-words text-text-primary" : "amount tabular-nums whitespace-nowrap"}`}>
             {l.amount == null ? (l.basis ?? "—") : formatPeso(l.amount)}
           </span>
         </li>
@@ -54,24 +54,24 @@ function Schedule({ s }: { s: WorksheetSchedule }) {
   return (
     <Card title={s.title}>
       {s.rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">Nothing to list.</p>
+        <p className="text-body-regular text-text-secondary">Nothing to list.</p>
       ) : (
         <div className="-mx-6 overflow-x-auto px-6">
-          <table className="w-full min-w-max text-sm">
+          <table className="w-full min-w-max text-body-regular">
             <thead>
-              <tr className="border-b border-border text-left text-xs text-ink-subtle">
+              <tr className="border-b border-separator-border text-start text-caption-1-regular text-text-tertiary">
                 {s.columns.map((c) => (
-                  <th key={c.key} className={`px-2 py-2 font-medium ${c.numeric ? "text-right" : ""}`}>{c.label}</th>
+                  <th key={c.key} className={`px-2 py-2 font-medium ${c.numeric ? "text-end" : ""}`}>{c.label}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {s.rows.map((r, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
+                <tr key={i} className="border-b border-separator-border last:border-0">
                   {s.columns.map((c) => {
                     const v = r[c.key];
                     return (
-                      <td key={c.key} className={`px-2 py-2 ${c.numeric ? "amount text-right tabular-nums" : ""}`}>
+                      <td key={c.key} className={`px-2 py-2 ${c.numeric ? "amount text-end tabular-nums" : ""}`}>
                         {v == null ? "—" : c.numeric && typeof v === "number" ? formatAmount(v) : String(v)}
                       </td>
                     );
@@ -80,9 +80,9 @@ function Schedule({ s }: { s: WorksheetSchedule }) {
               ))}
             </tbody>
             <tfoot>
-              <tr className="font-semibold text-ink-heading">
+              <tr className="font-semibold text-text-primary">
                 {s.columns.map((c, i) => (
-                  <td key={c.key} className={`px-2 py-2 ${c.numeric ? "amount text-right tabular-nums" : ""}`}>
+                  <td key={c.key} className={`px-2 py-2 ${c.numeric ? "amount text-end tabular-nums" : ""}`}>
                     {c.numeric ? formatAmount(totals[c.key]) : i === 0 ? "Total" : ""}
                   </td>
                 ))}
@@ -134,8 +134,8 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
       title={`Worksheet · ${filing.form} · ${filing.periodLabel}`}
       description={
         <span>
-          <Link href={`/app/clients/${filing.clientId}`} className="text-link hover:underline">{filing.clientName}</Link> ·{" "}
-          <Link href={`/app/filings/${filing.id}`} className="text-link hover:underline">Back to the return</Link>
+          <Link href={`/app/clients/${filing.clientId}`} className="text-button-ghost-foreground hover:underline">{filing.clientName}</Link> ·{" "}
+          <Link href={`/app/filings/${filing.id}`} className="text-button-ghost-foreground hover:underline">Back to the return</Link>
         </span>
       }
       actions={<Badge tone={filingStatusTone[status]}>{filingStatusLabel[status]}</Badge>}
@@ -145,7 +145,7 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
     return (
       <>
         {header}
-        <Card><p className="text-sm text-ink-muted">No worksheet for this form yet. Prepare it outside the OS and attach the filed return.</p></Card>
+        <Card><p className="text-body-regular text-text-secondary">No worksheet for this form yet. Prepare it outside the OS and attach the filed return.</p></Card>
       </>
     );
   }
@@ -180,13 +180,13 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
             <div className="space-y-6">
               {shown.sections.map((s) => (
                 <section key={s.title}>
-                  <h3 className="mb-1 text-sm font-semibold text-ink-heading">{s.title}</h3>
+                  <h3 className="mb-1 text-body-semibold text-text-primary">{s.title}</h3>
                   <Lines lines={s.lines} />
                 </section>
               ))}
             </div>
             {saved?.computedAt && (
-              <p className="mt-4 text-xs text-ink-subtle">Saved {when(saved.computedAt)}{savedBy?.full_name ? ` by ${savedBy.full_name}` : ""}.</p>
+              <p className="mt-4 text-caption-1-regular text-text-tertiary">Saved {when(saved.computedAt)}{savedBy?.full_name ? ` by ${savedBy.full_name}` : ""}.</p>
             )}
           </Card>
 
@@ -195,20 +195,20 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
 
         <div className="space-y-6">
           <Card title="Figures typed in">
-            {form.manualInputs(ctx).length === 0 && <p className="mb-4 text-sm text-ink-muted">Everything on this form comes from approved documents.</p>}
+            {form.manualInputs(ctx).length === 0 && <p className="mb-4 text-body-regular text-text-secondary">Everything on this form comes from approved documents.</p>}
             <WorksheetInputsForm filingId={filing.id} inputs={form.manualInputs(ctx)} values={saved?.inputs ?? {}} canEdit={canEdit} />
-            {!canEdit && !locked && <p className="mt-3 text-xs text-ink-subtle">Only the Owner and staff assigned to this client can change the worksheet.</p>}
+            {!canEdit && !locked && <p className="mt-3 text-caption-1-regular text-text-tertiary">Only the Owner and staff assigned to this client can change the worksheet.</p>}
           </Card>
 
           {attachments.length > 0 && (
             <Card title="Attachments">
               {shown.errors.length > 0 ? (
-                <p className="text-sm text-ink-muted">Fix the problems above to download the attachments.</p>
+                <p className="text-body-regular text-text-secondary">Fix the problems above to download the attachments.</p>
               ) : (
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2 text-body-regular">
                   {attachments.map((a) => (
                     <li key={a.kind}>
-                      <a href={`/app/filings/${filing.id}/worksheet/${a.kind}`} className="text-link hover:underline" download>{a.label}</a>
+                      <a href={`/app/filings/${filing.id}/worksheet/${a.kind}`} className="text-button-ghost-foreground hover:underline" download>{a.label}</a>
                     </li>
                   ))}
                 </ul>
@@ -218,17 +218,17 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
 
           <Card title="Source documents">
             {documents.length === 0 ? (
-              <p className="text-sm text-ink-muted">No approved documents for {filing.periodLabel}. Documents count once a staff member approves their figures.</p>
+              <p className="text-body-regular text-text-secondary">No approved documents for {filing.periodLabel}. Documents count once a staff member approves their figures.</p>
             ) : (
-              <ul className="space-y-3 text-sm">
+              <ul className="space-y-3 text-body-regular">
                 {documents.map((d) => {
                   const s = d.source;
                   const amount = s.docType.startsWith("bir_2307") ? s.withholding : s.total;
                   return (
                     <li key={d.id} className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <Link href={`/app/documents/${d.id}`} className="text-link hover:underline">{DOC_TYPES[s.docType as DocType]}{s.number ? ` ${s.number}` : ""}</Link>
-                        <span className="block truncate text-xs text-ink-subtle">
+                        <Link href={`/app/documents/${d.id}`} className="text-button-ghost-foreground hover:underline">{DOC_TYPES[s.docType as DocType]}{s.number ? ` ${s.number}` : ""}</Link>
+                        <span className="block truncate text-caption-1-regular text-text-tertiary">
                           {[s.partyName, s.atc, showMonth(s.month)].filter(Boolean).join(" · ")}
                         </span>
                       </span>

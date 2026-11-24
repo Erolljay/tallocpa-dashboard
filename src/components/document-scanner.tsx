@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { RiArrowGoBackLine, RiCheckLine, RiCloseLine, RiLoader4Line } from "@remixicon/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectDocument, loadCv, straighten } from "@/lib/scan/detect";
 import { defaultQuad, type Point, type Quad } from "@/lib/scan/geometry";
@@ -162,7 +162,7 @@ export function DocumentScanner({ onScan, onClose, onUnavailable }: { onScan: (f
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label="Scan a document">
       <div className="flex items-center justify-between px-4 py-3">
-        <p className="text-sm">
+        <p className="text-body-regular">
           {stage === "adjust" ? "Drag the corners to the edges of the page" : found ? "Page found — hold steady and tap the button" : "Point the camera at the receipt"}
           {count > 0 && <span className="ml-2 text-white/70">· {count} scanned</span>}
         </p>
@@ -175,7 +175,7 @@ export function DocumentScanner({ onScan, onClose, onUnavailable }: { onScan: (f
           className="rounded-full p-2 hover:bg-white/10"
           aria-label="Close the scanner"
         >
-          <X className="size-6" aria-hidden />
+          <RiCloseLine className="size-6" aria-hidden />
         </button>
       </div>
 
@@ -185,11 +185,11 @@ export function DocumentScanner({ onScan, onClose, onUnavailable }: { onScan: (f
         <Adjuster canvas={still} quad={quad} onChange={setQuad} visible={stage === "adjust" || stage === "saving"} />
         {stage === "starting" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/80">
-            <LoaderCircle className="size-8 animate-spin" aria-hidden />
-            <p className="text-sm">Starting the scanner…</p>
+            <RiLoader4Line className="size-8 animate-spin" aria-hidden />
+            <p className="text-body-regular">Starting the scanner…</p>
           </div>
         )}
-        {stage === "error" && <p className="absolute inset-x-4 top-1/3 text-center text-sm">{error}</p>}
+        {stage === "error" && <p className="absolute inset-x-4 top-1/3 text-center text-body-regular">{error}</p>}
       </div>
 
       <div className="flex items-center justify-center gap-3 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -198,14 +198,14 @@ export function DocumentScanner({ onScan, onClose, onUnavailable }: { onScan: (f
         )}
         {(stage === "adjust" || stage === "saving") && (
           <>
-            <button type="button" disabled={stage === "saving"} onClick={() => setStage("live")} className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-3 text-sm">
-              <RotateCcw className="size-4" aria-hidden /> Retake
+            <button type="button" disabled={stage === "saving"} onClick={() => setStage("live")} className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-3 text-body-regular">
+              <RiArrowGoBackLine className="size-4" aria-hidden /> Retake
             </button>
-            <button type="button" disabled={stage === "saving"} onClick={() => saveScan(false)} className="whitespace-nowrap rounded-full bg-white/15 px-4 py-3 text-sm">
+            <button type="button" disabled={stage === "saving"} onClick={() => saveScan(false)} className="whitespace-nowrap rounded-full bg-white/15 px-4 py-3 text-body-regular">
               Scan another
             </button>
-            <button type="button" disabled={stage === "saving"} onClick={() => saveScan(true)} className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-black">
-              {stage === "saving" ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Done
+            <button type="button" disabled={stage === "saving"} onClick={() => saveScan(true)} className="flex items-center gap-2 rounded-full bg-white px-5 py-3 text-body-medium text-black">
+              {stage === "saving" ? <RiLoader4Line className="size-4 animate-spin" aria-hidden /> : <RiCheckLine className="size-4" aria-hidden />} Done
             </button>
           </>
         )}
@@ -263,7 +263,7 @@ function Adjuster({ canvas, quad, onChange, visible }: { canvas: React.RefObject
       />
       {quad && (
         <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          <polygon points={quad.map((p) => { const s = toScreen(p); return `${s.x},${s.y}`; }).join(" ")} fill="rgba(37,99,235,0.18)" stroke="#3b82f6" strokeWidth={3} />
+          <polygon points={quad.map((p) => { const s = toScreen(p); return `${s.x},${s.y}`; }).join(" ")} fill="rgba(37,99,235,0.18)" stroke="#3b82f6" />
         </svg>
       )}
       {quad?.map((p, i) => {

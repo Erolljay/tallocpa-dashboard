@@ -17,7 +17,7 @@ export default function FeeGapPage() {
         description={
           <>
             Existing clients keep their fees until their annual renewal. This compares each client&apos;s current monthly retainer with what the active schedule would charge, and flags document volume above the included band.{" "}
-            <Link href="/app/settings/fees" className="text-link hover:underline">Fee schedule</Link>
+            <Link href="/app/settings/fees" className="text-button-ghost-foreground hover:underline">Fee schedule</Link>
           </>
         }
       />
@@ -101,59 +101,59 @@ async function Gap() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <p className="text-sm font-medium text-ink-muted">Current retainers</p>
-          <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(Math.round(totalCurrent * 100) / 100)}</p>
-          <p className="mt-2 text-sm text-ink-muted">{rows.length} client{rows.length === 1 ? "" : "s"} with an active engagement.</p>
+          <p className="text-body-medium text-text-secondary">Current retainers</p>
+          <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(Math.round(totalCurrent * 100) / 100)}</p>
+          <p className="mt-2 text-body-regular text-text-secondary">{rows.length} client{rows.length === 1 ? "" : "s"} with an active engagement.</p>
         </Card>
         <Card>
-          <p className="text-sm font-medium text-ink-muted">At schedule prices (estimate)</p>
-          <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(Math.round(totalComputed * 100) / 100)}</p>
-          <p className="mt-2 text-sm text-ink-muted">A month, at least.</p>
+          <p className="text-body-medium text-text-secondary">At schedule prices (estimate)</p>
+          <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(Math.round(totalComputed * 100) / 100)}</p>
+          <p className="mt-2 text-body-regular text-text-secondary">A month, at least.</p>
         </Card>
         <Card>
-          <p className="text-sm font-medium text-ink-muted">Above the included volume</p>
-          <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{above}</p>
-          <p className="mt-2 text-sm text-ink-muted">Clients sending more documents than their fee covers.</p>
+          <p className="text-body-medium text-text-secondary">Above the included volume</p>
+          <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{above}</p>
+          <p className="mt-2 text-body-regular text-text-secondary">Clients sending more documents than their fee covers.</p>
         </Card>
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">No client has an active engagement.</p>
+        <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">No client has an active engagement.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-          <table className="w-full min-w-[52rem] text-sm">
-            <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+        <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+          <table className="w-full min-w-[52rem] text-body-regular">
+            <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="px-4 py-3 font-medium">Client</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Current a month</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Schedule (estimate)</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Gap</th>
-                <th scope="col" className="px-4 py-3 font-medium">Documents a month</th>
+                <th scope="col" className="text-start px-4 py-3">Client</th>
+                <th scope="col" className="px-4 py-3 text-end">Current a month</th>
+                <th scope="col" className="px-4 py-3 text-end">Schedule (estimate)</th>
+                <th scope="col" className="px-4 py-3 text-end">Gap</th>
+                <th scope="col" className="text-start px-4 py-3">Documents a month</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-border align-top">
+                <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                   <td className="px-4 py-3">
-                    <Link href={`/app/clients/${r.id}`} className="font-medium text-ink-heading hover:text-link hover:underline">{r.name}</Link>
-                    <p className="text-xs text-ink-subtle">{r.code}{r.annualPackage > 0 ? ` · annual package ${peso.format(r.annualPackage)}` : ""}</p>
+                    <Link href={`/app/clients/${r.id}`} className="font-medium text-text-primary hover:text-button-ghost-foreground hover:underline">{r.name}</Link>
+                    <p className="text-caption-1-regular text-text-tertiary">{r.code}{r.annualPackage > 0 ? ` · annual package ${peso.format(r.annualPackage)}` : ""}</p>
                     {r.assumptions.length > 0 && (
-                      <ul className="mt-1 space-y-0.5 text-xs text-ink-muted">
+                      <ul className="mt-1 space-y-0.5 text-caption-1-regular text-text-secondary">
                         {r.assumptions.map((a) => <li key={a}>{a}</li>)}
                       </ul>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-heading">{peso.format(r.currentMonthly)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-heading">
+                  <td className="px-4 py-3 text-end tabular-nums text-text-primary">{peso.format(r.currentMonthly)}</td>
+                  <td className="px-4 py-3 text-end tabular-nums text-text-primary">
                     {peso.format(r.computedMonthly)}
-                    {r.incomplete && <p className="text-xs text-ink-subtle">plus items on request</p>}
+                    {r.incomplete && <p className="text-caption-1-regular text-text-tertiary">plus items on request</p>}
                   </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${r.gap > 0 ? "font-medium text-danger-text" : "text-ink-muted"}`}>
+                  <td className={`px-4 py-3 text-end tabular-nums ${r.gap > 0 ? "font-medium text-text-error-primary" : "text-text-secondary"}`}>
                     {r.gap === 0 ? "—" : r.gap > 0 ? `${peso.format(r.gap)} under` : `${peso.format(-r.gap)} over`}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="tabular-nums text-ink-heading">{r.averageDocuments} <span className="text-ink-subtle">(busiest {r.peakDocuments})</span></p>
-                    <p className="text-xs text-ink-subtle">{r.volumeBand ?? "No band"}</p>
+                    <p className="tabular-nums text-text-primary">{r.averageDocuments} <span className="text-text-tertiary">(busiest {r.peakDocuments})</span></p>
+                    <p className="text-caption-1-regular text-text-tertiary">{r.volumeBand ?? "No band"}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {r.volumeNeedsCustomQuote ? <Badge tone="blocked">Custom quote volume</Badge> : r.aboveIncludedVolume ? <Badge tone="waiting">Above included volume</Badge> : null}
                     </div>
