@@ -6,7 +6,8 @@ import "server-only";
  */
 import { moduleForForm } from "./registry";
 import { buildPriorFigures, isApproved, monthOf, taxableYearStart, toSourceDocument, withDirectoryParty, type DocumentRow } from "./source";
-import type { Centavos, FormModule, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
+import type { Centavos, FormModule, LedgerContext, LedgerMovement, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
+import { toCentavos } from "./money";
 import { supabaseServer } from "@/lib/supabase/server";
 import { lookupParties } from "@/lib/parties/lookup";
 import { loadPayrollContext } from "@/lib/payroll/load";
@@ -169,5 +170,39 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
     priorFigures: buildPriorFigures(prior),
   };
   if (PAYROLL_FORM_CODES.has(f.form)) ctx.payroll = await loadPayrollContext(db, f.clients.id, f.form, f.period_start, f.period_end);
+  if (formModule.usesLedger) {
+    const ledger = await loadLedger(db, f.client_id, yearStart, f.period_start, f.period_end);
+    if (ledger) ctx.ledger = ledger;
+  }
   return { filing, module: formModule, ctx, saved, documents };
+}
+
+const dayBefore = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * The client's posted income and expenses for the income tax worksheets (spec
+ * §3.6–3.7, slice 5): this period and the taxable year before it, from the
+ * database function ledger_income. Null when the client has no books.
+ */
+async function loadLedger(db: Supabase, clientId: string, yearStart: string, periodStart: string, periodEnd: string): Promise<LedgerContext | null> {
+  const { data: books } = await db.from("client_books").select("books_start").eq("client_id", clientId).maybeSingle();
+  if (!books) return null;
+  const movements = async (from: string, to: string): Promise<LedgerMovement[]> => {
+    if (to < from) return [];
+    const { data, error } = await db.rpc("ledger_income", { p_client: clientId, p_from: from, p_to: to });
+    if (error) throw new Error(`Could not read the books: ${error.message}`);
+    return ((data ?? []) as { code: string; name: string; type: LedgerMovement["type"]; bir_line: string | null; net: string | number }[]).map((r) => ({
+      code: r.code,
+      name: r.name,
+      type: r.type,
+      birLine: r.bir_line,
+      net: toCentavos(String(r.net)) ?? 0,
+    }));
+  };
+  const [period, earlier, { count }] = await Promise.all([
+    movements(periodStart, periodEnd),
+    movements(yearStart, dayBefore(periodStart)),
+    db.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "suggested").gte("entry_date", yearStart).lte("entry_date", periodEnd),
+  ]);
+  return { booksStart: books.books_start as string, period, earlier, suggested: count ?? 0 };
 }

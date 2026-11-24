@@ -10,13 +10,19 @@
  *     Schedule 3 (MCIT), Schedule 4 (credits), Part II.
  *
  * In taxify, sales / cost of sales / expenses came from the Manager chart of
- * accounts and carry-overs from dedicated balance-sheet accounts. Here sales
- * come from approved sales invoices, expenses from purchase receipts (a rough
- * proxy until the Phase 1B ledger), creditable tax withheld from 2307s
- * received, and prior quarters' payments from typed figures or the previous
- * quarter's worksheet (`priorFigures`).
+ * accounts and carry-overs from dedicated balance-sheet accounts. Here, for a
+ * bookkeeping client whose books cover the taxable year to date, sales, cost
+ * of sales, other income and itemized deductions come from the ledger, grouped
+ * by each account's BIR line (book-income.ts). Otherwise sales come from
+ * approved sales invoices and expenses from purchase receipts (a rough proxy),
+ * with cost of sales and other income typed in. Creditable tax withheld comes
+ * from 2307s received either way (the SAWT needs each payor), and prior
+ * quarters' payments from typed figures or the previous quarter's worksheet
+ * (`priorFigures`).
  */
+import { BIR_LINES } from "@/lib/ledger/bir-lines";
 import type { Centavos, FormModule, ManualInput, SourceDocument, WorksheetContext, WorksheetLine, WorksheetResult, WorksheetSchedule } from "../../types";
+import { bookIncome, linesWithMovement } from "./book-income";
 import { corporateRates, eightPercentRate, graduatedIncomeTax, mcitRate, osdRate } from "../../rates";
 import { buildSawt, sawtAttachments, sawtSchedule, type SawtResult } from "./sawt";
 import { Inputs, addMonths, amountInput, docsWithin, filerWarnings, labelsOf, line, monthEnd, netOfVat, ownerNameInputs, pct, peso, quarterOf, sum, taxableYear } from "./util";
@@ -68,15 +74,128 @@ function typedOrPrior(inp: Inputs, ctx: WorksheetContext, form: string, inputKey
   return { amount: 0, basis: quarter > 1 ? "No previous worksheet found and nothing typed in." : "First quarter of the taxable year.", found: quarter === 1 };
 }
 
+// ── Income and deductions: from the books, else from documents ──
+
+/** The client's books cover the taxable year to date (books started on or before its first day). */
+export function booksCover(ctx: Pick<WorksheetContext, "ledger" | "filing" | "client">): boolean {
+  return !!ctx.ledger && ctx.ledger.booksStart <= taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth).start;
+}
+
+interface IncomeSource {
+  fromBooks: boolean;
+  salesQ: Centavos;
+  salesPrev: Centavos;
+  cosQ: Centavos;
+  cosPrev: Centavos;
+  otherQ: Centavos;
+  otherPrev: Centavos;
+  dedQ: Centavos;
+  dedPrev: Centavos;
+  errors: string[];
+  warnings: string[];
+  /** Year-to-date detail for the schedules. */
+  detail: WorksheetSchedule;
+  basis: { sales: string; cos: string; other: string; ded: string; prev: string };
+}
+
+/**
+ * This quarter's and the earlier quarters' sales, cost of sales, other taxable
+ * income and itemized deductions. `useCos`: cost of sales is deducted (not for
+ * an individual on OSD or 8%).
+ */
+function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, form: string, useCos: boolean, cwtQ: Centavos, cwtPrev: Centavos): IncomeSource {
+  if (ctx.ledger && booksCover(ctx)) {
+    const q = bookIncome(ctx.ledger.period);
+    const prev = bookIncome(ctx.ledger.earlier);
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const unmapped = [...new Set([...q.unmapped, ...prev.unmapped])];
+    if (unmapped.length) errors.push(`These accounts have no BIR income tax line, so they are left out: ${unmapped.join(", ")}. Set the line in the chart of accounts.`);
+    if (ctx.ledger.suggested > 0)
+      warnings.push(`${ctx.ledger.suggested} suggested entr${ctx.ledger.suggested === 1 ? "y is" : "ies are"} not posted yet for the taxable year to date; confirm them on the Books page, then compute again.`);
+    if (q.excluded + prev.excluded !== 0) warnings.push(`Income subject to final tax or exempt (₱${peso(q.excluded + prev.excluded)} to date) is left out of taxable income.`);
+    if (q.nondeductible + prev.nondeductible !== 0) warnings.push(`Non-deductible expenses (₱${peso(q.nondeductible + prev.nondeductible)} to date) are not deducted.`);
+    const rows: Record<string, string | Centavos>[] = linesWithMovement(q, prev).map((k) => {
+      const a = q.byLine[k] ?? 0;
+      const b = prev.byLine[k] ?? 0;
+      return { item: BIR_LINES[k].label, thisQ: a, prevQ: b, ytd: a + b };
+    });
+    rows.push({ item: "Creditable tax withheld (2307s on file)", thisQ: cwtQ, prevQ: cwtPrev, ytd: cwtQ + cwtPrev });
+    return {
+      fromBooks: true,
+      salesQ: q.sales,
+      salesPrev: prev.sales,
+      cosQ: useCos ? q.costOfSales : 0,
+      cosPrev: useCos ? prev.costOfSales : 0,
+      otherQ: q.otherIncome,
+      otherPrev: prev.otherIncome,
+      dedQ: q.deductions,
+      dedPrev: prev.deductions,
+      errors,
+      warnings,
+      detail: { title: "Year to date from the books, by BIR line", columns: COMPARISON_COLUMNS, rows },
+      basis: {
+        sales: "From the books: accounts on the sales line, net of returns and discounts, this quarter.",
+        cos: useCos ? "From the books: cost of sales / services accounts this quarter." : "Not deducted under this regime.",
+        other: "From the books: other taxable income accounts this quarter (income subject to final tax is left out).",
+        ded: "From the books: expense accounts by BIR deduction line this quarter (see the schedule below).",
+        prev: "From the books: the earlier quarters of the taxable year.",
+      },
+    };
+  }
+
+  const salesQ = salesOf(p.thisQ);
+  const salesPrev = salesOf(p.prevQ);
+  const costsQ = costsOf(p.thisQ, ctx.client.vatRegistered);
+  const costsPrev = costsOf(p.prevQ, ctx.client.vatRegistered);
+  const cosQ = useCos ? inp.amount("cost_of_sales") : 0;
+  const cosPrev = useCos ? (ctx.priorFigures[form]?.cost_of_sales_to_date ?? 0) : 0;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (cosQ > costsQ) errors.push(`Cost of sales (₱${peso(cosQ)}) is more than this quarter's purchase receipts (₱${peso(costsQ)}).`);
+  if (ctx.ledger) warnings.push(`The books start on ${ctx.ledger.booksStart}, after the start of the taxable year: figures come from documents for this year.`);
+  return {
+    fromBooks: false,
+    salesQ,
+    salesPrev,
+    cosQ,
+    cosPrev,
+    otherQ: inp.amount("non_operating_income"),
+    otherPrev: ctx.priorFigures[form]?.non_operating_income_to_date ?? 0,
+    dedQ: Math.max(0, costsQ - cosQ),
+    dedPrev: Math.max(0, costsPrev - cosPrev),
+    errors,
+    warnings,
+    detail: comparisonSchedule([
+      ["Sales (net of VAT)", salesQ, salesPrev],
+      ["Purchase receipts", costsQ, costsPrev],
+      ["Creditable tax withheld (2307)", cwtQ, cwtPrev],
+    ]),
+    basis: {
+      sales: "Approved sales invoices this quarter, net of VAT.",
+      cos: useCos ? "Typed in." : "Not deducted under this regime.",
+      other: "Typed in.",
+      ded: `Purchase receipts this quarter ₱${peso(costsQ)} less cost of sales.`,
+      prev: "Recomputed from the documents of the earlier quarters, plus other income and cost of sales on earlier worksheets.",
+    },
+  };
+}
+
+/** Documents the figures came from: only the 2307s when the books give the income and deductions. */
+const usedDocuments = (p: Periods, fromBooks: boolean) =>
+  [...new Set([...p.thisQ, ...p.prevQ].filter((d) => (fromBooks ? d.docType === "bir_2307_received" : d.docType !== "bir_2307_issued" && d.docType !== "other")).map((d) => d.id))];
+
+const COMPARISON_COLUMNS: WorksheetSchedule["columns"] = [
+  { key: "item", label: "" },
+  { key: "thisQ", label: "This quarter", numeric: true },
+  { key: "prevQ", label: "Previous quarters", numeric: true },
+  { key: "ytd", label: "Year to date", numeric: true },
+];
+
 function comparisonSchedule(rows: [string, Centavos, Centavos][]): WorksheetSchedule {
   return {
     title: "Year to date from documents",
-    columns: [
-      { key: "item", label: "" },
-      { key: "thisQ", label: "This quarter", numeric: true },
-      { key: "prevQ", label: "Previous quarters", numeric: true },
-      { key: "ytd", label: "Year to date", numeric: true },
-    ],
+    columns: COMPARISON_COLUMNS,
     rows: rows.map(([item, a, b]) => ({ item, thisQ: a, prevQ: b, ytd: a + b })),
   };
 }
@@ -84,7 +203,7 @@ function comparisonSchedule(rows: [string, Centavos, Centavos][]): WorksheetSche
 function priorDiffWarning(ctx: WorksheetContext, form: string, key: string, computed: Centavos, what: string): string[] {
   const prior = ctx.priorFigures[form]?.[key];
   return prior != null && prior !== computed
-    ? [`${what} recomputed from documents (₱${peso(computed)}) differs from the previous quarter's worksheet (₱${peso(prior)}); documents may have been added or changed since. Use the figure actually filed.`]
+    ? [`${what} recomputed (₱${peso(computed)}) differs from the previous quarter's worksheet (₱${peso(prior)}); documents may have been added or changed since. Use the figure actually filed.`]
     : [];
 }
 
@@ -100,8 +219,13 @@ const REGIMES = [
   { value: "8pct", label: "8% on gross sales/receipts" },
 ];
 
-function inputs1701Q(ctx: Pick<WorksheetContext, "client">): ManualInput[] {
-  return [
+/** Inputs the books replace: cost of sales and other income come from the ledger when it covers the year. */
+const BOOK_FIGURES = new Set(["cost_of_sales", "non_operating_income"]);
+type InputsCtx = Pick<WorksheetContext, "client" | "filing" | "ledger">;
+const withoutBookFigures = (ctx: InputsCtx, xs: ManualInput[]) => (booksCover(ctx) ? xs.filter((x) => !BOOK_FIGURES.has(x.key)) : xs);
+
+function inputs1701Q(ctx: InputsCtx): ManualInput[] {
+  return withoutBookFigures(ctx, [
     { key: "regime", label: "Income tax regime for the year", kind: "choice", choices: REGIMES, required: true },
     {
       key: "has_compensation_income",
@@ -123,7 +247,7 @@ function inputs1701Q(ctx: Pick<WorksheetContext, "client">): ManualInput[] {
     amountInput("interest", "Interest (Item 65)"),
     amountInput("compromise", "Compromise (Item 66)"),
     ...ownerNameInputs(ctx),
-  ];
+  ]);
 }
 
 function compute1701Q(ctx: WorksheetContext): WorksheetResult {
@@ -139,15 +263,15 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
 
   const p = periods(ctx);
   const rateDate = p.yearEnd;
-  const salesQ = salesOf(p.thisQ);
-  const salesPrev = salesOf(p.prevQ);
-  const costsQ = costsOf(p.thisQ, ctx.client.vatRegistered);
-  const costsPrev = costsOf(p.prevQ, ctx.client.vatRegistered);
-  const nonOp = inp.amount("non_operating_income");
-  const priorNonOp = ctx.priorFigures[FORM]?.non_operating_income_to_date ?? 0;
   const credits = cwt(p);
   errors.push(...credits.thisQ.errors, ...credits.prevQ.errors);
   warnings.push(...credits.thisQ.warnings);
+  const src = incomeSource(ctx, p, inp, FORM, regime === "graduated_itemized", credits.thisQ.total, credits.prevQ.total);
+  errors.push(...src.errors);
+  warnings.push(...src.warnings);
+  const { salesQ, salesPrev } = src;
+  const nonOp = src.otherQ;
+  const priorNonOp = src.otherPrev;
 
   let schedule: WorksheetLine[];
   let taxDue: Centavos;
@@ -167,10 +291,12 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
       warnings.push(`Gross sales to date (₱${peso(salesQ + salesPrev)}) exceed ₱3,000,000; the 8% option no longer applies — the client moves to graduated rates and must register for VAT.`);
     warnings.push(...priorDiffWarning(ctx, FORM, "cumulative_income", i50, "Previous quarters' income"));
     schedule = [
-      line("sales", "47", "Sales/revenues/receipts/fees (net of returns, allowances & discounts)", salesQ, { basis: "Approved sales invoices this quarter, net of VAT." }),
-      line("non_operating_income", "48", "Add: Non-operating income", nonOp),
+      line("sales", "47", "Sales/revenues/receipts/fees (net of returns, allowances & discounts)", salesQ, { basis: src.basis.sales }),
+      line("non_operating_income", "48", "Add: Non-operating income", nonOp, { basis: src.basis.other }),
       line("total_income_quarter", "49", "Total income for the quarter (47 + 48)", i49, { emphasis: "subtotal" }),
-      line("previous_quarters_income", "50", "Add: Total taxable income/(loss) previous quarter(s)", i50, { basis: `Sales invoices of earlier quarters ₱${peso(salesPrev)} + non-operating income on earlier worksheets ₱${peso(priorNonOp)}.` }),
+      line("previous_quarters_income", "50", "Add: Total taxable income/(loss) previous quarter(s)", i50, {
+        basis: src.fromBooks ? `${src.basis.prev} Sales ₱${peso(salesPrev)} + non-operating income ₱${peso(priorNonOp)}.` : `Sales invoices of earlier quarters ₱${peso(salesPrev)} + non-operating income on earlier worksheets ₱${peso(priorNonOp)}.`,
+      }),
       line("cumulative_income", "51", "Cumulative taxable income/(loss) as of this quarter (49 + 50)", i51, { emphasis: "subtotal" }),
       line("allowable_reduction", "52", "Less: Allowable reduction from gross sales/receipts (₱250,000)", reduction, { basis: compensation === "yes" ? "Mixed income earner: no reduction." : "Purely self-employed." }),
       line("taxable_income_to_date", "53", "Taxable income/(loss) to date (51 − 52)", i53, { emphasis: "subtotal" }),
@@ -179,20 +305,18 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
   } else {
     const osd = regime === "graduated_osd";
     const osdPct = osdRate(rateDate);
-    const cos = osd ? 0 : inp.amount("cost_of_sales");
-    const priorCos = osd ? 0 : (ctx.priorFigures[FORM]?.cost_of_sales_to_date ?? 0);
-    if (cos > costsQ) errors.push(`Cost of sales (₱${peso(cos)}) is more than this quarter's purchase receipts (₱${peso(costsQ)}).`);
-    if (!osd) warnings.push(PROXY_WARNING);
+    const cos = src.cosQ;
+    const priorCos = src.cosPrev;
+    if (!osd && !src.fromBooks) warnings.push(PROXY_WARNING);
     // OSD for individuals (RR 16-2008 §3): 40% of gross sales, cost of sales not separately deductible (taxify `netIncomeFor`).
-    const net = (sales: Centavos, costs: Centavos, cogs: Centavos) =>
-      osd ? sales - pct(sales, osdPct) : sales - cogs - Math.max(0, costs - cogs);
+    const net = (sales: Centavos, cogs: Centavos, ded: Centavos) => (osd ? sales - pct(sales, osdPct) : sales - cogs - ded);
     const i36 = salesQ;
     const i37 = cos;
     const i38 = i36 - i37;
-    const deduction = osd ? pct(salesQ, osdPct) : Math.max(0, costsQ - cos);
+    const deduction = osd ? pct(salesQ, osdPct) : src.dedQ;
     const i41 = i38 - deduction;
     const priorGpp = ctx.priorFigures[FORM]?.gpp_share_to_date ?? 0;
-    const i42 = net(salesPrev, costsPrev, priorCos) + priorNonOp + priorGpp;
+    const i42 = net(salesPrev, priorCos, src.dedPrev) + priorNonOp + priorGpp;
     const i43 = nonOp;
     const i44 = inp.amount("gpp_share");
     const i45 = i41 + i42 + i43 + i44;
@@ -200,15 +324,17 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
     warnings.push(...priorDiffWarning(ctx, FORM, "taxable_income_to_date", i42, "Previous quarters' taxable income"));
     Object.assign(carry, { gpp_share_to_date: priorGpp + i44, cost_of_sales_to_date: priorCos + cos });
     schedule = [
-      line("sales", "36", "Sales/revenues/receipts/fees (net of returns, allowances & discounts)", i36, { basis: "Approved sales invoices this quarter, net of VAT." }),
-      line("cost_of_sales", "37", "Less: Cost of sales/services", i37, { basis: osd ? "Not deducted under OSD." : "Typed in." }),
+      line("sales", "36", "Sales/revenues/receipts/fees (net of returns, allowances & discounts)", i36, { basis: src.basis.sales }),
+      line("cost_of_sales", "37", "Less: Cost of sales/services", i37, { basis: osd ? "Not deducted under OSD." : src.basis.cos }),
       line("gross_income", "38", "Gross income/(loss) from operation (36 − 37)", i38, { emphasis: "subtotal" }),
       osd
         ? line("osd", "40", `Optional standard deduction (${osdPct}% of Item 36)`, deduction)
-        : line("itemized_deductions", "39", "Total allowable itemized deductions", deduction, { basis: `Purchase receipts this quarter ₱${peso(costsQ)} less cost of sales.` }),
+        : line("itemized_deductions", "39", "Total allowable itemized deductions", deduction, { basis: src.basis.ded }),
       line("net_income_quarter", "41", "Net income/(loss) this quarter (38 − 39/40)", i41, { emphasis: "subtotal" }),
-      line("previous_quarters_income", "42", "Add: Taxable income/(loss) previous quarter(s)", i42, { basis: "Recomputed from the documents of the earlier quarters, plus non-operating and partnership income on earlier worksheets." }),
-      line("non_operating_income", "43", "Non-operating income", i43),
+      line("previous_quarters_income", "42", "Add: Taxable income/(loss) previous quarter(s)", i42, {
+        basis: src.fromBooks ? `${src.basis.prev} Partnership income from earlier worksheets.` : "Recomputed from the documents of the earlier quarters, plus non-operating and partnership income on earlier worksheets.",
+      }),
+      line("non_operating_income", "43", "Non-operating income", i43, { basis: src.basis.other }),
       line("gpp_share", "44", "Share in income from general professional partnership", i44),
       line("taxable_income_to_date", "45", "Total taxable income/(loss) to date (41 to 44)", i45, { emphasis: "subtotal" }),
       line("tax_due_graduated", "46", "TAX DUE (graduated rates)", taxDue, { emphasis: "total", basis: "Annual graduated table applied to income to date." }),
@@ -262,23 +388,19 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
       { title: "Carried to the next quarter (not form lines)", lines: Object.entries(carry).map(([k, v]) => line(k, "—", k.replace(/_/g, " "), v)) },
     ],
     schedules: [
-      comparisonSchedule([
-        ["Sales (net of VAT)", salesQ, salesPrev],
-        ["Purchase receipts", costsQ, costsPrev],
-        ["Creditable tax withheld (2307)", i58, i57],
-      ]),
+      src.detail,
       sawtSchedule("SAWT — creditable income tax withheld this quarter", credits.thisQ.rows),
     ],
     errors,
     warnings,
-    documentIds: [...new Set([...p.thisQ, ...p.prevQ].filter((d) => d.docType !== "bir_2307_issued" && d.docType !== "other").map((d) => d.id))],
+    documentIds: usedDocuments(p, src.fromBooks),
   };
 }
 
 // ── 1702Q ──────────────────────────────────────────────────
 
-function inputs1702Q(ctx: Pick<WorksheetContext, "client">): ManualInput[] {
-  return [
+function inputs1702Q(ctx: InputsCtx): ManualInput[] {
+  return withoutBookFigures(ctx, [
     {
       key: "deduction",
       label: "Deduction method for the year",
@@ -309,7 +431,7 @@ function inputs1702Q(ctx: Pick<WorksheetContext, "client">): ManualInput[] {
     amountInput("interest", "Interest (Item 22)"),
     amountInput("compromise", "Compromise (Item 23)"),
     ...ownerNameInputs(ctx),
-  ];
+  ]);
 }
 
 function compute1702Q(ctx: WorksheetContext): WorksheetResult {
@@ -332,27 +454,25 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
   if (rateChoice === "small") warnings.push(`The ${rates.small}% rate applies only if net taxable income is ₱5M or less and total assets (excluding land) are ₱100M or less; confirm.`);
   const osd = deduction === "osd";
   const osdPct = osdRate(rateDate);
-  if (!osd) warnings.push(PROXY_WARNING);
-
-  const salesQ = salesOf(p.thisQ);
-  const salesPrev = salesOf(p.prevQ);
-  const costsQ = costsOf(p.thisQ, ctx.client.vatRegistered);
-  const costsPrev = costsOf(p.prevQ, ctx.client.vatRegistered);
-  const cos = inp.amount("cost_of_sales");
-  const priorCos = ctx.priorFigures[FORM]?.cost_of_sales_to_date ?? 0;
-  if (cos > costsQ) errors.push(`Cost of sales (₱${peso(cos)}) is more than this quarter's purchase receipts (₱${peso(costsQ)}).`);
-  const nonOp = inp.amount("non_operating_income");
-  const priorNonOp = ctx.priorFigures[FORM]?.non_operating_income_to_date ?? 0;
+  const credits = cwt(p);
+  const src = incomeSource(ctx, p, inp, FORM, true, credits.thisQ.total, credits.prevQ.total);
+  errors.push(...src.errors);
+  warnings.push(...src.warnings);
+  if (!osd && !src.fromBooks) warnings.push(PROXY_WARNING);
+  const cos = src.cosQ;
+  const priorCos = src.cosPrev;
+  const nonOp = src.otherQ;
+  const priorNonOp = src.otherPrev;
 
   // taxify `netIncomeFor1702`: OSD for corporations is 40% of gross income (sales − cost of sales + other income).
-  const figures = (sales: Centavos, costs: Centavos, cogs: Centavos, other: Centavos) => {
+  const figures = (sales: Centavos, cogs: Centavos, other: Centavos, ded: Centavos) => {
     const grossIncomeOps = sales - cogs;
     const totalGrossIncome = grossIncomeOps + other;
-    const allowable = osd ? pct(totalGrossIncome, osdPct) : Math.max(0, costs - cogs);
+    const allowable = osd ? pct(totalGrossIncome, osdPct) : ded;
     return { sales, cogs, grossIncomeOps, totalGrossIncome, allowable, taxableIncome: totalGrossIncome - allowable };
   };
-  const q = figures(salesQ, costsQ, cos, nonOp);
-  const prev = figures(salesPrev, costsPrev, priorCos, priorNonOp);
+  const q = figures(src.salesQ, cos, nonOp, src.dedQ);
+  const prev = figures(src.salesPrev, priorCos, priorNonOp, src.dedPrev);
   const i9 = q.taxableIncome + prev.taxableIncome;
   const i11 = pct(Math.max(0, i9), rate);
   warnings.push(...priorDiffWarning(ctx, FORM, "taxable_income_to_date", prev.taxableIncome, "Previous quarters' taxable income"));
@@ -372,7 +492,6 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
   if (carryforward > 0 && !regularHigher) warnings.push("MCIT is higher than the regular income tax this quarter, so the prior years' excess MCIT cannot be credited (Item 15 is 0).");
   const i16 = i13 - i15;
 
-  const credits = cwt(p);
   errors.push(...credits.thisQ.errors, ...credits.prevQ.errors);
   warnings.push(...credits.thisQ.warnings);
   const c1 = inp.amount("prior_year_excess_credit");
@@ -403,14 +522,14 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
       {
         title: "Schedule 2 — Declaration this quarter (regular/normal rate)",
         lines: [
-          line("sales", "S2-1", "Sales/receipts/revenues/fees", q.sales, { basis: "Approved sales invoices this quarter, net of VAT." }),
-          line("cost_of_sales", "S2-2", "Less: Cost of sales/services", q.cogs, { basis: "Typed in." }),
+          line("sales", "S2-1", "Sales/receipts/revenues/fees", q.sales, { basis: src.basis.sales }),
+          line("cost_of_sales", "S2-2", "Less: Cost of sales/services", q.cogs, { basis: src.basis.cos }),
           line("gross_income_operations", "S2-3", "Gross income from operation", q.grossIncomeOps, { emphasis: "subtotal" }),
-          line("non_operating_income", "S2-4", "Add: Non-operating and other taxable income", nonOp),
+          line("non_operating_income", "S2-4", "Add: Non-operating and other taxable income", nonOp, { basis: src.basis.other }),
           line("total_gross_income", "S2-5", "Total gross income", q.totalGrossIncome, { emphasis: "subtotal" }),
-          line("deductions", "S2-6", osd ? `Less: Optional standard deduction (${osdPct}% of gross income)` : "Less: Itemized deductions", q.allowable, osd ? {} : { basis: `Purchase receipts this quarter ₱${peso(costsQ)} less cost of sales.` }),
+          line("deductions", "S2-6", osd ? `Less: Optional standard deduction (${osdPct}% of gross income)` : "Less: Itemized deductions", q.allowable, osd ? {} : { basis: src.basis.ded }),
           line("taxable_income_quarter", "S2-7", "Taxable income this quarter", q.taxableIncome, { emphasis: "subtotal" }),
-          line("previous_quarters_income", "S2-8", "Add: Taxable income previous quarter(s)", prev.taxableIncome, { basis: "Recomputed from the documents of the earlier quarters, plus other income and cost of sales on earlier worksheets." }),
+          line("previous_quarters_income", "S2-8", "Add: Taxable income previous quarter(s)", prev.taxableIncome, { basis: src.basis.prev }),
           line("taxable_income_to_date", "S2-9", "Total taxable income to date", i9, { emphasis: "subtotal" }),
           line("income_tax_rate", "S2-10", `Applicable income tax rate: ${rate}%`, null),
           line("regular_income_tax", "S2-11", "Income tax due other than MCIT", i11),
@@ -460,16 +579,12 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
       { title: "Carried to the next quarter (not form lines)", lines: Object.entries(carry).map(([k, v]) => line(k, "—", k.replace(/_/g, " "), v)) },
     ],
     schedules: [
-      comparisonSchedule([
-        ["Sales (net of VAT)", salesQ, salesPrev],
-        ["Purchase receipts", costsQ, costsPrev],
-        ["Creditable tax withheld (2307)", c5, c4],
-      ]),
+      src.detail,
       sawtSchedule("SAWT — creditable income tax withheld this quarter", credits.thisQ.rows),
     ],
     errors,
     warnings,
-    documentIds: [...new Set([...p.thisQ, ...p.prevQ].filter((d) => d.docType !== "bir_2307_issued" && d.docType !== "other").map((d) => d.id))],
+    documentIds: usedDocuments(p, src.fromBooks),
   };
 }
 
@@ -485,6 +600,7 @@ export const form1701Q: FormModule = {
   title: "1701Q — Quarterly Income Tax Return (individuals)",
   manualInputs: inputs1701Q,
   documentScope: "year_to_date",
+  usesLedger: true,
   compute: compute1701Q,
   attachments: incomeAttachments("1701Q"),
 };
@@ -494,6 +610,7 @@ export const form1702Q: FormModule = {
   title: "1702Q — Quarterly Income Tax Return (corporations, partnerships, non-individuals)",
   manualInputs: inputs1702Q,
   documentScope: "year_to_date",
+  usesLedger: true,
   compute: compute1702Q,
   attachments: incomeAttachments("1702Q"),
 };

@@ -420,15 +420,15 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795519534.5623546,
-    "seen": 1795519540.7464914,
-    "ast_hash": "e97c847b23e8a89a7d585ddb999f8417",
+    "mtime": 1795519957.4680464,
+    "seen": 1795519992.1994328,
+    "ast_hash": "bad430f8a8ed2f76510a7e7c6a527a3e",
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
-    "mtime": 1795519110.9383802,
-    "seen": 1795519540.7464943,
-    "ast_hash": "8a983b443d0763b2e62bba291f7a6481",
+    "mtime": 1795519957.4666777,
+    "seen": 1795519992.199435,
+    "ast_hash": "be73147b476c6b9e4c9bbb6f0890c276",
     "semantic_hash": ""
   },
   "docs/SETUP.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795519534.5629475,
-    "seen": 1795519540.746522,
-    "ast_hash": "d00ca629752aebc18990e3d031715d12",
+    "mtime": 1795519957.467593,
+    "seen": 1795519992.199456,
+    "ast_hash": "d079baf076eae844b63c5c5439cedc39",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/edit/page.tsx": {
@@ -906,9 +906,9 @@
     "semantic_hash": ""
   },
   "src/app/app/filings/[id]/worksheet/page.tsx": {
-    "mtime": 1795500965.330516,
-    "seen": 1795501478.3348489,
-    "ast_hash": "f32a6ba101ee6739e49afeb3fd1742de",
+    "mtime": 1795519937.7673092,
+    "seen": 1795519992.1907241,
+    "ast_hash": "800f60920a3734f96bebc36dbf485e70",
     "semantic_hash": ""
   },
   "src/app/app/nav/app-nav.tsx": {
@@ -1446,15 +1446,15 @@
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/income.test.ts": {
-    "mtime": 1795500965.3392754,
-    "seen": 1795501478.3351433,
-    "ast_hash": "81e9015897301654569f9741c98d0e70",
+    "mtime": 1795519902.5004606,
+    "seen": 1795519992.1976168,
+    "ast_hash": "4683569fd539cce5091421f06eb180de",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/income.ts": {
-    "mtime": 1795500965.3392754,
-    "seen": 1795501478.3351457,
-    "ast_hash": "66e74a1910e4348db1fa373ab0d46a9a",
+    "mtime": 1795519933.342429,
+    "seen": 1795519992.1976197,
+    "ast_hash": "a5a45e7ce28d27c1cea92898d42fb7e4",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/percentage.test.ts": {
@@ -1482,9 +1482,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/testing.ts": {
-    "mtime": 1795500965.3392754,
-    "seen": 1795501478.3351536,
-    "ast_hash": "45580c18380d0bb25af4891e97bf56f7",
+    "mtime": 1795519873.1605122,
+    "seen": 1795519992.197747,
+    "ast_hash": "27e0a339f50cc17e5e3a4a9d3471a001",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/util.ts": {
@@ -1584,9 +1584,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/load.ts": {
-    "mtime": 1795500965.3402805,
-    "seen": 1795501478.335183,
-    "ast_hash": "fe137fd3c5bd260f48fbe74017ce8e2c",
+    "mtime": 1795519915.5375767,
+    "seen": 1795519992.1982574,
+    "ast_hash": "c9861335b8af91840b8726976eb013a5",
     "semantic_hash": ""
   },
   "src/lib/returns/money.test.ts": {
@@ -1644,9 +1644,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/types.ts": {
-    "mtime": 1795500965.3402805,
-    "seen": 1795501478.335197,
-    "ast_hash": "cd3faaae2fd640e83487165aed8887ed",
+    "mtime": 1795519778.063903,
+    "seen": 1795519992.1984684,
+    "ast_hash": "a823262c5ccfccd49aaaa9183ef86bf3",
     "semantic_hash": ""
   },
   "src/lib/scores/compliance.ts": {
@@ -2238,9 +2238,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/ledger.test.ts": {
-    "mtime": 1795519111.0070088,
-    "seen": 1795519540.7460096,
-    "ast_hash": "fb9936bb9915cf0d2b2de03bbb2b55c8",
+    "mtime": 1795519732.9815335,
+    "seen": 1795519992.1989372,
+    "ast_hash": "d001cd27d191f2fff731d4277b040652",
     "semantic_hash": ""
   },
   "src/lib/ledger/arap-xlsx.ts": {
@@ -2313,6 +2313,18 @@
     "mtime": 1795519424.7233202,
     "seen": 1795519540.7460055,
     "ast_hash": "3d37323312d4d6825943327a162aa0d8",
+    "semantic_hash": ""
+  },
+  "src/lib/returns/forms/business/book-income.test.ts": {
+    "mtime": 1795519902.4843435,
+    "seen": 1795519992.1976113,
+    "ast_hash": "c608313a41a79ed3a49050c005f767d9",
+    "semantic_hash": ""
+  },
+  "src/lib/returns/forms/business/book-income.ts": {
+    "mtime": 1795519778.0679986,
+    "seen": 1795519992.1976137,
+    "ast_hash": "a4b1c055704128c05ca6fa94d5464a4d",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

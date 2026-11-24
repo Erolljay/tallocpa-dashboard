@@ -1,5 +1,5 @@
 /** Fixture builders for the business-tax worksheet tests. */
-import type { SourceDocument, WorksheetContext, WorksheetResult } from "../../types";
+import type { LedgerMovement, SourceDocument, WorksheetContext, WorksheetResult } from "../../types";
 
 let seq = 0;
 const P = (pesos: number) => Math.round(pesos * 100);
@@ -48,6 +48,7 @@ export function ctxFor(opts: {
   inputs?: Record<string, string>;
   priorFigures?: WorksheetContext["priorFigures"];
   client?: Partial<WorksheetContext["client"]>;
+  ledger?: WorksheetContext["ledger"];
 }): WorksheetContext {
   return {
     client: {
@@ -65,7 +66,13 @@ export function ctxFor(opts: {
     documents: opts.documents,
     inputs: opts.inputs ?? {},
     priorFigures: opts.priorFigures ?? {},
+    ...(opts.ledger ? { ledger: opts.ledger } : {}),
   };
+}
+
+/** An income or expense account's movement for the ledger context; `net` in pesos, debit − credit (income negative). */
+export function mv(birLine: string | null, net: number, type: LedgerMovement["type"] = net < 0 ? "revenue" : "expense", code = birLine ?? "9999"): LedgerMovement {
+  return { code, name: birLine ?? "Unmapped", type, birLine, net: Math.round(net * 100) };
 }
 
 /** Line amounts by key, in pesos. */

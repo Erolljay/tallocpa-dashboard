@@ -74,6 +74,30 @@ export interface WorksheetContext {
   priorFigures: Record<string, Record<string, Centavos>>;
   /** Employees and their pay for the year to date (1601-C, 1604-C), from src/lib/payroll/load.ts `loadPayrollContext`. */
   payroll?: PayrollContext;
+  /** The client's books (Phase 1B), for forms with `usesLedger`; absent when the client has no books. */
+  ledger?: LedgerContext;
+}
+
+/** One income or expense account's movement over a date range: debit − credit (income is negative). */
+export interface LedgerMovement {
+  code: string;
+  name: string;
+  type: "revenue" | "cost" | "expense" | "other_income" | "income_tax";
+  /** The BIR income tax line the account feeds (src/lib/ledger/bir-lines.ts), or null when not set. */
+  birLine: string | null;
+  net: Centavos;
+}
+
+/** Posted income and expenses from the client's ledger (database function ledger_income). */
+export interface LedgerContext {
+  /** First day of the books; the ledger is used only if it is on or before the start of the taxable year. */
+  booksStart: string;
+  /** This filing's period. */
+  period: LedgerMovement[];
+  /** From the start of the taxable year to the day before the period. */
+  earlier: LedgerMovement[];
+  /** Suggested entries dated in the taxable year to date, not yet posted. */
+  suggested: number;
 }
 
 /** A figure staff must or may type in (payroll totals, prior-year credits, tax regime choice…). */
@@ -139,6 +163,8 @@ export interface FormModule {
    * or from the start of the taxable year to the end of the period (for cumulative returns).
    */
   documentScope?: "period" | "year_to_date";
+  /** The loader also reads the client's books (`ledger`) for the taxable year to date. */
+  usesLedger?: boolean;
   /** Attachments this form produces (empty if none). */
   attachments?(ctx: WorksheetContext, result: WorksheetResult): { kind: string; label: string; build(): AttachmentFile }[];
 }
