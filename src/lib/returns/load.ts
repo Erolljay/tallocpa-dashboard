@@ -8,6 +8,7 @@ import { moduleForForm } from "./registry";
 import { buildPriorFigures, isApproved, monthOf, taxableYearStart, toSourceDocument, withDirectoryParty, type DocumentRow } from "./source";
 import type { Centavos, FormModule, LedgerContext, LedgerMovement, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
 import { toCentavos } from "./money";
+import { buildStatements, type FinancialStatements } from "@/lib/ledger/statements";
 import { supabaseServer } from "@/lib/supabase/server";
 import { lookupParties } from "@/lib/parties/lookup";
 import { loadPayrollContext } from "@/lib/payroll/load";
@@ -136,7 +137,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       .eq("client_id", f.client_id)
       .neq("filing_instance_id", f.id)
       .gte("filing_instances.period_start", yearStart)
-      .lt("filing_instances.period_end", f.period_start),
+      .lt("filing_instances.period_end", formModule.priorWithinPeriod ? f.period_end : f.period_start),
   ]);
 
   const documents: ListedDocument[] = [];
@@ -172,6 +173,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   if (PAYROLL_FORM_CODES.has(f.form)) ctx.payroll = await loadPayrollContext(db, f.clients.id, f.form, f.period_start, f.period_end);
   if (formModule.usesLedger) {
     const ledger = await loadLedger(db, f.client_id, yearStart, f.period_start, f.period_end);
+    if (ledger && formModule.priorWithinPeriod) ledger.statements = await loadYearStatements(db, ctx, yearStart);
     if (ledger) ctx.ledger = ledger;
   }
   return { filing, module: formModule, ctx, saved, documents };
@@ -205,4 +207,27 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
     db.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "suggested").gte("entry_date", yearStart).lte("entry_date", periodEnd),
   ]);
   return { booksStart: books.books_start as string, period, earlier, suggested: count ?? 0 };
+}
+
+/** The year's financial statements at the period end, for an annual return's balance sheet schedule. */
+async function loadYearStatements(db: Supabase, ctx: WorksheetContext, yearStart: string): Promise<FinancialStatements | undefined> {
+  const { data, error } = await db.rpc("trial_balance", { p_client: ctx.client.id, p_from: yearStart, p_to: ctx.filing.periodEnd });
+  if (error) return undefined;
+  const rows = ((data ?? []) as Record<string, string | number>[]).map((r) => ({
+    code: String(r.code),
+    name: String(r.name),
+    fsLine: String(r.fs_line),
+    opening: toCentavos(String(r.opening)) ?? 0,
+    debit: toCentavos(String(r.debit)) ?? 0,
+    credit: toCentavos(String(r.credit)) ?? 0,
+    closing: toCentavos(String(r.closing)) ?? 0,
+  }));
+  return buildStatements({
+    kind: "annual",
+    periodStart: yearStart,
+    periodEnd: ctx.filing.periodEnd,
+    yearStart,
+    client: { name: ctx.client.name, tin: ctx.client.tin, address: ctx.client.registeredAddress },
+    year: rows,
+  });
 }

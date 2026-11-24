@@ -9,6 +9,7 @@
  * Amounts are integers in centavos to avoid floating-point drift.
  */
 
+import type { FinancialStatements } from "@/lib/ledger/statements";
 import type { PayrollContext } from "@/lib/payroll/types";
 
 export type Centavos = number;
@@ -98,6 +99,8 @@ export interface LedgerContext {
   earlier: LedgerMovement[];
   /** Suggested entries dated in the taxable year to date, not yet posted. */
   suggested: number;
+  /** For annual forms: the financial statements at the period end (balance sheet schedule). */
+  statements?: FinancialStatements;
 }
 
 /** A figure staff must or may type in (payroll totals, prior-year credits, tax regime choice…). */
@@ -165,6 +168,11 @@ export interface FormModule {
   documentScope?: "period" | "year_to_date";
   /** The loader also reads the client's books (`ledger`) for the taxable year to date. */
   usesLedger?: boolean;
+  /**
+   * Annual forms: earlier worksheets are those ending before this period's end
+   * (the year's quarterly returns), not before its start.
+   */
+  priorWithinPeriod?: boolean;
   /** Attachments this form produces (empty if none). */
   attachments?(ctx: WorksheetContext, result: WorksheetResult): { kind: string; label: string; build(): AttachmentFile }[];
 }
