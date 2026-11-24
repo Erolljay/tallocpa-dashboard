@@ -1,0 +1,37 @@
+name: Apply database migrations
+
+# Runs the new files in supabase/migrations/ against the live Supabase database once
+# they reach main, so the database never falls behind the deployed code.
+# Needs the repository secret SUPABASE_DB_URL (see docs/SETUP.md).
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only list the pending migrations"
+        type: boolean
+        default: false
+
+# Never run two migration jobs at once, and never cancel one halfway.
+concurrency:
+  group: supabase-migrations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Apply pending migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: bash scripts/apply-migrations.sh ${{ inputs.dry_run && '--dry-run' || '' }}

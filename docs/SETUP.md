@@ -4,19 +4,27 @@ How to connect TalloCPA OS to Supabase, Google sign-in and Vercel. Done once by 
 
 ## 1. Supabase project
 
-> **Done (2026-11-23):** project **TalloCPA OS** (`fjimfmvfmwqmuekzocsw`, Singapore) is created, all migrations in `supabase/migrations/` are applied and `supabase/seed.sql` is loaded. Steps 1–3 below are for rebuilding it. New migrations are applied in order as they are merged.
+> **Done (2026-11-23):** project **TalloCPA OS** (`fjimfmvfmwqmuekzocsw`, Singapore) is created, all migrations in `supabase/migrations/` are applied and `supabase/seed.sql` is loaded. Steps 1–3 below are for rebuilding it. New migrations are applied automatically when they reach `main` (see **Automatic migrations** below).
 
 1. Create a project at supabase.com, **region: Southeast Asia (Singapore)** (spec §3.14).
-2. Apply the database: install the Supabase CLI, then from this repo:
+2. Apply the database from this repo (needs `psql`; the connection string is under **Connect → Session pooler**):
    ```bash
-   supabase link --project-ref <project-ref>
-   supabase db push
+   SUPABASE_DB_URL="<session pooler connection string>" scripts/apply-migrations.sh
    ```
+   (`supabase db push` does not work here: two migration files share the version `20261123000010`.)
 3. Load the starting data (brand, deadline rules, 2027 holidays):
    ```bash
    psql "<connection string from Project Settings → Database>" -f supabase/seed.sql
    ```
 4. Copy `.env.example` to `.env.local` and fill in the project URL and the **publishable** key (Project Settings → API Keys).
+
+### Automatic migrations
+
+The **Apply database migrations** workflow (`.github/workflows/migrate.yml`) runs `scripts/apply-migrations.sh` whenever a change under `supabase/migrations/` is merged to `main`, so the live database never falls behind the deployed code. It applies only the files the database has not run (matched by name in `supabase_migrations.schema_migrations`), each in its own transaction, and stops at the first error.
+
+One-time setup: in Supabase, open **Connect → Session pooler** and copy the URI (port 5432, IPv4; the direct connection is IPv6-only and GitHub runners cannot reach it). Put the database password in it, then add it on GitHub under **Settings → Secrets and variables → Actions → New repository secret** as `SUPABASE_DB_URL`.
+
+To check or catch up by hand: **Actions → Apply database migrations → Run workflow** (tick *dry run* to only list what is pending). If a run fails, the failed migration was rolled back; fix the file in a new pull request and the next merge applies it.
 
 ## 2. Sign-in settings (Authentication → Sign In / Providers)
 

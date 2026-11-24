@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "docs/SETUP.md": {
-    "mtime": 1795500965.2978687,
-    "seen": 1795501478.3352504,
-    "ast_hash": "ae1f916408d16a6f481c119f24fc50a0",
+    "mtime": 1795522678.4247057,
+    "seen": 1795522686.7824986,
+    "ast_hash": "6876f8d4f197e0bece772acb74653983",
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
@@ -2403,6 +2403,18 @@
     "mtime": 1795521926.492047,
     "seen": 1795522484.3847978,
     "ast_hash": "3b359463e19e1a8cabb93ac32c076857",
+    "semantic_hash": ""
+  },
+  ".github/workflows/migrate.yml": {
+    "mtime": 1795522644.4680727,
+    "seen": 1795522686.7732396,
+    "ast_hash": "74e63f09d011da83e23b144e198db74b",
+    "semantic_hash": ""
+  },
+  "scripts/apply-migrations.sh": {
+    "mtime": 1795522670.1480737,
+    "seen": 1795522686.77334,
+    "ast_hash": "1a6ad0944989c406162f61c35da3dedb",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
