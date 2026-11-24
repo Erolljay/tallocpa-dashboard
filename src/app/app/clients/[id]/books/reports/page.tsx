@@ -75,6 +75,11 @@ async function Reports({ params, searchParams }: Pick<PageProps<"/app/clients/[i
               {result.fs.difference !== 0 && (
                 <Notice tone="blocked">Total assets differ from total liabilities and equity by {formatAmount(result.fs.difference)}. Check the books before using these statements.</Notice>
               )}
+              {(result.fs.cashDifference ?? []).some((d) => d !== 0) && (
+                <Notice tone="waiting">
+                  The statement of cash flows does not reconcile to the change in cash ({result.fs.cashDifference.map(formatAmount).join(" / ")}). Check the cash-flow class of cash accounts in the chart of accounts.
+                </Notice>
+              )}
               {result.fs.unclassified.length > 0 && (
                 <Notice tone="blocked">
                   These accounts have no known FS line and show as &ldquo;Unclassified&rdquo;: {result.fs.unclassified.join(", ")}.{" "}

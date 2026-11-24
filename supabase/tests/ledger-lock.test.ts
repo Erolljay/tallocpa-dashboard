@@ -216,4 +216,29 @@ describe.skipIf(!url)("ledger: period lock and amendments", () => {
     await expect(as(OWNER, `update public.ledger_amendments set status = 'reopened' where id = $1`, [amendment])).resolves.toMatchObject({ rowCount: 0 });
     await expect(as(OWNER, `insert into public.ledger_amendments (client_id, filing_instance_id, period_start, period_end, reason) values ($1, $2, '2027-01-01', '2027-03-31', 'x')`, [client, filing["2550Q"]])).rejects.toThrow(/row-level security/);
   });
+
+  it("an amended return is a new filing of the same period through the sign-off chain; filing it locks the reopened months again", async () => {
+    await expect(as(STAFF, `select public.amend_filing($1, 'Missed invoice')`, [filing["0619-E"]])).rejects.toThrow(/Owner or the client's reviewer/);
+    await expect(as(REVIEWER, `select public.amend_filing($1, '')`, [filing["0619-E"]])).rejects.toThrow(/reason/);
+    const amended = (await as(REVIEWER, `select public.amend_filing($1, 'Late payroll accrual') as id`, [filing["0619-E"]])).rows[0].id;
+    const row = (await db.query(`select form, period_label, period_start::text, period_end::text, status, amends, amendment_no from public.filing_instances where id = $1`, [amended])).rows[0];
+    expect(row).toEqual({ form: "0619-E", period_label: "2027-04 Amended", period_start: "2027-04-01", period_end: "2027-04-30", status: "not_started", amends: filing["0619-E"], amendment_no: 1 });
+    expect((await db.query(`select action, note from public.filing_events where filing_instance_id = $1`, [amended])).rows).toEqual([{ action: "amend", note: "Late payroll accrual" }]);
+    await expect(as(REVIEWER, `select public.amend_filing($1, 'again')`, [filing["0619-E"]])).rejects.toThrow(/later amended return/);
+    await expect(as(REVIEWER, `select public.amend_filing($1, 'x')`, [amended])).rejects.toThrow(/Only a filed return/);
+
+    // April is open through the Owner's books amendment; filing the amended return locks it again.
+    expect(await post("2027-04-12")).toBeTruthy();
+    await db.query(`update public.filing_instances set status = 'filed' where id = $1`, [amended]);
+    await expect(post("2027-04-13")).rejects.toThrow(/April 2027 is locked/);
+    const a = (await db.query(`select status, changes_note from public.ledger_amendments where filing_instance_id = $1 order by requested_at desc limit 1`, [filing["0619-E"]])).rows[0];
+    expect(a).toEqual({ status: "relocked", changes_note: "Amended return filed: 0619-E 2027-04 Amended" });
+
+    // A second amendment numbers on.
+    const second = (await as(OWNER, `select public.amend_filing($1, 'Another correction') as id`, [amended])).rows[0].id;
+    expect((await db.query(`select period_label, amendment_no from public.filing_instances where id = $1`, [second])).rows[0]).toEqual({ period_label: "2027-04 Amended 2", amendment_no: 2 });
+    // Amended returns are not scored as late filings.
+    const late = (await db.query(`select filing_id from private.late_filing_causes('2000-01-01', '2100-01-01', '2100-01-01')`)).rows.map((r) => r.filing_id);
+    expect(late).not.toContain(second);
+  });
 });

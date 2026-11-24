@@ -5,7 +5,7 @@ import { ctxFor, purchase, sale } from "./testing";
 
 describe("business tax forms", () => {
   it("are registered under their filing form codes", () => {
-    for (const form of ["2551Q", "2550Q", "1701Q", "1702Q"]) expect(moduleForForm(form)?.forms).toContain(form);
+    for (const form of ["2551Q", "2550Q", "1701Q", "1702Q", "1701", "1701A", "1702-RT"]) expect(moduleForForm(form)?.forms).toContain(form);
   });
 
   it("give every line a unique key", () => {
@@ -14,11 +14,13 @@ describe("business tax forms", () => {
       "2550Q": {},
       "1701Q": { regime: "graduated_itemized" },
       "1702Q": { deduction: "itemized", corporate_rate: "regular" },
+      "1701": {},
+      "1702-RT": { deduction: "itemized", corporate_rate: "regular" },
     };
     for (const m of BUSINESS_TAX_FORMS) {
       const form = m.forms[0];
-      const individual = form === "1701Q";
-      for (const regime of form === "1701Q" ? ["graduated_itemized", "graduated_osd", "8pct"] : [""]) {
+      const individual = form === "1701Q" || form === "1701";
+      for (const regime of individual ? ["graduated_itemized", "graduated_osd", "8pct"] : [""]) {
         const ctx = ctxFor({
           form,
           periodStart: "2026-04-01",

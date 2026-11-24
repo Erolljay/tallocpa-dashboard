@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getIdentity } from "@/lib/auth";
 import type { SignOffAction } from "@/lib/filings/sign-off";
@@ -49,4 +50,16 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   revalidatePath("/portal");
   revalidatePath("/app/collections");
   return { ok: "Saved." };
+}
+
+/** Starts an amended return of a filed one (spec §4.3) and opens it. */
+export async function amendFilingAction(filingId: string, _: SignOffState, form: FormData): Promise<SignOffState> {
+  await getIdentity();
+  const reason = text(form.get("reason"));
+  if (!reason) return { error: "Give the reason for the amended return." };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("amend_filing", { p_filing: filingId, p_reason: reason });
+  if (error) return { error: error.message };
+  revalidatePath("/app", "layout");
+  redirect(`/app/filings/${data as string}`);
 }

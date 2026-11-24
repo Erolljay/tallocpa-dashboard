@@ -112,4 +112,64 @@ describe("buildStatements", () => {
     expect(amount(fs.equity, "Owner's drawings: movement")).toEqual([P(-2_000)]);
     expect(amount(fs.equity, "Balance at December 31, 2028")).toEqual([P(125_000)]);
   });
+
+  it("builds the statement of cash flows by the indirect method, tied to the change in cash", () => {
+    const fs = buildStatements({ kind: "quarterly", periodStart: "2027-01-01", periodEnd: "2027-03-31", yearStart: "2027-01-01", client, year });
+    const cf = fs.cashFlows;
+    expect(amount(cf, "Net income (loss)")).toEqual([P(13_000)]);
+    expect(amount(cf, "(Increase) decrease in trade and other receivables")).toEqual([P(-30_000)]);
+    expect(amount(cf, "Increase (decrease) in income tax payable")).toEqual([P(3_000)]);
+    expect(amount(cf, "Net cash from (used in) operating activities")).toEqual([P(-14_000)]);
+    expect(amount(cf, "Loans payable, net of current portion")).toEqual([P(40_000)]);
+    expect(amount(cf, "NET INCREASE (DECREASE) IN CASH AND CASH EQUIVALENTS")).toEqual([P(26_000)]);
+    expect(amount(cf, "Cash and cash equivalents at the beginning of the period")).toEqual([P(100_000)]);
+    expect(amount(cf, "CASH AND CASH EQUIVALENTS AT THE END OF THE PERIOD")).toEqual([P(126_000)]);
+    expect(fs.cashDifference).toEqual([0]);
+  });
+
+  it("adds back non-cash items and shows purchases of equipment under investing, per the accounts' class", () => {
+    const rows: StatementRow[] = [
+      { ...row("1010", "Cash", "cash_and_equivalents", 100_000, -50_000 + 20_000) },
+      { ...row("1500", "Equipment", "ppe", 0, 50_000) },
+      { ...row("1510", "Accumulated Depreciation", "ppe", 0, -5_000), cashFlow: "noncash" },
+      { ...row("1020", "Petty Cash Fund", "other_current_assets", 0, 0), cashFlow: "cash" },
+      { ...row("3010", "Share Capital", "share_capital", -100_000, 0) },
+      { ...row("4010", "Sales", "revenue", 0, -20_000) },
+      { ...row("6100", "Depreciation", "operating_expenses", 0, 5_000) },
+    ];
+    const fs = buildStatements({ kind: "annual", periodStart: "2027-01-01", periodEnd: "2027-12-31", yearStart: "2027-01-01", client, year: rows });
+    expect(amount(fs.cashFlows, "Adjustments: depreciation, amortization and other non-cash items")).toEqual([P(5_000)]);
+    expect(amount(fs.cashFlows, "Net cash from (used in) operating activities")).toEqual([P(20_000)]);
+    expect(amount(fs.cashFlows, "Property and equipment, net")).toEqual([P(-50_000)]);
+    expect(fs.cashDifference).toEqual([0]);
+  });
+
+  it("annual reports show the prior year beside the current one", () => {
+    const prior: StatementRow[] = [
+      row("1010", "Cash on Hand", "cash_and_equivalents", 80_000, 20_000),
+      row("3010", "Share Capital", "share_capital", -80_000, 0),
+      row("4010", "Sales", "revenue", 0, -20_000),
+    ];
+    // The current year opens after the prior year's closing entry.
+    const current: StatementRow[] = [
+      row("1010", "Cash on Hand", "cash_and_equivalents", 100_000, 5_000),
+      row("3010", "Share Capital", "share_capital", -80_000, 0),
+      row("3030", "Retained Earnings", "retained_earnings", -20_000, 0),
+      row("4010", "Sales", "revenue", 0, -5_000),
+    ];
+    const fs = buildStatements({ kind: "annual", periodStart: "2028-01-01", periodEnd: "2028-12-31", yearStart: "2028-01-01", client, year: current, prior: { end: "2027-12-31", rows: prior, income: true } });
+    expect(fs.position.columns).toEqual(["December 31, 2028", "December 31, 2027"]);
+    expect(fs.income.columns).toEqual(["Year ended December 31, 2028", "Year ended December 31, 2027"]);
+    expect(amount(fs.position, "TOTAL ASSETS")).toEqual([P(105_000), P(100_000)]);
+    expect(amount(fs.position, "Retained earnings")).toEqual([P(20_000), 0]);
+    expect(amount(fs.position, "Total equity")).toEqual([P(105_000), P(100_000)]);
+    expect(amount(fs.income, "NET INCOME (LOSS)")).toEqual([P(5_000), P(20_000)]);
+    expect(fs.notes.find((n) => n.title === "Cash and cash equivalents")?.columns).toEqual(["December 31, 2028", "December 31, 2027"]);
+    expect(fs.cashDifference).toEqual([0, 0]);
+
+    // Without the prior year's income (books started that year end): balance sheet only.
+    const sfpOnly = buildStatements({ kind: "annual", periodStart: "2028-01-01", periodEnd: "2028-12-31", yearStart: "2028-01-01", client, year: current, prior: { end: "2027-12-31", rows: prior, income: false } });
+    expect(sfpOnly.income.columns).toEqual(["Year ended December 31, 2028"]);
+    expect(sfpOnly.position.columns).toHaveLength(2);
+  });
 });

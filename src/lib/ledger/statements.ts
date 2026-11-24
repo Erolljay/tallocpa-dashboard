@@ -7,7 +7,12 @@
  *   Statement of Comprehensive Income for the period and, when the period is
  *                                     shorter than the year, the year to date.
  *   Statement of Changes in Equity    from the start of the taxable year.
+ *   Statement of Cash Flows           indirect method, by each account's
+ *                                     cash-flow class (cash-flow.ts).
  *   Notes                             the accounts behind each FS line that has a note.
+ *
+ * Annual reports add the prior year beside the current one when the books
+ * hold it (`prior`).
  *
  * The books are not closed at year end (no closing entries yet), so income of
  * the year to date shows as "Net income for the year", and income of earlier
@@ -18,6 +23,7 @@
  * stored as it was released.
  */
 import { FS_LINES, isFsLine, type FsLineKey, type Section } from "./fs-lines";
+import { defaultCashFlow, type CashFlowClass } from "./cash-flow";
 import type { Centavos } from "./types";
 
 export type ReportKind = "monthly" | "quarterly" | "annual";
@@ -33,6 +39,8 @@ export interface StatementRow {
   debit: Centavos;
   credit: Centavos;
   closing: Centavos;
+  /** How the account reports on the statement of cash flows; worked out from the FS line when absent. */
+  cashFlow?: CashFlowClass;
 }
 
 export interface StatementLine {
@@ -67,9 +75,12 @@ export interface FinancialStatements {
   position: Statement;
   income: Statement;
   equity: Statement;
+  cashFlows: Statement;
   notes: Note[];
-  /** Total assets less total liabilities and equity: 0 when the books balance. */
+  /** Total assets less total liabilities and equity (current year): 0 when the books balance. */
   difference: Centavos;
+  /** Net change in cash per the statement of cash flows less the actual change, per column: 0 when they agree. */
+  cashDifference: Centavos[];
   /** Accounts whose FS line is unknown (reported under "Unclassified"). */
   unclassified: string[];
 }
@@ -137,6 +148,48 @@ const add = (a: Centavos[], b: Centavos[]) => a.map((x, i) => x + (b[i] ?? 0));
 const zero = (n: number) => Array<Centavos>(n).fill(0);
 const nonZero = (xs: Centavos[]) => xs.some((x) => x !== 0);
 
+interface Column {
+  label: string;
+  rows: StatementRow[];
+}
+
+/** Statement of financial position figures for one trial balance. */
+function position(rows: StatementRow[]) {
+  const balances = new Map<Fs, Map<string, Centavos>>();
+  let priorIncome = 0; // income of earlier periods not closed (credit positive)
+  let income = 0; // income of the range
+  for (const r of rows) {
+    const k = fsOf(r);
+    if (isPnl(k)) {
+      priorIncome -= r.opening;
+      income -= r.debit - r.credit;
+      continue;
+    }
+    const v = sign(sectionOf(k), r.closing);
+    if (v === 0) continue;
+    if (!balances.has(k)) balances.set(k, new Map());
+    const acc = `${r.code} ${r.name}`;
+    balances.get(k)!.set(acc, (balances.get(k)!.get(acc) ?? 0) + v);
+  }
+  return { balances, priorIncome, income };
+}
+
+/** Income and expense movement for one trial balance, by FS line and account (income positive in income sections). */
+function movement(rows: StatementRow[]) {
+  const m = new Map<Fs, Map<string, Centavos>>();
+  for (const r of rows) {
+    const k = fsOf(r);
+    if (!isPnl(k)) continue;
+    const v = sign(sectionOf(k), r.debit - r.credit);
+    if (!m.has(k)) m.set(k, new Map());
+    const acc = `${r.code} ${r.name}`;
+    m.get(k)!.set(acc, (m.get(k)!.get(acc) ?? 0) + v);
+  }
+  return m;
+}
+
+const classOf = (r: StatementRow): CashFlowClass => r.cashFlow ?? defaultCashFlow({ fsLine: r.fsLine, control: null, normalSide: "debit" });
+
 export function buildStatements(opts: {
   kind: ReportKind;
   periodStart: string;
@@ -147,47 +200,23 @@ export function buildStatements(opts: {
   year: StatementRow[];
   /** Trial balance from the period start to its end; omit when the period is the year to date. */
   period?: StatementRow[];
+  /** Annual reports: the prior taxable year's trial balance; `income` false when the books did not cover that year (balance sheet only). */
+  prior?: { end: string; rows: StatementRow[]; income: boolean };
 }): FinancialStatements {
   const { year } = opts;
   const twoColumns = opts.periodStart !== opts.yearStart && !!opts.period;
-  const sciColumns = twoColumns
-    ? [opts.kind === "monthly" ? fmtMonth(opts.periodStart) : opts.kind === "quarterly" ? `Quarter ended ${fmtDate(opts.periodEnd)}` : "Period", "Year to date"]
-    : [opts.kind === "annual" ? `Year ended ${fmtDate(opts.periodEnd)}` : "Year to date"];
-  const sfpColumns = [fmtDate(opts.periodEnd)];
+  const flows: Column[] = twoColumns
+    ? [
+        { label: opts.kind === "monthly" ? fmtMonth(opts.periodStart) : opts.kind === "quarterly" ? `Quarter ended ${fmtDate(opts.periodEnd)}` : "Period", rows: opts.period! },
+        { label: "Year to date", rows: year },
+      ]
+    : [{ label: opts.kind === "annual" ? `Year ended ${fmtDate(opts.periodEnd)}` : "Year to date", rows: year }];
+  if (opts.prior?.income) flows.push({ label: `Year ended ${fmtDate(opts.prior.end)}`, rows: opts.prior.rows });
+  const balancesAt: Column[] = [{ label: fmtDate(opts.periodEnd), rows: year }];
+  if (opts.prior) balancesAt.push({ label: fmtDate(opts.prior.end), rows: opts.prior.rows });
+  const sciColumns = flows.map((c) => c.label);
+  const sfpColumns = balancesAt.map((c) => c.label);
   const unclassified = year.filter((r) => fsOf(r) === "unclassified" && (r.closing !== 0 || r.debit !== 0 || r.credit !== 0)).map((r) => `${r.code} ${r.name}`);
-
-  // Movement of P&L accounts per column; balances of SFP accounts at the end.
-  const movement = (rows: StatementRow[]) => {
-    const m = new Map<Fs, Map<string, Centavos>>();
-    for (const r of rows) {
-      const k = fsOf(r);
-      if (!isPnl(k)) continue;
-      const v = sign(sectionOf(k), r.debit - r.credit);
-      if (!m.has(k)) m.set(k, new Map());
-      m.get(k)!.set(`${r.code} ${r.name}`, (m.get(k)!.get(`${r.code} ${r.name}`) ?? 0) + v);
-    }
-    return m;
-  };
-  const pnlCols = twoColumns ? [movement(opts.period!), movement(year)] : [movement(year)];
-  const pnlKeys = ordered(pnlCols.flatMap((c) => [...c.keys()]));
-  const pnlAccounts = (k: Fs) => [...new Set(pnlCols.flatMap((c) => [...(c.get(k)?.keys() ?? [])]))].sort();
-  const pnlAmounts = (k: Fs): Centavos[] => pnlCols.map((c) => [...(c.get(k)?.values() ?? [])].reduce((s, v) => s + v, 0));
-  const pnlByAccount = (k: Fs, acc: string): Centavos[] => pnlCols.map((c) => c.get(k)?.get(acc) ?? 0);
-
-  const balances = new Map<Fs, Map<string, Centavos>>();
-  let priorIncome = 0; // P&L of earlier years not closed: credit positive
-  for (const r of year) {
-    const k = fsOf(r);
-    if (isPnl(k)) {
-      priorIncome -= r.opening;
-      continue;
-    }
-    const v = sign(sectionOf(k), r.closing);
-    if (v === 0) continue;
-    if (!balances.has(k)) balances.set(k, new Map());
-    balances.get(k)!.set(`${r.code} ${r.name}`, (balances.get(k)!.get(`${r.code} ${r.name}`) ?? 0) + v);
-  }
-  const balance = (k: Fs) => [...(balances.get(k)?.values() ?? [])].reduce((s, v) => s + v, 0);
 
   // Notes are numbered in the order their lines appear: position first, then income.
   const notes: Note[] = [];
@@ -210,59 +239,65 @@ export function buildStatements(opts: {
   };
 
   // ── Statement of Financial Position ──
-  const pos: StatementLine[] = [];
-  const sfpSection = (section: Section, title: string, totalLabel: string): Centavos => {
-    const keys = ordered([...balances.keys()].filter((k) => sectionOf(k) === section));
-    if (!keys.length) return 0;
-    pos.push({ label: title, amounts: [null], kind: "heading" });
-    let total = 0;
-    for (const k of keys) {
-      const v = balance(k);
-      total += v;
-      const rows = [...balances.get(k)!.entries()].sort().map(([label, a]) => ({ label, amounts: [a] }));
-      pos.push({ label: labelOf(k), amounts: [v], kind: "line", note: noteFor(k, sfpColumns, rows) });
-    }
-    pos.push({ label: totalLabel, amounts: [total], kind: "subtotal" });
+  const pos = balancesAt.map((c) => position(c.rows));
+  const ns = pos.length;
+  const balanceOf = (k: Fs) => pos.map((p) => [...(p.balances.get(k)?.values() ?? [])].reduce((a, v) => a + v, 0));
+  const accountsOf = (k: Fs) => [...new Set(pos.flatMap((p) => [...(p.balances.get(k)?.keys() ?? [])]))].sort();
+  const allKeys = ordered(pos.flatMap((p) => [...p.balances.keys()]));
+  const posLines: StatementLine[] = [];
+  const blank = (n: number) => Array<null>(n).fill(null);
+  const sfpLine = (k: Fs): Centavos[] => {
+    const v = balanceOf(k);
+    const rows = accountsOf(k).map((acc) => ({ label: acc, amounts: pos.map((p) => p.balances.get(k)?.get(acc) ?? 0) }));
+    posLines.push({ label: labelOf(k), amounts: v, kind: "line", note: noteFor(k, sfpColumns, rows) });
+    return v;
+  };
+  const sfpSection = (section: Section, title: string, totalLabel: string): Centavos[] => {
+    const keys = allKeys.filter((k) => sectionOf(k) === section);
+    if (!keys.length) return zero(ns);
+    posLines.push({ label: title, amounts: blank(ns), kind: "heading" });
+    let total = zero(ns);
+    for (const k of keys) total = add(total, sfpLine(k));
+    posLines.push({ label: totalLabel, amounts: total, kind: "subtotal" });
     return total;
   };
-  pos.push({ label: "ASSETS", amounts: [null], kind: "heading" });
-  const assets = sfpSection("current_assets", "Current assets", "Total current assets") + sfpSection("noncurrent_assets", "Non-current assets", "Total non-current assets");
-  pos.push({ label: "TOTAL ASSETS", amounts: [assets], kind: "total" });
-  pos.push({ label: "LIABILITIES AND EQUITY", amounts: [null], kind: "heading" });
-  const liabilities = sfpSection("current_liabilities", "Current liabilities", "Total current liabilities") + sfpSection("noncurrent_liabilities", "Non-current liabilities", "Total non-current liabilities");
-  if (liabilities !== 0) pos.push({ label: "Total liabilities", amounts: [liabilities], kind: "subtotal" });
-
-  const ytdIncome = pnlNet(pnlKeys, pnlAmounts, pnlCols.length - 1);
-  const equityKeys = ordered([...balances.keys()].filter((k) => sectionOf(k) === "equity"));
-  pos.push({ label: "Equity", amounts: [null], kind: "heading" });
-  let equityTotal = 0;
-  for (const k of equityKeys) {
-    const v = balance(k);
-    equityTotal += v;
-    const rows = [...balances.get(k)!.entries()].sort().map(([label, a]) => ({ label, amounts: [a] }));
-    pos.push({ label: labelOf(k), amounts: [v], kind: "line", note: noteFor(k, sfpColumns, rows) });
+  posLines.push({ label: "ASSETS", amounts: blank(ns), kind: "heading" });
+  const assets = add(sfpSection("current_assets", "Current assets", "Total current assets"), sfpSection("noncurrent_assets", "Non-current assets", "Total non-current assets"));
+  posLines.push({ label: "TOTAL ASSETS", amounts: assets, kind: "total" });
+  posLines.push({ label: "LIABILITIES AND EQUITY", amounts: blank(ns), kind: "heading" });
+  const liabilities = add(sfpSection("current_liabilities", "Current liabilities", "Total current liabilities"), sfpSection("noncurrent_liabilities", "Non-current liabilities", "Total non-current liabilities"));
+  if (nonZero(liabilities)) posLines.push({ label: "Total liabilities", amounts: liabilities, kind: "subtotal" });
+  posLines.push({ label: "Equity", amounts: blank(ns), kind: "heading" });
+  let equityTotal = zero(ns);
+  for (const k of allKeys.filter((k) => sectionOf(k) === "equity")) equityTotal = add(equityTotal, sfpLine(k));
+  const priorIncome = pos.map((p) => p.priorIncome);
+  if (nonZero(priorIncome)) {
+    posLines.push({ label: "Income of prior years not yet closed", amounts: priorIncome, kind: "line" });
+    equityTotal = add(equityTotal, priorIncome);
   }
-  if (priorIncome !== 0) {
-    pos.push({ label: "Income of prior years not yet closed", amounts: [priorIncome], kind: "line" });
-    equityTotal += priorIncome;
-  }
-  pos.push({ label: "Net income (loss) for the year to date", amounts: [ytdIncome], kind: "line" });
-  equityTotal += ytdIncome;
-  pos.push({ label: "Total equity", amounts: [equityTotal], kind: "subtotal" });
-  pos.push({ label: "TOTAL LIABILITIES AND EQUITY", amounts: [liabilities + equityTotal], kind: "total" });
+  const income = pos.map((p) => p.income);
+  posLines.push({ label: "Net income (loss) for the year to date", amounts: income, kind: "line" });
+  equityTotal = add(equityTotal, income);
+  posLines.push({ label: "Total equity", amounts: equityTotal, kind: "subtotal" });
+  const totalLe = add(liabilities, equityTotal);
+  posLines.push({ label: "TOTAL LIABILITIES AND EQUITY", amounts: totalLe, kind: "total" });
 
   // ── Statement of Comprehensive Income ──
+  const mv = flows.map((c) => movement(c.rows));
+  const n = mv.length;
+  const pnlKeys = ordered(mv.flatMap((c) => [...c.keys()]));
+  const pnlAmounts = (k: Fs): Centavos[] => mv.map((c) => [...(c.get(k)?.values() ?? [])].reduce((a, v) => a + v, 0));
+  const pnlAccounts = (k: Fs) => [...new Set(mv.flatMap((c) => [...(c.get(k)?.keys() ?? [])]))].sort();
   const inc: StatementLine[] = [];
-  const n = pnlCols.length;
   const sciSection = (section: Section, title: string | null, totalLabel: string | null): Centavos[] => {
     const keys = pnlKeys.filter((k) => sectionOf(k) === section && nonZero(pnlAmounts(k)));
     if (!keys.length) return zero(n);
-    if (title) inc.push({ label: title, amounts: Array(n).fill(null), kind: "heading" });
+    if (title) inc.push({ label: title, amounts: blank(n), kind: "heading" });
     let total = zero(n);
     for (const k of keys) {
       const v = pnlAmounts(k);
       total = add(total, v);
-      const rows = pnlAccounts(k).map((acc) => ({ label: acc, amounts: pnlByAccount(k, acc) })).filter((r) => nonZero(r.amounts));
+      const rows = pnlAccounts(k).map((acc) => ({ label: acc, amounts: mv.map((c) => c.get(k)?.get(acc) ?? 0) })).filter((r) => nonZero(r.amounts));
       inc.push({ label: labelOf(k), amounts: v, kind: "line", note: noteFor(k, sciColumns, rows) });
     }
     if (totalLabel && keys.length > 1) inc.push({ label: totalLabel, amounts: total, kind: "subtotal" });
@@ -284,16 +319,72 @@ export function buildStatements(opts: {
   inc.push({ label: "NET INCOME (LOSS)", amounts: net, kind: "total" });
 
   // ── Statement of Changes in Equity (year to date) ──
+  const cur = pos[0];
   const eq: StatementLine[] = [];
   const equityRows = year.filter((r) => !isPnl(fsOf(r)) && sectionOf(fsOf(r)) === "equity");
-  const startEquity = equityRows.reduce((s, r) => s - r.opening, 0) + priorIncome;
+  const startEquity = equityRows.reduce((a, r) => a - r.opening, 0) + cur.priorIncome;
   eq.push({ label: `Balance at ${fmtDate(opts.yearStart)}`, amounts: [startEquity], kind: "subtotal" });
   const moves = new Map<Fs, Centavos>();
   for (const r of equityRows) moves.set(fsOf(r), (moves.get(fsOf(r)) ?? 0) - (r.debit - r.credit));
   for (const k of ordered(moves.keys())) if (moves.get(k)) eq.push({ label: `${labelOf(k)}: movement`, amounts: [moves.get(k)!], kind: "line" });
-  eq.push({ label: "Net income (loss) for the year to date", amounts: [ytdIncome], kind: "line" });
-  const endEquity = startEquity + [...moves.values()].reduce((s, v) => s + v, 0) + ytdIncome;
+  eq.push({ label: "Net income (loss) for the year to date", amounts: [cur.income], kind: "line" });
+  const endEquity = startEquity + [...moves.values()].reduce((a, v) => a + v, 0) + cur.income;
   eq.push({ label: `Balance at ${fmtDate(opts.periodEnd)}`, amounts: [endEquity], kind: "total" });
+
+  // ── Statement of Cash Flows (indirect method), one column per income column ──
+  const cf = flows.map((c) => {
+    const lines = new Map<string, Centavos>(); // "class|label" → cash effect
+    let noncash = 0;
+    let cashOpen = 0;
+    let cashClose = 0;
+    let netIncome = 0;
+    for (const r of c.rows) {
+      const k = fsOf(r);
+      if (isPnl(k)) {
+        netIncome -= r.debit - r.credit;
+        continue;
+      }
+      const cls = classOf(r);
+      if (cls === "cash") {
+        cashOpen += r.opening;
+        cashClose += r.closing;
+        continue;
+      }
+      const effect = -(r.closing - r.opening);
+      if (effect === 0) continue;
+      if (cls === "noncash") noncash += effect;
+      else lines.set(`${cls}|${labelOf(k)}`, (lines.get(`${cls}|${labelOf(k)}`) ?? 0) + effect);
+    }
+    return { lines, noncash, cashOpen, cashClose, netIncome };
+  });
+  const cfLines: StatementLine[] = [];
+  const groupKeys = (cls: CashFlowClass) => [...new Set(cf.flatMap((c) => [...c.lines.keys()].filter((key) => key.startsWith(`${cls}|`))))];
+  const opLabel = (label: string, assetLike: boolean) => (assetLike ? `(Increase) decrease in ${label.toLowerCase()}` : `Increase (decrease) in ${label.toLowerCase()}`);
+  const assetLabels = new Set(ORDER.filter((k) => FS_LINES[k].section === "current_assets" || FS_LINES[k].section === "noncurrent_assets").map((k) => FS_LINES[k].label as string));
+  const section = (cls: CashFlowClass, title: string, totalLabel: string, extra: StatementLine[] = [], extraAmounts: Centavos[] = zero(n)): Centavos[] => {
+    cfLines.push({ label: title, amounts: blank(n), kind: "heading" });
+    cfLines.push(...extra);
+    let total = extraAmounts;
+    for (const key of groupKeys(cls)) {
+      const label = key.slice(key.indexOf("|") + 1);
+      const v = cf.map((c) => c.lines.get(key) ?? 0);
+      total = add(total, v);
+      cfLines.push({ label: cls === "operating" ? opLabel(label, assetLabels.has(label)) : label, amounts: v, kind: "line" });
+    }
+    cfLines.push({ label: totalLabel, amounts: total, kind: "subtotal" });
+    return total;
+  };
+  const ni = cf.map((c) => c.netIncome);
+  const nc = cf.map((c) => c.noncash);
+  const opExtra: StatementLine[] = [{ label: "Net income (loss)", amounts: ni, kind: "line" }];
+  if (nonZero(nc)) opExtra.push({ label: "Adjustments: depreciation, amortization and other non-cash items", amounts: nc, kind: "line" });
+  const opTotal = section("operating", "CASH FLOWS FROM OPERATING ACTIVITIES", "Net cash from (used in) operating activities", opExtra, add(ni, nc));
+  const invTotal = section("investing", "CASH FLOWS FROM INVESTING ACTIVITIES", "Net cash from (used in) investing activities");
+  const finTotal = section("financing", "CASH FLOWS FROM FINANCING ACTIVITIES", "Net cash from (used in) financing activities");
+  const netChange = opTotal.map((o, i) => o + invTotal[i] + finTotal[i]);
+  cfLines.push({ label: "NET INCREASE (DECREASE) IN CASH AND CASH EQUIVALENTS", amounts: netChange, kind: "subtotal" });
+  cfLines.push({ label: "Cash and cash equivalents at the beginning of the period", amounts: cf.map((c) => c.cashOpen), kind: "line" });
+  cfLines.push({ label: "CASH AND CASH EQUIVALENTS AT THE END OF THE PERIOD", amounts: cf.map((c) => c.cashClose), kind: "total" });
 
   return {
     kind: opts.kind,
@@ -301,20 +392,13 @@ export function buildStatements(opts: {
     periodEnd: opts.periodEnd,
     yearStart: opts.yearStart,
     client: opts.client,
-    position: { title: "Statement of Financial Position", columns: sfpColumns, lines: pos },
+    position: { title: "Statement of Financial Position", columns: sfpColumns, lines: posLines },
     income: { title: "Statement of Comprehensive Income", columns: sciColumns, lines: inc },
     equity: { title: "Statement of Changes in Equity", columns: [`Year to ${fmtDate(opts.periodEnd)}`], lines: eq },
+    cashFlows: { title: "Statement of Cash Flows", columns: sciColumns, lines: cfLines },
     notes,
-    difference: assets - (liabilities + equityTotal),
+    difference: assets[0] - totalLe[0],
+    cashDifference: cf.map((c, i) => netChange[i] - (c.cashClose - c.cashOpen)),
     unclassified,
   };
-}
-
-/** Net income of column `col` (revenue and other income less costs, expenses, finance costs and tax). */
-function pnlNet(keys: Fs[], amounts: (k: Fs) => Centavos[], col: number): Centavos {
-  return keys.reduce((s, k) => {
-    const v = amounts(k)[col] ?? 0;
-    const section = sectionOf(k);
-    return section === "revenue" || section === "other_income" ? s + v : s - v;
-  }, 0);
 }
