@@ -1,0 +1,762 @@
+<title>TalloCPA OS UX Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: report tabs on top; the mock tab reproduces the app's floating-sidebar shell. Tokens mirror src/styles/theme.css (Tallo blue, neutral ground). */
+:root{
+  --bg:#ffffff; --panel:#f4f5f7; --surface:#ffffff; --sunk:#f8f9fb;
+  --fg:#0b0d12; --muted:#5f6673; --faint:#8a909c; --line:#e4e6eb; --line-strong:#d3d6dd;
+  --accent:#0053fb; --accent-ink:#0045d4; --accent-soft:#eef4ff; --accent-line:#bcd0ff;
+  --ok:#3f6212; --ok-bg:#ecfccb; --warn:#854d0e; --warn-bg:#fef3c7; --bad:#b42318; --bad-bg:#fee4e2;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121316; --panel:#17181c; --surface:#202227; --sunk:#1a1c20;
+  --fg:#f4f5f7; --muted:#a3a9b5; --faint:#7d8390; --line:#2b2e35; --line-strong:#3a3e46;
+  --accent:#5b8cff; --accent-ink:#86aaff; --accent-soft:#16233f; --accent-line:#2a417a;
+  --ok:#a3e635; --ok-bg:#1f2a10; --warn:#facc15; --warn-bg:#2d2508; --bad:#fb8b7f; --bad-bg:#3a1714;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121316; --panel:#17181c; --surface:#202227; --sunk:#1a1c20;
+  --fg:#f4f5f7; --muted:#a3a9b5; --faint:#7d8390; --line:#2b2e35; --line-strong:#3a3e46;
+  --accent:#5b8cff; --accent-ink:#86aaff; --accent-soft:#16233f; --accent-line:#2a417a;
+  --ok:#a3e635; --ok-bg:#1f2a10; --warn:#facc15; --warn-bg:#2d2508; --bad:#fb8b7f; --bad-bg:#3a1714;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
+h1,h2,h3,h4{text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:26px;font-weight:600;line-height:1.2}
+h2{font-size:20px;font-weight:600}
+h3{font-size:16px;font-weight:600}
+h4{font-size:14px;font-weight:600}
+p{margin:0}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--accent-ink)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* header + tabs */
+.top{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
+.lede{max-width:72ch;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;overflow-x:auto;scrollbar-width:none}
+.tabs a{padding:9px 12px;border-bottom:2px solid transparent;margin-bottom:-1px;text-decoration:none;color:var(--fg);white-space:nowrap}
+.tabs a[aria-current="page"]{border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+.tabs a .c{font-size:12px;background:var(--panel);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--muted)}
+
+.stack{display:flex;flex-direction:column;gap:16px}
+.grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;min-width:0}
+.card.flat{background:var(--sunk)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;border-radius:999px;padding:1px 8px;white-space:nowrap;border:1px solid transparent}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip.info{background:var(--accent-soft);color:var(--accent-ink)}
+.chip.neutral{background:var(--panel);color:var(--muted)}
+.chip.line{border-color:var(--line-strong);color:var(--muted);background:transparent}
+
+/* journeys */
+.journey{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.step:first-child{border-top:0}
+.step .n{width:26px;height:26px;border-radius:999px;background:var(--panel);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--muted)}
+.step.gap .n{background:var(--bad-bg);color:var(--bad)}
+.step.fr .n{background:var(--warn-bg);color:var(--warn)}
+.step.ok .n{background:var(--ok-bg);color:var(--ok)}
+.step .row1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;justify-content:space-between}
+.step .screen{font-size:12px;color:var(--muted)}
+.step .screen code{font-size:12px;background:var(--panel);padding:1px 5px;border-radius:4px}
+.step .pain{margin-top:4px;color:var(--muted);max-width:75ch}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+
+/* findings */
+.finding{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--line)}
+.finding:first-of-type{border-top:0}
+.fid{font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.finding .why{color:var(--muted);margin-top:6px;max-width:78ch}
+.finding .ev{font-size:12px;color:var(--faint);margin-top:6px}
+.finding .ev code{font-size:12px}
+
+/* flow before/after */
+.flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.flow .box{border:1px solid var(--line-strong);border-radius:12px;padding:8px 12px;background:var(--surface);min-width:0}
+.flow .box small{display:block;color:var(--muted);font-size:12px}
+.flow .arrow{align-self:center;color:var(--faint)}
+.flow .box.gapbox{border-style:dashed;border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+.flow .box.newbox{border-color:var(--accent);background:var(--accent-soft)}
+.flow .box.newbox b{color:var(--accent-ink)}
+
+.rec{padding:16px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:52px 1fr;gap:14px}
+.rec:first-of-type{border-top:0}
+.rec ul{margin:6px 0 0;padding-left:18px;color:var(--muted)}
+.rec li{margin:2px 0}
+.why-b{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--sunk);border:1px solid var(--line)}
+.why-b b{font-weight:600}
+
+table{border-collapse:collapse;width:100%}
+th{font-weight:500;color:var(--muted);text-align:start;font-size:12.5px;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tfoot td{font-weight:600;border-bottom:0;border-top:2px solid var(--line-strong)}
+td.r,th.r{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tscroll{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
+
+/* ---------- mock app shell ---------- */
+.mockbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.seg{display:inline-flex;background:var(--panel);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 10px;border-radius:9px;cursor:pointer;color:var(--muted);font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow);font-weight:500}
+.sample{font-size:12px;color:var(--warn);background:var(--warn-bg);padding:3px 10px;border-radius:999px}
+
+.app{display:flex;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:24px;padding:8px;min-height:640px}
+.side{width:230px;flex-shrink:0;background:var(--panel);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:14px}
+.lock{display:flex;align-items:center;gap:8px;padding:4px}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.lock b{font-size:14px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button,.nav span{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;border:0;background:transparent;text-align:start;cursor:pointer;font-size:13.5px;color:var(--fg)}
+.nav span{cursor:default;color:var(--faint)}
+.nav button[aria-current="page"]{background:var(--accent);color:#fff}
+.nav button:not([aria-current="page"]):hover{background:var(--surface)}
+.nav .new{margin-left:auto;font-size:10.5px;font-weight:600;letter-spacing:.04em;background:var(--accent-soft);color:var(--accent-ink);padding:0 6px;border-radius:999px}
+.nav button[aria-current="page"] .new{background:rgba(255,255,255,.22);color:#fff}
+.nav .grp{font-size:11.5px;font-weight:600;color:var(--faint);padding:10px 8px 2px}
+.nav .cnt{margin-left:auto;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.nav button[aria-current="page"] .cnt{color:#fff}
+.who{margin-top:auto;background:var(--surface);border-radius:14px;padding:8px;display:flex;gap:8px;align-items:center}
+.av{width:30px;height:30px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:12px;flex-shrink:0}
+.main{flex:1;min-width:0;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.ph{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.ph .crumb{font-size:12.5px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:var(--surface);padding:6px 12px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--sunk)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 9px;font-size:12.5px;border-radius:8px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent-ink)}
+
+/* period strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface)}
+.strip div{padding:10px 12px;border-left:1px solid var(--line);min-width:0}
+.strip div:first-child{border-left:0}
+.strip .k{font-size:11.5px;color:var(--muted)}
+.strip .v{font-weight:600;font-variant-numeric:tabular-nums}
+.strip .done{color:var(--ok)} .strip .cur{background:var(--accent-soft)}
+
+/* workpaper file */
+.wp{display:grid;grid-template-columns:250px minmax(0,1fr);gap:14px}
+.index{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:6px;align-self:start}
+.index button{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;width:100%;border:0;background:transparent;text-align:start;padding:8px;border-radius:10px;cursor:pointer}
+.index button:hover{background:var(--sunk)}
+.index button[aria-current="true"]{background:var(--accent-soft)}
+.ref{font-weight:700;font-size:12.5px;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.index .t{font-size:13px;line-height:1.3}
+.index .t small{display:block;color:var(--faint);font-size:11.5px}
+.dot{width:9px;height:9px;border-radius:99px;background:var(--line-strong)}
+.dot.ok{background:var(--ok)} .dot.warn{background:#d4a017} .dot.bad{background:var(--bad)} .dot.info{background:var(--accent)}
+.sched{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.sh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.signs{display:flex;gap:8px;flex-wrap:wrap}
+.sign{border:1px dashed var(--line-strong);border-radius:10px;padding:4px 10px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;min-width:108px}
+.sign b{color:var(--fg);font-weight:600;font-size:12.5px}
+.sign.done{border-style:solid;border-color:var(--ok);background:var(--ok-bg)}
+.sign.done b{color:var(--ok)}
+.feeds{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+.tick{border:1px solid var(--line-strong);background:transparent;border-radius:6px;width:24px;height:22px;cursor:pointer;font-size:12px;color:var(--faint);padding:0}
+.tick[aria-pressed="true"]{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:700}
+.note{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--sunk)}
+.note.open{border-color:#e9c46a;background:var(--warn-bg)}
+.note .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inline-form{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end;padding:12px;border:1px dashed var(--accent-line);border-radius:12px;background:var(--accent-soft)}
+.inline-form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:54px}
+.gate{border-radius:14px;padding:12px 14px;border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.gate ul{margin:0;padding-left:18px;color:var(--muted)}
+.hl td{background:var(--warn-bg)}
+.memo dl{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 14px;margin:0}
+.memo dt{color:var(--muted)}
+.memo dd{margin:0;font-variant-numeric:tabular-nums}
+.stamp{display:inline-block;border:2px solid var(--ok);color:var(--ok);font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:8px;transform:rotate(-3deg)}
+.queue li{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.queue li:first-child{border-top:0}
+.queue ul{list-style:none;margin:0;padding:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:20}
+
+@media (max-width:900px){
+  .app{flex-direction:column;padding:6px}
+  .side{width:auto;flex-direction:column}
+  .nav{flex-direction:row;overflow-x:auto;scrollbar-width:none}
+  .nav .grp{display:none}
+  .nav button,.nav span{white-space:nowrap}
+  .who{display:none}
+  .wp{grid-template-columns:1fr}
+  .index{display:flex;overflow-x:auto;gap:4px}
+  .index button{grid-template-columns:auto auto auto;width:auto;white-space:nowrap}
+  .index .t small{display:none}
+  .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .strip div{border-left:0;border-top:1px solid var(--line)}
+  .main{padding:10px 4px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Tallo CPA · TalloCPA OS Phase 1</span>
+    <h1>Staff and Owner journey review</h1>
+    <p class="lede">How a preparer, a reviewer and the Owner move through the app today, where each journey breaks, and a proposed <b>Workpapers</b> layer between Documents and Returns. Reviewed against the code on <code>main</code> (commit 2f2a2ec, 24 Nov 2026). Screens were read from the source; this has not yet been tested with your staff on real client data.</p>
+  </header>
+
+  <nav class="tabs" aria-label="Review sections" id="tabs">
+    <a href="#journeys">1 · Journeys</a>
+    <a href="#findings">2 · Findings <span class="c">10</span></a>
+    <a href="#recommendations">3 · Recommendations <span class="c">7</span></a>
+    <a href="#mock">4 · Mock app</a>
+  </nav>
+
+  <!-- ================= JOURNEYS ================= -->
+  <section id="v-journeys" class="stack" hidden>
+    <div class="legend">
+      <span><span class="chip ok">Works</span> the screen supports the step well</span>
+      <span><span class="chip warn">Friction</span> it works, with extra hops or guesswork</span>
+      <span><span class="chip bad">Gap</span> no screen for the step; it happens in Excel, Viber or someone's head</span>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>Preparer: one VAT client's quarter</h2><p class="muted">Rhea prepares Jaro Agri Supply (sole proprietor, VAT, bookkeeping + tax). Goal: 0619-E monthly, then 2550Q, 1601-EQ and 1701Q for the quarter.</p></div><span class="chip neutral">Staff role</span></div>
+      <div class="journey" id="j-prep"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><div><h2>Reviewer: checking Rhea's 2550Q</h2><p class="muted">Marco is the client's assigned reviewer.</p></div><span class="chip neutral">Reviewer</span></div>
+        <div class="journey" id="j-rev"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>Owner: a morning and a final approval</h2><p class="muted">You, checking the firm, then approving the 2550Q.</p></div><span class="chip neutral">Owner</span></div>
+        <div class="journey" id="j-own"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FINDINGS ================= -->
+  <section id="v-findings" class="stack" hidden>
+    <div class="card">
+      <div class="card-h"><h2>What the journeys show</h2><span class="muted">Ordered by impact on accuracy, then time saved</span></div>
+      <div id="findings-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= RECOMMENDATIONS ================= -->
+  <section id="v-recommendations" class="stack" hidden>
+    <div class="card">
+      <h2>The gap, before and after</h2>
+      <p class="muted" style="margin:6px 0 14px">Today the return worksheet is both where staff work the numbers and the output. Separating them gives the work a home that a reviewer can read and that you can defend in an LOA.</p>
+      <div class="stack" style="gap:12px">
+        <div><p class="faint" style="font-size:12px;margin-bottom:6px">TODAY</p>
+          <div class="flow">
+            <div class="box"><b>Documents</b><small>OCR, approve one by one</small></div><span class="arrow">→</span>
+            <div class="box gapbox"><b>Analysis happens outside</b><small>Excel, notes, memory</small></div><span class="arrow">→</span>
+            <div class="box"><b>Worksheet</b><small>one per filing + “figures typed in”</small></div><span class="arrow">→</span>
+            <div class="box"><b>Sign-off</b><small>kick back = free-text note</small></div>
+          </div></div>
+        <div><p class="faint" style="font-size:12px;margin-bottom:6px">PROPOSED</p>
+          <div class="flow">
+            <div class="box"><b>Documents</b><small>unchanged</small></div><span class="arrow">→</span>
+            <div class="box newbox"><b>Workpapers (client × period)</b><small>lead schedules · adjustments with support · tie-outs · review notes · per-schedule sign-off</small></div><span class="arrow">→</span>
+            <div class="box"><b>Worksheet</b><small>reads the workpapers; output only</small></div><span class="arrow">→</span>
+            <div class="box"><b>Sign-off</b><small>gated on clean tie-outs + cleared notes</small></div>
+          </div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>Recommended changes</h2><span class="muted">Each with the reason</span></div>
+      <div id="recs-list"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Suggested build order</h3>
+        <div class="tscroll" style="margin-top:10px"><table>
+          <thead><tr><th>Slice</th><th>What</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td><b>W1</b></td><td>Period file with lead schedules B–E read from approved documents and the ledger, plus the T tie-outs. Read-only; no new data entry.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
+            <tr><td><b>W2</b></td><td>Adjustments with reason and support replace “figures typed in”; per-schedule preparer and reviewer sign-off; “Mark prepared” gated.</td><td><span class="chip info">During the first live cycle</span></td></tr>
+            <tr><td><b>W3</b></td><td>Review notes anchored to a schedule or row; open or cleared; replace the kick-back note. <b>My work</b> home for staff and reviewers.</td><td><span class="chip info">After cycle 1</span></td></tr>
+            <tr><td><b>W4</b></td><td>Owner approval memo on the filing page; print the period file as a PDF binder; feed LOA ratios (Phase 4).</td><td><span class="chip neutral">After cycle 1</span></td></tr>
+          </tbody></table></div>
+        <p class="muted" style="margin-top:10px">Why W1 first: the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
+      </div>
+      <div class="card">
+        <h3>New tables (for the developer)</h3>
+        <ul class="muted" style="padding-left:18px;margin:10px 0 0">
+          <li><code>workpaper_files</code>: client, period (month or quarter), status, locked_at</li>
+          <li><code>workpaper_schedules</code>: file, ref (A–T), kind, prepared_by/at, reviewed_by/at</li>
+          <li><code>workpaper_adjustments</code>: schedule, kind, amount, return line, reason, support document, created_by</li>
+          <li><code>workpaper_ticks</code>: schedule, row key, tick (agreed to source, traced to ledger)</li>
+          <li><code>review_notes</code>: file, schedule ref, row key, body, status, raised_by, cleared_by, reply</li>
+        </ul>
+        <p class="muted" style="margin-top:10px">Schedules are computed, like worksheets today. Only sign-offs, ticks, adjustments and notes are stored. The file locks with the last return of the period, the same way worksheets lock now.</p>
+        <h3 style="margin-top:16px">Decisions for you</h3>
+        <ul class="muted" style="padding-left:18px;margin:8px 0 0">
+          <li>W/P reference letters: keep A–T as drafted, or match the index of your audit working papers?</li>
+          <li>Tie-out tolerance before “Mark prepared” is blocked (₱1 rounding? ₱100?)</li>
+          <li>Must every schedule be reviewer-signed, or only B, C and T?</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOCK APP ================= -->
+  <section id="v-mock" hidden>
+    <div class="mockbar">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="muted" style="font-size:13px">View as</span>
+        <div class="seg" role="group" aria-label="Role" id="roleSeg">
+          <button data-role="preparer" aria-pressed="true">Preparer</button>
+          <button data-role="reviewer" aria-pressed="false">Reviewer</button>
+          <button data-role="owner" aria-pressed="false">Owner</button>
+        </div>
+      </div>
+      <span class="sample">Sample client and figures · not real data</span>
+    </div>
+    <div class="app">
+      <aside class="side">
+        <div class="lock"><div class="mark">T</div><b>Tallo CPA</b></div>
+        <nav class="nav" id="mnav" aria-label="Mock navigation"></nav>
+        <div class="who"><div class="av" id="whoAv">RS</div><div style="min-width:0"><div style="font-weight:500;font-size:13px" id="whoName">Rhea S.</div><div class="faint" style="font-size:12px" id="whoRole">Staff</div></div></div>
+      </aside>
+      <main class="main" id="mmain"></main>
+    </div>
+    <p class="muted" style="margin-top:10px;font-size:13px">Try it: as <b>Preparer</b>, explain tie-out T-1 and clear D's note, add an adjustment on C, then sign. Switch to <b>Reviewer</b> to sign and clear notes, then <b>Owner</b> to see the approval memo. Nothing here is saved.</p>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const peso = n => (n<0?"−":"")+"₱"+Math.abs(n).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2});
+const amt = n => (n<0?"(":"")+Math.abs(n).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2})+(n<0?")":"");
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = s => document.querySelector(s);
+
+/* ---------------- report content ---------------- */
+const J = {
+ prep:[
+  ["ok","Start the day","Dashboard <code>/app</code>","Shows overdue, due in 14 days and missed cutoffs for my clients. Useful, but it is a firm view filtered to me, not a list of what I should do next."],
+  ["ok","See who sent documents","Monthly cycle <code>/app/cycle</code>","Clear per-client submission state, late and carried-in counts, “client has nothing”. Good."],
+  ["ok","Review OCR documents","Documents <code>/app/documents</code> → document","Pending list per client, low-confidence count, approve or return. Solid; this is the strongest part of the app."],
+  ["fr","Confirm suggested entries","Client → Books","Separate screen from Documents. A preparer has to remember to go here after approving, or the 1701Q later warns about unposted suggestions."],
+  ["gap","Work the numbers for the quarter","none","Sales by month, purchases split goods vs services, input VAT to disallow, customers who should have sent a 2307, EWT on rent vs rent expense. No screen holds this. It ends up in Excel, and the reviewer never sees it."],
+  ["gap","Check that the returns agree with each other","none","For a bookkeeping client, 1701Q sales come from the ledger while 2550Q sales come from approved documents. Nothing compares them. A cash sale posted by journal entry without an uploaded invoice makes them differ silently."],
+  ["fr","Open the return worksheet","Deadlines → filing → small “Worksheet” link","Three hops, one form at a time. The worksheet link is a text link in the side card of the filing page."],
+  ["fr","Enter what the documents can't give","Worksheet → “Figures typed in”","Works, but a typed figure has no reason, no support attached and no reviewer tick. Six months later nobody knows why input VAT carried over is ₱12,400."],
+  ["ok","Recompute, save, mark prepared","Worksheet → filing → Sign-off","Stale-figure warning and locking after filing are well done."],
+  ["fr","Fix a kick-back","Filing → History","The reviewer's note is one sentence on the filing. It doesn't point at a figure, and once answered it has no cleared state."],
+ ],
+ rev:[
+  ["ok","Find what to review","Review <code>/app/review</code>","Clear queue with due dates, preparer and tax due."],
+  ["fr","Read the return","Filing page, then Worksheet page","Two pages for one return; the sign-off button is on one, the figures on the other."],
+  ["gap","Check how Rhea got the figures","none","The reviewer sees totals and the source documents list, but none of Rhea's analysis or why she typed in a figure. Reviewing means re-doing."],
+  ["gap","Leave points to fix","Kick back (one note)","No list of open points per schedule. Several points go into one paragraph; the preparer can't mark each one done."],
+  ["fr","Confirm the other returns agree","Open each worksheet","Opens 2550Q, 1701Q and 1601-EQ separately and compares by eye."],
+ ],
+ own:[
+  ["ok","Firm at a glance","Dashboard (owner sections)","Deadlines, cutoffs, amendments waiting, acting approver notice. Good."],
+  ["ok","Money and people","Collections, Staff, Scores","Load points, receivables, client scores: in place and Owner-only as specified."],
+  ["ok","Open the final approvals","Review → “Waiting for your final approval”","Payment check shown before approval: matches Q25 and Q58."],
+  ["gap","Decide whether to trust the figure","Filing page","You see tax due and payment status. You don't see change against last quarter, effective rate on sales, adjustments made, whether returns tie out, or how many review points were raised and cleared. The final approval is the riskiest click in the app and it has the least context."],
+  ["gap","Defend the return later (LOA)","none","Workpapers lock as worksheets only. There is no binder per period to hand to a BIR examiner, which Phase 4 (LOA services) will need."],
+ ]
+};
+const lab = {ok:"Works",fr:"Friction",gap:"Gap"}, cls = {ok:"ok",fr:"warn",gap:"bad"};
+for (const [k,id] of [["prep","j-prep"],["rev","j-rev"],["own","j-own"]]){
+  document.getElementById(id).innerHTML = J[k].map((s,i)=>`<div class="step ${s[0]}"><span class="n">${i+1}</span><div><div class="row1"><b>${s[1]}</b><span class="chip ${cls[s[0]]}">${lab[s[0]]}</span></div><div class="screen">${s[2]==="none"?'<span class="chip line">No screen</span>':s[2]}</div><p class="pain">${s[3]}</p></div></div>`).join("");
+}
+
+const F = [
+ ["High","bad","No place to work the data between Documents and Returns","Documents end at “approved”; returns start at the worksheet. The analysis in between (summaries, splits, disallowances, reasonableness checks) has no home, so it lives in Excel and isn't reviewable or kept with the return.","Documents page, Worksheet page"],
+ ["High","bad","Two sources for the same figure, never compared","For bookkeeping clients 1701Q/1702Q read the ledger (slice 5) while 2550Q, SAWT and QAP read approved documents. A journal entry without a document, or a document approved after posting, makes the returns disagree with no warning.","SPEC §3.6 slice 5; §3.7"],
+ ["High","bad","Typed-in figures have no support","“Figures typed in” stores a number only. No reason, attachment, or reviewer acknowledgement. This is the weakest part of the audit trail you built everywhere else.","worksheet/forms.tsx"],
+ ["Medium","warn","Work is organised by feature, not by client and period","For one client's quarter a preparer visits Cycle, Documents, Books, Deadlines, Filing and Worksheet, six screens, and must remember the order.","app-nav.tsx, client page"],
+ ["Medium","warn","Review feedback is one note per filing","Kick-back notes aren't tied to a figure and have no open or cleared state, so the kickback rate KPI (Q40) can't tell one big issue from five small ones.","filings/[id]/page.tsx"],
+ ["Medium","warn","Staff home is a filtered Owner dashboard","Staff see firm-style counts. They need a queue of next actions: documents to review, schedules to prepare, notes to clear, client questions.","app/page.tsx"],
+ ["Medium","warn","Final approval lacks context","The Owner's approve screen shows tax due and payment check only. No variance against the prior period, no effective rate, no tie-out or review-note status.","sign-off-actions"],
+ ["Low","neutral","Worksheet is hard to find","A small text link in the Return card of the filing page; nothing on the client page.","filings/[id]/page.tsx"],
+ ["Low","neutral","Client page has no “this period” view","Ten cards of setup data. The thing staff open it for, where this client's month stands, isn't there.","clients/[id]/page.tsx"],
+ ["Low","neutral","Overlapping lists in the sidebar","Deadlines, Monthly cycle, Documents and Review each show part of the same pipeline. Fine for now; worth merging once My work exists.","layout.tsx"],
+];
+document.getElementById("findings-list").innerHTML = F.map((f,i)=>`<div class="finding"><span class="fid">F${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${f[2]}</h3><span class="chip ${f[1]}">${f[0]}</span></div><p class="why">${f[3]}</p><p class="ev">Where: <code>${f[4]}</code></p></div></div>`).join("");
+
+const R = [
+ ["Add Workpapers: one file per client and period","Fixes F1, F4",
+  ["Opened from the client page and from My work; one file per month, rolled up per quarter.","An index with references: A Lead (returns of the period), B Sales &amp; output VAT, C Purchases &amp; input VAT, D Creditable withholding received (2307 → SAWT), E Withholding on payments (0619-E, 1601-EQ, QAP), F Compensation (1601-C), G Income tax, T Tie-outs, N Review notes.","Every schedule is computed from approved documents and the ledger, never retyped, the same rule as the worksheets.","Each schedule shows which return line it feeds, so the worksheet becomes the output."],
+  "This is where the professional judgment is: what to disallow, what's missing, whether the quarter makes sense. Putting it in the app keeps it with the return, makes it reviewable, and gives you the binder an LOA examiner asks for."],
+ ["Replace “figures typed in” with adjustments","Fixes F3",
+  ["An adjustment has a kind (disallowed input VAT, non-deductible, reclass, cut-off, carry-over), amount, reason and a supporting document or request.","The reviewer ticks each one. Totals change visibly: before adjustments, adjustment, after."],
+  "Every peso on a return should trace to a document, the ledger or a reasoned adjustment. That is the standard you already hold the books to (no unbalanced entries, no edits after posting)."],
+ ["Tie-outs that block “Mark prepared”","Fixes F2",
+  ["T-1 Sales: 2550Q (documents) vs ledger (1701Q). T-2 Output VAT vs ledger. T-3 2307s vs SAWT. T-4 QAP vs rent and fees expense × rate. T-5 Input VAT vs ledger after adjustments.","A difference must be explained (with a note and, ideally, a request to the client) before the return can be marked prepared."],
+  "It is the cheapest control with the biggest payoff, and it only reads data you already have. It also turns into the LOA risk ratios in Phase 4."],
+ ["Review notes instead of one kick-back note","Fixes F5",
+  ["Anchored to a schedule or a row; open or cleared; the preparer replies, the reviewer clears.","Reviewer signs a schedule only when its notes are cleared."],
+  "Staff know exactly what to fix, nothing gets lost, and your kickback KPI can count points, not round trips."],
+ ["My work as the staff and reviewer home","Fixes F4, F6",
+  ["Grouped by client and period with one next action each: review documents, prepare schedule, clear notes, answer client, prepare return."],
+  "Staff shouldn't have to know the module map to know what to do next. It also makes onboarding new staff faster."],
+ ["Approval memo for the Owner","Fixes F7",
+  ["On the filing page at Owner approval: tax due vs prior period, effective rate on sales, adjustments, tie-out status, notes raised and cleared, preparer and reviewer, then the payment check you already have."],
+  "You approve every return (Q21). Ten seconds of the right context per return beats opening three screens, and it is the exact moment an error becomes a filed error."],
+ ["Period strip on the client page","Fixes F8, F9",
+  ["Documents, Books, Workpapers, Returns, Filed for the current period, each linking to its screen."],
+  "Puts the client's month at the top of the page staff actually open, and makes the worksheet and workpapers one click away."],
+];
+document.getElementById("recs-list").innerHTML = R.map((r,i)=>`<div class="rec"><span class="fid">R${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${r[0]}</h3><span class="chip info">${r[1]}</span></div><ul>${r[2].map(x=>`<li>${x}</li>`).join("")}</ul><p class="why-b"><b>Why:</b> ${r[3]}</p></div></div>`).join("");
+
+/* ---------------- mock state ---------------- */
+const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"}};
+const S = {
+  role:"preparer", view:"file", sched:"T", approved:false, showAdj:false, showNote:null,
+  ticks:{}, requested:false,
+  sign:{A:{},B:{p:"RS · 2 Apr"},C:{p:"RS · 2 Apr",r:"MR · 3 Apr"},D:{p:"RS · 2 Apr"},E:{p:"RS · 1 Apr",r:"MR · 3 Apr"},F:{na:true},G:{},T:{}},
+  adj:[{id:1,kind:"Disallowed input VAT",amt:-2184,reason:"OR 22817 (Mar 14, hardware) is issued to “Cash”, not to the client's name and TIN.",support:"Doc C-14 · image",by:"RS",ok:true}],
+  tie:[
+    {id:"T-1",what:"Sales: 2550Q (approved documents) vs books (used by 1701Q)",a:3664500,b:3671300,status:"open",note:""},
+    {id:"T-2",what:"Output VAT: schedule B vs Output VAT account",a:439740,b:439740},
+    {id:"T-3",what:"Creditable tax withheld: 2307s received vs SAWT",a:8515.5,b:8515.5},
+    {id:"T-4",what:"EWT on rent: QAP vs rent expense × 5%",a:6750,b:6750},
+    {id:"T-5",what:"Input VAT: schedule C after adjustments vs Input VAT account",a:null,b:326862},
+  ],
+  notes:[
+    {id:1,on:"B",row:"March",body:"March sales are 19% above February. Check that no April invoices were dated in March.",by:"MR",status:"cleared",reply:"Checked SI 0601–0631: all dated Apr 1 onward. March is the harvest-season peak, same as 2026.",rby:"RS"},
+    {id:2,on:"D",row:"Iloilo Grains Inc.",body:"Sales of ₱210,000 to Iloilo Grains, a top withholding agent, but no 2307 received. Request it or say why not.",by:"MR",status:"open",reply:"",rby:""},
+    {id:3,on:"C",row:"Petron OR 5512",body:"Two March fuel receipts look like duplicates.",by:"MR",status:"cleared",reply:"Different pumps and amounts (₱2,310 and ₱2,130). Both images checked.",rby:"RS"},
+  ],
+};
+const B = [["January",212,1240500,148860],["February",188,1105800,132696],["March",231,1318200,158184]];
+const C = [["January",842100,101052,61500,7380],["February",790450,94854,58200,6984],["March",905300,108636,66300,7956]];
+const D = [["Bacolod Feeds Corp.","WC158",412000,4120,true],["Western Visayas Coop","WC158",288050,2880.5,true],["Panay Mills Inc.","WC158",151500,1515,true],["Iloilo Grains Inc.","WC158",210000,null,false]];
+const E = [["January","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Feb 10"],["February","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Mar 10"],["March","Sta. Barbara Realty Corp.","WC100",45000,2250,"1601-EQ · to file"]];
+
+const outVAT = 439740, inGross = 304542+22320;
+const adjTotal = () => S.adj.reduce((a,x)=>a+x.amt,0);
+const inNet = () => inGross + adjTotal();
+const vatDue = () => outVAT - inNet();
+const tieRows = () => S.tie.map(t=> t.id==="T-5" ? {...t,a:inNet(),auto:true} : t);
+function tieState(t){
+  const d = Math.round(((t.a??0)-(t.b??0))*100)/100;
+  if (d===0) return {k:"ok",l:"Agrees",d};
+  if (t.auto && Math.abs(d)===Math.abs(adjTotal())) return {k:"info",l:"Explained by adjustments",d};
+  if (t.status==="explained") return {k:"info",l:"Explained",d};
+  return {k:"bad",l:"Unexplained",d};
+}
+const openTies = () => tieRows().filter(t=>tieState(t).k==="bad");
+const openNotes = on => S.notes.filter(n=>n.status==="open" && (!on || n.on===on));
+
+const SCHED = [
+  ["A","Lead: returns of the period","2550Q · 1601-EQ · 1701Q"],
+  ["B","Sales & output VAT","631 sales invoices"],
+  ["C","Purchases & input VAT","goods · services · adjustments"],
+  ["D","Creditable withholding received","2307s → SAWT"],
+  ["E","Withholding on payments","0619-E · 1601-EQ · QAP"],
+  ["F","Compensation","no employees"],
+  ["G","Income tax (1701Q)","from the books"],
+  ["T","Tie-outs","across returns and books"],
+  ["N","Review notes","raised and cleared"],
+];
+function schedState(r){
+  const s = S.sign[r]||{};
+  if (r==="T") return openTies().length?"bad":"ok";
+  if (r==="N") return openNotes().length?"warn":"ok";
+  if (s.na) return "na";
+  if (r==="G") return openTies().some(t=>t.id==="T-1")?"bad":(s.p?(s.r?"ok":"info"):"none");
+  if (openNotes(r).length) return "warn";
+  if (s.r) return "ok"; if (s.p) return "info"; return "none";
+}
+const stateTxt = {ok:"Reviewed",info:"Prepared",warn:"Open note",bad:"Blocked",none:"Not started",na:"N/A"};
+
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._);toast._=setTimeout(()=>t.hidden=true,2200)}
+const today = () => (S.role==="reviewer"?"MR":"RS")+" · 4 Apr";
+
+/* ---------------- views ---------------- */
+function nav(){
+  const r=S.role;
+  const items = [
+    ["mywork","My work",r==="owner"?null:"new"],
+    ["dash","Dashboard"],["clients","Clients"],["docs","Documents"],["cycle","Monthly cycle"],["requests","Requests"],
+  ];
+  let h = items.map(([k,l,n])=> k==="mywork"||k==="clients" ? `<button data-go="${k==="clients"?"file":k}" aria-current="${(S.view===k||(k==="clients"&&S.view==="file"))?"page":"false"}">${l}${n?`<span class="new">NEW</span>`:""}</button>` : `<span>${l}</span>`).join("");
+  if (r!=="preparer") h += `<div class="grp">Firm</div><button data-go="approval" aria-current="${S.view==="approval"?"page":"false"}">Review${r==="owner"?'<span class="cnt">1</span>':""}</button>`;
+  if (r==="owner") h += ["Collections","Scores","Staff","Settings"].map(x=>`<span>${x}</span>`).join("");
+  $("#mnav").innerHTML=h;
+  const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
+}
+
+function viewMyWork(){
+  const r=S.role, nb=openNotes().length, t=openTies().length;
+  const prepItems = [
+    ["Jaro Agri Supply · Q1 2027", t?`${t} tie-out difference to explain before 2550Q can be prepared`:"Tie-outs clean · ready to mark 2550Q prepared", t?"bad":"ok", "Open workpapers","T"],
+    ["Jaro Agri Supply · Q1 2027", nb?`${nb} review note${nb>1?"s":""} from Marco to answer`:"No open review notes", nb?"warn":"ok","Open notes","N"],
+    ["Molo Bakeshop · March 2027","14 documents to review (3 with low-confidence fields)","warn","Open documents",null],
+    ["Arevalo Dental Clinic · March 2027","Suggested entries to confirm: 22","info","Open books",null],
+    ["Mandurriao Print Shop · Q1 2027","Workpapers not started · 2551Q due Apr 25","none","Start workpapers",null],
+  ];
+  const revItems = [
+    ["Jaro Agri Supply · Q1 2027", "Schedules B and D prepared, waiting for your review","info","Review schedules","B"],
+    ["Jaro Agri Supply · Q1 2027", nb?`${nb} open note${nb>1?"s":""} you raised`:"All your notes are cleared","warn","See notes","N"],
+    ["Lapaz Hardware · Q1 2027","2550Q prepared by Joy · ready for review","info","Open return",null],
+  ];
+  const items = r==="reviewer"?revItems:prepItems;
+  const head = r==="reviewer"?"Marco's next actions":"Rhea's next actions";
+  return `<div class="ph"><div><p class="crumb">My work</p><h2>${head}</h2><p class="muted">One line per client and period, with the next thing to do. Replaces hunting across Documents, Books, Deadlines and Review.</p></div></div>
+  <div class="strip">${[["Documents to review","17"],["Schedules to prepare","6"],["Notes to clear",String(nb)],["Returns due ≤ 7 days","4"],["Client questions","1"]].map(([k,v])=>`<div><p class="k">${k}</p><p class="v">${v}</p></div>`).join("")}</div>
+  <div class="card queue"><ul>${items.map(i=>`<li><div style="min-width:0"><p style="font-weight:500">${i[0]}</p><p class="muted" style="font-size:13px"><span class="dot ${i[2]==="none"?"":i[2]}" style="display:inline-block;margin-right:6px"></span>${i[1]}</p></div>${i[4]?`<button class="btn sm" data-open="${i[4]}">${i[3]}</button>`:`<button class="btn sm" disabled title="Outside this mock">${i[3]}</button>`}</li>`).join("")}</ul></div>`;
+}
+
+function signBlock(r){
+  const s=S.sign[r]||{}; if (s.na) return `<span class="chip neutral">Not applicable this period</span>`;
+  const canP = S.role==="preparer" && !s.p, canR = S.role!=="preparer" && s.p && !s.r && !openNotes(r).length;
+  return `<div class="signs">
+    <div class="sign ${s.p?"done":""}"><span>Prepared</span><b>${s.p||"—"}</b>${canP?`<button class="btn sm" style="margin-top:4px" data-sign="p">Sign</button>`:""}</div>
+    <div class="sign ${s.r?"done":""}"><span>Reviewed</span><b>${s.r||"—"}</b>${canR?`<button class="btn sm" style="margin-top:4px" data-sign="r">Sign</button>`:(S.role!=="preparer"&&s.p&&!s.r&&openNotes(r).length?`<span style="font-size:11.5px">clear notes first</span>`:"")}</div>
+  </div>`;
+}
+const tick = (key,label) => `<button class="tick" aria-pressed="${!!S.ticks[key]}" data-tick="${key}" title="${label}">${label==="Agreed to documents"?"✓":"◊"}</button>`;
+const feeds = list => `<div class="feeds">Feeds ${list.map(x=>`<span class="chip info">${x}</span>`).join("")}</div>`;
+const notesFor = r => { const ns=S.notes.filter(n=>n.on===r); return ns.length?`<div class="stack" style="gap:8px">${ns.map(noteHTML).join("")}</div>`:""; };
+
+function noteHTML(n){
+  const canClear = S.role!=="preparer" && n.status==="open" && n.reply;
+  const canReply = S.role==="preparer" && n.status==="open" && !n.reply;
+  return `<div class="note ${n.status==="open"?"open":""}">
+    <div class="meta"><span class="ref">${n.on}</span><span>${esc(n.row)}</span><span>· ${n.by}</span><span class="chip ${n.status==="open"?"warn":"ok"}">${n.status==="open"?(n.reply?"Answered · waiting for reviewer":"Open"):"Cleared"}</span></div>
+    <p>${esc(n.body)}</p>
+    ${n.reply?`<p class="muted"><b style="color:var(--fg);font-weight:500">${n.rby}:</b> ${esc(n.reply)}</p>`:""}
+    ${canReply?`<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="reply-${n.id}" placeholder="Your answer" aria-label="Answer to note ${n.id}" style="flex:1;min-width:180px"><button class="btn sm pri" data-reply="${n.id}">Answer</button></div>`:""}
+    ${canClear?`<div><button class="btn sm" data-clear="${n.id}">Clear note</button></div>`:""}
+  </div>`;
+}
+function addNoteBtn(r,row){ return S.role!=="preparer" ? `<button class="btn sm ghost" data-addnote="${r}|${row}">+ Review note</button>` : ""; }
+function noteForm(){
+  if(!S.showNote) return "";
+  const [r,row]=S.showNote.split("|");
+  return `<form class="inline-form" id="noteForm"><label style="grid-column:1/-1">Review note on ${r} · ${esc(row)}<textarea id="noteBody" required placeholder="What should the preparer check?"></textarea></label><div style="display:flex;gap:8px"><button class="btn sm pri" type="submit">Add note</button><button class="btn sm" type="button" data-cancelnote>Cancel</button></div></form>`;
+}
+
+function schedBody(r){
+  if (r==="A"){
+    const ready = gate();
+    return `<p class="muted">Every return of the period, where its figures come from, and whether it can move on.</p>
+    <div class="tscroll"><table><thead><tr><th>Return</th><th>From</th><th class="r">Amount</th><th>State</th></tr></thead><tbody>
+      <tr><td>0619-E Jan, Feb</td><td>E</td><td class="r">${amt(4500)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
+      <tr><td><b>2550Q Q1 2027</b></td><td>B, C, T-1, T-2, T-5</td><td class="r">${amt(vatDue())}</td><td>${ready.ok?'<span class="chip info">Ready to prepare</span>':'<span class="chip bad">Blocked</span>'}</td></tr>
+      <tr><td>1601-EQ Q1 2027 + QAP</td><td>E, T-4</td><td class="r">${amt(2250)}</td><td><span class="chip info">Ready to prepare</span></td></tr>
+      <tr><td>1701Q Q1 2027 + SAWT</td><td>G, D, T-1, T-3</td><td class="r">—</td><td>${openTies().some(t=>t.id==="T-1")?'<span class="chip bad">Waits for T-1</span>':'<span class="chip neutral">Not started</span>'}</td></tr>
+    </tbody></table></div>
+    ${gateHTML(ready)}`;
+  }
+  if (r==="B"){
+    const tot=B.reduce((a,x)=>[a[0]+x[1],a[1]+x[2],a[2]+x[3]],[0,0,0]);
+    return `${feeds(["2550Q · VATable sales","2550Q · Output tax","T-1","T-2"])}
+    <div class="tscroll"><table><thead><tr><th>Month</th><th class="r">Invoices</th><th class="r">VATable sales</th><th class="r">Output VAT</th><th>Ticks</th><th></th></tr></thead><tbody>
+    ${B.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td><td class="r">${amt(x[2])}</td><td class="r">${amt(x[3])}</td><td style="white-space:nowrap">${tick("B"+x[0]+"a","Agreed to documents")} ${tick("B"+x[0]+"b","Traced to ledger")}</td><td>${addNoteBtn("B",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Total</td><td class="r">${tot[0]}</td><td class="r">${amt(tot[1])}</td><td class="r">${amt(tot[2])}</td><td colspan="2"></td></tr></tfoot></table></div>
+    <p class="muted" style="font-size:12.5px">✓ agreed to approved documents · ◊ traced to the ledger. Output VAT checks to 12% of VATable sales within rounding.</p>`;
+  }
+  if (r==="C"){
+    const t=C.reduce((a,x)=>[a[0]+x[1],a[1]+x[2],a[2]+x[3],a[3]+x[4]],[0,0,0,0]);
+    return `${feeds(["2550Q · Input tax","T-5"])}
+    <div class="tscroll"><table><thead><tr><th>Month</th><th class="r">Goods</th><th class="r">Input VAT</th><th class="r">Services</th><th class="r">Input VAT</th><th></th></tr></thead><tbody>
+    ${C.map(x=>`<tr><td>${x[0]}</td><td class="r">${amt(x[1])}</td><td class="r">${amt(x[2])}</td><td class="r">${amt(x[3])}</td><td class="r">${amt(x[4])}</td><td>${addNoteBtn("C",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Total</td><td class="r">${amt(t[0])}</td><td class="r">${amt(t[1])}</td><td class="r">${amt(t[2])}</td><td class="r">${amt(t[3])}</td><td></td></tr></tfoot></table></div>
+    <div class="card flat" style="padding:14px">
+      <div class="card-h" style="margin-bottom:8px"><h4>Adjustments</h4>${S.role==="preparer"?`<button class="btn sm" data-toggleadj>${S.showAdj?"Close":"+ Add adjustment"}</button>`:""}</div>
+      ${S.showAdj?`<form class="inline-form" id="adjForm" style="margin-bottom:10px">
+        <label>Kind<select id="adjKind"><option>Disallowed input VAT</option><option>Input VAT carried over</option><option>Reclass goods ↔ services</option><option>Cut-off (other period)</option></select></label>
+        <label>Amount (− reduces input VAT)<input id="adjAmt" type="number" step="0.01" value="-1250.00" required></label>
+        <label style="grid-column:1/-1">Reason<input id="adjReason" required value="Meralco bill in the owner's personal name; not deductible to the business."></label>
+        <label>Support<input id="adjSupport" value="Doc C-31 · image"></label>
+        <div><button class="btn sm pri" type="submit">Add adjustment</button></div></form>`:""}
+      <div class="tscroll"><table><thead><tr><th>#</th><th>Kind and reason</th><th>Support</th><th class="r">Input VAT</th><th>Reviewer</th></tr></thead><tbody>
+      ${S.adj.map(a=>`<tr><td class="num" style="white-space:nowrap">C-${a.id}</td><td><b style="font-weight:500">${esc(a.kind)}</b><p class="muted" style="font-size:12.5px">${esc(a.reason)}</p></td><td style="font-size:12.5px">${esc(a.support)}</td><td class="r">${amt(a.amt)}</td><td>${a.ok?'<span class="chip ok">Ticked</span>':(S.role!=="preparer"?`<button class="btn sm" data-okadj="${a.id}">Tick</button>`:'<span class="chip neutral">Waiting</span>')}</td></tr>`).join("")}
+      </tbody></table></div>
+      <div class="memo" style="margin-top:10px"><dl><dt>Input VAT per documents</dt><dd>${peso(inGross)}</dd><dt>Adjustments</dt><dd>${peso(adjTotal())}</dd><dt><b>Allowable input VAT</b></dt><dd><b>${peso(inNet())}</b></dd></dl></div>
+      <p class="muted" style="font-size:12.5px;margin-top:6px">These replace “figures typed in”: each peso has a reason and a support, and the reviewer ticks it.</p>
+    </div>`;
+  }
+  if (r==="D"){
+    return `${feeds(["1701Q · Creditable tax withheld","SAWT","T-3"])}
+    <div class="tscroll"><table><thead><tr><th>Customer (payor)</th><th>ATC</th><th class="r">Sales per B</th><th class="r">Tax withheld (2307)</th><th></th></tr></thead><tbody>
+    ${D.map(x=>`<tr class="${x[4]?"":"hl"}"><td>${x[0]}</td><td>${x[1]}</td><td class="r">${amt(x[2])}</td><td class="r">${x[3]==null?`<span class="chip warn">No 2307</span>`:amt(x[3])}</td><td>${x[4]?"":(S.requested?'<span class="chip info">Requested in portal</span>':(S.role==="preparer"?'<button class="btn sm" data-request>Ask client for 2307</button>':""))} ${addNoteBtn("D",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Total received</td><td></td><td class="r">${amt(851550)}</td><td class="r">${amt(8515.5)}</td><td></td></tr></tfoot></table></div>
+    <p class="muted" style="font-size:12.5px">The 1% on ₱210,000 (₱2,100) is not claimed until the 2307 arrives. The request goes to the client's portal under Requests.</p>`;
+  }
+  if (r==="E"){
+    return `${feeds(["1601-EQ · Tax withheld","QAP","T-4"])}
+    <div class="tscroll"><table><thead><tr><th>Month</th><th>Payee</th><th>ATC</th><th class="r">Rent</th><th class="r">EWT 5%</th><th>Remitted on</th></tr></thead><tbody>
+    ${E.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td class="r">${amt(x[3])}</td><td class="r">${amt(x[4])}</td><td style="font-size:12.5px">${x[5]}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Quarter</td><td></td><td></td><td class="r">${amt(135000)}</td><td class="r">${amt(6750)}</td><td style="font-size:12.5px">Due on 1601-EQ: ${amt(2250)}</td></tr></tfoot></table></div>`;
+  }
+  if (r==="F") return `<p class="muted">No employees on the payroll this quarter. Marked not applicable; the schedule appears once a 1601-C obligation exists.</p>`;
+  if (r==="G"){
+    const blocked = openTies().some(t=>t.id==="T-1");
+    return `${feeds(["1701Q"])}${blocked?`<div class="gate" style="border-color:var(--bad);background:var(--bad-bg)"><b style="color:var(--bad)">Waiting for T-1</b><p class="muted">Sales in the books differ from sales on the 2550Q by ${peso(6800)}. Explain it in T before income tax is prepared from the books.</p></div>`:""}
+    <div class="tscroll"><table><thead><tr><th>From the books, Jan–Mar 2027</th><th class="r">Amount</th></tr></thead><tbody>
+      <tr><td>Sales, net of returns and discounts</td><td class="r">${amt(3671300)}</td></tr>
+      <tr><td>Cost of sales</td><td class="r">(${amt(2537850)})</td></tr>
+      <tr><td>Gross income</td><td class="r">${amt(1133450)}</td></tr>
+      <tr><td>Itemized deductions by BIR line</td><td class="r">(${amt(486920)})</td></tr>
+      <tr><td><b>Taxable income, quarter</b></td><td class="r"><b>${amt(646530)}</b></td></tr>
+      <tr><td>Creditable tax withheld (from D)</td><td class="r">${amt(8515.5)}</td></tr>
+    </tbody></table></div>
+    <p class="muted" style="font-size:12.5px">Gross profit rate ${(1133450/3671300*100).toFixed(1)}%. In Phase 4 this is compared with the industry benchmark you set.</p>`;
+  }
+  if (r==="T"){
+    return `<p class="muted">The same figure, read from two places. A difference must be explained before the return that uses it can be marked prepared.</p>
+    <div class="tscroll"><table><thead><tr><th>#</th><th>Check</th><th class="r">Source 1</th><th class="r">Source 2</th><th class="r">Difference</th><th>State</th></tr></thead><tbody>
+    ${tieRows().map(t=>{const s=tieState(t);return `<tr class="${s.k==="bad"?"hl":""}"><td class="num">${t.id}</td><td>${t.what}${t.note?`<p class="muted" style="font-size:12.5px">${esc(t.note)}</p>`:""}${s.k==="bad"&&S.role==="preparer"?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><input id="ex-${t.id}" style="flex:1;min-width:160px" aria-label="Explanation for ${t.id}" value="SI 0457 (Mar 30, ₱6,800 cash sale) posted by JE 03-118; the client hasn't uploaded the invoice. Requested in the portal."><button class="btn sm pri" data-explain="${t.id}">Explain</button></div>`:""}</td><td class="r">${amt(t.a)}</td><td class="r">${amt(t.b)}</td><td class="r">${s.d?amt(s.d):"—"}</td><td><span class="chip ${s.k}">${s.l}</span></td></tr>`}).join("")}
+    </tbody></table></div>`;
+  }
+  if (r==="N"){
+    const o=openNotes().length;
+    return `<p class="muted">${S.notes.length} raised · ${S.notes.length-o} cleared · ${o} open. A schedule can't be reviewer-signed while its notes are open.</p><div class="stack" style="gap:8px">${S.notes.map(noteHTML).join("")}</div>`;
+  }
+}
+
+function gate(){
+  const why=[];
+  if (openTies().length) why.push(`${openTies().length} tie-out difference not explained (${openTies().map(t=>t.id).join(", ")})`);
+  for (const r of ["B","C"]) { if(!S.sign[r].p) why.push(`Schedule ${r} not signed by the preparer`); }
+  for (const r of ["B","C"]) { const n=openNotes(r).length; if(n) why.push(`Schedule ${r} has ${n} open review note${n>1?"s":""}`); }
+  return {ok:!why.length,why};
+}
+function gateHTML(g){
+  return g.ok
+   ? `<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">2550Q can be marked prepared</b><p class="muted">Worksheet figures will be read from B and C after adjustments: VAT payable ${peso(vatDue())}.</p><div><button class="btn pri" data-prepare ${S.role!=="preparer"?"disabled":""}>Mark 2550Q prepared</button></div></div>`
+   : `<div class="gate" style="border-color:var(--bad);background:var(--bad-bg)"><b style="color:var(--bad)">2550Q can't be marked prepared yet</b><ul>${g.why.map(w=>`<li>${w}</li>`).join("")}</ul></div>`;
+}
+
+function viewFile(){
+  const done = ["A","B","C","D","E","G","T"].filter(r=>["ok","info"].includes(schedState(r))).length;
+  const cur = SCHED.find(s=>s[0]===S.sched);
+  return `<div class="ph"><div><p class="crumb">Clients › Jaro Agri Supply › Workpapers</p><h2>Q1 2027 · January – March</h2><p class="muted">Sole proprietor · VAT · Bookkeeping + Tax · Preparer Rhea S. · Reviewer Marco R.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" disabled title="Outside this mock">Print binder (PDF)</button>${S.role!=="preparer"?`<button class="btn sm pri" data-go="approval">Open 2550Q</button>`:""}</div></div>
+  <div class="strip">
+    <div><p class="k">Documents</p><p class="v done">631 + 418 approved</p></div>
+    <div><p class="k">Books</p><p class="v done">Posted to Mar 31</p></div>
+    <div class="cur"><p class="k">Workpapers</p><p class="v">${done} of 7 prepared</p></div>
+    <div><p class="k">Returns</p><p class="v">0 of 3 prepared</p></div>
+    <div><p class="k">Filed</p><p class="v">0619-E × 2</p></div>
+  </div>
+  <div class="wp">
+    <div class="index" role="list">${SCHED.map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${s[0]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
+    <div class="sched">
+      <div class="sh"><div><p class="ref">W/P ${cur[0]}</p><h3>${cur[1]}</h3><p class="faint" style="font-size:12.5px">${stateTxt[schedState(cur[0])]}</p></div>${["A","T","N"].includes(cur[0])?"":signBlock(cur[0])}</div>
+      ${schedBody(cur[0])}
+      ${noteForm()}
+      ${["N","A"].includes(cur[0])?"":notesFor(cur[0])}
+    </div>
+  </div>`;
+}
+
+function viewApproval(){
+  const prior=98410, due=vatDue(), ch=(due-prior)/prior*100;
+  const ties=tieRows().map(t=>[t,tieState(t)]);
+  const r=S.role;
+  return `<div class="ph"><div><p class="crumb">Review › Jaro Agri Supply</p><h2>2550Q · Q1 2027</h2><p class="muted">Due Apr 26, 2027 (Apr 25 is a Sunday) · client approved Apr 6</p></div><span class="chip ${S.approved?"ok":"info"}">${S.approved?"Owner approved":"Client approved"}</span></div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">
+    <div class="card memo"><div class="card-h"><h3>Approval memo</h3><span class="chip neutral">New</span></div>
+      <dl>
+        <dt>VAT payable</dt><dd><b>${peso(due)}</b></dd>
+        <dt>Q4 2026</dt><dd>${peso(prior)} <span class="chip ${Math.abs(ch)>25?"warn":"neutral"}">${ch>=0?"+":""}${ch.toFixed(1)}%</span></dd>
+        <dt>Sales vs Q4 2026</dt><dd>${peso(3664500)} <span class="chip neutral">+8.2%</span></dd>
+        <dt>VAT payable ÷ sales</dt><dd>${(due/3664500*100).toFixed(2)}%</dd>
+        <dt>Adjustments</dt><dd>${S.adj.length} · ${peso(adjTotal())} input VAT${S.adj.every(a=>a.ok)?' <span class="chip ok">all ticked</span>':' <span class="chip warn">not all ticked</span>'}</dd>
+        <dt>Tie-outs</dt><dd>${ties.filter(([,s])=>s.k==="ok").length} agree · ${ties.filter(([,s])=>s.k==="info").length} explained · ${ties.filter(([,s])=>s.k==="bad").length} open</dd>
+        <dt>Review notes</dt><dd>${S.notes.length} raised · ${S.notes.length-openNotes().length} cleared</dd>
+        <dt>Prepared / reviewed</dt><dd>Rhea S. · Marco R.</dd>
+      </dl>
+      ${ties.filter(([,s])=>s.k!=="ok").map(([t,s])=>`<div class="note" style="margin-top:10px"><div class="meta"><span class="ref">${t.id}</span><span class="chip ${s.k}">${s.l}</span><span>${peso(s.d)}</span></div><p class="muted">${esc(t.note|| (t.auto?"Equals the adjustments on C.":"Not explained yet."))}</p></div>`).join("")}
+    </div>
+    <div class="card memo"><div class="card-h"><h3>Payment check</h3><span class="muted" style="font-size:12.5px">As built today</span></div>
+      <dl><dt>Tax on this return</dt><dd><span class="chip warn">Unpaid</span> · firm remits</dd><dt>Retainer balance</dt><dd><span class="chip ok">Paid</span></dd></dl>
+      <p class="muted" style="margin-top:10px;font-size:13px">Approving while unpaid records ${peso(due)} as Advances to clients – taxes (Q32).</p>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        ${S.approved?'<span class="stamp">APPROVED</span>':(r==="owner"?`<button class="btn pri" data-approve ${openTies().length||openNotes().length?"disabled":""}>Approve</button><button class="btn">Send back</button>`:`<span class="muted" style="font-size:13px">Final approval is the Owner's. Switch to Owner to see it.</span>`)}
+      </div>
+      ${r==="owner"&&!S.approved&&(openTies().length||openNotes().length)?`<p style="margin-top:8px;font-size:12.5px;color:var(--bad)">Disabled while a tie-out or review note is open. In the mock, resolve them as Preparer and Reviewer first.</p>`:""}
+    </div>
+  </div>
+  <p class="muted" style="font-size:12.5px">Workpapers: <button class="btn sm ghost" data-go="file">open the Q1 2027 file</button></p>`;
+}
+
+function render(){
+  nav();
+  $("#mmain").innerHTML = S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():viewFile();
+}
+
+/* ---------------- events ---------------- */
+$("#roleSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-role]"); if(!b) return;
+  S.role=b.dataset.role; S.showAdj=false; S.showNote=null;
+  document.querySelectorAll("#roleSeg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  if (S.role==="owner") S.view="approval"; else if (S.view==="approval") S.view="file";
+  render();
+});
+document.getElementById("v-mock").addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  const d=t.dataset;
+  if (d.go){ S.view=d.go; }
+  else if (d.open){ S.view="file"; S.sched=d.open; }
+  else if (d.sched){ S.sched=d.sched; S.showAdj=false; S.showNote=null; }
+  else if (d.sign){ S.sign[S.sched][d.sign]=today(); toast(`${S.sched} signed as ${d.sign==="p"?"preparer":"reviewer"}`); }
+  else if (d.tick){ S.ticks[d.tick]=!S.ticks[d.tick]; }
+  else if (d.explain!=null && d.explain!==undefined && d.explain!==""){ const i=$("#ex-"+d.explain); const v=(i&&i.value.trim())||""; if(!v){toast("Write the reason first");return;} const x=S.tie.find(z=>z.id===d.explain); x.status="explained"; x.note=v; toast(`${x.id} explained`); }
+  else if ("toggleadj" in d){ S.showAdj=!S.showAdj; }
+  else if (d.okadj){ S.adj.find(a=>a.id==d.okadj).ok=true; toast("Adjustment ticked"); }
+  else if ("request" in d){ S.requested=true; toast("Request sent to the client's portal"); }
+  else if (d.reply){ const v=($("#reply-"+d.reply)?.value||"").trim(); if(!v){toast("Write an answer first");return;} const n=S.notes.find(z=>z.id==d.reply); n.reply=v; n.rby="RS"; if(n.on==="D"&&!S.requested){S.requested=true;} toast("Answer sent to Marco"); }
+  else if (d.clear){ S.notes.find(z=>z.id==d.clear).status="cleared"; toast("Note cleared"); }
+  else if (d.addnote){ S.showNote=d.addnote; }
+  else if ("cancelnote" in d){ S.showNote=null; }
+  else if ("prepare" in d){ toast("2550Q marked prepared · goes to Marco for review"); }
+  else if ("approve" in d){ S.approved=true; toast("2550Q approved"); }
+  else return;
+  render();
+});
+document.getElementById("v-mock").addEventListener("submit",e=>{
+  e.preventDefault();
+  if (e.target.id==="adjForm"){
+    const amtv=parseFloat($("#adjAmt").value); if(isNaN(amtv)){toast("Enter an amount");return;}
+    S.adj.push({id:S.adj.length+1,kind:$("#adjKind").value,amt:amtv,reason:$("#adjReason").value,support:$("#adjSupport").value||"—",by:"RS",ok:false});
+    const hadRev=!!S.sign.C.r; delete S.sign.C.r; S.showAdj=false; toast("Adjustment added · VAT payable now "+peso(vatDue())+(hadRev?" · C needs review again":""));
+  } else if (e.target.id==="noteForm"){
+    const body=$("#noteBody").value.trim(); if(!body) return;
+    const [on,row]=S.showNote.split("|");
+    S.notes.push({id:S.notes.length+1,on,row,body,by:"MR",status:"open",reply:"",rby:""});
+    S.showNote=null; toast("Review note added");
+  }
+  render();
+});
+
+/* ---------------- routing ---------------- */
+const views=["journeys","findings","recommendations","mock"];
+function route(){
+  const h=(location.hash||"#journeys").slice(1); const v=views.includes(h)?h:"journeys";
+  views.forEach(x=>document.getElementById("v-"+x).hidden = x!==v);
+  document.querySelectorAll("#tabs a").forEach(a=>a.setAttribute("aria-current", a.getAttribute("href")==="#"+v?"page":"false"));
+}
+window.addEventListener("hashchange",route);
+route(); render();
+})();
+</script>
