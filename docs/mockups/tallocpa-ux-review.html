@@ -84,7 +84,8 @@ button{font:inherit;color:inherit}
 .fid{font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
 .finding .why{color:var(--muted);margin-top:6px;max-width:78ch}
 .finding .ev{font-size:12px;color:var(--faint);margin-top:6px}
-.finding .ev code{font-size:12px}
+.finding .ev code{font-size:12px;overflow-wrap:anywhere}
+.finding>div,.rec>div{min-width:0}
 
 /* flow before/after */
 .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
@@ -209,6 +210,19 @@ textarea{resize:vertical;min-height:54px}
 .je table td:first-child{padding-left:8px}
 .je .cr td:first-child{padding-left:28px}
 .je.old .card{background:var(--sunk)}
+.pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch}
+.pipe .col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.pipe .col>p{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.pipe .box{border:1px solid var(--line-strong);border-radius:12px;padding:8px 10px;background:var(--surface)}
+.pipe .box small{display:block;color:var(--muted);font-size:12px}
+.pipe .box.new{border-color:var(--accent);background:var(--accent-soft)}
+.pipe .box.later{border-style:dashed}
+.pipe .box.hub{border:2px solid var(--accent);flex:1;display:flex;flex-direction:column;justify-content:center}
+.anat{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.anat .card{padding:14px}
+.anat dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:13px}
+.anat dt{color:var(--muted)} .anat dd{margin:0;text-align:end;font-variant-numeric:tabular-nums}
+@media (max-width:900px){.pipe,.anat{grid-template-columns:1fr}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:20}
 
 @media (max-width:900px){
@@ -239,9 +253,10 @@ textarea{resize:vertical;min-height:54px}
   <nav class="tabs" aria-label="Review sections" id="tabs">
     <a href="#journeys">1 · Journeys</a>
     <a href="#findings">2 · Findings <span class="c">13</span></a>
-    <a href="#recommendations">3 · Recommendations <span class="c">10</span></a>
-    <a href="#deadlines">4 · Deadlines</a>
-    <a href="#mock">5 · Mock app</a>
+    <a href="#recommendations">3 · Recommendations <span class="c">11</span></a>
+    <a href="#flow">4 · Data flow</a>
+    <a href="#deadlines">5 · Deadlines</a>
+    <a href="#mock">6 · Mock app</a>
   </nav>
 
   <!-- ================= JOURNEYS ================= -->
@@ -332,13 +347,16 @@ textarea{resize:vertical;min-height:54px}
         <div class="tscroll" style="margin-top:10px"><table>
           <thead><tr><th>Slice</th><th>What</th><th>When</th></tr></thead>
           <tbody>
+            <tr><td><b>R1</b></td><td>One register: approved documents become register lines with sales, bookkeeping and tax parts; the books and the worksheets read the register. W1 builds on it.</td><td><span class="chip warn">Before go-live if the January cycle allows</span></td></tr>
             <tr><td><b>D1</b></td><td>Deadline safeguards: nightly coverage check, milestones per form, risk status, the Deadlines tracker, staff reminders and your Critical alerts.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>W1</b></td><td>Period file with registers B–F in your worksheet columns (adds the SC/PWD discount OCR field and each supplier's ATC), read from approved documents and the ledger, plus the T tie-outs.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
+            <tr><td><b>E1</b></td><td>Email intake at invoices@tallocpa.com: sender matching, Unmatched list, receipt reply, n8n mailbox watch.</td><td><span class="chip info">During the first live cycle</span></td></tr>
             <tr><td><b>W2</b></td><td>Adjustments with reason and support replace “figures typed in”; per-schedule preparer and reviewer sign-off; “Mark prepared” gated.</td><td><span class="chip info">During the first live cycle</span></td></tr>
             <tr><td><b>W3</b></td><td>Review notes anchored to a schedule or row; open or cleared; replace the kick-back note. <b>My work</b> home for staff and reviewers.</td><td><span class="chip info">After cycle 1</span></td></tr>
+            <tr><td><b>B1</b></td><td>Batch upload in the register layout, offered at onboarding.</td><td><span class="chip neutral">Later, with onboarding</span></td></tr>
             <tr><td><b>W4</b></td><td>Owner approval memo on the filing page; print the period file as a PDF binder; feed LOA ratios (Phase 4).</td><td><span class="chip neutral">After cycle 1</span></td></tr>
           </tbody></table></div>
-        <p class="muted" style="margin-top:10px">Why D1 and W1 first: D1 adds checks on top of the deadline engine you already have, so it is small and protects the first live cycle. the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
+        <p class="muted" style="margin-top:10px">If R1 can't land before January, W1's tie-outs catch the two-source differences until it does. Why D1 and W1 first: D1 adds checks on top of the deadline engine you already have, so it is small and protects the first live cycle. the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
       </div>
       <div class="card">
         <h3>New tables (for the developer)</h3>
@@ -357,6 +375,80 @@ textarea{resize:vertical;min-height:54px}
           <li>Must every schedule be reviewer-signed, or only B, C and T?</li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- ================= DATA FLOW ================= -->
+  <section id="v-flow" class="stack" hidden>
+    <div class="card">
+      <h2>One register, from intake to returns</h2>
+      <p class="lede" style="margin-top:6px">Bookkeeping and tax compliance are one piece of work. Every figure comes from the same register line, and each line carries a sales part, a bookkeeping part and a tax part. The books, the workpapers and the returns are all read from it, so they can't disagree.</p>
+      <div class="pipe" style="margin-top:16px">
+        <div class="col"><p>1 · Intake</p>
+          <div class="box"><b>Portal upload</b><small>Client, phone or file · built</small></div>
+          <div class="box"><b>Staff upload</b><small>For assigned clients · built</small></div>
+          <div class="box new"><b>Email</b><small>invoices@tallocpa.com · new</small></div>
+          <div class="box later"><b>Batch upload</b><small>Excel in the register layout, at onboarding · later</small></div>
+        </div>
+        <div class="col"><p>2 · Review</p>
+          <div class="box hub" style="border-width:1px;border-color:var(--line-strong)"><b>One review queue</b><small>OCR reads images; staff check the figures, the account title and the cash account. Batch rows skip OCR but get the same checks: TIN, VAT at 12%, duplicates, open period.</small></div>
+        </div>
+        <div class="col"><p>3 · Register</p>
+          <div class="box hub"><b>Register line</b><small>Sales part · bookkeeping part · tax part. One line per invoice, receipt or payroll month.</small></div>
+        </div>
+        <div class="col"><p>4 · Generated from it</p>
+          <div class="box"><b>Books</b><small>Entries, the six books, trial balance, FS</small></div>
+          <div class="box"><b>Workpapers</b><small>Registers B–F, tie-outs, lead schedule</small></div>
+          <div class="box"><b>Returns and attachments</b><small>2550Q/2551Q + SLSP, 0619-E, 1601-EQ + QAP, 1601-C, 1701Q/1702Q + SAWT</small></div>
+          <div class="box"><b>Client portal</b><small>Released reports, 2307 requests</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>One line, three parts</h2><p class="muted">SI 0412, Bacolod Feeds Corp., March 2, 2027. Received by email.</p></div></div>
+      <div class="anat">
+        <div class="card flat"><h4>Sales part</h4><dl>
+          <dt>VATable sales</dt><dd>120,000.00</dd><dt>Output VAT</dt><dd>14,400.00</dd><dt>Invoice total</dt><dd>134,400.00</dd>
+          <dt>Terms</dt><dd>Cash</dd><dt>CWT (WC158, 1%)</dt><dd>1,200.00</dd><dt><b>Net receipt</b></dt><dd><b>133,200.00</b></dd><dt>Deposited to</dt><dd>Cash in bank – BPI</dd></dl></div>
+        <div class="card flat"><h4>Bookkeeping part</h4><dl>
+          <dt>Book</dt><dd>Cash receipts</dd><dt>Dr Cash in bank – BPI</dt><dd>133,200.00</dd><dt>Dr CWT – awaiting 2307</dt><dd>1,200.00</dd>
+          <dt>Cr Sales – VATable</dt><dd>120,000.00</dd><dt>Cr Output VAT</dt><dd>14,400.00</dd><dt>FS line</dt><dd>Revenue</dd></dl></div>
+        <div class="card flat"><h4>Tax part</h4><dl>
+          <dt>2550Q · VATable sales</dt><dd>120,000.00</dd><dt>2550Q · Output tax</dt><dd>14,400.00</dd><dt>SLSP · Bacolod Feeds</dt><dd>120,000.00</dd>
+          <dt>1701Q · Sales (BIR line)</dt><dd>120,000.00</dd><dt>SAWT · WC158</dt><dd>1,200.00</dd><dt></dt><dd class="muted" style="font-size:12px">once the 2307 arrives</dd></dl></div>
+      </div>
+      <p class="muted" style="margin-top:10px">Correct one figure on the line before its month is locked and all three parts move together. Nothing is retyped, so nothing can disagree.</p>
+    </div>
+
+    <div class="card">
+      <h2>What changes in the app</h2>
+      <div class="tscroll" style="margin-top:10px"><table>
+        <thead><tr><th>Today</th><th>With one register</th></tr></thead>
+        <tbody>
+          <tr><td>An approved document feeds two separate paths: the worksheets read its fields, and <code>book_document</code> writes a journal entry, for bookkeeping clients only.</td><td>The approved document becomes a register line. The journal entry and the tax lines are both worked out from that line.</td></tr>
+          <tr><td>For bookkeeping clients the 1701Q reads the ledger while the 2550Q reads documents, so they can disagree (F2).</td><td>Both read the register. Tie-out T-1 stays as a safety check and should always agree.</td></tr>
+          <tr><td>Tax-only clients have no account titles; staff type cost of sales and deductions into the 1701Q worksheet.</td><td>Every line gets an account title, because the 1701Q/1702Q needs them anyway. The engagement decides what you deliver and bill: books and FS, or returns only.</td></tr>
+          <tr><td>A document's source is <code>portal</code> or <code>staff</code>; intake is portal only (Q10).</td><td>Adds <code>email</code> and <code>batch</code>. Changes Q10.</td></tr>
+        </tbody></table></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card"><h3>Email intake: invoices@tallocpa.com</h3>
+        <ul class="checks ok" style="margin-top:10px">
+          <li>The sender is matched to a client: a client user's email, or a sender the client adds (e.g. their bookkeeper). Someone linked to several businesses adds the client code: invoices+JAS@tallocpa.com.</li>
+          <li>Each attachment (PDF, JPG, PNG) becomes a document with source Email, tagged to a period by its date and the received time, with the same cutoff rules as the portal (§4.2).</li>
+          <li>The sender gets a receipt: how many files were received and a portal link. It never repeats the contents.</li>
+          <li>Unknown senders, and mail that fails sender checks (SPF/DKIM), go to an Unmatched list for staff to assign or reject.</li>
+          <li>n8n watches the mailbox and passes attachments to the app, so it stays plumbing only (Q11).</li>
+        </ul></div>
+      <div class="card"><h3>Batch upload (later, at onboarding)</h3>
+        <ul class="checks ok" style="margin-top:10px">
+          <li>An Excel template in the register layout, your worksheet columns. For the opening months, backlog, or clients with their own POS or accounting system.</li>
+          <li>Every row is checked before anything posts, like the payroll register preview today: TIN format, VAT at 12% within rounding, duplicate invoice numbers, open period, known account title.</li>
+          <li>Rows post as register lines marked “Batch · no image”. Images can be attached later; the reviewer sees how many lines have none.</li>
+          <li>The workpapers generate from these lines the same way.</li>
+        </ul></div>
     </div>
   </section>
 
@@ -537,6 +629,9 @@ const R = [
  ["Post each register line as its entry, with the net receipt in cash","Fixes F13",
   ["Sales: Dr Cash in bank or Cash on hand (net receipt), Dr CWT awaiting 2307 (CWT), Dr Sales discount SC/PWD (discount); Cr Sales VATable, Cr Sales VAT-exempt (before discount), Cr Output VAT.","When the 2307 arrives it moves the amount from CWT awaiting 2307 to CWT supported (2307 on file) and touches no cash. Only supported CWT is claimed on the 1701Q/1702Q. What is still unsupported at year end goes to you to decide.","Purchases: Dr expense or purchases, Dr Input VAT; Cr Cash in bank or on hand (net paid), Cr EWT payable (at payment, so it ties to the 0619-E and 1601-EQ).","Payroll: the monthly register posts Dr Salaries and wages, Dr de minimis; Cr Cash in bank (net pay), Cr Withholding tax on compensation payable, Cr SSS, PhilHealth and Pag-IBIG payable. The employer share goes in a second entry.","Each line names the cash account it went to (a client default, changeable per line), so cash in bank can be reconciled to the bank statement."],
   "The net receipt is what reaches the bank. If the books debit anything else, cash never reconciles, and every CWT and EWT balance in the trial balance depends on when paper arrives instead of when the money moved."],
+ ["One register: bookkeeping and tax compliance as one","Fixes F2 by construction",
+  ["Every intake channel (portal, staff, email to invoices@tallocpa.com, batch upload at onboarding) ends in the same review queue and becomes a register line.","Each line has a sales part, a bookkeeping part (account title, cash account, the entry) and a tax part (return lines, ATC, SLSP, SAWT and QAP rows).","Books, workpapers and returns are all generated from the register. Every client gets account titles; the engagement only decides which outputs you deliver.","See the Data flow tab."],
+  "The data is the same for both services, so there should be one place it lives. Two consumers of one document is how the 2550Q and the 1701Q came to disagree."],
 ];
 document.getElementById("recs-list").innerHTML = R.map((r,i)=>`<div class="rec"><span class="fid">R${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${r[0]}</h3><span class="chip info">${r[1]}</span></div><ul>${r[2].map(x=>`<li>${x}</li>`).join("")}</ul><p class="why-b"><b>Why:</b> ${r[3]}</p></div></div>`).join("");
 
@@ -588,6 +683,7 @@ const BM = [["January",212,1252500,2400,1240500,9600,148860,1398960,3450,1395510
 const BD = [["Mar 2","SI 0412","Bacolod Feeds Corp.",120000,0,120000,0,14400,134400,1200,133200,""],["Mar 4","SI 0415","Walk-in · senior citizen",2500,500,0,2000,0,2000,0,2000,""],["Mar 9","SI 0421","Panay Mills Inc.",51500,0,51500,0,6180,57680,515,57165,""],["Mar 15","SI 0433","Iloilo Grains Inc.",70000,0,70000,0,8400,78400,700,77700,"No 2307 yet"],["Mar 22","SI 0447","Walk-in · PWD",1250,250,0,1000,0,1000,0,1000,""],["Mar 30","SI 0457","Cash sale",6800,0,6800,0,816,7616,0,7616,"In books only · no image · not in totals"]];
 const CM = [["January",142,1030432,903600,18400,108432,2250,1028182],["February",131,966388,848650,15900,101838,2250,964138],["March",145,1109492,971600,21300,116592,2250,1107242]];
 const CD = [["Mar 1","OR 2201","Sta. Barbara Realty Corp.","Rent",50400,45000,0,5400,2250,48150,"EWT WC100 5%"],["Mar 3","SI 88123","Panay Feedmill Supply","Purchases",347200,310000,0,37200,0,347200,""],["Mar 14","OR 22817","Hardware store (issued to “Cash”)","Repairs",20384,18200,0,2184,0,20384,"Input VAT disallowed · C-1"],["Mar 18","OR 5512","Petron Jaro","Fuel and oil",2310,2062.5,0,247.5,0,2310,""],["Mar 20","—","Market vendor (non-VAT)","Supplies",4500,0,4500,0,0,4500,""]];
+const BSRC = ["Email","Portal","Email","Portal","Portal",null];
 const BCASH = ["Cash in bank – BPI","Cash on hand","Cash in bank – BPI","Cash in bank – BPI","Cash on hand",null];
 const CCASH = ["Cash in bank – BPI","Cash in bank – BPI","Cash on hand","Cash on hand","Cash on hand"];
 function je(title,lines,note){
@@ -599,7 +695,11 @@ function salesEntries(i){
   const now=[[BCASH[i],net,0]]; if(cwt) now.push(["CWT – awaiting 2307",cwt,0]); if(disc) now.push(["Sales discount – SC/PWD",disc,0]);
   if(vatable) now.push(["Sales – VATable",0,vatable]); if(exempt) now.push(["Sales – VAT-exempt",0,exempt+disc]); if(vat) now.push(["Output VAT",0,vat]);
   const old=[["Cash on hand",total,0],["Sales",0,vatable+exempt]]; if(vat) old.push(["Output VAT",0,vat]);
-  return `<div class="je">${je(`Proposed · ${x[1]} on ${x[0]}`,now,`Cash debited at the net receipt, ${peso(net)}: what reached ${BCASH[i]==="Cash on hand"?"the cash box":"the bank"}.${cwt?" When the 2307 arrives it moves the CWT to “CWT – supported (2307 on file)”; no cash entry.":""}${disc?" The discount shows on its own line and stays visible as a deduction (check the account and its BIR line with the Owner).":""}`)}
+  const tax=[]; if(vatable){tax.push(["2550Q · VATable sales",vatable,0],["2550Q · Output tax",vat,0]); if(!x[2].startsWith("Walk-in")&&x[2]!=="Cash sale") tax.push([`SLSP · ${x[2]}`,vatable,0]);}
+  if(exempt) tax.push(["2550Q · VAT-exempt sales",exempt,0]);
+  tax.push(["1701Q · Sales (BIR line)",vatable+exempt+disc,0]); if(disc) tax.push(["1701Q · SC/PWD discount deduction",disc,0]); if(cwt) tax.push(["SAWT · WC158, once the 2307 arrives",cwt,0]);
+  const taxCard=`<div class="card"><h4>Tax part · where this line goes</h4><div class="tscroll" style="margin-top:6px"><table><tbody>${tax.map(t=>`<tr><td>${t[0]}</td><td class="r">${amt(t[1])}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:12.5px;margin-top:6px">From the same line as the entry, so the return and the books can't disagree.</p></div>`;
+  return `<div class="je">${je(`Bookkeeping part · ${x[1]} on ${x[0]}`,now,`Cash debited at the net receipt, ${peso(net)}: what reached ${BCASH[i]==="Cash on hand"?"the cash box":"the bank"}.${cwt?" When the 2307 arrives it moves the CWT to “CWT – supported (2307 on file)”; no cash entry.":""}${disc?" The discount shows on its own line and stays visible as a deduction (check the account and its BIR line with the Owner).":""}`)}${taxCard}
   <div class="old">${je("As built today",old,`Cash on hand debited at the invoice total${cwt?`, ${peso(cwt)} more than was received. A second entry follows only when the 2307 is approved, months later: Dr CWT / Cr Cash on hand ${peso(cwt)}.`:"."}${disc?` The ${peso(disc)} discount is never recorded; sales show net.`:""}`)}</div></div>`;
 }
 function purchEntries(i){
@@ -824,7 +924,7 @@ function schedBody(r){
     </tbody><tfoot><tr><td>Quarter</td><td class="r">${col(BM,1)}</td>${[2,3,4,5,6,7,8,9].map(i=>`<td class="r">${amt(col(BM,i))}</td>`).join("")}<td colspan="2"></td></tr></tfoot></table></div>
     <h4>March, by invoice <span class="faint" style="font-weight:400">· 6 of 232 lines</span></h4>
     <div class="tscroll"><table>${hdr(["Date","No.","Customer",">Gross",">SC/PWD",">VATable",">Exempt",">VAT",">Total",">CWT",">Net receipt","Deposited to",""])}<tbody>
-    ${BD.map((x,i)=>`<tr class="${x[11].startsWith("In books")?"hl":""}"><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td>${[3,4,5,6,7,8,9,10].map(j=>`<td class="r">${cellAmt(x[j])}</td>`).join("")}<td style="white-space:nowrap;font-size:12.5px">${BCASH[i]??"—"}</td><td style="white-space:nowrap">${x[11]?`<span class="chip ${x[11].startsWith("In books")?"bad":"warn"}">${x[11]}</span> `:""}${BCASH[i]?`<button class="btn sm ${S.bsel===i?"pri":""}" data-bsel="${i}">Entry</button>`:""}</td></tr>`).join("")}
+    ${BD.map((x,i)=>`<tr class="${x[11].startsWith("In books")?"hl":""}"><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}${BSRC[i]?` <span class="chip line">${BSRC[i]}</span>`:""}</td><td>${x[2]}</td>${[3,4,5,6,7,8,9,10].map(j=>`<td class="r">${cellAmt(x[j])}</td>`).join("")}<td style="white-space:nowrap;font-size:12.5px">${BCASH[i]??"—"}</td><td style="white-space:nowrap">${x[11]?`<span class="chip ${x[11].startsWith("In books")?"bad":"warn"}">${x[11]}</span> `:""}${BCASH[i]?`<button class="btn sm ${S.bsel===i?"pri":""}" data-bsel="${i}">Entry</button>`:""}</td></tr>`).join("")}
     <tr><td colspan="13" class="faint">… 226 more March invoices</td></tr></tbody></table></div>
     ${salesEntries(S.bsel)}
     <p class="muted" style="font-size:12.5px">✓ agreed to approved documents · ◊ traced to the ledger. SC/PWD sales are VAT-exempt after the 20% discount. CWT comes from the collection receipt or the customer's 2307; net receipt = invoice total − CWT. The discount needs a new OCR field (today OCR reads VATable, exempt, VAT and total only).</p>`;
@@ -928,7 +1028,7 @@ function viewFile(){
   return `<div class="ph"><div><p class="crumb">Clients › Jaro Agri Supply › Workpapers</p><h2>Q1 2027 · January – March</h2><p class="muted">Sole proprietor · VAT · Bookkeeping + Tax · Preparer Rhea S. · Reviewer Marco R.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" disabled title="Outside this mock">Download registers (Excel)</button><button class="btn sm" disabled title="Outside this mock">Print binder (PDF)</button>${S.role!=="preparer"?`<button class="btn sm pri" data-go="approval">Open 2550Q</button>`:""}</div></div>
   <div class="strip">
-    <div><p class="k">Documents</p><p class="v done">631 + 418 approved</p></div>
+    <div><p class="k">Register</p><p class="v done">1,049 lines</p><p class="k">Portal 612 · Email 401 · Staff 36</p></div>
     <div><p class="k">Books</p><p class="v done">Posted to Mar 31</p></div>
     <div class="cur"><p class="k">Workpapers</p><p class="v">${done} of ${list.length} prepared</p></div>
     <div><p class="k">Returns</p><p class="v">1 of 4 prepared</p></div>
@@ -1044,7 +1144,7 @@ document.getElementById("v-mock").addEventListener("submit",e=>{
 });
 
 /* ---------------- routing ---------------- */
-const views=["journeys","findings","recommendations","deadlines","mock"];
+const views=["journeys","findings","recommendations","flow","deadlines","mock"];
 function route(){
   const h=(location.hash||"#journeys").slice(1); const v=views.includes(h)?h:"journeys";
   views.forEach(x=>document.getElementById("v-"+x).hidden = x!==v);

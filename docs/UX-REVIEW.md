@@ -48,6 +48,29 @@ Screens were read from the source. This review has not yet been tested with staf
 
     A 2307 received later moves the amount from "CWT – awaiting 2307" to "CWT – supported" with no cash entry; only supported CWT is claimed on the income tax return, and what is unsupported at year end goes to the Owner. EWT payable is booked at payment, so it ties to the 0619-E and 1601-EQ. Each line names its cash account (client default, changeable per line) so cash in bank reconciles to the bank statement. Charge sales keep Dr AR at the invoice total; the collection line of the AR/AP update then gets a CWT column (Dr Cash net, Dr CWT – awaiting 2307, Cr AR).
 
+11. **One register: bookkeeping and tax compliance as one.** See below.
+
+## Data flow: one register
+
+Every intake channel ends in one review queue and becomes a **register line**. Each line has three parts, and the books, workpapers and returns are all generated from it, so they cannot disagree.
+
+| Stage | What |
+|---|---|
+| Intake | Portal upload (built) · staff upload (built) · email to invoices@tallocpa.com (new) · batch upload in the register layout at onboarding (later) |
+| Review | One queue. OCR reads images; staff check the figures, account title and cash account. Batch rows skip OCR but get the same checks (TIN, VAT at 12%, duplicates, open period, known account). |
+| Register line | **Sales part:** gross, SC/PWD discount, VATable, exempt, zero-rated, VAT, total, terms, CWT, net receipt, cash account. **Bookkeeping part:** account title, book, the entry, AR/AP. **Tax part:** 2550Q/2551Q lines, SLSP/QAP/SAWT rows, ATC, 1701Q/1702Q BIR line. |
+| Generated | Books (entries, six books, TB, FS) · workpapers (registers B–F, tie-outs, lead) · returns and attachments · client portal |
+
+What changes in the app:
+- An approved document becomes a register line; the journal entry and the tax lines are both derived from it. Today the worksheets read the approved fields and `book_document` writes an entry, for bookkeeping clients only.
+- 2550Q and 1701Q both read the register, which removes F2 by construction. T-1 stays as a safety check.
+- Every client's lines get an account title (the 1701Q/1702Q needs them anyway). The engagement decides what is delivered and billed: books and FS, or returns only.
+- `documents.source` gains `email` and `batch` (today `portal` or `staff`). This changes Q10 (portal-only intake in v1).
+
+**Email intake (invoices@tallocpa.com).** The sender is matched to a client (a client user's email, or a sender the client adds); someone linked to several businesses adds the client code (invoices+CODE@tallocpa.com). Each attachment becomes a document with source Email, under the same period and cutoff rules as the portal. The sender gets a receipt with the file count and a portal link. Unknown senders and mail failing SPF/DKIM go to an Unmatched list. n8n watches the mailbox and passes attachments to the app (Q11: plumbing only).
+
+**Batch upload (later, at onboarding).** Excel template in the register layout. Every row is checked before posting, like the payroll register preview. Rows post as lines marked "Batch · no image"; images can be attached later.
+
 ## Deadline safeguards
 
 1. **Coverage.** A nightly check confirms that every COR tax type has an obligation, a client with payroll has a 1601-C obligation, a client with expanded withholding in the books has 0619-E and 1601-EQ, and every filing has a preparer and a reviewer. Gaps go to the Owner's dashboard.
@@ -62,10 +85,13 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 | Slice | Scope | When |
 |---|---|---|
+| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before go-live if the January cycle allows; otherwise W1's tie-outs cover the gap |
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
+| E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
 | W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
 | W3 | Review notes, My work | After cycle 1 |
+| B1 | Batch upload in the register layout, at onboarding | Later, with onboarding |
 | W4 | Approval memo, PDF binder, LOA ratios feed (Phase 4) | After cycle 1 |
 
 New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `workpaper_ticks`, `review_notes`. Schedules stay computed. Only sign-offs, ticks, adjustments and notes are stored. The file locks with the period's last return, the same way worksheets lock today.
@@ -76,4 +102,5 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 - Tie-out tolerance before "Mark prepared" is blocked (₱1 rounding? ₱100?)
 - Must every schedule be reviewer-signed, or only B, C and T?
 - The account and BIR line for the SC/PWD discount, and what happens to CWT still without a 2307 at year end.
+- Should every client get account titles on every line (proposed), with the engagement deciding only which outputs are delivered?
 - Step targets per form (the 1601-C example uses one working day between steps), and the hour of the morning email.
