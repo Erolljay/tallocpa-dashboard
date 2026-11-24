@@ -5,9 +5,9 @@ import { Badge, Button, Card, Field, Input, Notice, Select, Textarea } from "@/c
 import type { Branch } from "@/lib/branches";
 import { months, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAXPAYER_TYPES, type TaxpayerType } from "@/lib/clients/obligations";
-import { AGENCIES, STEP_STATUSES, stepsFor, type StepStatus } from "@/lib/registration/steps";
+import { AGENCIES, closureStepsFor, renewalStepsFor, STEP_STATUSES, stepsFor, type PlannedStep, type StepStatus } from "@/lib/registration/steps";
 import { StaffOptions } from "../clients/client-form";
-import { cancelRegistrationAction, completeRegistrationAction, openRegistrationAction, updateStepAction, type FormState } from "./actions";
+import { cancelRegistrationAction, completeRegistrationAction, openClientCaseAction, openRegistrationAction, openYearRenewalsAction, updateStepAction, type FormState } from "./actions";
 
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
@@ -97,21 +97,7 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
         </div>
       </div>
 
-      <aside className="lg:sticky lg:top-8 lg:self-start">
-        <Card title="Checklist">
-          <ol className="space-y-2 text-body-regular">
-            {preview.map((s) => (
-              <li key={s.code} className="flex items-start justify-between gap-3">
-                <span className={s.status === "not_applicable" ? "text-text-tertiary line-through" : "text-text-primary"}>
-                  <span className="text-caption-1-semibold text-text-tertiary">{AGENCIES[s.agency]}</span>
-                  <span className="block">{s.label}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-4 text-caption-1-regular text-text-tertiary">Opening the registration adds the business as a client (Onboarding) with a Business Registration engagement.</p>
-        </Card>
-      </aside>
+      <ChecklistPreview steps={preview} note="Opening the registration adds the business as a client (Onboarding) with a Business Registration engagement." />
     </form>
   );
 }
@@ -215,6 +201,108 @@ export function CancelForm({ caseId }: { caseId: string }) {
       </Field>
       <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Cancelling…" : "Cancel registration"}</Button>
       {state.error && !state.fieldErrors && <div className="sm:col-span-2"><Notice tone="blocked">{state.error}</Notice></div>}
+    </form>
+  );
+}
+
+function ChecklistPreview({ steps, note }: { steps: PlannedStep[]; note: string }) {
+  return (
+    <aside className="lg:sticky lg:top-8 lg:self-start">
+      <Card title="Checklist">
+        <ol className="space-y-2 text-body-regular">
+          {steps.map((s) => (
+            <li key={s.code} className={s.status === "not_applicable" ? "text-text-tertiary line-through" : "text-text-primary"}>
+              <span className="text-caption-1-semibold text-text-tertiary">{AGENCIES[s.agency]}</span>
+              <span className="block">{s.label}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-caption-1-regular text-text-tertiary">{note}</p>
+      </Card>
+    </aside>
+  );
+}
+
+function Check({ name, checked, onChange, label, hint }: { name: string; checked: boolean; onChange: (v: boolean) => void; label: string; hint: string }) {
+  return (
+    <label className="flex items-start gap-3 text-body-regular text-text-primary">
+      <input type="checkbox" name={name} checked={checked} onChange={(ev) => onChange(ev.target.checked)} className="mt-1 size-4 shrink-0" />
+      <span>{label}<span className="block text-caption-1-regular text-text-tertiary">{hint}</span></span>
+    </label>
+  );
+}
+
+/** Annual renewal or closure for an existing client. */
+export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: { clientId: string; taxpayerType: TaxpayerType; kind: "renewal" | "closure"; year: number; dtiDue: boolean }) {
+  const [state, action, pending] = useActionState(openClientCaseAction.bind(null, clientId, kind), {} as FormState);
+  const [lguServed, setLguServed] = useState(true);
+  const [employer, setEmployer] = useState(false);
+  const [dti, setDti] = useState(dtiDue);
+  const e = state.fieldErrors ?? {};
+  const preview = kind === "renewal" ? renewalStepsFor(taxpayerType, { lguServed, dtiDue: dti }) : closureStepsFor(taxpayerType, { lguServed, employer });
+
+  return (
+    <form action={action} className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="space-y-6">
+        {state.error && !state.fieldErrors && <Notice tone="blocked">{state.error}</Notice>}
+        <Card title={kind === "renewal" ? "Renewal" : "Closing the business"}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {kind === "renewal" ? (
+              <>
+                <Field label="Permits for the year" htmlFor="period_year" error={e.period_year}>
+                  <Input id="period_year" name="period_year" type="number" min={2000} max={2100} required defaultValue={year} className="tabular-nums" />
+                </Field>
+                <Field label="Renew by" htmlFor="target_date" error={e.target_date} hint="Most LGUs renew the mayor's permit by 20 January.">
+                  <Input id="target_date" name="target_date" type="date" defaultValue={`${year}-01-20`} />
+                </Field>
+              </>
+            ) : (
+              <>
+                <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
+                  <Input id="effective_date" name="effective_date" type="date" required />
+                </Field>
+                <Field label="Target date" htmlFor="target_date" error={e.target_date}>
+                  <Input id="target_date" name="target_date" type="date" />
+                </Field>
+              </>
+            )}
+            <div className="grid gap-3 sm:col-span-2">
+              <Check name="lgu_served" checked={lguServed} onChange={setLguServed} label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : "Barangay and City Hall closure"} hint="Leave unticked when the client handles these themselves." />
+              {kind === "renewal" && taxpayerType === "individual" && (
+                <Check name="dti_due" checked={dti} onChange={setDti} label="DTI business name is due for renewal" hint="Every 5 years from registration." />
+              )}
+              {kind === "closure" && (
+                <Check name="employer" checked={employer} onChange={setEmployer} label="Close the SSS, PhilHealth and Pag-IBIG employer numbers" hint="Tick when the business had employees." />
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Notes" htmlFor="notes" error={e.notes}>
+                <Textarea id="notes" name="notes" rows={3} />
+              </Field>
+            </div>
+          </div>
+        </Card>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={pending}>{pending ? "Opening…" : kind === "renewal" ? "Open renewal" : "Open closure"}</Button>
+        </div>
+      </div>
+      <ChecklistPreview
+        steps={preview}
+        note={kind === "renewal" ? "Completing the renewal only closes this case." : "Completing the closure ends the client's filing obligations after the closing date, ends its engagements and makes it inactive."}
+      />
+    </form>
+  );
+}
+
+/** The Owner opens the year's renewals for every active client at once. */
+export function YearRenewalsForm({ year }: { year: number }) {
+  const [state, action, pending] = useActionState(openYearRenewalsAction, {} as FormState);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="year" value={year} />
+      <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Opening…" : `Open ${year} renewals`}</Button>
+      {state.message && <span className="text-caption-1-regular text-text-secondary">{state.message}</span>}
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }

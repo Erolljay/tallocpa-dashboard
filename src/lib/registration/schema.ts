@@ -31,3 +31,21 @@ export const stepUpdateSchema = z
     notes: optional(z.string().trim().max(1000)),
   })
   .refine((v) => v.status !== "done" || Boolean(v.done_on), { path: ["done_on"], message: "Enter the date this step was done." });
+
+/** Annual renewal for an existing client. */
+export const renewalSchema = z.object({
+  period_year: z.coerce.number().int().min(2000).max(2100),
+  lgu_served: checkbox,
+  dti_due: checkbox,
+  target_date: optional(z.iso.date("Enter a valid date.")),
+  notes: optional(z.string().trim().max(1000)),
+});
+
+/** Closing an existing client's business. */
+export const closureSchema = z.object({
+  effective_date: z.iso.date("Enter the day the business stopped operating."),
+  lgu_served: checkbox,
+  employer: checkbox,
+  target_date: optional(z.iso.date("Enter a valid date.")),
+  notes: optional(z.string().trim().max(1000)),
+});

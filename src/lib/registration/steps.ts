@@ -16,6 +16,7 @@ export const AGENCIES = {
   sec: "SEC",
   barangay: "Barangay",
   lgu: "City Hall",
+  bfp: "BFP (Fire)",
   bir: "BIR",
   sss: "SSS",
   philhealth: "PhilHealth (PHIC)",
@@ -103,7 +104,99 @@ export function stepsFor(t: TaxpayerType, options: RegistrationOptions): Planned
   });
 }
 
-/** Payload for open_registration_case. */
+/* ----------------------------------------------- Renewals and closures */
+
+/** The three kinds of case: registering a new business, the yearly renewal, and closing a business. */
+export const CASE_KINDS = {
+  new_business: "New business",
+  renewal: "Annual renewal",
+  closure: "Closing the business",
+} as const;
+export type CaseKind = keyof typeof CASE_KINDS;
+
+export interface RenewalOptions {
+  /** The firm handles the barangay clearance, mayor's permit, fire and sanitary permits. */
+  lguServed: boolean;
+  /** A sole proprietor's DTI business name is due for its 5-year renewal this year. */
+  dtiDue: boolean;
+}
+
+/**
+ * The yearly renewal, for the year the permits are for. The mayor's permit and
+ * the permits that come with it are renewed in January (by the 20th in most
+ * LGUs). Corporations file their SEC General Information Sheet; a sole
+ * proprietor's DTI business name is renewed every five years. There is no BIR
+ * annual registration fee since 2024 (RA 11976, EOPT).
+ */
+export function renewalStepsFor(t: TaxpayerType, options: RenewalOptions): PlannedStep[] {
+  const list: StepTemplate[] = [
+    { code: "barangay_clearance", agency: "barangay", label: "Barangay business clearance (renewal)", referenceLabel: "Clearance no." },
+    { code: "fire_safety", agency: "bfp", label: "Fire Safety Inspection Certificate", referenceLabel: "FSIC no." },
+    { code: "sanitary_permit", agency: "lgu", label: "Sanitary permit (City Health Office)", referenceLabel: "Permit no." },
+    { code: "mayors_permit", agency: "lgu", label: "Mayor's / business permit renewal", referenceLabel: "Permit no." },
+    ...(registersWithSec(t)
+      ? [{ code: "sec_gis", agency: "sec" as const, label: "General Information Sheet filed", referenceLabel: "SEC filing reference" }]
+      : [{ code: "dti_renewal", agency: "dti" as const, label: "Business name renewal (every 5 years)", referenceLabel: "Certificate no." }]),
+    { code: "bir_books", agency: "bir", label: "Books of accounts for the new year (manual books registered, loose-leaf bound)", referenceLabel: "Reference no." },
+    { code: "bir_display", agency: "bir", label: "Renewed permit and COR displayed at the place of business", referenceLabel: "Reference" },
+  ];
+  const lgu = new Set(["barangay_clearance", "fire_safety", "sanitary_permit", "mayors_permit"]);
+  return list.map((s, i) => {
+    let notes: string | null = null;
+    if (lgu.has(s.code) && !options.lguServed) notes = "The client handles this.";
+    if (s.code === "dti_renewal" && !options.dtiDue) notes = "Not due this year.";
+    return { ...s, sortOrder: i + 1, status: notes ? "not_applicable" : "pending", notes };
+  });
+}
+
+/** A DTI business name is valid for 5 years from registration: due in years registered + 5, + 10, and so on. */
+export function dtiRenewalDue(registeredOn: string | null, year: number): boolean {
+  if (!registeredOn) return false;
+  const since = year - Number(registeredOn.slice(0, 4));
+  return since > 0 && since % 5 === 0;
+}
+
+export interface ClosureOptions {
+  /** The firm handles the barangay and City Hall closure. */
+  lguServed: boolean;
+  /** The business has employer numbers with SSS, PhilHealth and Pag-IBIG to close. */
+  employer: boolean;
+}
+
+/**
+ * Closing a business: barangay and City Hall retirement first (the BIR asks for
+ * them), then BIR cancellation through Form 1905 with the final returns, the
+ * unused invoices surrendered and the BIR's verification, then DTI cancellation
+ * or SEC dissolution (SEC asks for the BIR tax clearance), and the employer
+ * numbers.
+ */
+export function closureStepsFor(t: TaxpayerType, options: ClosureOptions): PlannedStep[] {
+  const list: StepTemplate[] = [
+    { code: "barangay_closure", agency: "barangay", label: "Barangay certificate of closure", referenceLabel: "Certificate no." },
+    { code: "mayors_retirement", agency: "lgu", label: "Business retirement (closure of mayor's permit)", referenceLabel: "Retirement no." },
+    { code: "bir_1905", agency: "bir", label: "Application for cancellation of registration (Form 1905)", referenceLabel: "Reference no." },
+    { code: "bir_final_returns", agency: "bir", label: "Final returns filed (short-period income tax return, last percentage tax / VAT, withholding)", referenceLabel: "Reference no." },
+    { code: "bir_invoices_surrender", agency: "bir", label: "Unused invoices and books surrendered; inventory list", referenceLabel: "Reference no." },
+    { code: "bir_verification", agency: "bir", label: "BIR verification of open cases and tax clearance", referenceLabel: "Clearance no." },
+    { code: "bir_cancelled", agency: "bir", label: "Registration cancelled (TIN inactive)", referenceLabel: "Reference no." },
+    registersWithSec(t)
+      ? { code: "sec_dissolution", agency: "sec", label: "Voluntary dissolution (Certificate of Dissolution)", referenceLabel: "SEC reference" }
+      : { code: "dti_cancellation", agency: "dti", label: "Business name cancellation", referenceLabel: "Reference no." },
+    { code: "sss_employer_closure", agency: "sss", label: "Employer closure / separation report", referenceLabel: "Reference no." },
+    { code: "philhealth_employer_closure", agency: "philhealth", label: "Employer closure", referenceLabel: "Reference no." },
+    { code: "pagibig_employer_closure", agency: "pagibig", label: "Employer closure", referenceLabel: "Reference no." },
+  ];
+  const lgu = new Set(["barangay_closure", "mayors_retirement"]);
+  const employer = new Set(["sss_employer_closure", "philhealth_employer_closure", "pagibig_employer_closure"]);
+  return list.map((s, i) => {
+    let notes: string | null = null;
+    if (lgu.has(s.code) && !options.lguServed) notes = "The client handles this.";
+    if (employer.has(s.code) && !options.employer) notes = "No employer numbers.";
+    return { ...s, sortOrder: i + 1, status: notes ? "not_applicable" : "pending", notes };
+  });
+}
+
+/** Payload for open_registration_case and open_client_case. */
 export const stepsPayload = (steps: PlannedStep[]) =>
   steps.map((s) => ({ code: s.code, agency: s.agency, label: s.label, reference_label: s.referenceLabel, sort_order: s.sortOrder, status: s.status, notes: s.notes }));
 

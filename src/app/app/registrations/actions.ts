@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireStaff } from "@/lib/auth";
 import { formToObject } from "@/lib/clients/schema";
-import { newRegistrationSchema, stepUpdateSchema } from "@/lib/registration/schema";
-import { stepsFor, stepsPayload } from "@/lib/registration/steps";
+import { closureSchema, newRegistrationSchema, renewalSchema, stepUpdateSchema } from "@/lib/registration/schema";
+import { closureStepsFor, dtiRenewalDue, renewalStepsFor, stepsFor, stepsPayload } from "@/lib/registration/steps";
+import type { TaxpayerType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean };
+export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean; message?: string };
 
 function fieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
   const out: Record<string, string> = {};
@@ -92,4 +93,88 @@ export async function cancelRegistrationAction(caseId: string, _: FormState, for
   revalidatePath(`/app/registrations/${caseId}`);
   revalidatePath("/app/registrations");
   return { ok: true };
+}
+
+/** The Owner opens a renewal or a closure for an existing client. */
+export async function openClientCaseAction(clientId: string, kind: "renewal" | "closure", _: FormState, form: FormData): Promise<FormState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { data: client } = await supabase.from("clients").select("taxpayer_type").eq("id", clientId).maybeSingle();
+  if (!client) return { error: "Client not found." };
+  const type = client.taxpayer_type as TaxpayerType;
+
+  let caseData: Record<string, unknown>;
+  let steps;
+  if (kind === "renewal") {
+    const parsed = renewalSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { period_year: v.period_year, lgu_served: v.lgu_served, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = renewalStepsFor(type, { lguServed: v.lgu_served, dtiDue: v.dti_due });
+  } else {
+    const parsed = closureSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { effective_date: v.effective_date, lgu_served: v.lgu_served, employer: v.employer, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = closureStepsFor(type, { lguServed: v.lgu_served, employer: v.employer });
+  }
+  const { data, error } = await supabase.rpc("open_client_case", { p_client: clientId, p_kind: kind, p_case: caseData, p_steps: stepsPayload(steps) });
+  if (error) {
+    if (error.message.includes("registration_cases_renewal_idx")) return { error: "This client already has a renewal for that year." };
+    if (error.message.includes("registration_cases_open_idx")) return { error: `This client already has an open ${kind === "renewal" ? "renewal" : "closure"}.` };
+    return { error: error.message };
+  }
+  revalidatePath("/app/registrations");
+  revalidatePath(`/app/clients/${clientId}`);
+  redirect(`/app/registrations/${(data as { id: string }).id}`);
+}
+
+/** When each client's DTI business name was registered through us (the DTI step of a completed new-business case). */
+async function dtiRegisteredOn(supabase: Awaited<ReturnType<typeof supabaseServer>>) {
+  const { data } = await supabase
+    .from("registration_steps")
+    .select("done_on, registration_cases!inner(client_id, kind, status)")
+    .eq("code", "dti_business_name")
+    .eq("status", "done")
+    .eq("registration_cases.kind", "new_business");
+  return new Map((data ?? []).map((r) => [(r.registration_cases as unknown as { client_id: string }).client_id, r.done_on as string]));
+}
+
+/**
+ * The Owner opens the year's renewals for every active client that has none
+ * yet. The firm is taken to handle the permits; staff mark what the client
+ * handles as not needed. The DTI renewal is due every 5 years from the DTI
+ * registration we did.
+ */
+export async function openYearRenewalsAction(_: FormState, form: FormData): Promise<FormState> {
+  await requireOwner();
+  const year = Number(form.get("year"));
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "Choose the year." };
+  const supabase = await supabaseServer();
+  const [{ data: clients, error }, { data: existing }, dti] = await Promise.all([
+    supabase.from("clients").select("id, taxpayer_type").eq("status", "active"),
+    supabase.from("registration_cases").select("client_id").eq("kind", "renewal").eq("period_year", year).neq("status", "cancelled"),
+    dtiRegisteredOn(supabase),
+  ]);
+  if (error) return { error: error.message };
+  const has = new Set((existing ?? []).map((r) => r.client_id));
+  const todo = (clients ?? []).filter((c) => !has.has(c.id));
+  let opened = 0;
+  const failed: string[] = [];
+  for (const c of todo) {
+    const type = c.taxpayer_type as TaxpayerType;
+    const steps = renewalStepsFor(type, { lguServed: true, dtiDue: dtiRenewalDue(dti.get(c.id) ?? null, year) });
+    const { error: e } = await supabase.rpc("open_client_case", {
+      p_client: c.id,
+      p_kind: "renewal",
+      p_case: { period_year: year, lgu_served: true, target_date: `${year}-01-20` },
+      p_steps: stepsPayload(steps),
+    });
+    if (e) failed.push(e.message);
+    else opened++;
+  }
+  revalidatePath("/app/registrations");
+  if (failed.length) return { error: `Opened ${opened}; ${failed.length} could not be opened: ${failed[0]}` };
+  if (opened === 0) return { error: `Every active client already has a ${year} renewal.` };
+  return { ok: true, message: `Opened ${opened} renewal${opened === 1 ? "" : "s"} for ${year}.` };
 }

@@ -2,6 +2,8 @@
  * Phase 1C slice 1 database tests (migration 20261124000010_business_registration.sql):
  * the Owner opens a registration case (client, engagement, steps); staff on the
  * client move steps along; the Owner completes it once the COR is on the client.
+ * Renewals and closures for existing clients; a completed closure ends the
+ * client's obligations and makes it inactive.
  *
  * Runs in its own database. `pnpm test:db`.
  */
@@ -9,7 +11,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { stepsFor, stepsPayload } from "../../src/lib/registration/steps";
+import { closureStepsFor, renewalStepsFor, stepsFor, stepsPayload } from "../../src/lib/registration/steps";
 
 const url = process.env.TEST_DATABASE_URL;
 const root = path.resolve(import.meta.dirname, "..");
@@ -170,5 +172,55 @@ describe.skipIf(!url)("business registration", () => {
       { code: "business_registration", available: true },
       { code: "bir_loa", available: false },
     ]);
+  });
+  async function activeClient(name: string) {
+    const id = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type, tin) values ($1, $2, $3, 'corporation', '111-222-333-00000') returning id`, [brand, `TC-9${Math.floor(Math.random() * 900 + 100)}`, name])).rows[0].id as string;
+    await db.query(`insert into public.staff_assignments (client_id, user_id, role) values ($1, $2, 'preparer')`, [id, STAFF]);
+    return id;
+  }
+  const openClientCase = (user: string, client: string, kind: string, caseData: object, steps: unknown) =>
+    as(user, `select * from public.open_client_case($1, $2, $3, $4)`, [client, kind, JSON.stringify(caseData), JSON.stringify(steps)]).then((r) => r.rows[0] as { id: string; kind: string; period_year: number | null; effective_date: Date | null });
+
+  it("opens one renewal per client and year, and completing it only closes the case", async () => {
+    const client = await activeClient("Renew Corp");
+    const steps = stepsPayload(renewalStepsFor("corporation", { lguServed: true, dtiDue: false }));
+    await expect(openClientCase(STAFF, client, "renewal", { period_year: 2027 }, steps)).rejects.toThrow(/Only the Owner opens renewals/);
+    await expect(openClientCase(OWNER, client, "renewal", {}, steps)).rejects.toThrow(/Choose the year/);
+    const k = await openClientCase(OWNER, client, "renewal", { period_year: 2027, lgu_served: true, target_date: "2027-01-20" }, steps);
+    expect(k).toMatchObject({ kind: "renewal", period_year: 2027 });
+    await finishAll(k.id);
+    await as(OWNER, `select public.complete_registration_case($1)`, [k.id]);
+    expect((await db.query(`select status from public.clients where id = $1`, [client])).rows[0].status).toBe("active");
+    await expect(openClientCase(OWNER, client, "renewal", { period_year: 2027 }, steps)).rejects.toThrow(/registration_cases_renewal_idx/);
+    expect((await openClientCase(OWNER, client, "renewal", { period_year: 2028 }, steps)).period_year).toBe(2028);
+  });
+
+  it("closes a business: obligations end on the closing date, later unstarted filings go, the client becomes inactive", async () => {
+    const client = await activeClient("Closing Corp");
+    await db.query(`insert into public.engagements (client_id, service_line, start_date) values ($1, 'tax_compliance', '2027-01-01')`, [client]);
+    const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '1702Q', 'quarterly', '2027-01-01') returning id`, [client])).rows[0].id;
+    const rule = (await db.query(`select id from public.deadline_rules limit 1`)).rows[0].id;
+    const filing = (start: string, end: string, status = "not_started") =>
+      db.query(
+        `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date, status) values ($1, $2, '1702Q', $3::text, $3::date, $4::date, $5, $4::date, $4::date, $6)`,
+        [ob, client, start, end, rule, status],
+      );
+    await filing("2027-01-01", "2027-03-31", "filed");
+    await filing("2027-04-01", "2027-06-30");
+    await filing("2027-07-01", "2027-09-30");
+
+    const steps = stepsPayload(closureStepsFor("corporation", { lguServed: true, employer: false }));
+    await expect(openClientCase(OWNER, client, "closure", {}, steps)).rejects.toThrow(/stopped operating/);
+    const k = await openClientCase(OWNER, client, "closure", { effective_date: "2027-05-31" }, steps);
+    await expect(as(OWNER, `select public.complete_registration_case($1)`, [k.id])).rejects.toThrow(/not finished/);
+    await finishAll(k.id);
+    await as(OWNER, `select public.complete_registration_case($1)`, [k.id]);
+
+    expect((await db.query(`select status from public.clients where id = $1`, [client])).rows[0].status).toBe("inactive");
+    expect((await db.query(`select end_date::text from public.obligations where id = $1`, [ob])).rows[0].end_date).toBe("2027-05-31");
+    const periods = (await db.query(`select period_start::text from public.filing_instances where obligation_id = $1 order by period_start`, [ob])).rows.map((r) => r.period_start);
+    expect(periods).toEqual(["2027-01-01", "2027-04-01"]);
+    expect((await db.query(`select status, end_date::text from public.engagements where client_id = $1`, [client])).rows).toEqual([{ status: "ended", end_date: "2027-05-31" }]);
+    await expect(openClientCase(OWNER, client, "renewal", { period_year: 2028 }, stepsPayload(renewalStepsFor("corporation", { lguServed: true, dtiDue: false })))).rejects.toThrow(/no longer active/);
   });
 });

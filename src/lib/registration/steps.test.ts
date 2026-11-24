@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birForm, daysBetween, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
+import { birForm, closureStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
 
 const codes = (...args: Parameters<typeof stepsFor>) => stepsFor(...args).map((s) => s.code);
 const all = { lguServed: true, employer: true };
@@ -101,5 +101,42 @@ describe("routingSlip", () => {
     expect(daysOpen([s("a", 1, "pending")], "2027-02-01", "2027-02-11")).toBe(10);
     expect(daysOpen([s("a", 1, "done", "2027-02-04"), s("b", 2, "not_applicable")], "2027-02-01", "2027-03-01")).toBe(3);
     expect(daysBetween("2027-02-10", "2027-02-01")).toBe(0);
+  });
+});
+
+describe("renewalStepsFor", () => {
+  it("renews the barangay, fire, sanitary and mayor's permits, then the books for the new year", () => {
+    expect(renewalStepsFor("corporation", { lguServed: true, dtiDue: false }).map((s) => s.code)).toEqual([
+      "barangay_clearance", "fire_safety", "sanitary_permit", "mayors_permit", "sec_gis", "bir_books", "bir_display",
+    ]);
+  });
+  it("renews a sole proprietor's DTI name only when due", () => {
+    const due = (dtiDue: boolean) => renewalStepsFor("individual", { lguServed: false, dtiDue }).find((s) => s.code === "dti_renewal");
+    expect(due(true)?.status).toBe("pending");
+    expect(due(false)).toMatchObject({ status: "not_applicable", notes: "Not due this year." });
+    expect(renewalStepsFor("individual", { lguServed: false, dtiDue: true }).find((s) => s.code === "mayors_permit")?.status).toBe("not_applicable");
+  });
+  it("counts the DTI renewal every 5 years from registration", () => {
+    expect(dtiRenewalDue("2022-03-01", 2027)).toBe(true);
+    expect(dtiRenewalDue("2022-03-01", 2032)).toBe(true);
+    expect(dtiRenewalDue("2022-03-01", 2026)).toBe(false);
+    expect(dtiRenewalDue("2027-03-01", 2027)).toBe(false);
+    expect(dtiRenewalDue(null, 2027)).toBe(false);
+  });
+});
+
+describe("closureStepsFor", () => {
+  it("closes City Hall first, then BIR, then SEC, then the employer numbers", () => {
+    expect(closureStepsFor("corporation", { lguServed: true, employer: true }).map((s) => s.code)).toEqual([
+      "barangay_closure", "mayors_retirement", "bir_1905", "bir_final_returns", "bir_invoices_surrender", "bir_verification", "bir_cancelled",
+      "sec_dissolution", "sss_employer_closure", "philhealth_employer_closure", "pagibig_employer_closure",
+    ]);
+  });
+  it("cancels a sole proprietor's DTI name and skips what does not apply", () => {
+    const steps = closureStepsFor("individual", { lguServed: false, employer: false });
+    expect(steps.map((s) => s.code)).toContain("dti_cancellation");
+    expect(steps.filter((s) => s.status === "not_applicable").map((s) => s.code)).toEqual([
+      "barangay_closure", "mayors_retirement", "sss_employer_closure", "philhealth_employer_closure", "pagibig_employer_closure",
+    ]);
   });
 });

@@ -1,6 +1,8 @@
--- Business Registration, Phase 1C slice 1 (spec §2, Q66): registering a new
--- business as a service.
+-- Business Registration, Phase 1C (spec §2, §3.7c, Q66): registering a new
+-- business, the yearly permit renewals, and closing a business, each as a case
+-- with a checklist of agency steps shown as a routing slip.
 --
+-- New business:
 -- The Owner opens a registration case for a business that does not exist yet.
 -- That creates the client (status Onboarding, no TIN), a Business Registration
 -- engagement and the case with its checklist of agency steps, worked out in
@@ -13,6 +15,16 @@
 -- the client (Edit: TIN, RDO, tax types, effective date), which starts the
 -- filing obligations (§4.1). The Owner then completes the case, which makes the
 -- client active and ends the Business Registration engagement.
+--
+-- Annual renewal (an existing client, for a year): barangay, fire, sanitary and
+-- mayor's permits, SEC GIS or DTI renewal, books for the new year. Completing
+-- it only closes the case.
+--
+-- Closing the business (an existing client, with the closing date): barangay
+-- and City Hall retirement, BIR Form 1905, final returns, invoices surrendered,
+-- verification and cancellation, DTI cancellation or SEC dissolution, employer
+-- numbers. Completing it ends the client's filing obligations after the
+-- closing date, ends its engagements and makes it inactive.
 
 insert into public.service_lines (code, name, available, sort_order) values
   ('business_registration', 'Business Registration', true, 3),
@@ -25,6 +37,11 @@ where code not in ('tax_compliance', 'bookkeeping', 'business_registration', 'bi
 create table public.registration_cases (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients (id) on delete cascade,
+  kind text not null default 'new_business' check (kind in ('new_business', 'renewal', 'closure')),
+  -- Renewal: the year the permits are for.
+  period_year smallint check (period_year between 2000 and 2100),
+  -- Closure: the day the business stopped operating; obligations end on it.
+  effective_date date,
   -- The firm handles the barangay clearance and mayor's permit.
   lgu_served boolean not null,
   -- The business will hire: employer registration with SSS, PhilHealth and Pag-IBIG.
@@ -41,17 +58,20 @@ create table public.registration_cases (
   cancel_reason text,
   updated_at timestamptz not null default now(),
   check ((status = 'open') = (closed_at is null)),
-  check (status <> 'cancelled' or cancel_reason is not null)
+  check (status <> 'cancelled' or cancel_reason is not null),
+  check ((kind = 'renewal') = (period_year is not null)),
+  check ((kind = 'closure') = (effective_date is not null))
 );
--- One open case per client.
-create unique index registration_cases_open_idx on public.registration_cases (client_id) where status = 'open';
+-- One open case of each kind per client, and one renewal per client and year.
+create unique index registration_cases_open_idx on public.registration_cases (client_id, kind) where status = 'open';
+create unique index registration_cases_renewal_idx on public.registration_cases (client_id, period_year) where kind = 'renewal' and status <> 'cancelled';
 create index registration_cases_client_idx on public.registration_cases (client_id, opened_at desc);
 
 create table public.registration_steps (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references public.registration_cases (id) on delete cascade,
   code text not null,
-  agency text not null check (agency in ('dti', 'sec', 'barangay', 'lgu', 'bir', 'sss', 'philhealth', 'pagibig')),
+  agency text not null check (agency in ('dti', 'sec', 'barangay', 'lgu', 'bfp', 'bir', 'sss', 'philhealth', 'pagibig')),
   label text not null,
   reference_label text not null,
   sort_order smallint not null,
@@ -178,8 +198,9 @@ begin
 end;
 $$;
 
--- The Owner completes the case once every step is done (or not needed) and the
--- COR is entered on the client; the client becomes active.
+-- The Owner completes a case once every step is done (or not needed).
+-- New business: the COR must be entered on the client; the client becomes active.
+-- Closure: obligations end on the closing date, engagements end, the client becomes inactive.
 create or replace function public.complete_registration_case(p_case uuid) returns public.registration_cases
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -195,6 +216,29 @@ begin
     raise exception 'Some steps are not finished' using errcode = '22023';
   end if;
   select * into c from public.clients where id = k.client_id;
+
+  if k.kind = 'renewal' then
+    update public.registration_cases set status = 'completed', closed_by = auth.uid(), closed_at = now()
+    where id = p_case returning * into k;
+    return k;
+  end if;
+
+  if k.kind = 'closure' then
+    -- Nothing is due for periods after the business closed.
+    update public.obligations set end_date = k.effective_date
+    where client_id = c.id and (end_date is null or end_date > k.effective_date) and start_date <= k.effective_date;
+    delete from public.filing_instances f
+    using public.obligations o
+    where f.obligation_id = o.id and o.client_id = c.id and o.end_date is not null
+      and f.period_start > o.end_date and f.status = 'not_started';
+    update public.engagements set status = 'ended', end_date = greatest(start_date, k.effective_date)
+    where client_id = c.id and status = 'active';
+    update public.clients set status = 'inactive' where id = c.id;
+    update public.registration_cases set status = 'completed', closed_by = auth.uid(), closed_at = now()
+    where id = p_case returning * into k;
+    return k;
+  end if;
+
   select reference_no into cor_tin from public.registration_steps where case_id = p_case and code = 'bir_cor' and status = 'done';
   if cor_tin is null then raise exception 'The BIR COR step is not done' using errcode = '22023'; end if;
   if c.tin is null or not exists (
@@ -216,7 +260,52 @@ begin
 end;
 $$;
 
--- The Owner cancels an open case (the business was not registered after all).
+-- The Owner opens a renewal or a closure for an existing client.
+create or replace function public.open_client_case(p_client uuid, p_kind text, p_case jsonb, p_steps jsonb)
+returns public.registration_cases
+language plpgsql security definer set search_path = '' as $$
+declare
+  c public.clients;
+  r public.registration_cases;
+begin
+  if not private.is_owner() then raise exception 'Only the Owner opens renewals and closures' using errcode = '42501'; end if;
+  select * into c from public.clients where id = p_client;
+  if c.id is null then raise exception 'Client not found' using errcode = 'P0002'; end if;
+  if p_kind not in ('renewal', 'closure') then raise exception 'Choose a renewal or a closure' using errcode = '22023'; end if;
+  if c.status in ('inactive', 'archived') then raise exception 'This client is no longer active' using errcode = '22023'; end if;
+  if p_kind = 'renewal' and nullif(p_case ->> 'period_year', '') is null then raise exception 'Choose the year' using errcode = '22023'; end if;
+  if p_kind = 'closure' and nullif(p_case ->> 'effective_date', '') is null then
+    raise exception 'Enter the day the business stopped operating' using errcode = '22023';
+  end if;
+  if p_steps is null or jsonb_typeof(p_steps) <> 'array' or jsonb_array_length(p_steps) = 0 then
+    raise exception 'The steps are missing' using errcode = '22023';
+  end if;
+  if exists (select 1 from jsonb_array_elements(p_steps) s where s ->> 'status' not in ('pending', 'not_applicable')) then
+    raise exception 'New steps start as pending or not needed' using errcode = '22023';
+  end if;
+
+  insert into public.registration_cases (client_id, kind, period_year, effective_date, lgu_served, employer, lgu, target_date, notes, opened_by)
+  values (
+    c.id, p_kind,
+    case when p_kind = 'renewal' then (p_case ->> 'period_year')::smallint end,
+    case when p_kind = 'closure' then (p_case ->> 'effective_date')::date end,
+    coalesce((p_case ->> 'lgu_served')::boolean, true),
+    coalesce((p_case ->> 'employer')::boolean, false),
+    nullif(btrim(p_case ->> 'lgu'), ''),
+    nullif(p_case ->> 'target_date', '')::date,
+    nullif(btrim(p_case ->> 'notes'), ''),
+    auth.uid()
+  ) returning * into r;
+
+  insert into public.registration_steps (case_id, code, agency, label, reference_label, sort_order, status, notes)
+  select r.id, s ->> 'code', s ->> 'agency', s ->> 'label', s ->> 'reference_label', (s ->> 'sort_order')::smallint,
+         s ->> 'status', nullif(s ->> 'notes', '')
+  from jsonb_array_elements(p_steps) s;
+  return r;
+end;
+$$;
+
+-- The Owner cancels an open case (e.g. the business was not registered after all).
 create or replace function public.cancel_registration_case(p_case uuid, p_reason text) returns public.registration_cases
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -227,13 +316,17 @@ begin
   update public.registration_cases set status = 'cancelled', closed_by = auth.uid(), closed_at = now(), cancel_reason = btrim(p_reason)
   where id = p_case and status = 'open' returning * into k;
   if k.id is null then raise exception 'No open registration to cancel' using errcode = 'P0002'; end if;
-  update public.engagements set status = 'ended', end_date = greatest(start_date, current_date)
-  where client_id = k.client_id and service_line = 'business_registration' and status = 'active';
+  if k.kind = 'new_business' then
+    update public.engagements set status = 'ended', end_date = greatest(start_date, current_date)
+    where client_id = k.client_id and service_line = 'business_registration' and status = 'active';
+  end if;
   return k;
 end;
 $$;
 
 revoke execute on function public.open_registration_case(jsonb, jsonb, jsonb) from public, anon;
+revoke execute on function public.open_client_case(uuid, text, jsonb, jsonb) from public, anon;
+grant execute on function public.open_client_case(uuid, text, jsonb, jsonb) to authenticated;
 revoke execute on function public.update_registration_step(uuid, text, text, date, numeric, text) from public, anon;
 revoke execute on function public.complete_registration_case(uuid) from public, anon;
 revoke execute on function public.cancel_registration_case(uuid, text) from public, anon;

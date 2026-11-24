@@ -3,9 +3,10 @@ import { Suspense } from "react";
 import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { AGENCIES, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
+import { AGENCIES, CASE_KINDS, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
+import { YearRenewalsForm } from "./forms";
 import { daysTone, manilaDate } from "./slip";
 
 export default function RegistrationsPage(props: PageProps<"/app/registrations">) {
@@ -18,6 +19,8 @@ export default function RegistrationsPage(props: PageProps<"/app/registrations">
 
 interface Row {
   id: string;
+  kind: keyof typeof CASE_KINDS;
+  period_year: number | null;
   status: "open" | "completed" | "cancelled";
   opened_at: string;
   closed_at: string | null;
@@ -27,18 +30,28 @@ interface Row {
 }
 
 async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrations">, "searchParams">) {
-  const { show } = await searchParams;
+  const { show, kind } = await searchParams;
   const closed = show === "closed";
+  const kindFilter = typeof kind === "string" && kind in CASE_KINDS ? (kind as keyof typeof CASE_KINDS) : null;
   const me = await requireStaff();
   const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
   const query = supabase
     .from("registration_cases")
-    .select("id, status, opened_at, closed_at, target_date, clients(name, code), registration_steps(code, agency, label, status, sort_order, done_on)")
+    .select("id, kind, period_year, status, opened_at, closed_at, target_date, clients(name, code), registration_steps(code, agency, label, status, sort_order, done_on)")
     .order("opened_at", { ascending: false });
-  const { data, error } = await (closed ? query.neq("status", "open") : query.eq("status", "open"));
+  const filtered = kindFilter ? query.eq("kind", kindFilter) : query;
+  const { data, error } = await (closed ? filtered.neq("status", "open") : filtered.eq("status", "open"));
   if (error) throw error;
   const today = manilaDate(new Date());
+  const renewalYear = Number(today.slice(0, 4)) + (Number(today.slice(5, 7)) >= 10 ? 1 : 0);
+  const href = (p: { show?: string; kind?: string | null }) => {
+    const q = new URLSearchParams();
+    if (p.show) q.set("show", p.show);
+    if (p.kind) q.set("kind", p.kind);
+    return `/app/registrations${q.size ? `?${q}` : ""}`;
+  };
+  const pill = (on: boolean) => cx("rounded-full px-3 py-1", on ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover");
 
   const rows = ((data ?? []) as unknown as Row[]).map((r) => {
     const steps = r.registration_steps.map((s) => ({ ...s, sortOrder: s.sort_order, doneOn: s.done_on }));
@@ -53,17 +66,32 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
     <>
       <PageHeader
         title="Registrations"
-        description="New businesses we are registering: where each file is now and how long it has been there."
-        actions={isOwner && <LinkButton href="/app/registrations/new"><RiAddLine aria-hidden className="size-4" />New registration</LinkButton>}
+        description="New businesses, annual renewals and closures: where each file is now and how long it has been there."
+        actions={
+          isOwner && (
+            <div className="flex flex-wrap items-center gap-3">
+              <YearRenewalsForm year={renewalYear} />
+              <LinkButton href="/app/registrations/new"><RiAddLine aria-hidden className="size-4" />New business</LinkButton>
+            </div>
+          )
+        }
       />
-      <div className="mb-4 flex gap-2 text-body-medium">
-        <Link href="/app/registrations" aria-current={!closed ? "page" : undefined} className={cx("rounded-full px-3 py-1", !closed ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover")}>Open</Link>
-        <Link href="/app/registrations?show=closed" aria-current={closed ? "page" : undefined} className={cx("rounded-full px-3 py-1", closed ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover")}>Completed &amp; cancelled</Link>
+      <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-body-medium">
+        <div className="flex gap-1">
+          <Link href={href({ kind: kindFilter })} aria-current={!closed ? "page" : undefined} className={pill(!closed)}>Open</Link>
+          <Link href={href({ show: "closed", kind: kindFilter })} aria-current={closed ? "page" : undefined} className={pill(closed)}>Completed &amp; cancelled</Link>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <Link href={href({ show: closed ? "closed" : undefined })} aria-current={!kindFilter ? "page" : undefined} className={pill(!kindFilter)}>All</Link>
+          {(Object.keys(CASE_KINDS) as (keyof typeof CASE_KINDS)[]).map((k) => (
+            <Link key={k} href={href({ show: closed ? "closed" : undefined, kind: k })} aria-current={kindFilter === k ? "page" : undefined} className={pill(kindFilter === k)}>{CASE_KINDS[k]}</Link>
+          ))}
+        </div>
       </div>
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
-          <p className="font-medium text-text-primary">{closed ? "Nothing closed yet" : "No open registrations"}</p>
-          <p className="mt-1 text-body-regular text-text-secondary">{isOwner && !closed ? "Open one when a client asks us to register a new business." : "Registrations assigned to you show here."}</p>
+          <p className="font-medium text-text-primary">{closed ? "Nothing closed yet" : "Nothing open"}</p>
+          <p className="mt-1 text-body-regular text-text-secondary">{isOwner && !closed ? "Open a new business here, a renewal or closure from the client's page, or this year's renewals for every client above." : "Cases for clients assigned to you show here."}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
@@ -83,7 +111,9 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
                 <tr key={r.id} className="border-t border-separator-border transition-colors first:border-t-0 hover:bg-background-secondary-hover">
                   <td className="px-4 py-3">
                     <Link href={`/app/registrations/${r.id}`} className="font-medium text-text-primary hover:underline">{r.clients?.name}</Link>
-                    <p className="text-caption-1-regular tabular-nums text-text-tertiary">{r.clients?.code}{r.target_date ? ` · target ${r.target_date}` : ""}</p>
+                    <p className="text-caption-1-regular tabular-nums text-text-tertiary">
+                      {CASE_KINDS[r.kind]}{r.period_year ? ` ${r.period_year}` : ""} · {r.clients?.code}{r.target_date ? ` · target ${r.target_date}` : ""}
+                    </p>
                   </td>
                   <td className="px-4 py-3">
                     {r.here ? (

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { taxpayerTypeLabel } from "@/lib/clients/labels";
-import { AGENCIES, daysBetween, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
+import { AGENCIES, CASE_KINDS, daysBetween, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { CancelForm, CompleteButton, StepBadge, StepForm, type StepRow } from "../forms";
@@ -57,7 +57,7 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
     <>
       <PageHeader
         title={client.name}
-        description={<span className="tabular-nums">Business registration · {client.code} · {taxpayerTypeLabel[client.taxpayer_type]}{k.lgu ? ` · ${k.lgu}` : ""}</span>}
+        description={<span className="tabular-nums">{CASE_KINDS[k.kind as keyof typeof CASE_KINDS]}{k.period_year ? ` ${k.period_year}` : ""}{k.effective_date ? ` · closed ${fmt(k.effective_date)}` : ""} · {client.code} · {taxpayerTypeLabel[client.taxpayer_type]}{k.lgu ? ` · ${k.lgu}` : ""}</span>}
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone}>{statusLabel}</Badge>
@@ -159,7 +159,11 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <Card title="Finish">
             {here ? (
-              <p className="text-body-regular text-text-secondary">The registration can be completed once every step is done or not needed.</p>
+              <p className="text-body-regular text-text-secondary">This can be completed once every step is done or not needed.</p>
+            ) : k.kind === "renewal" ? (
+              <p className="text-body-regular text-text-secondary">Completing closes this year&rsquo;s renewal.</p>
+            ) : k.kind === "closure" ? (
+              <Notice>Completing ends {client.name}&rsquo;s filing obligations after {fmt(k.effective_date)}, removes filings for later periods that were not started, ends its engagements and makes it inactive.</Notice>
             ) : !client.tin ? (
               <Notice>
                 The COR is issued. <Link href={`/app/clients/${client.id}/edit`} className="font-medium underline">Enter it on the client</Link> (TIN, RDO, tax types and the registration date as the effective date) to start the filing obligations, then complete the registration.
