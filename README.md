@@ -33,6 +33,7 @@ Phase 1A in progress. Built so far:
 - Bookkeeping slice 4: period lock — a month locks once a return covering it is filed; late documents book to the next open month; amendments (reviewer asks, Owner approves) reopen and relock a filed return's months
 - Bookkeeping slice 5: 1701Q and 1702Q computed from the ledger by BIR line (sales, cost of sales, other income, itemized deductions) for clients whose books cover the taxable year
 - Bookkeeping slice 6: financial statements from the ledger (financial position, comprehensive income, changes in equity, notes) for a month, quarter or year; the Owner releases them to the client portal's Reports tab
+- Bookkeeping slice 7: year-end closing entries; annual 1702-RT and 1701 / 1701A worksheets from the books; statement of cash flows with a cash-flow class per account; prior-year column on annual statements; amended returns as new filings of the same period through the sign-off chain
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

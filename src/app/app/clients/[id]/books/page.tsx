@@ -216,7 +216,10 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
                       {a.status === "requested" && isOwner && <AmendmentDecision clientId={id} amendmentId={a.id} />}
                       {a.status === "reopened" && (
                         <>
-                          <p className="text-caption-1-regular text-text-tertiary">Approved by {a.decidedBy ?? "the Owner"}. Post the corrections, then lock the months again. The amended return is filed as a new return.</p>
+                          <p className="text-caption-1-regular text-text-tertiary">
+                            Approved by {a.decidedBy ?? "the Owner"}. Post the corrections, then{" "}
+                            <Link href={`/app/filings/${a.filingId}`} className="underline">start the amended return</Link> from the filed return; filing it locks the months again (or lock them here).
+                          </p>
                           {canAmend && <RelockForm clientId={id} amendmentId={a.id} />}
                         </>
                       )}

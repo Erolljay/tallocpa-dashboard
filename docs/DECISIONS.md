@@ -76,3 +76,5 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q70 | Owner's own amendment | When the Owner asks for an amendment, the months reopen at once, with no second approval step. (Owner, 24 Nov 2026) |
 | Q71 | Acting approver and amendments | Only the Owner approves amendments; the acting approver does not. (Owner, 24 Nov 2026) |
 | Q72 | Late documents in a locked month | A document dated in a locked month is booked on the first open month of the same taxable year, with its own date in the memo, rather than waiting for an amendment. (Owner, 24 Nov 2026) |
+| Q73 | Amended returns | An amended return is a new return of the same form and period, labelled "<period> Amended" (e.g. 1601-C 2026-10 Amended; "Amended 2" for a second one), and goes through the whole sign-off chain; the filed original stays on record. (Owner, 24 Nov 2026) |
+| Q74 | Cash flow statement | Built by the indirect method from the ledger; every account carries a cash-flow classification (cash, operating, investing, financing, non-cash), editable per account. (Owner, 24 Nov 2026) |
