@@ -1,6 +1,5 @@
 {
   "1": "Deadline Engine & Dates",
-  "2": "Client Actions & Edit",
   "7": "TypeScript Config",
   "8": "CI Workflow",
   "10": "Deadline Engine Docs",
@@ -27,9 +26,5 @@
   "36": "Q60 Brand Settings",
   "37": "Q61 Client Users & OCR",
   "38": "Q9 Gemini OCR",
-  "39": "Develop Commands",
-  "40": "Function Grants Migration",
-  "41": "Calendar-Year Migration",
-  "42": "Seed SQL",
-  "43": "Grants SQL"
+  "39": "Develop Commands"
 }
