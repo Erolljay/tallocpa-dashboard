@@ -12,6 +12,7 @@ import { readUpdateWorkbook } from "@/lib/ledger/arap-xlsx";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type Control, type TemplateCode } from "@/lib/ledger/types";
 import { isBirLine } from "@/lib/ledger/bir-lines";
 import { isFsLine } from "@/lib/ledger/fs-lines";
+import { isCashFlowClass } from "@/lib/ledger/cash-flow";
 import { toCentavos, toDecimalString } from "@/lib/returns/money";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string };
@@ -55,11 +56,14 @@ export async function saveAccountAction(clientId: string, accountId: string | nu
   if (!isFsLine(v("fs_line"))) errs.fs_line = "Choose an FS line";
   if (v("bir_line") && !isBirLine(v("bir_line"))) errs.bir_line = "Unknown BIR line";
   if (control && !(control in CONTROLS)) errs.control = "Unknown role";
+  const cashFlow = v("cash_flow");
+  if (cashFlow && !isCashFlowClass(cashFlow)) errs.cash_flow = "Unknown class";
   if (Object.keys(errs).length) return { error: "Check the highlighted fields.", fieldErrors: errs };
   const side = v("normal_side") === "debit" || v("normal_side") === "credit" ? v("normal_side") : NORMAL_SIDE[type];
   const row = {
     code: v("code"), name: v("name"), type, normal_side: side, fs_line: v("fs_line"),
     bir_line: v("bir_line") || null, control: control || null, active: form.get("active") === "on",
+    cash_flow: ["asset", "liability", "equity"].includes(type) ? cashFlow || null : null,
     sort_order: Number(v("sort_order")) || 0,
   };
   const { error } = accountId
@@ -303,4 +307,22 @@ export async function withdrawReportAction(clientId: string, reportId: string): 
   revalidatePath(path(clientId), "layout");
   revalidatePath("/portal/reports", "layout");
   return { ok: "Withdrawn." };
+}
+
+// ---------------------------------------------------------------------------
+// Year-end closing (slice 7).
+// ---------------------------------------------------------------------------
+
+/** Closes the taxable year ending `yearEnd`. Partnerships give each partner's share (form fields share_<account id>). */
+export async function closeYearAction(clientId: string, yearEnd: string, partners: string[], _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  let shares: { account_id: string; percent: number }[] | null = null;
+  if (partners.length > 1) {
+    shares = partners.map((a) => ({ account_id: a, percent: Number(String(form.get(`share_${a}`) ?? "").trim()) }));
+    if (shares.some((s) => !Number.isFinite(s.percent) || s.percent < 0)) return { error: "Enter each partner's share as a percentage." };
+  }
+  const { error } = await supabase.rpc("close_books_year", { p_client: clientId, p_year_end: yearEnd, p_shares: shares });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  return { ok: "Closed." };
 }

@@ -6,7 +6,7 @@ import { AGING, aging } from "@/lib/ledger/arap";
 import { booksAccess, loadAccounts, loadAmendments, loadBooksMonths, loadEntries, loadOpenItems, loadOpening, loadTrialBalance, monthState, type AmendmentStatus } from "@/lib/ledger/data";
 import { BOOK_LOCK_FORMS, BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount } from "@/lib/returns/money";
-import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, RelockForm, ReverseForm, SetupForm } from "./forms";
+import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, CloseYearForm, PermitForm, RelockForm, ReverseForm, SetupForm } from "./forms";
 
 export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
   return (
@@ -58,6 +58,7 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const toMonth = asOfParam ?? (today < books.booksStart.slice(0, 7) ? books.booksStart.slice(0, 7) : today);
   const to = monthEnd(toMonth);
   const from = `${toMonth.slice(0, 4)}-01-01` < books.booksStart ? dayBefore(books.booksStart) : `${toMonth.slice(0, 4)}-01-01`;
+  const todayIso = new Date().toISOString().slice(0, 10);
   const [accounts, opening, tb, entries, suggested, openItems, { data: pendingUpdates }, months, amendments, { data: filedReturns }, { data: reviewerOf }] = await Promise.all([
     loadAccounts(supabase, id),
     loadOpening(supabase, id),
@@ -72,7 +73,20 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
       .in("status", ["filed", "paid", "proof_uploaded"]).gte("period_end", books.booksStart).order("period_start", { ascending: false }).limit(60),
     supabase.from("staff_assignments").select("user_id").eq("client_id", id).eq("user_id", me.userId).eq("role", "reviewer").limit(1),
   ]);
+  // Taxable years ended since the books started, newest first, with their closing entry if any.
+  const yearEnds: string[] = [];
+  for (let y = Number(todayIso.slice(0, 4)); y >= Number(books.booksStart.slice(0, 4)) - 1; y--) {
+    const end = new Date(Date.UTC(y, client.fiscal_year_end_month, 0)).toISOString().slice(0, 10);
+    if (end < todayIso && end >= books.booksStart) yearEnds.push(end);
+  }
+  const { data: closings } = yearEnds.length
+    ? await supabase.from("journal_entries").select("id, entry_date, posted_at").eq("client_id", id).eq("source", "closing").eq("status", "posted").in("entry_date", yearEnds)
+    : { data: [] };
+  const closedOn = new Map(((closings ?? []) as { entry_date: string; posted_at: string }[]).map((c) => [c.entry_date, c.posted_at]));
+  const capitals = accounts.filter((a) => a.control === "capital" && a.active);
+  const partners = accounts.some((a) => a.control === "retained_earnings") ? [] : capitals.map((a) => ({ id: a.id, name: a.name }));
   const isOwner = me.staff.role === "owner";
+
   const canAmend = isOwner || (reviewerOf ?? []).length > 0;
   const inProgress = new Set(amendments.filter((a) => a.status === "requested" || a.status === "reopened").map((a) => a.filingId));
   const amendable = ((filedReturns ?? []) as { id: string; form: string; period_label: string }[])
@@ -91,7 +105,6 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
     { label: "Accounts Receivable", ledger: closingOf("ar"), open: sumOpen("receivable") },
     { label: "Accounts Payable", ledger: -closingOf("ap"), open: sumOpen("payable") },
   ];
-  const todayIso = new Date().toISOString().slice(0, 10);
   const lastMonthStart = (() => { const d = new Date(`${todayIso.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); const m = d.toISOString().slice(0, 10); return m < books.booksStart ? books.booksStart : m; })();
   const lastMonth = (() => { const d = new Date(`${todayIso.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); })();
   const accountName = new Map(accounts.map((a) => [a.id, `${a.code} · ${a.name}`]));
@@ -203,7 +216,10 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
                       {a.status === "requested" && isOwner && <AmendmentDecision clientId={id} amendmentId={a.id} />}
                       {a.status === "reopened" && (
                         <>
-                          <p className="text-caption-1-regular text-text-tertiary">Approved by {a.decidedBy ?? "the Owner"}. Post the corrections, then lock the months again. The amended return is filed as a new return.</p>
+                          <p className="text-caption-1-regular text-text-tertiary">
+                            Approved by {a.decidedBy ?? "the Owner"}. Post the corrections, then{" "}
+                            <Link href={`/app/filings/${a.filingId}`} className="underline">start the amended return</Link> from the filed return; filing it locks the months again (or lock them here).
+                          </p>
                           {canAmend && <RelockForm clientId={id} amendmentId={a.id} />}
                         </>
                       )}
@@ -221,6 +237,29 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
             )}
           </div>
         </Card>
+
+        {yearEnds.length > 0 && (
+          <Card title="Year-end closing">
+            <div className="space-y-3">
+              <p className="text-body-regular text-text-secondary">
+                Closing brings the year&rsquo;s income and expenses to nil against{" "}
+                {partners.length > 1 ? "the partners\u2019 capital, by their shares" : partners.length === 1 ? "the owner\u2019s capital (with the drawings)" : "retained earnings"}. The year&rsquo;s statements and returns still read the year before closing. Close after the year&rsquo;s adjustments; reverse the closing entry to close again.
+              </p>
+              <ul className="divide-y divide-separator-border">
+                {yearEnds.map((end) => (
+                  <li key={end} className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <span className="text-body-medium text-text-primary">Year ended {fmtDate(end)}</span>
+                    {closedOn.has(end) ? (
+                      <Badge tone="done">Closed {fmtDate(closedOn.get(end)!.slice(0, 10))}</Badge>
+                    ) : (
+                      <CloseYearForm clientId={id} yearEnd={end} partners={partners} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Card>
+        )}
 
         <Card title="Receivables and payables">
           <div className="space-y-6">

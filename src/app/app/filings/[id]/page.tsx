@@ -12,6 +12,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { DocumentUpload } from "@/components/document-upload";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
+import { AmendFilingForm } from "../amend-form";
 
 export default function FilingPage(props: PageProps<"/app/filings/[id]">) {
   return (
@@ -44,6 +45,7 @@ const eventText: Record<string, string> = {
   file: "recorded the filing",
   pay: "recorded the payment",
   send_proof: "marked the proof sent",
+  amend: "started this amended return",
 };
 const paymentText: Record<string, string> = { paid: "Paid", partial: "Partially paid", unpaid: "Unpaid", not_applicable: "Nothing to pay" };
 
@@ -54,13 +56,13 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
 
   const { data: f } = await supabase
     .from("filing_instances")
-    .select("id, client_id, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, clients(id, name, code, payment_mode)")
+    .select("id, client_id, obligation_id, amendment_no, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, clients(id, name, code, payment_mode)")
     .eq("id", id)
     .maybeSingle();
   if (!f) notFound();
   const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
 
-  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }] = await Promise.all([
+  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
     supabase.from("staff_assignments").select("user_id, role").eq("client_id", f.client_id),
     supabase.from("staff_profiles").select("user_id, full_name"),
@@ -69,7 +71,13 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
     me.staff.role === "reviewer"
       ? supabase.from("acting_approver_delegations").select("id, delegate_user_id, starts_at, ends_at, max_tax_due, reason, ended_at").eq("delegate_user_id", me.userId).is("ended_at", null)
       : Promise.resolve({ data: [] as Delegation[] }),
+    // The original return of the period and its amended returns.
+    supabase.from("filing_instances").select("id, period_label, status, amendment_no").eq("obligation_id", f.obligation_id).eq("period_end", f.period_end).order("amendment_no"),
   ]);
+  const later = (versions ?? []).some((v) => v.amendment_no > f.amendment_no);
+  const canAmend =
+    ["filed", "paid", "proof_uploaded"].includes(f.status) && !later &&
+    (me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId && t.role === "reviewer"));
   const acting = activeFor((delegations ?? []) as Delegation[], me.userId);
   const canAttach = me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId);
   const thisMonth = `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date()).slice(0, 7)}-01`;
@@ -146,6 +154,12 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             </div>
           </Card>
 
+          {canAmend && (
+            <Card title="Amend this return">
+              <AmendFilingForm filingId={f.id} />
+            </Card>
+          )}
+
           <Card title="History">
             {history.length === 0 ? (
               <p className="text-body-regular text-text-secondary">No steps taken yet.</p>
@@ -175,6 +189,23 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             <dt className="text-text-tertiary">Filing ref.</dt><dd className="text-text-primary">{f.filing_reference ?? "—"}{f.filed_on ? ` · ${showDate(f.filed_on)}` : ""}</dd>
             <dt className="text-text-tertiary">Payment ref.</dt><dd className="text-text-primary">{f.payment_reference ?? "—"}{f.paid_on ? ` · ${showDate(f.paid_on)}` : ""}</dd>
           </dl>
+          {(versions ?? []).length > 1 && (
+            <div className="mt-4 space-y-2 border-t border-separator-border pt-4">
+              <p className="text-body-medium text-text-primary">Returns for this period</p>
+              <ul className="space-y-1 text-body-regular">
+                {(versions ?? []).map((v) => (
+                  <li key={v.id} className="flex items-center justify-between gap-2">
+                    {v.id === f.id ? (
+                      <span className="text-text-primary">{v.period_label} (this one)</span>
+                    ) : (
+                      <Link href={`/app/filings/${v.id}`} className="text-button-ghost-foreground hover:underline">{v.period_label}</Link>
+                    )}
+                    <Badge tone={filingStatusTone[v.status as FilingStatus]}>{filingStatusLabel[v.status as FilingStatus]}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-4 space-y-3 border-t border-separator-border pt-4">
             <p className="text-body-medium text-text-primary">Filed return and proof</p>
             {(attachments ?? []).length === 0 ? (

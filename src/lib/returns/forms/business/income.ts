@@ -28,16 +28,16 @@ import { buildSawt, sawtAttachments, sawtSchedule, type SawtResult } from "./saw
 import { Inputs, addMonths, amountInput, docsWithin, filerWarnings, labelsOf, line, monthEnd, netOfVat, ownerNameInputs, pct, peso, quarterOf, sum, taxableYear } from "./util";
 
 /** ₱250,000 allowable reduction under the 8% option (NIRC Sec. 24(A)(2)(b)), for purely self-employed individuals. */
-const EIGHT_PCT_REDUCTION: Centavos = 250_000_00;
+export const EIGHT_PCT_REDUCTION: Centavos = 250_000_00;
 /** Gross sales/receipts ceiling for the 8% option and for non-VAT status. */
-const VAT_THRESHOLD: Centavos = 3_000_000_00;
+export const VAT_THRESHOLD: Centavos = 3_000_000_00;
 
-const PROXY_WARNING =
+export const PROXY_WARNING =
   "Itemized deductions are taken from the purchase receipts on file — only a rough proxy until the Phase 1B ledger: payroll, depreciation, non-deductible items and capital purchases are not separated, and cost of sales is only what was typed in. Review before filing.";
 
 // ── Shared figures ─────────────────────────────────────────
 
-interface Periods {
+export interface Periods {
   quarter: number;
   yearStart: string;
   yearEnd: string;
@@ -46,7 +46,7 @@ interface Periods {
   prevQ: SourceDocument[];
 }
 
-function periods(ctx: WorksheetContext): Periods {
+export function periods(ctx: WorksheetContext): Periods {
   const { start, end } = taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth);
   const quarter = quarterOf(ctx);
   const thisQ = docsWithin(ctx.documents, ctx.filing.periodStart, ctx.filing.periodEnd);
@@ -81,7 +81,7 @@ export function booksCover(ctx: Pick<WorksheetContext, "ledger" | "filing" | "cl
   return !!ctx.ledger && ctx.ledger.booksStart <= taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth).start;
 }
 
-interface IncomeSource {
+export interface IncomeSource {
   fromBooks: boolean;
   salesQ: Centavos;
   salesPrev: Centavos;
@@ -103,7 +103,7 @@ interface IncomeSource {
  * income and itemized deductions. `useCos`: cost of sales is deducted (not for
  * an individual on OSD or 8%).
  */
-function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, form: string, useCos: boolean, cwtQ: Centavos, cwtPrev: Centavos): IncomeSource {
+export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, form: string, useCos: boolean, cwtQ: Centavos, cwtPrev: Centavos): IncomeSource {
   if (ctx.ledger && booksCover(ctx)) {
     const q = bookIncome(ctx.ledger.period);
     const prev = bookIncome(ctx.ledger.earlier);
@@ -207,13 +207,13 @@ function priorDiffWarning(ctx: WorksheetContext, form: string, key: string, comp
     : [];
 }
 
-function cwt(p: Periods): { thisQ: SawtResult; prevQ: SawtResult } {
+export function cwt(p: Periods): { thisQ: SawtResult; prevQ: SawtResult } {
   return { thisQ: buildSawt(p.thisQ, ["income"]), prevQ: buildSawt(p.prevQ, ["income"]) };
 }
 
 // ── 1701Q ──────────────────────────────────────────────────
 
-const REGIMES = [
+export const REGIMES = [
   { value: "graduated_osd", label: "Graduated rates, optional standard deduction (40%)" },
   { value: "graduated_itemized", label: "Graduated rates, itemized deductions" },
   { value: "8pct", label: "8% on gross sales/receipts" },
@@ -221,8 +221,8 @@ const REGIMES = [
 
 /** Inputs the books replace: cost of sales and other income come from the ledger when it covers the year. */
 const BOOK_FIGURES = new Set(["cost_of_sales", "non_operating_income"]);
-type InputsCtx = Pick<WorksheetContext, "client" | "filing" | "ledger">;
-const withoutBookFigures = (ctx: InputsCtx, xs: ManualInput[]) => (booksCover(ctx) ? xs.filter((x) => !BOOK_FIGURES.has(x.key)) : xs);
+export type InputsCtx = Pick<WorksheetContext, "client" | "filing" | "ledger">;
+export const withoutBookFigures = (ctx: InputsCtx, xs: ManualInput[]) => (booksCover(ctx) ? xs.filter((x) => !BOOK_FIGURES.has(x.key)) : xs);
 
 function inputs1701Q(ctx: InputsCtx): ManualInput[] {
   return withoutBookFigures(ctx, [

@@ -19,6 +19,8 @@ export const ACCOUNT_TYPES = {
 } as const;
 export type AccountType = keyof typeof ACCOUNT_TYPES;
 
+import type { CashFlowClass } from "./cash-flow";
+
 export type NormalSide = "debit" | "credit";
 
 /** Accounts the app posts to by itself. The ones in SINGLE_CONTROLS appear once per client. */
@@ -90,6 +92,8 @@ export interface AccountDef {
 
 export interface LedgerAccount extends Omit<AccountDef, "key"> {
   id: string;
+  /** Statement of cash flows class set on the account; null: from the FS line (cash-flow.ts `defaultCashFlow`). */
+  cashFlow: CashFlowClass | null;
   /** Null for an account staff added themselves. */
   key: string | null;
   active: boolean;

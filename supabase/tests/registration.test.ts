@@ -1,5 +1,5 @@
 /**
- * Phase 1C slice 1 database tests (migration 20261124000010_business_registration.sql):
+ * Phase 1C slice 1 database tests (migration 20261124000013_business_registration.sql):
  * the Owner opens a registration case (client, engagement, steps); staff on the
  * client move steps along; the Owner completes it once the COR is on the client.
  * Renewals and closures for existing clients; a completed closure ends the

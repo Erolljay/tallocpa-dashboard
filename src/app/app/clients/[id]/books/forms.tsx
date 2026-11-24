@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
+import { CASH_FLOW_CLASSES, defaultCashFlow } from "@/lib/ledger/cash-flow";
 import { FS_LINES } from "@/lib/ledger/fs-lines";
 import type { ReportKind } from "@/lib/ledger/statements";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type LedgerAccount, type TemplateCode } from "@/lib/ledger/types";
@@ -11,6 +12,7 @@ import {
   confirmAllAction,
   decideAmendmentAction,
   relockAmendmentAction,
+  closeYearAction,
   releaseReportAction,
   withdrawReportAction,
   requestAmendmentAction,
@@ -99,6 +101,12 @@ export function AccountForm({ clientId, account, used }: { clientId: string; acc
         <Select id={`bir-${p}`} name="bir_line" defaultValue={account?.birLine ?? ""} disabled={!pnl}>
           <option value="">{pnl ? "Choose…" : "Not on the income tax return"}</option>
           {pnl && Object.entries(BIR_LINES).map(([k, l]) => <option key={k} value={k}>{l.label}</option>)}
+        </Select>
+      </Field>
+      <Field label="Cash flow" htmlFor={`cf-${p}`} hint={pnl ? "Part of net income." : undefined}>
+        <Select id={`cf-${p}`} name="cash_flow" defaultValue={account?.cashFlow ?? ""} disabled={pnl}>
+          <option value="">{account && !pnl ? `Automatic: ${CASH_FLOW_CLASSES[defaultCashFlow(account)]}` : "Automatic (from the FS line)"}</option>
+          {!pnl && Object.entries(CASH_FLOW_CLASSES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </Select>
       </Field>
       <Field label="Control role" htmlFor={`control-${p}`} error={e.control} hint={used ? "Has entries: fixed." : undefined}>
@@ -465,6 +473,26 @@ export function WithdrawReportButton({ clientId, reportId }: { clientId: string;
     <form action={action} className="flex items-center gap-2">
       <Button type="submit" size="sm" variant="ghost" disabled={pending}>{pending ? "Withdrawing…" : "Withdraw"}</Button>
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Year-end closing.
+// ---------------------------------------------------------------------------
+export function CloseYearForm({ clientId, yearEnd, partners }: { clientId: string; yearEnd: string; partners: { id: string; name: string }[] }) {
+  const [state, action, pending] = useActionState(closeYearAction.bind(null, clientId, yearEnd, partners.map((p) => p.id)), {} as FormState);
+  if (state.ok) return <span className="text-caption-1-regular text-text-secondary">{state.ok}</span>;
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-3">
+      {partners.length > 1 &&
+        partners.map((p) => (
+          <Field key={p.id} label={`${p.name} share (%)`} htmlFor={`share-${yearEnd}-${p.id}`}>
+            <Input id={`share-${yearEnd}-${p.id}`} name={`share_${p.id}`} inputMode="decimal" required defaultValue={String(Math.round((100 / partners.length) * 100) / 100)} className="w-28 tabular-nums" />
+          </Field>
+        ))}
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Closing…" : "Close the year"}</Button>
+      {state.error && <span className="pb-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }

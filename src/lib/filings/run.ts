@@ -36,7 +36,7 @@ export async function runFilingGeneration(admin: SupabaseClient, today = manilaT
   for (let i = 0; i < rows.length; i += 500) {
     const { data, error } = await admin
       .from("filing_instances")
-      .upsert(rows.slice(i, i + 500), { onConflict: "obligation_id,period_end", ignoreDuplicates: true })
+      .upsert(rows.slice(i, i + 500), { onConflict: "obligation_id,period_end,amendment_no", ignoreDuplicates: true })
       .select("id");
     if (error) throw new Error(`Saving filings: ${error.message}`);
     created += data?.length ?? 0;
