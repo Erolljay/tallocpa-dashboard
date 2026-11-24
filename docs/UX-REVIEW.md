@@ -24,6 +24,8 @@ Screens were read from the source. This review has not yet been tested with staf
 | F10 | Low | Deadlines, Monthly cycle, Documents and Review overlap in the sidebar. |
 | F11 | High | Nothing warns anyone before a filing is late. No staff member is named on a filing, there is no internal target ahead of the BIR date, and the nightly job reminds clients only. |
 | F12 | Medium | Documents don't carry the firm's worksheet columns: no SC/PWD discount, no CWT per invoice, no EWT per supplier, so no net receipt or net paid. |
+| F14 | Medium | A supplier's firm-wide account title is applied silently when a client hasn't used that supplier before (only a hint below the field), even when the account isn't in that client's chart. Titles are chosen one document at a time. |
+| F15 | Medium | The portal has no "I've sent everything for the month", no check for missing invoice numbers, and no view of what happens next. |
 | F13 | High | Cash is posted at the invoice total, not the net receipt. `book_document` debits Cash on hand for the total of a cash sale; the CWT leaves cash only when the 2307 is approved (Dr CWT / Cr Cash). Purchases credit Cash at the gross; EWT payable appears only when a 2307 is issued. The SC/PWD discount is never recorded, cash sales never go to a bank account, and payroll posts nothing to the books. |
 
 ## Recommendations
@@ -50,6 +52,8 @@ Screens were read from the source. This review has not yet been tested with staf
 
 11. **One register: bookkeeping and tax compliance as one.** See below.
 12. **Capital expenditure to a fixed asset register (H) with straight-line depreciation.** See below.
+13. **Documents reviewed per client.** Inside one client: pending documents with the account title chosen inline from that client's chart, and approve-selected. Each line shows where its title came from: this client's history (green), a firm suggestion to confirm (amber), a new supplier or a preset not in this chart (must choose). A chosen or confirmed title is saved for that client and supplier only (`client_party_accounts`); the firm-wide preset is only a starting suggestion.
+14. **Client portal: "I've sent everything for <month>" and what happens next.** The portal lists what was sent by kind and how far each is checked; asks about gaps first (missing sales invoice numbers in the series — uploaded or cancelled? — and outstanding 2307s); then a confirm step. On confirmation the month is complete (new `document_cycles` columns for when and who), staff are told, the filing's first step is done so work starts early, and later uploads are marked late. A plain-language timeline shows the next steps with dates from the deadline steps: checking, each return ready for approval, filing, proof. "No transactions this month" stays as built.
 
 ## Data flow: one register
 
@@ -105,6 +109,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
 | A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |
+| P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live |
 | E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
 | W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
 | W3 | Review notes, My work | After cycle 1 |

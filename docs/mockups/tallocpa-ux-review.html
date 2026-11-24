@@ -223,6 +223,16 @@ textarea{resize:vertical;min-height:54px}
 .anat dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:13px}
 .anat dt{color:var(--muted)} .anat dd{margin:0;text-align:end;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.pipe,.anat{grid-template-columns:1fr}}
+.phone{max-width:430px;margin-inline:auto;display:flex;flex-direction:column;gap:12px;width:100%}
+.tl{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.tl li:first-child{border-top:0}
+.tl .d{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.tl li.done b{color:var(--ok)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pills button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px}
+.pills button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.pills button:disabled{opacity:.5;cursor:not-allowed}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:20}
 
 @media (max-width:900px){
@@ -252,8 +262,8 @@ textarea{resize:vertical;min-height:54px}
 
   <nav class="tabs" aria-label="Review sections" id="tabs">
     <a href="#journeys">1 · Journeys</a>
-    <a href="#findings">2 · Findings <span class="c">13</span></a>
-    <a href="#recommendations">3 · Recommendations <span class="c">12</span></a>
+    <a href="#findings">2 · Findings <span class="c">15</span></a>
+    <a href="#recommendations">3 · Recommendations <span class="c">14</span></a>
     <a href="#flow">4 · Data flow</a>
     <a href="#deadlines">5 · Deadlines</a>
     <a href="#mock">6 · Mock app</a>
@@ -287,7 +297,7 @@ textarea{resize:vertical;min-height:54px}
   <!-- ================= FINDINGS ================= -->
   <section id="v-findings" class="stack" hidden>
     <div class="card">
-      <div class="card-h"><h2>What the journeys show</h2><span class="muted">F1–F10 by impact; F11–F13 added after your follow-ups</span></div>
+      <div class="card-h"><h2>What the journeys show</h2><span class="muted">F1–F10 by impact; F11–F15 added after your follow-ups</span></div>
       <div id="findings-list"></div>
     </div>
   </section>
@@ -351,6 +361,7 @@ textarea{resize:vertical;min-height:54px}
             <tr><td><b>D1</b></td><td>Deadline safeguards: nightly coverage check, milestones per form, risk status, the Deadlines tracker, staff reminders and your Critical alerts.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>W1</b></td><td>Period file with registers B–F in your worksheet columns (adds the SC/PWD discount OCR field and each supplier's ATC), read from approved documents and the ledger, plus the T tie-outs.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>A1</b></td><td>Fixed asset register and depreciation schedule from purchases lines with asset account titles; monthly depreciation entry; opening assets from the opening balances.</td><td><span class="chip info">Before the first 1701Q, May 2027</span></td></tr>
+            <tr><td><b>P1</b></td><td>Portal: “I've sent everything”, missing-invoice and 2307 checks, what happens next. Documents per client with inline titles and approve-selected; firm suggestions must be confirmed.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>E1</b></td><td>Email intake at invoices@tallocpa.com: sender matching, Unmatched list, receipt reply, n8n mailbox watch.</td><td><span class="chip info">During the first live cycle</span></td></tr>
             <tr><td><b>W2</b></td><td>Adjustments with reason and support replace “figures typed in”; per-schedule preparer and reviewer sign-off; “Mark prepared” gated.</td><td><span class="chip info">During the first live cycle</span></td></tr>
             <tr><td><b>W3</b></td><td>Review notes anchored to a schedule or row; open or cleared; replace the kick-back note. <b>My work</b> home for staff and reviewers.</td><td><span class="chip info">After cycle 1</span></td></tr>
@@ -524,6 +535,7 @@ textarea{resize:vertical;min-height:54px}
           <button data-role="preparer" aria-pressed="true">Preparer</button>
           <button data-role="reviewer" aria-pressed="false">Reviewer</button>
           <button data-role="owner" aria-pressed="false">Owner</button>
+          <button data-role="client" aria-pressed="false">Client</button>
         </div>
       </div>
       <span class="sample">Sample client and figures · not real data</span>
@@ -536,7 +548,7 @@ textarea{resize:vertical;min-height:54px}
       </aside>
       <main class="main" id="mmain"></main>
     </div>
-    <p class="muted" style="margin-top:10px;font-size:13px">Try it: open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers B, C and F use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
+    <p class="muted" style="margin-top:10px;font-size:13px">Try it: switch to <b>Client</b> and confirm March is complete, then back to <b>Preparer</b> › <b>Documents</b> to see it and review per client. Open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers B, C and F use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -596,6 +608,8 @@ const F = [
  ["High","bad","Nothing warns anyone before a filing is late","Filings are created 120 days ahead and listed by due date, but no staff member is named on a filing, there is no internal target before the BIR date, and the nightly job reminds clients only. A 1601-C still “Not started” on the 7th looks the same as one a month away. See the Deadlines tab.","api/cron/generate-filings, deadlines/filing-table.tsx"],
  ["Medium","warn","Documents don't carry your worksheet columns","OCR reads VATable, exempt, zero-rated, VAT and total, and the 2307 separately. There is no SC/PWD discount, no CWT per invoice and no EWT per supplier, so no net receipt or net paid. Your sales and purchases worksheets are built around those columns.","lib/ocr/fields.ts"],
  ["High","bad","Cash is posted at the invoice total, not the net receipt","An approved cash sale debits Cash on hand for the invoice total. The CWT is taken out of cash only when the 2307 arrives, often months later and in a lump, credited to Cash. Purchases do the same with EWT: Cash is credited at the gross, and EWT payable appears only when the 2307 is issued. Until then cash in the trial balance doesn't match the bank, EWT payable doesn't match the 0619-E, the SC/PWD discount is never recorded, and cash sales always go to Cash on hand, never to the bank. Payroll doesn't post to the books at all.","migrations/20261124000005_ledger_documents.sql (book_document)"],
+ ["Medium","warn","A supplier's firm-wide account title is applied silently to a new client","The account title is prefilled from this client's own history with the supplier first, which is right. But for a supplier the client hasn't used before, the supplier's single firm-wide preset is used with only a hint below the field. SM Supermarket preset as Representation lands on a bakeshop where it is Purchases, and if the preset account isn't in that client's chart, nothing says so. Titles are also chosen one document at a time.","ledger_documents.sql (document_account), documents/[id]/page.tsx"],
+ ["Medium","warn","Clients can't say they've sent everything, or see what happens next","The portal shows how many documents were sent and offers “No transactions this month”. There is no “I've sent everything for March”, no check for missing invoice numbers before the cutoff, and no view of what the firm does next and when. Staff can't start early with confidence, and clients call to ask.","portal/page.tsx, document_cycles"],
 ];
 document.getElementById("findings-list").innerHTML = F.map((f,i)=>`<div class="finding"><span class="fid">F${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${f[2]}</h3><span class="chip ${f[1]}">${f[0]}</span></div><p class="why">${f[3]}</p><p class="ev">Where: <code>${f[4]}</code></p></div></div>`).join("");
 
@@ -636,6 +650,12 @@ const R = [
  ["Capital expenditure goes to a fixed asset register with straight-line depreciation","New",
   ["The account title on a purchases line routes it: an expense or purchases account stays in operating expenses; an asset account (furniture and fixtures, equipment, vehicles, building) also creates an asset in register H.","Its input VAT stays on the 2550Q in full in the quarter of purchase, and the SLP lists it as capital goods.","Register H holds cost, residual value, useful life and start month for each asset; the depreciation schedule generates the monthly entry (Dr Depreciation Expense / Cr Accumulated Depreciation) and feeds the 1701Q Depreciation line.","A capitalization threshold sends small items to expense; opening assets come in with the opening balances."],
   "The capex never touches operating expenses or the 1701Q directly, only through depreciation, while VAT still sees the whole purchase. One register line does both, so the books and the returns stay consistent."],
+ ["Documents reviewed per client, with each client's own supplier titles","Fixes F14",
+  ["Documents opens on the client list (as now) and works inside one client: a table of that client's pending documents with the account title chosen inline from that client's chart, and approve-selected for lines that are ready.","Where the suggestion came from is shown on every line: this client's history (green), a firm suggestion to confirm (amber), or a new supplier or a preset not in this chart (choose).","A title chosen or confirmed is saved for that client and supplier only. The client page lists its suppliers and their titles."],
+  "One supplier can be Purchases for one client and Representation for another. Reviewing per client, from that client's chart, keeps each register right from the first document."],
+ ["“I've sent everything” for the client, and what happens next","Fixes F15",
+  ["The portal shows what was sent for the month by kind and how far each is checked, then a button: “I've sent everything for March”, with a confirm step.","Before confirming, the portal asks about gaps it can see: missing sales invoice numbers in the series (uploaded or cancelled?) and 2307s still outstanding.","After confirming: March shows as complete, staff are told, the filing's first step is done so work can start early, and anything sent later is marked late.","A plain-language timeline shows what happens next with dates from the deadline steps: checking, each return ready for approval, filing, proof."],
+  "The client gets a clear finish line and knows what comes next, the firm gets a confirmed start instead of waiting for the cutoff, and a missing invoice is caught while the client still has it in hand."],
 ];
 document.getElementById("recs-list").innerHTML = R.map((r,i)=>`<div class="rec"><span class="fid">R${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${r[0]}</h3><span class="chip info">${r[1]}</span></div><ul>${r[2].map(x=>`<li>${x}</li>`).join("")}</ul><p class="why-b"><b>Why:</b> ${r[3]}</p></div></div>`).join("");
 
@@ -660,10 +680,10 @@ const SG = [
 document.getElementById("safeguards").innerHTML = SG.map((s,i)=>`<div class="rec"><span class="fid">${i+1}</span><div><h3>${s[0]}</h3><p class="muted" style="margin-top:6px;max-width:78ch">${s[1]}</p><p class="why-b"><b>Why:</b> ${s[2]}</p></div></div>`).join("");
 
 /* ---------------- mock state ---------------- */
-const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"}};
+const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"},client:{i:"AR",n:"Ana R.",r:"Client · Jaro Agri Supply"}};
 const S = {
   role:"preparer", view:"file", sched:"B", approved:false, showAdj:false, showNote:null,
-  ticks:{}, requested:false, onlyMine:true, dsel:"1|c", bsel:0, csel:0,
+  ticks:{}, requested:false, onlyMine:true, dsel:"1|c", bsel:0, csel:0, dcl:"jaro", dchk:{}, portalDone:false, portalAsk:false, gap:null,
   sign:{A:{},B:{p:"RS · 2 Apr"},C:{p:"RS · 2 Apr",r:"MR · 3 Apr"},D:{p:"RS · 2 Apr"},E:{p:"RS · 1 Apr",r:"MR · 3 Apr"},F:{p:"RS · 6 Apr"},H:{p:"RS · 2 Apr"},G:{},T:{}},
   adj:[{id:1,kind:"Disallowed input VAT",amt:-2184,reason:"OR 22817 (Mar 14, hardware) is issued to “Cash”, not to the client's name and TIN.",support:"Doc C-14 · image",by:"RS",ok:true}],
   tie:[
@@ -815,11 +835,17 @@ function nextTxt(cell,k){
 /* ---------------- views ---------------- */
 function nav(){
   const r=S.role, cur=k=>S.view===k?"page":"false";
+  if (r==="client"){
+    $("#mnav").innerHTML = `<button data-go="portal" aria-current="page">Home</button>` + ["Documents","Returns","Requests","Statement"].map(x=>`<span>${x}</span>`).join("");
+    const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
+    return;
+  }
   let h = `<button data-go="mywork" aria-current="${cur("mywork")}">My work${r==="owner"?"":'<span class="new">NEW</span>'}</button>`
     + `<span>Dashboard</span>`
     + `<button data-go="file" aria-current="${cur("file")}">Clients</button>`
     + `<button data-go="deadlines" aria-current="${cur("deadlines")}">Deadlines<span class="new">NEW</span></button>`
-    + ["Documents","Monthly cycle","Requests"].map(x=>`<span>${x}</span>`).join("");
+    + `<button data-go="docs" aria-current="${cur("docs")}">Documents</button>`
+    + ["Monthly cycle","Requests"].map(x=>`<span>${x}</span>`).join("");
   if (r!=="preparer") h += `<div class="grp">Firm</div><button data-go="approval" aria-current="${cur("approval")}">Review${r==="owner"?'<span class="cnt">1</span>':""}</button>`;
   if (r==="owner") h += ["Collections","Scores","Staff","Settings"].map(x=>`<span>${x}</span>`).join("");
   $("#mnav").innerHTML=h;
@@ -881,6 +907,79 @@ function viewDeadlines(){
       ${(st==="risk"||st==="crit")&&firstLate>=0?`<p><b style="font-weight:500">If it is filed late:</b> <span class="muted">counts as ${f.steps[firstLate][1]==="Client"?"client-caused (the client's step slipped first)":"staff-caused"}.</span></p>`:""}
       ${actions?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${actions}</div>`:""}
     </div>
+  </div>`;
+}
+
+/* ---------------- documents per client (staff) ---------------- */
+const CHART = {jaro:["Purchases","Office Supplies","Representation","Fuel and Oil","Repairs and Maintenance","Rent","Furniture and Fixtures"],molo:["Purchases – Raw Materials","Packaging Supplies","Utilities","Representation","Repairs and Maintenance","Rent"]};
+const DCL = [["jaro","Jaro Agri Supply"],["molo","Molo Bakeshop"]];
+const PEND = {
+  jaro:[
+    {rec:"Apr 2",no:"OR 4471",dt:"Mar 29",sup:"SM Supermarket Iloilo",tot:5600,acct:"Representation",src:"history"},
+    {rec:"Apr 2",no:"SI 88190",dt:"Mar 30",sup:"Panay Feedmill Supply",tot:351400,acct:"Purchases",src:"history"},
+    {rec:"Apr 3",no:"OR 7781",dt:"Mar 30",sup:"Shell Jaro",tot:2850,acct:"Fuel and Oil",src:"preset"},
+    {rec:"Apr 3",no:"SI 1203",dt:"Mar 31",sup:"Wilcon Depot Iloilo",tot:18900,acct:"",src:"none"},
+    {rec:"Apr 4",no:"OR 2240",dt:"Mar 31",sup:"Sta. Barbara Realty Corp.",tot:50400,acct:"Rent",src:"history"},
+  ],
+  molo:[
+    {rec:"Apr 2",no:"OR 5530",dt:"Mar 28",sup:"SM Supermarket Iloilo",tot:12450,acct:"Purchases – Raw Materials",src:"history"},
+    {rec:"Apr 2",no:"SI 2231",dt:"Mar 29",sup:"Iloilo Flour Mills",tot:86000,acct:"Purchases – Raw Materials",src:"history"},
+    {rec:"Apr 3",no:"OR 7790",dt:"Mar 30",sup:"Shell Jaro",tot:1900,acct:"",src:"notinchart"},
+    {rec:"Apr 4",no:"OR 1102",dt:"Mar 31",sup:"MORE Power Iloilo",tot:15800,acct:"Utilities",src:"history"},
+  ],
+};
+const SUPMAP = {jaro:[["SM Supermarket Iloilo","Representation"],["Panay Feedmill Supply","Purchases"],["Sta. Barbara Realty Corp.","Rent"],["Petron Jaro","Fuel and Oil"]],molo:[["SM Supermarket Iloilo","Purchases – Raw Materials"],["Iloilo Flour Mills","Purchases – Raw Materials"],["MORE Power Iloilo","Utilities"]]};
+const SRC = {history:["ok","This client's history"],preset:["warn","Firm suggestion · confirm"],notinchart:["bad","Firm preset “Fuel and Oil” isn't in this chart · choose"],none:["bad","New supplier · choose"],chosen:["info","Chosen · saved for this client"]};
+const dReady = r => r.acct && (r.src==="history"||r.src==="chosen");
+
+function viewDocs(){
+  const k=S.dcl, rows=PEND[k], chart=CHART[k], name=DCL.find(x=>x[0]===k)[1];
+  const open=rows.map((r,i)=>[r,i]).filter(([r])=>!r.done);
+  const sel=open.filter(([r,i])=>S.dchk[k+"|"+i]&&dReady(r));
+  const other=k==="jaro"?"molo":"jaro", otherName=DCL.find(x=>x[0]===other)[1];
+  const smOther=SUPMAP[other].find(x=>x[0]==="SM Supermarket Iloilo");
+  return `<div class="ph"><div><p class="crumb">Documents</p><h2>${name} · documents to review</h2><p class="muted">Each client has its own chart of accounts, so each client's documents are reviewed in their own list. An account title chosen here is saved for this client and this supplier only.</p></div></div>
+  <div class="pills" role="group" aria-label="Client">${DCL.map(([c,n])=>`<button data-dclient="${c}" aria-pressed="${k===c}">${n} (${PEND[c].filter(r=>!r.done).length})</button>`).join("")}<button disabled title="Outside this mock">Lapaz Hardware (9)</button><button disabled title="Outside this mock">Arevalo Dental Clinic (3)</button></div>
+  ${S.portalDone&&k==="jaro"?`<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">The client confirmed March is complete on Apr 3</b><p class="muted">380 documents. Anything sent after this is marked late. The 1601-C's first step is done, so preparing can start now.</p></div>`:""}
+  <div class="card" style="padding:12px"><div class="tscroll"><table>${hdr(["","Received","Document","Supplier",">Total","Account title (this client's chart)","Suggested from"])}<tbody>
+    ${open.length?open.map(([r,i])=>`<tr><td><input type="checkbox" data-dchk="${k}|${i}" ${S.dchk[k+"|"+i]&&dReady(r)?"checked":""} ${dReady(r)?"":"disabled"} aria-label="Select ${r.no}" style="width:auto"></td><td style="white-space:nowrap">${r.rec}</td><td style="white-space:nowrap">${r.no}<br><span class="faint" style="font-size:12px">dated ${r.dt}</span></td><td>${r.sup}</td><td class="r">${amt(r.tot)}</td><td><select data-acct="${k}|${i}" aria-label="Account title for ${r.no}" style="min-width:190px">${["",...chart].map(a=>`<option ${a===r.acct?"selected":""} value="${a}">${a||"Choose…"}</option>`).join("")}</select></td><td><span class="chip ${SRC[r.src][0]}">${SRC[r.src][1]}</span>${r.src==="preset"?` <button class="btn sm" data-dconfirm="${k}|${i}">Confirm</button>`:""}</td></tr>`).join(""):`<tr><td colspan="7" class="muted">Nothing left to review for ${name}.</td></tr>`}
+  </tbody></table></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px"><button class="btn pri" data-dapprove ${sel.length?"":"disabled"}>Approve ${sel.length} selected</button><button class="btn sm" data-dall>Select all ready</button><span class="muted" style="font-size:12.5px">A firm suggestion must be confirmed, and a new supplier needs a title, before the line can be approved.</span></div></div>
+  <div class="grid2">
+    <div class="card"><h3>${name}'s suppliers</h3><div class="tscroll" style="margin-top:8px"><table>${hdr(["Supplier","Account title for this client"])}<tbody>${SUPMAP[k].map(([s1,a])=>`<tr><td>${s1}</td><td>${a}${s1==="SM Supermarket Iloilo"&&smOther?` <span class="chip neutral">${otherName}: ${smOther[1]}</span>`:""}</td></tr>`).join("")}</tbody></table></div>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">Same supplier, different client, different account. The firm-wide preset is only a starting suggestion for a supplier this client hasn't used before.</p></div>
+    <div class="card"><h3>What staff check here</h3><ul class="checks ok" style="margin-top:8px"><li>Figures read by OCR, low-confidence ones highlighted (as built).</li><li>The account title, from this client's chart only.</li><li>The cash account each line was paid from or deposited to.</li><li>An asset title also sends the line to the fixed asset register.</li></ul></div>
+  </div>`;
+}
+
+/* ---------------- client portal ---------------- */
+function viewPortal(){
+  const gapOpen = S.gap===null;
+  return `<div class="phone">
+    <div><p class="crumb">Jaro Agri Supply · Saturday, Apr 3</p><h2>March 2027 documents</h2><p class="muted">Due Monday, Apr 5 · 2 days left</p></div>
+    ${S.portalDone?`<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">March is complete. Thank you.</b><p class="muted">You confirmed 380 documents on Apr 3. Found something else? You can still upload it; it will be marked late.</p></div>`:""}
+    <div class="card"><h3>What you've sent for March</h3><div class="tscroll" style="margin-top:6px"><table><tbody>
+      <tr><td>Sales invoices</td><td class="r">231</td><td><span class="chip ok">220 checked</span></td></tr>
+      <tr><td>Receipts for purchases and expenses</td><td class="r">145</td><td><span class="chip info">11 being checked</span></td></tr>
+      <tr><td>2307s from customers</td><td class="r">3</td><td><span class="chip ok">Checked</span></td></tr>
+      <tr><td>Payroll register</td><td class="r">1</td><td><span class="chip ok">Checked</span></td></tr>
+      <tr><td><b>Total</b></td><td class="r"><b>380</b></td><td></td></tr>
+    </tbody></table></div></div>
+    ${!S.portalDone?`<div class="card"><h3>Before you confirm</h3><div class="stack" style="gap:10px;margin-top:8px">
+      ${gapOpen?`<div class="note open"><p><b style="font-weight:500">Sales invoices SI 0450 to SI 0452 aren't here.</b> Were they cancelled?</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-gapupload>Upload them</button><button class="btn sm" data-gapcancel>They were cancelled</button></div></div>`:`<div class="note"><p class="muted">SI 0450 to SI 0452: you said they were cancelled. Please keep all copies of the cancelled invoices.</p></div>`}
+      <div class="note"><p class="muted">Iloilo Grains Inc. hasn't sent you its 2307 for ₱2,100.00. We've asked; you can still confirm March.</p></div>
+    </div></div>`:""}
+    ${!S.portalDone&&!S.portalAsk?`<button class="btn pri" data-pdone ${gapOpen?"disabled":""} style="justify-content:center;padding:10px">I've sent everything for March</button>${gapOpen?`<p class="muted" style="font-size:12.5px;text-align:center">Answer the missing invoices first.</p>`:""}<button class="btn ghost" disabled title="Outside this mock" style="justify-content:center">Upload more</button>`:""}
+    ${S.portalAsk&&!S.portalDone?`<div class="gate" style="border-color:var(--accent);background:var(--accent-soft)"><b>Confirm March is complete?</b><p class="muted">You're confirming 380 documents for March 2027. If you find something later you can still send it; it will be marked late.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" data-pyes>Yes, March is complete</button><button class="btn" data-pno>Not yet</button></div></div>`:""}
+    <div class="card"><h3>What happens next</h3><ol class="tl">
+      <li class="${S.portalDone?"done":""}"><span class="d">Apr 3</span><span><b>${S.portalDone?"You sent everything ✓":"You confirm March is complete"}</b><br><span class="muted" style="font-size:13px">${S.portalDone?"":"Or by Apr 5 at the latest."}</span></span></li>
+      <li><span class="d">Apr 6</span><span><b>We finish checking your documents</b><br><span class="muted" style="font-size:13px">If something needs fixing we'll ask you under Requests.</span></span></li>
+      <li><span class="d">Apr 8</span><span><b>Your March withholding on wages (1601-C) is ready for your approval</b><br><span class="muted" style="font-size:13px">Tax due ₱411.30. You approve it here in the portal.</span></span></li>
+      <li><span class="d">Apr 9</span><span><b>We file and pay it</b></span></li>
+      <li><span class="d">Apr 12</span><span><b>The filed return and proof of payment are in Returns</b></span></li>
+      <li><span class="d">Apr 21</span><span><b>Your Q1 VAT return (2550Q) is ready for your approval</b><br><span class="muted" style="font-size:13px">Then the Q1 income tax return (1701Q) in May.</span></span></li>
+    </ol></div>
+    <p class="muted" style="font-size:12.5px;text-align:center">No transactions in a month? Use “No transactions this month” instead (as built today).</p>
   </div>`;
 }
 
@@ -1105,7 +1204,7 @@ function viewApproval(){
 
 function render(){
   nav();
-  $("#mmain").innerHTML = S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():S.view==="deadlines"?viewDeadlines():viewFile();
+  $("#mmain").innerHTML = S.role==="client"?viewPortal():S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():S.view==="deadlines"?viewDeadlines():S.view==="docs"?viewDocs():viewFile();
 }
 
 /* ---------------- events ---------------- */
@@ -1116,7 +1215,7 @@ function setRole(role){
 $("#roleSeg").addEventListener("click",e=>{
   const b=e.target.closest("button[data-role]"); if(!b) return;
   setRole(b.dataset.role);
-  if (S.role==="owner") S.view="deadlines"; else if (S.view==="approval") S.view="file";
+  if (S.role==="client") S.view="portal"; else if (S.role==="owner") S.view="deadlines"; else if (S.view==="approval"||S.view==="portal") S.view="file";
   render();
 });
 document.addEventListener("click",e=>{
@@ -1125,6 +1224,10 @@ document.addEventListener("click",e=>{
 });
 document.getElementById("v-mock").addEventListener("change",e=>{
   if (e.target.id==="onlyMine"){ S.onlyMine=e.target.checked; render(); }
+  const t=e.target;
+  if (t.dataset.acct){ const [k,i]=t.dataset.acct.split("|"); const r=PEND[k][+i]; r.acct=t.value; r.src=t.value?"chosen":(r.src==="chosen"?"none":r.src);
+    if (t.value){ const m=SUPMAP[k].find(x=>x[0]===r.sup); if(m) m[1]=t.value; else SUPMAP[k].push([r.sup,t.value]); toast(`Saved for ${DCL.find(x=>x[0]===k)[1]}: ${r.sup} → ${t.value}`);} render(); }
+  if (t.dataset.dchk){ S.dchk[t.dataset.dchk]=t.checked; render(); }
 });
 document.getElementById("v-mock").addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
@@ -1133,6 +1236,15 @@ document.getElementById("v-mock").addEventListener("click",e=>{
   if (d.go){ S.view=d.go; if(d.dsel) S.dsel=d.dsel; }
   else if (d.open){ S.view="file"; S.sched=d.open; }
   else if (d.cell){ S.dsel=d.cell; }
+  else if (d.dclient){ S.dcl=d.dclient; }
+  else if (d.dconfirm){ const [k,i]=d.dconfirm.split("|"); const r=PEND[k][+i]; r.src="chosen"; SUPMAP[k].push([r.sup,r.acct]); toast(`Saved for ${DCL.find(x=>x[0]===k)[1]}: ${r.sup} → ${r.acct}`); }
+  else if ("dall" in d){ PEND[S.dcl].forEach((r,i)=>{ if(!r.done&&dReady(r)) S.dchk[S.dcl+"|"+i]=true; }); }
+  else if ("dapprove" in d){ let n=0; PEND[S.dcl].forEach((r,i)=>{ if(!r.done&&dReady(r)&&S.dchk[S.dcl+"|"+i]){ r.done=true; n++; } }); toast(`${n} approved · added to the register`); }
+  else if ("gapcancel" in d){ S.gap="cancelled"; toast("Noted: SI 0450–0452 cancelled"); }
+  else if ("gapupload" in d){ toast("Opens the camera or file picker (outside this mock)"); return; }
+  else if ("pdone" in d){ S.portalAsk=true; }
+  else if ("pyes" in d){ S.portalDone=true; S.portalAsk=false; toast("March confirmed complete · your accountant has been told"); }
+  else if ("pno" in d){ S.portalAsk=false; }
   else if (d.bsel){ S.bsel=+d.bsel; }
   else if (d.csel){ S.csel=+d.csel; }
   else if ("remind" in d){ dcell.reminded=true; toast(`Reminder sent to ${DL.rows[+ri].c} (portal and email)`); }
