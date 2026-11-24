@@ -33,6 +33,7 @@ Phase 1A in progress. Built so far:
 - Bookkeeping slice 4: period lock — a month locks once a return covering it is filed; late documents book to the next open month; amendments (reviewer asks, Owner approves) reopen and relock a filed return's months
 - Bookkeeping slice 5: 1701Q and 1702Q computed from the ledger by BIR line (sales, cost of sales, other income, itemized deductions) for clients whose books cover the taxable year
 - Bookkeeping slice 6: financial statements from the ledger (financial position, comprehensive income, changes in equity, notes) for a month, quarter or year; the Owner releases them to the client portal's Reports tab
+- Business Registration (Phase 1C, slice 1): registration cases for new businesses — DTI or SEC, barangay, City Hall, BIR (ORUS, COR, books, invoices, eFiling) and SSS / PhilHealth / Pag-IBIG steps, shown as a routing slip with days held at each office; the COR feeds client onboarding
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

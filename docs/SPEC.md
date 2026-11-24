@@ -39,7 +39,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 - Website, lead capture, proposals, e-sign (Phase 2, Q17, Q43)
 - Full billing, issuing BIR invoices, automatic bank matching (Phase 3; BIR invoices stay manual, Q27)
 - Time tracking: **not planned at all**, the firm charges fixed retainers (Q37)
-- Business Registration (Phase 1C) and BIR LOA Services with LOA risk analytics (Phase 4), see §2
+- BIR LOA Services with LOA risk analytics (Phase 4), see §2
 - **Not in the OS at all (Q66):** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation, Business Processing, Systems Implementation, AI & Business Automation. These run on another platform.
 - Viber, SMS, Messenger channels (later, through n8n, Q10, Q38)
 - Registering clients' books as a computerized accounting system (CAS) with BIR (Q18)
@@ -162,6 +162,15 @@ Intake channel in v1: **portal upload only** (Q10). **Staff can also upload docu
 
 - One firm-wide directory of customers and suppliers by **TIN + branch code**: registered name (or last / first / middle for individuals), address, ZIP, VAT status. Filled automatically when a document with a TIN is approved; verified entries (Owner or reviewer) are never overwritten by OCR.
 - It is a helper, not a menu item: **when OCR reads a document**, a TIN on file fills in the registered name, address and branch code automatically. If OCR read a clearly different name, nothing is replaced (the TIN may be misread) and the reviewer sees a warning with "Use directory details". Worksheets and their attachments use the directory's details. The list is reached from each client's page and from document review, for corrections and verifying.
+
+### 3.7c Business Registration (Phase 1C; Q66)
+
+- **A registration case** for a business that does not exist yet. The Owner opens it with the proposed name, kind of business, city or municipality, branch, target date and preparer; this adds the business as a client (Onboarding, no TIN) with a Business Registration engagement.
+- **Checklist of agency steps**, worked out from the kind of business and saved with the case: DTI business name (sole proprietor) or SEC name reservation and registration (partnership, corporation, OPC, non-stock); barangay clearance and mayor's permit at City Hall (marked not needed when the client handles them); BIR registration through ORUS (Form 1901 or 1903), COR (Form 2303), books, Authority to Print and invoices, eBIRForms / eFPS enrollment, COR and "Ask for invoice" notice displayed; SSS, PhilHealth (PHIC) and Pag-IBIG (HDMF) employer registration when the business will have employees.
+- **Each step:** status (not started, in progress, waiting on client, waiting on agency, done, not needed), the reference number on its certificate or permit, the date done, the government fee paid and notes. The COR step needs the TIN.
+- **Routing slip:** the case page reads like a routing slip — each office is a station with the date the file was received and released and the days it was held there; the current station is highlighted with the days it has sat there and how long in its current status (over 7 days amber, over 14 red). The Registrations list puts the longest-held files first.
+- **Finishing:** when the COR is issued the Owner enters it on the client (Edit: TIN, RDO, tax types, effective date), which starts the filing obligations (§4.1). The Owner then completes the case once every step is done or not needed and the client's TIN matches the COR; the client becomes active and the engagement ends. The Owner can cancel an open case with a reason.
+- **Not yet:** requirements checklist and uploads from the client, proof files on each step, the portal view, and other registration services (updates, renewals, closures).
 
 ### 3.8 Sign-off chain (Q21, Q25, Q32, Q57, Q58)
 

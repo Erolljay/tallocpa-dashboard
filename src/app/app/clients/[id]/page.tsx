@@ -32,7 +32,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const { data: client } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (!client) notFound();
 
-  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties, branchRows] = await Promise.all([
+  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties, branchRows, registrationCase] = await Promise.all([
     supabase.from("client_registrations").select("registration_date, tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("id, form, frequency, start_date, end_date").eq("client_id", id).order("form"),
     supabase.from("engagements").select("id, service_line, monthly_retainer, start_date, status, service_lines(name)").eq("client_id", id).order("start_date"),
@@ -42,6 +42,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
+    supabase.from("registration_cases").select("id, status").eq("client_id", id).order("opened_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
@@ -65,8 +66,9 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
                 <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>
               </>
             )}
+            {registrationCase.data && <LinkButton href={`/app/registrations/${registrationCase.data.id}`} variant="secondary">Registration</LinkButton>}
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
-            {isOwner && client.status === "onboarding" && <StatusButton clientId={id} to="active" label="Mark active" />}
+            {isOwner && client.status === "onboarding" && registrationCase.data?.status !== "open" && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
         }
       />
