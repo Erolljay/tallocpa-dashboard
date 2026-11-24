@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { toCentavos } from "@/lib/returns/money";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { OpenItem } from "./arap";
+import type { BookEntry } from "./books";
 import type { OpeningItem } from "./opening";
 import type { AccountType, Book, Centavos, Control, EntrySource, LedgerAccount, NormalSide, TemplateCode } from "./types";
 
@@ -13,11 +14,15 @@ export interface BooksClient {
   name: string;
   tin: string | null;
   taxpayer_type: string;
+  registered_address: string | null;
+  book_type: "manual" | "loose_leaf";
+  fiscal_year_end_month: number;
 }
 
 export interface ClientBooks {
   template: TemplateCode;
   booksStart: string;
+  permit: string | null;
 }
 
 /**
@@ -28,14 +33,14 @@ export interface ClientBooks {
 export async function booksAccess(clientId: string) {
   const me = await requireStaff();
   const supabase = await supabaseServer();
-  const { data: client } = await supabase.from("clients").select("id, name, tin, taxpayer_type").eq("id", clientId).maybeSingle();
+  const { data: client } = await supabase.from("clients").select("id, name, tin, taxpayer_type, registered_address, book_type, fiscal_year_end_month").eq("id", clientId).maybeSingle();
   if (!client) notFound();
   if (me.staff.role !== "owner") {
     const { data: a } = await supabase.from("staff_assignments").select("user_id").eq("client_id", clientId).eq("user_id", me.userId).limit(1);
     if (!a?.length) notFound();
   }
-  const { data: b } = await supabase.from("client_books").select("template, books_start").eq("client_id", clientId).maybeSingle();
-  const books: ClientBooks | null = b ? { template: b.template as TemplateCode, booksStart: b.books_start as string } : null;
+  const { data: b } = await supabase.from("client_books").select("template, books_start, books_permit").eq("client_id", clientId).maybeSingle();
+  const books: ClientBooks | null = b ? { template: b.template as TemplateCode, booksStart: b.books_start as string, permit: (b.books_permit as string | null) ?? null } : null;
   return { me, supabase, client: client as BooksClient, books };
 }
 
@@ -170,5 +175,39 @@ export async function loadOpenItems(supabase: SupabaseClient, clientId: string):
   return (data ?? []).map((i) => ({
     id: i.id, kind: i.kind, partyName: i.party_name, partyTin: i.party_tin, docNumber: i.doc_number,
     docDate: i.doc_date, dueDate: i.due_date, amount: cents(i.amount), balance: cents(i.balance),
+  }));
+}
+
+/** Posted (and later reversed) entries dated `from`…`to`, oldest first, for the books of account. */
+export async function loadBookEntries(supabase: SupabaseClient, clientId: string, from: string, to: string): Promise<BookEntry[]> {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("id, entry_date, book, reference, memo, created_at, journal_lines(line_no, account_id, description, debit, credit, party_name, parties(display_name, tin))")
+    .eq("client_id", clientId)
+    .in("status", ["posted", "reversed"])
+    .gte("entry_date", from)
+    .lte("entry_date", to)
+    .order("entry_date")
+    .order("created_at");
+  if (error) throw new Error(`Could not load the books: ${error.message}`);
+  return (data ?? []).map((e) => ({
+    id: e.id,
+    date: e.entry_date,
+    book: e.book as Book,
+    reference: e.reference,
+    memo: e.memo,
+    lines: ((e.journal_lines ?? []) as Record<string, unknown>[])
+      .sort((a, b) => (a.line_no as number) - (b.line_no as number))
+      .map((l) => {
+        const p = (Array.isArray(l.parties) ? l.parties[0] : l.parties) as { display_name: string | null; tin: string } | null;
+        return {
+          accountId: l.account_id as string,
+          partyName: (l.party_name as string | null) ?? p?.display_name ?? null,
+          partyTin: p?.tin ?? null,
+          description: (l.description as string | null) ?? null,
+          debit: cents(l.debit),
+          credit: cents(l.credit),
+        };
+      }),
   }));
 }

@@ -1,24 +1,24 @@
 # Graph Report - tallocpa-dashboard  (2026-11-24)
 
 ## Corpus Check
-- 391 files · ~278,289 words
+- 398 files · ~283,574 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 13 file(s) not represented in the graph (top: .css 5, (none) 4, .mdc 1)
+- Unclassified: 14 file(s) not represented in the graph (top: .css 6, (none) 4, .mdc 1)
 
 ## Summary
-- 2679 nodes · 8403 edges · 124 communities (107 shown, 17 thin omitted)
+- 2733 nodes · 8579 edges · 120 communities (103 shown, 17 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.85)
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a54241b4`
+- Built from commit: `c477d928`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - sign-off.ts
 - engine.ts
-- payroll/payroll.test.ts
+- money.ts
 - manilaToday
 - vat.ts
 - package.json
@@ -27,16 +27,16 @@
 - CI Workflow
 - Free components
 - Deadline Engine Docs
-- cycle/page.tsx
+- cycle-forms.tsx
 - Sign-in & Setup Docs
 - profile.ts
 - Sign-off, Ledger & Payments
 - dependencies
 - Brand, Fees & Service Lines
 - Portal, OCR & Scores
-- buildSawt
+- payroll/data.ts
 - Data Model & Security Docs
-- fees/[id]/page.tsx
+- quote.test.ts
 - Moxie Migration & Phasing
 - Capacity & Open Items
 - Product Spec Root
@@ -45,9 +45,9 @@
 - pnpm Workspace
 - Decisions Log
 - Develop Commands
-- register-xlsx.ts
+- payroll/payroll.test.ts
 - scores/page.tsx
-- Button
+- Notice
 - payroll/forms.tsx
 - rows.ts
 - ref_node_fs
@@ -61,14 +61,14 @@
 - parties/[id]/page.tsx
 - payroll/payroll.test.ts
 - supabaseServer
-- payroll/data.ts
+- [month]/page.tsx
 - src/app/layout.tsx
 - rates.ts
 - books/page.tsx
 - toCentavos
 - form-1601eq.ts
 - server-only
-- Notice
+- sign-off-actions.tsx
 - cx
 - dropdown.tsx
 - Apple Design
@@ -92,7 +92,7 @@
 - Pro components
 - notification.tsx
 - cx.ts
-- FormModule
+- returns/types.ts
 - generate-qap-fixture.mjs
 - input.tsx
 - document-scanner.tsx
@@ -105,39 +105,35 @@
 - BoardUI theming reference
 - Pro templates
 - db.test.ts
-- books/forms.tsx
+- print/page.tsx
 - breadcrumb.tsx
 - BoardUI page patterns
 - proxy.ts
 - boardui
 - Centavos
-- settings/page.tsx
+- Card
 - parties/parties.test.ts
 - template.ts
-- coa.test.ts
+- gap.ts
 - proof-upload.tsx
-- index.ts
-- books/export/route.ts
-- requireOwner
+- boardui/SKILL.md
+- documents/actions.ts
 - acting-approver.test.ts
-- brand/actions.ts
+- brand/forms.tsx
 - filters.tsx
 - copy-opencv.mjs
 - checkbox.tsx
 - receipts.ts
 - ledger.test.ts
-- brand/forms.tsx
-- acting-approver/actions.ts
-- Building UIs with BoardUI
 
 ## God Nodes (most connected - your core abstractions)
 1. `supabaseServer()` - 169 edges
-2. `cx` - 118 edges
-3. `Notice()` - 117 edges
-4. `react` - 117 edges
-5. `Button()` - 100 edges
-6. `Skeleton()` - 95 edges
-7. `next` - 95 edges
+2. `cx` - 121 edges
+3. `Notice()` - 119 edges
+4. `react` - 118 edges
+5. `Button()` - 103 edges
+6. `Skeleton()` - 97 edges
+7. `next` - 96 edges
 8. `requireOwner()` - 88 edges
 9. `Card()` - 87 edges
 10. `Badge()` - 83 edges
@@ -162,27 +158,27 @@
 - **Return lifecycle: intake to filed return** — docs_spec_ocr_intake_review_queue, docs_spec_bookkeeping, docs_spec_tax_computation_returns, docs_spec_sign_off_chain, docs_spec_period_lock [EXTRACTED 1.00]
 - **Deadline generation flow** — docs_spec_deadline_rules_as_data, docs_spec_holiday_rollforward, docs_spec_calendar_year_withholding, docs_spec_filing_instance_generation, readme_bir_deadline_engine, docs_setup_generate_filings_cron [INFERRED 0.85]
 
-## Communities (124 total, 17 thin omitted)
+## Communities (120 total, 17 thin omitted)
 
 ### Community 0 - "sign-off.ts"
-Cohesion: 0.09
-Nodes (22): advanceFilingAction(), amount, SignOffState, stepData(), text(), Row, QueueFiling, QueueViewer (+14 more)
+Cohesion: 0.12
+Nodes (17): Row, QueueFiling, QueueViewer, ReviewQueue, ACTION_LABEL, availableActions(), FilingState, FilingStatus (+9 more)
 
 ### Community 1 - "engine.ts"
-Cohesion: 0.08
-Nodes (46): Rule, compareIso(), IsoDate, isWeekend(), lastDayOfMonth(), DeadlineRule, DueRule, EfpsGroup (+38 more)
+Cohesion: 0.07
+Nodes (58): shift(), Rule, addDays(), addMonths(), compareIso(), IsoDate, isWeekend(), lastDayOfMonth() (+50 more)
 
-### Community 2 - "payroll/payroll.test.ts"
-Cohesion: 0.15
-Nodes (26): MonthGrid(), toInput(), annualSummary(), annualTax(), computeEmployeeYear(), dateForYear(), differsFromSuggestion(), employeeContributions() (+18 more)
+### Community 2 - "money.ts"
+Cohesion: 0.26
+Nodes (11): PortalPayrollState, previewPortalPayrollAction(), submitPortalPayrollAction(), PortalPayrollUpload(), applyRate(), basisPoints(), grossUp(), grouped (+3 more)
 
 ### Community 3 - "manilaToday"
-Cohesion: 0.07
-Nodes (51): @remixicon/react, DocReviewActions(), Doc, DocumentsCard(), when(), BOOKED_TYPES, DocumentReviewPage(), loadBooking() (+43 more)
+Cohesion: 0.08
+Nodes (48): Doc, DocumentsCard(), when(), Cycle(), CyclePage(), CycleWithClient, DocRow, ExceptionRow (+40 more)
 
 ### Community 4 - "vat.ts"
-Cohesion: 0.14
-Nodes (41): incomeAttachments(), Periods, periods(), sawtAttachments(), sawtCsv(), sawtDat(), SawtForm, SawtResult (+33 more)
+Cohesion: 0.12
+Nodes (40): ATC_MASTER, AtcInfo, lookupAtc(), normalizeAtc(), AtcInfo, atcInfo(), AtcKind, atcKind() (+32 more)
 
 ### Community 5 - "package.json"
 Cohesion: 0.10
@@ -190,7 +186,7 @@ Nodes (27): eslintConfig, devDependencies, eslint@^9, eslint-config-next@16.4.6,
 
 ### Community 6 - "review-form.tsx"
 Cohesion: 0.13
-Nodes (24): approveDocumentAction(), Booking, DirectoryParty, ENTRY_STATUS, typeLabel, DocActionState, checkFields(), Issue (+16 more)
+Nodes (20): approveDocumentAction(), checkFields(), Issue, num(), msgs(), ok, FieldKey, keys (+12 more)
 
 ### Community 7 - "TypeScript Config"
 Cohesion: 0.11
@@ -208,9 +204,9 @@ Nodes (79): Accordion, Agent Chat, Agent runtime, Agent Thinking, Announcement, 
 Cohesion: 0.21
 Nodes (11): /api/cron/generate-filings (02:00 Manila), Server-Only Keys (SUPABASE_SECRET_KEY, CRON_SECRET), Withholding Returns Follow Calendar Year (calendar_year flag), Onboarding a Client Workflow, Nightly Filing Instance Generation (120 days ahead, 60 back), Filing Obligations & Deadline Engine, Weekend/Holiday Roll to Next Working Day, BIR Deadline Engine (src/lib/deadlines) (+3 more)
 
-### Community 11 - "cycle/page.tsx"
-Cohesion: 0.12
-Nodes (32): Cycle(), CyclePage(), CycleWithClient, DocRow, ExceptionRow, shift(), Home(), PortalHome() (+24 more)
+### Community 11 - "cycle-forms.tsx"
+Cohesion: 0.18
+Nodes (15): CloseCycleButton(), Message(), NothingToSubmitButton(), closeCycleAction(), CycleState, decideExceptionAction(), nothingToSubmitAction(), refresh() (+7 more)
 
 ### Community 12 - "Sign-in & Setup Docs"
 Cohesion: 0.20
@@ -225,8 +221,8 @@ Cohesion: 0.25
 Nodes (8): Amendment Workflow, Bookkeeping (Phase 1B double-entry ledger), Collections & Statement of Account, Payment Check at Owner Approval, Period Lock, Roles: Owner, Acting Approver, Reviewer, Staff, Client User, Sign-Off Chain, Tax Computation & Returns
 
 ### Community 15 - "dependencies"
-Cohesion: 0.12
-Nodes (17): dependencies, exceljs@4.4.0, @internationalized/date@^3.12.4, motion@^12.43.0, next@16.4.6, react@19.3.0, react-aria-components@^1.22.1, react-dom@19.3.0 (+9 more)
+Cohesion: 0.14
+Nodes (14): dependencies, exceljs@4.4.0, @internationalized/date@^3.12.4, motion@^12.43.0, next@16.4.6, react@19.3.0, react-aria-components@^1.22.1, @remixicon/react@^4.9.0 (+6 more)
 
 ### Community 16 - "Brand, Fees & Service Lines"
 Cohesion: 0.29
@@ -236,17 +232,17 @@ Nodes (7): Brands & Firm Settings, Clients & Engagements, Appendix A: Draft Fee 
 Cohesion: 0.38
 Nodes (7): Client Compliance Score (green/yellow/red), Client Portal, Dashboards & Scores, Assigning an Uploaded Document to a Period, Monthly Cycle & Cutoff, OCR Intake & Review Queue, Prior-Year Exceptions Queue
 
-### Community 18 - "buildSawt"
+### Community 18 - "payroll/data.ts"
 Cohesion: 0.25
-Nodes (12): ATC_MASTER, AtcInfo, lookupAtc(), normalizeAtc(), AtcInfo, atcInfo(), AtcKind, atcKind() (+4 more)
+Nodes (11): @supabase/supabase-js, Release2316Form(), yearWorksheet(), PayrollYear(), PayrollYearPage(), when(), load2316Release(), PayrollClient (+3 more)
 
 ### Community 19 - "Data Model & Security Docs"
 Cohesion: 0.33
 Nodes (4): Supabase Project Setup (Singapore), Data Model (first draft), Notifications & Automation (Resend, n8n plumbing only), Privacy, Security, Retention
 
-### Community 20 - "fees/[id]/page.tsx"
-Cohesion: 0.19
-Nodes (19): deleteDraftAction(), FeeFormState, loadSchedule(), loadTaxOnFee(), ActivateForm(), billingHint, DeleteDraftButton(), PriceRow (+11 more)
+### Community 20 - "quote.test.ts"
+Cohesion: 0.21
+Nodes (11): EWT_NOTE, QuoteInput, base, code(), priced(), quote(), settings, TEST_PRICES (+3 more)
 
 ### Community 21 - "Moxie Migration & Phasing"
 Cohesion: 0.40
@@ -260,137 +256,137 @@ Nodes (5): Tallo CPA Brand Design System, Open Items (O1-O10), Staff Capacity: L
 Cohesion: 1.00
 Nodes (3): Decisions Q1-Q61 (DECISIONS.md), TalloCPA OS Product Specification, TalloCPA OS
 
-### Community 40 - "register-xlsx.ts"
-Cohesion: 0.12
-Nodes (30): check(), PortalPayrollState, previewPortalPayrollAction(), submitPortalPayrollAction(), PayrollItem, sortItems(), checkRegister(), fmt() (+22 more)
+### Community 40 - "payroll/payroll.test.ts"
+Cohesion: 0.10
+Nodes (39): file(), GET(), safe(), check(), GET(), previewOf(), totals(), monthlyTable() (+31 more)
 
 ### Community 41 - "scores/page.tsx"
 Cohesion: 0.12
-Nodes (31): OcrRate, Queue, QueueCell(), waited(), ClientRow, order, PartCell(), ScoredClient (+23 more)
+Nodes (33): OcrRate, OwnerSections(), Queue, QueueCell(), waited(), ClientRow, order, PartCell() (+25 more)
 
-### Community 42 - "Button"
-Cohesion: 0.14
-Nodes (41): ClientForm(), AccountForm(), ArapUpload(), EntryForm(), OpeningUpload(), SetupForm(), EngagementForm(), EmployeeForm() (+33 more)
+### Community 42 - "Notice"
+Cohesion: 0.08
+Nodes (76): ClientForm(), StaffOptions(), AccountForm(), EntryForm(), SetupForm(), DocReviewActions(), AssignForm(), ClientUserForm() (+68 more)
 
 ### Community 43 - "payroll/forms.tsx"
-Cohesion: 0.11
-Nodes (40): checkEmployeeFile(), deleteItemAction(), deletePriorEmployerAction(), EmployeeImportState, fieldErrors(), fileOf(), FormState, friendly() (+32 more)
+Cohesion: 0.10
+Nodes (49): checkEmployeeFile(), deleteItemAction(), deletePriorEmployerAction(), EmployeeImportState, fieldErrors(), fileOf(), FormState, friendly() (+41 more)
 
 ### Community 44 - "rows.ts"
-Cohesion: 0.12
-Nodes (32): Certificates2316, certificatesFromRaw(), form2316(), Form2316Employer, Form2316Signatory, mmdd(), paidInYear(), Payroll2316Raw (+24 more)
+Cohesion: 0.13
+Nodes (30): Certificates2316, certificatesFromRaw(), form2316(), Form2316Data, Form2316Employer, Form2316Line, Form2316Signatory, mmdd() (+22 more)
 
 ### Community 45 - "ref_node_fs"
 Cohesion: 0.08
-Nodes (10): pg@^8.23.1, pg, vitest, ctx, input, root, root, root (+2 more)
+Nodes (9): pg@^8.23.1, pg, ctx, input, root, root, root, root (+1 more)
 
 ### Community 46 - "Card"
 Cohesion: 0.13
-Nodes (31): ClientCollectionsPage(), Deposit, Detail(), Due, maskNumber(), Client, CollectionsPage(), OpenDue (+23 more)
+Nodes (30): ClientCollectionsPage(), Deposit, Detail(), Due, maskNumber(), Client, CollectionsPage(), OpenDue (+22 more)
 
 ### Community 47 - "returns/load.ts"
 Cohesion: 0.14
-Nodes (25): Split, VatData, FilingRow, ListedDocument, PAYROLL_FORM_CODES, SavedWorksheet, Supabase, toSource() (+17 more)
+Nodes (26): recomputeWorksheetAction(), WorksheetState, FilingRow, ListedDocument, loadWorksheet(), PAYROLL_FORM_CODES, SavedWorksheet, Supabase (+18 more)
 
 ### Community 48 - "fees/data.ts"
 Cohesion: 0.12
-Nodes (30): zod, activateAction(), createFromTemplateAction(), newDraftSchema, refresh(), savePricesAction(), saveSettingsAction(), startNewVersionAction() (+22 more)
+Nodes (29): activateAction(), createFromTemplateAction(), deleteDraftAction(), FeeFormState, newDraftSchema, refresh(), savePricesAction(), saveSettingsAction() (+21 more)
 
 ### Community 49 - "scripts"
 Cohesion: 0.20
 Nodes (10): scripts, build, db:seed:generate, dev, lint, postinstall, start, test (+2 more)
 
 ### Community 50 - "manilaToday"
-Cohesion: 0.18
-Nodes (19): EmployeeDetail(), EmployeePage(), Detail(), StatementPage(), PortalClient, portalContext(), Payroll(), PortalPayroll() (+11 more)
+Cohesion: 0.10
+Nodes (33): @remixicon/react, Detail(), StatementPage(), PortalClient, portalContext(), Documents(), FolderKey, FOLDERS (+25 more)
 
 ### Community 51 - "quote.ts"
-Cohesion: 0.13
-Nodes (23): buildQuote(), cents(), CustomQuoteItem, EWT_NOTE, inRange(), matches(), pesos(), QuoteLine (+15 more)
+Cohesion: 0.17
+Nodes (18): PriceRow, buildQuote(), cents(), CustomQuoteItem, inRange(), matches(), pesos(), Quote (+10 more)
 
 ### Community 52 - "statement-view.tsx"
-Cohesion: 0.16
-Nodes (15): Detail(), PayNow(), PrintButton(), proofBadge, proofMethod, statusBadge, FirmBlock, PayAccount (+7 more)
+Cohesion: 0.21
+Nodes (10): Detail(), PayNow(), FirmBlock, PayAccount, PaymentProof, ProofMethod, ProofStatus, Statement (+2 more)
 
 ### Community 53 - "parties/[id]/page.tsx"
 Cohesion: 0.17
-Nodes (18): VerifyButton(), fmtDate(), PartyDetail(), PartyPage(), datAddress(), datNameCols(), Names, PARTY_KINDS (+10 more)
+Nodes (18): VerifyButton(), fmtDate(), PartyDetail(), PartyPage(), datAddress(), datNameCols(), Names, Party (+10 more)
 
 ### Community 54 - "payroll/payroll.test.ts"
 Cohesion: 0.11
 Nodes (22): cellText(), CheckedEmployees, checkEmployeeImport(), code(), EMPLOYEE_IMPORT_COLUMNS, EMPLOYEE_SHEET, EmployeeImportRow, readEmployeeFile() (+14 more)
 
 ### Community 55 - "supabaseServer"
-Cohesion: 0.11
-Nodes (25): nextConfig, next, EditClient(), EditClientPage(), recomputeWorksheetAction(), GET(), Lines(), lineStyle (+17 more)
+Cohesion: 0.09
+Nodes (43): nextConfig, next, EditClient(), EditClientPage(), NewClientPage(), OwnerOnly(), addChargeAction(), applyCreditAction() (+35 more)
 
-### Community 56 - "payroll/data.ts"
-Cohesion: 0.17
-Nodes (28): @supabase/supabase-js, saveMonthAction(), file(), GET(), safe(), PayrollMonth(), PayrollMonthPage(), when() (+20 more)
+### Community 56 - "[month]/page.tsx"
+Cohesion: 0.16
+Nodes (20): EmployeeDetail(), EmployeePage(), MonthGrid(), toInput(), PayrollMonth(), PayrollMonthPage(), when(), loadPriorEmployers() (+12 more)
 
 ### Community 57 - "src/app/layout.tsx"
 Cohesion: 0.33
 Nodes (3): inter, metadata, montserrat
 
 ### Community 58 - "rates.ts"
-Cohesion: 0.23
-Nodes (18): AmountRate, CorporateRate, corporateRates(), eightPercentRate(), graduatedIncomeTax(), IncomeTaxTable, mcitRate(), osdRate() (+10 more)
+Cohesion: 0.22
+Nodes (20): AmountRate, CorporateRate, corporateRates(), eightPercentRate(), graduatedIncomeTax(), IncomeTaxTable, mcitRate(), osdRate() (+12 more)
 
 ### Community 59 - "books/page.tsx"
-Cohesion: 0.21
-Nodes (17): ArapDecision(), ConfirmAllButton(), ConfirmButton(), ReverseForm(), Books(), BooksPage(), dayBefore(), fmtDate() (+9 more)
+Cohesion: 0.07
+Nodes (54): dayBefore(), GET(), safe(), ArapDecision(), ArapUpload(), BookPicker(), ConfirmAllButton(), ConfirmButton() (+46 more)
 
 ### Community 60 - "toCentavos"
-Cohesion: 0.15
-Nodes (19): CheckedOpening, checkOpening(), fmt(), ItemRow, OpeningItem, OpeningLine, openingPayload(), sheetOf() (+11 more)
+Cohesion: 0.14
+Nodes (18): CheckedOpening, checkOpening(), fmt(), ItemRow, OpeningItem, OpeningLine, sheetOf(), TbRow (+10 more)
 
 ### Community 61 - "form-1601eq.ts"
-Cohesion: 0.08
-Nodes (49): agentBackground(), agentErrors(), tinDashed(), atcSchedule(), AtcTotal, detailSchedule(), docLabel(), EwtLine (+41 more)
+Cohesion: 0.10
+Nodes (29): Split, tinDashed(), AtcTotal, docLabel(), EwtLine, ewtLines(), tinDigits(), branchFromTin() (+21 more)
 
 ### Community 62 - "server-only"
-Cohesion: 0.19
-Nodes (17): fieldErrors(), mergePartyAction(), PartyFormState, savePartyAction(), setPartyVerifiedAction(), normalizeTin(), PARTY_COLUMNS, blank() (+9 more)
+Cohesion: 0.20
+Nodes (16): mergePartyAction(), normalizeTin(), lookupParties(), person, blank(), optionalText(), PartyInput, partySchema (+8 more)
 
-### Community 63 - "Notice"
-Cohesion: 0.14
-Nodes (23): ClientUserForm(), EmployeeUpload(), PayrollSettingsForm(), PreviewTable(), PriorEmployerForm(), RegisterUpload(), Release2316Form(), SubmissionReview() (+15 more)
+### Community 63 - "sign-off-actions.tsx"
+Cohesion: 0.31
+Nodes (9): checkTone, checkWord, needsNote(), noteLabel(), noteRequired(), PaymentCheck, PaymentCheckView(), StepForm() (+1 more)
 
 ### Community 64 - "cx"
 Cohesion: 0.07
-Nodes (37): react-aria-components, InputOtp(), InputOtpProps, Kbd(), KbdProps, SegmentedControl(), SegmentedControlItem(), SegmentedControlItemProps (+29 more)
+Nodes (36): InputOtp(), InputOtpProps, Kbd(), KbdProps, SegmentedControl(), SegmentedControlItem(), SegmentedControlItemProps, SegmentedControlProps (+28 more)
 
 ### Community 65 - "dropdown.tsx"
-Cohesion: 0.07
-Nodes (40): Dropdown(), DropdownContext, DropdownContextValue, DropdownDivider(), DropdownGroup(), DropdownGroupProps, DropdownItem(), DropdownItemProps (+32 more)
+Cohesion: 0.08
+Nodes (38): Dropdown(), DropdownContext, DropdownContextValue, DropdownDivider(), DropdownGroup(), DropdownGroupProps, DropdownItem(), DropdownItemProps (+30 more)
 
 ### Community 66 - "Apple Design"
 Cohesion: 0.09
 Nodes (21): 10. Gesture design details (the "feel" checklist), 11. Frame-level smoothness, 12. Materials & depth — translucency conveys hierarchy, 13. Multimodal feedback — motion + sound + haptics, 14. Reduced motion & accessibility, 15. Typography — optical sizing, tracking, leading, 16. Design foundations — the eight principles, 17. Process (+13 more)
 
 ### Community 67 - "returns/types.ts"
-Cohesion: 0.13
-Nodes (30): alphaCols(), Alphalist, AlphalistAgent, alphalistCsv(), alphalistDat(), branch4(), buildAlphalist(), csvCell() (+22 more)
+Cohesion: 0.21
+Nodes (19): AlphaCols, alphaCols(), Alphalist, AlphalistAgent, alphalistCsv(), alphalistDat(), branch4(), buildAlphalist() (+11 more)
 
 ### Community 68 - "vitest"
-Cohesion: 0.21
-Nodes (16): individual, individual, amounts(), cert2307(), ctxFor(), doc(), DocInput, lineNo() (+8 more)
+Cohesion: 0.15
+Nodes (23): vitest, BUSINESS_TAX_FORMS, form1701Q, form1702Q, individual, form2551Q, individual, amounts() (+15 more)
 
 ### Community 69 - "clients/[id]/page.tsx"
 Cohesion: 0.05
-Nodes (65): addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), FormState, removeAssignmentAction(), setClientStatusAction(), updateClientAction() (+57 more)
+Nodes (65): zod@^4.6.7, zod, addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), FormState, removeAssignmentAction() (+57 more)
 
 ### Community 70 - "gemini.ts"
-Cohesion: 0.11
-Nodes (21): OCR_DOC_TYPES, OcrOutput, BACKOFF, base64(), DEFAULT_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL, GeminiError, geminiProvider() (+13 more)
+Cohesion: 0.13
+Nodes (16): OcrOutput, BACKOFF, base64(), DEFAULT_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL, GeminiError, geminiProvider(), call() (+8 more)
 
 ### Community 71 - "books/actions.ts"
-Cohesion: 0.25
-Nodes (22): checkArapFile(), checkOpeningFile(), confirmAllAction(), confirmEntryAction(), deleteAccountAction(), friendly(), path(), postArapAction() (+14 more)
+Cohesion: 0.11
+Nodes (44): ArapState, checkArapFile(), checkOpeningFile(), confirmAllAction(), confirmEntryAction(), deleteAccountAction(), FormState, friendly() (+36 more)
 
 ### Community 72 - "fees/types.ts"
-Cohesion: 0.10
-Nodes (33): EngagementRow, TaxpayerType, EstimatedProfile, estimateProfile(), ExistingClient, gapFor(), GapRow, has() (+25 more)
+Cohesion: 0.15
+Nodes (19): EngagementRow, TaxpayerType, EstimatedProfile, ExistingClient, count(), first(), pick(), profileFromQuery() (+11 more)
 
 ### Community 73 - "Rules"
 Cohesion: 0.09
@@ -401,36 +397,36 @@ Cohesion: 0.11
 Nodes (17): Animation Performance, Hard Rules, Initial Response, Operating Posture, Phase 1: Find what animates, Phase 2: Diagnose, Phase 3: Report, React: Don't Animate Through State (+9 more)
 
 ### Community 75 - "settings/page.tsx"
-Cohesion: 0.25
-Nodes (16): PaymentSettings(), accountSchema, addPaymentAccountAction(), PaymentSettingsState, QR_TYPES, refresh(), replaceQrAction(), setAccountActiveAction() (+8 more)
+Cohesion: 0.29
+Nodes (13): accountSchema, addPaymentAccountAction(), PaymentSettingsState, QR_TYPES, refresh(), replaceQrAction(), setAccountActiveAction(), setPaymentDaysAction() (+5 more)
 
 ### Community 76 - "stat-cards.tsx"
-Cohesion: 0.07
-Nodes (33): DashboardStat, icons, DEFAULT_FOOTER_STATS, DEFAULT_STATS, DELTA_STYLES, DeltaPill(), FooterStatCard(), IconComponent (+25 more)
+Cohesion: 0.12
+Nodes (24): DashboardStat, DashboardStats(), icons, DEFAULT_FOOTER_STATS, DEFAULT_STATS, DELTA_STYLES, DeltaPill(), FooterStatCard() (+16 more)
 
 ### Community 77 - "quote/page.tsx"
-Cohesion: 0.29
-Nodes (10): loadSchedules(), longDate(), COMPLEXITY_LABEL, Lines(), Preview(), QuotePreviewPage(), QuoteView(), TAXPAYER_LABEL (+2 more)
+Cohesion: 0.16
+Nodes (26): dateFmt, loadItems(), loadSchedules(), loadTaxOnFee(), longDate(), nextEffectiveDate(), statusLabel, statusTone (+18 more)
 
 ### Community 78 - "theme-toggle.tsx"
-Cohesion: 0.12
-Nodes (25): applyTheme(), applyThemeWithTransition(), createBlurCircleMask(), currentTheme(), elementCenter(), installThemeTransitionStyle(), normalizedOrigin(), storedTheme() (+17 more)
+Cohesion: 0.10
+Nodes (30): Nav(), PortalLayout(), baseTabs, payrollTab, PortalNav(), applyTheme(), applyThemeWithTransition(), createBlurCircleMask() (+22 more)
 
 ### Community 79 - "arap.ts"
-Cohesion: 0.15
-Nodes (20): exceljs, accountLabel(), AGING, aging(), agingBucket(), AgingRow, CashAccount, CheckedUpdate (+12 more)
+Cohesion: 0.16
+Nodes (19): accountLabel(), AGING, aging(), agingBucket(), AgingRow, CashAccount, CheckedUpdate, checkUpdate() (+11 more)
 
 ### Community 80 - "percentage.ts"
-Cohesion: 0.18
-Nodes (29): comparisonSchedule(), compute1701Q(), compute1702Q(), costsOf(), cwt(), inputs1701Q(), inputs1702Q(), priorDiffWarning() (+21 more)
+Cohesion: 0.13
+Nodes (44): comparisonSchedule(), compute1701Q(), compute1702Q(), costsOf(), cwt(), incomeAttachments(), inputs1701Q(), inputs1702Q() (+36 more)
 
 ### Community 81 - "form-2316.tsx"
-Cohesion: 0.23
-Nodes (15): amount(), BoxCells(), cx(), DateBoxes(), Form2316(), Form2316Set(), Item(), mmddyyyy() (+7 more)
+Cohesion: 0.12
+Nodes (29): BoardUI Pro, Building UIs with BoardUI, Choosing components, Design rules, Going deeper, Known gotchas, The workflow, PrintAll() (+21 more)
 
 ### Community 82 - "filings/[id]/page.tsx"
 Cohesion: 0.09
-Nodes (48): DashboardStats(), FilingListRow, FilingTable(), Deadlines(), DeadlinesPage(), Event, eventText, Filing() (+40 more)
+Nodes (47): FilingListRow, FilingTable(), Deadlines(), DeadlinesPage(), Event, eventText, Filing(), FilingPage() (+39 more)
 
 ### Community 83 - "button.tsx"
 Cohesion: 0.07
@@ -442,23 +438,23 @@ Nodes (31): Activity Rings Card, Agent Avatar, Agent Creator, Agent Limits Card,
 
 ### Community 85 - "notification.tsx"
 Cohesion: 0.08
-Nodes (27): UserMenu(), Avatar(), AvatarColor, AvatarProps, AvatarSize, styles, CloseButton(), CloseButtonProps (+19 more)
+Nodes (27): react-dom@19.3.0, react-dom, AvatarColor, AvatarProps, AvatarSize, styles, CloseButton(), CloseButtonProps (+19 more)
 
 ### Community 86 - "cx.ts"
-Cohesion: 0.10
-Nodes (18): CHIP_COLORS, ChipColor, ChipProps, ChipVariant, styles, Counter(), CounterColor, CounterProps (+10 more)
+Cohesion: 0.08
+Nodes (22): CHIP_COLORS, ChipColor, ChipProps, ChipVariant, styles, Counter(), CounterColor, CounterProps (+14 more)
 
-### Community 87 - "FormModule"
-Cohesion: 0.15
-Nodes (10): BUSINESS_TAX_FORMS, form1701Q, form1702Q, form2551Q, form2550Q, WITHHOLDING_FORMS, LoadedWorksheet, moduleForForm() (+2 more)
+### Community 87 - "returns/types.ts"
+Cohesion: 0.10
+Nodes (32): agentProblems(), amountText(), emptyResult(), PAYROLL_NOT_LOADED, form1601C, INPUTS, MONTH, form1604C (+24 more)
 
 ### Community 88 - "generate-qap-fixture.mjs"
 Cohesion: 0.29
 Nodes (5): api, ctx, fn, rows, src
 
 ### Community 89 - "input.tsx"
-Cohesion: 0.13
-Nodes (24): HintText(), hintTextClassName(), HintTextProps, IconComponent, Input(), InputBase(), InputBaseProps, inputElementClassName (+16 more)
+Cohesion: 0.12
+Nodes (27): react-aria-components, HintText(), hintTextClassName(), HintTextProps, IconComponent, Input(), InputBase(), InputBaseProps (+19 more)
 
 ### Community 90 - "document-scanner.tsx"
 Cohesion: 0.18
@@ -466,47 +462,51 @@ Nodes (20): Adjuster(), DocumentScanner(), capture(), saveScan(), Stage, CV, det
 
 ### Community 91 - "app/app/layout.tsx"
 Cohesion: 0.11
-Nodes (24): AppLayout(), nav, ownerNav, OwnerNavLinks(), reviewNav, roleLabel, items, Links() (+16 more)
+Nodes (26): advanceFilingAction(), amount, SignOffState, stepData(), text(), AppLayout(), nav, ownerNav (+18 more)
 
 ### Community 92 - "react"
-Cohesion: 0.08
-Nodes (59): react, NewEntry(), NewEntryPage(), NewEmployee(), NewEmployeePage(), Payroll(), PayrollPage(), PrintAll() (+51 more)
+Cohesion: 0.11
+Nodes (38): react, Accounts(), AccountsPage(), GROUPS, NewEntry(), NewEntryPage(), RemoveClientUserButton(), StatusButton() (+30 more)
 
 ### Community 93 - "settings/actions.ts"
-Cohesion: 0.08
-Nodes (35): server-only, GET(), generateFilingsNow(), GenerateState, GenerateButton(), addHolidayAction(), fieldErrors(), refreshAfterChange() (+27 more)
+Cohesion: 0.12
+Nodes (22): server-only, GET(), generateFilingsNow(), GenerateState, GenerateButton(), digestMessage(), DigestRow, longDay() (+14 more)
 
 ### Community 94 - "social-button.tsx"
-Cohesion: 0.08
-Nodes (31): GET(), GET(), code, email, sendSignInEmail(), SignInState, signInWithGoogle(), verifySignInCode() (+23 more)
+Cohesion: 0.10
+Nodes (28): GET(), code, email, sendSignInEmail(), SignInState, signInWithGoogle(), verifySignInCode(), errors (+20 more)
 
 ### Community 95 - "Recipes"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (13): BoardUI motion reference, Charts and data, Checklist before shipping motion, Duration scale, Hover and press, Modals, Popovers, dropdowns, selects (the soft blur-in), Principles (+5 more)
 
 ### Community 96 - "file-upload.tsx"
-Cohesion: 0.26
-Nodes (12): DEFAULT_EXTENSIONS, DefaultFileIcon(), extensionFor(), FileUpload(), FileUploadProps, formatFileSize(), ringPath(), staggerContainer() (+4 more)
+Cohesion: 0.10
+Nodes (22): DEFAULT_EXTENSIONS, DefaultFileIcon(), extensionFor(), FileUpload(), FileUploadProps, formatFileSize(), ringPath(), staggerContainer() (+14 more)
 
 ### Community 97 - "BoardUI theming reference"
-Cohesion: 0.29
+Cohesion: 0.33
 Nodes (6): Architecture, BoardUI theming reference, Dark mode, Rebranding, Semantic color families, Type scale
 
 ### Community 98 - "Pro templates"
 Cohesion: 0.18
 Nodes (11): AI Chat Template, AI Image Generation Template, AI Profile Template, Finance Dashboard Template, Home Dashboard Template, HR Management Template, Marketing Dashboard Template, Medical Report Template (+3 more)
 
-### Community 100 - "books/forms.tsx"
-Cohesion: 0.16
-Nodes (20): Accounts(), AccountsPage(), GROUPS, ArapState, FormState, OpeningState, BooksClient, ClientBooks (+12 more)
+### Community 99 - "db.test.ts"
+Cohesion: 0.21
+Nodes (4): seedHolidays, buildSeedSql(), q(), root
+
+### Community 100 - "print/page.tsx"
+Cohesion: 0.08
+Nodes (41): exceljs, BookPrint(), BookPrintPage(), dayBefore(), fmtDate(), Pad(), PrintButton(), BOOK_ABBR (+33 more)
 
 ### Community 101 - "breadcrumb.tsx"
 Cohesion: 0.22
 Nodes (7): Breadcrumb(), BreadcrumbItem(), BreadcrumbItemProps, BreadcrumbProps, IconComponent, ChevronRightSmall(), IconProps
 
 ### Community 102 - "BoardUI page patterns"
-Cohesion: 0.20
-Nodes (8): BoardUI component catalog, AI chat page, Auth page, BoardUI page patterns, Dashboard page, Settings, Table page, When a template fits, use it
+Cohesion: 0.29
+Nodes (7): AI chat page, Auth page, BoardUI page patterns, Dashboard page, Settings, Table page, When a template fits, use it
 
 ### Community 103 - "proxy.ts"
 Cohesion: 0.33
@@ -517,52 +517,44 @@ Cohesion: 0.40
 Nodes (4): DO_NOT_TRACK, NODE_USE_ENV_PROXY, npx, boardui
 
 ### Community 105 - "Centavos"
-Cohesion: 0.14
-Nodes (23): GridRow, AlphaCols, AlphalistRow, AnnualSummary, MonthLines, PriorAmounts, Suggestion, CheckedRegister (+15 more)
+Cohesion: 0.13
+Nodes (31): GridRow, AlphalistRow, AnnualSummary, annualSummary(), annualTax(), computeEmployeeYear(), dateForYear(), differsFromSuggestion() (+23 more)
 
-### Community 106 - "settings/page.tsx"
-Cohesion: 0.21
-Nodes (16): HolidayForm(), periodWord, RemoveHolidayButton(), RuleEditor(), appliesTo(), DeadlineSettings(), fmtDate(), kindLabel (+8 more)
+### Community 106 - "Card"
+Cohesion: 0.15
+Nodes (25): Lines(), lineStyle, Problems(), sameFigures(), Schedule(), when(), Worksheet(), WorksheetPage() (+17 more)
 
 ### Community 107 - "parties/parties.test.ts"
-Cohesion: 0.24
-Nodes (14): displayName(), fullAddress(), listNameCols(), Party, partyTinLabel(), person, ABBREVIATIONS, nameTokens() (+6 more)
+Cohesion: 0.26
+Nodes (13): displayName(), fullAddress(), listNameCols(), partyTinLabel(), ABBREVIATIONS, fillFromDirectory(), nameTokens(), ResolvedParty (+5 more)
 
 ### Community 108 - "template.ts"
 Cohesion: 0.22
 Nodes (6): items, DOCUMENT_BANDS, EMPLOYEE_BANDS, EMPLOYEE_PER_HEAD_ABOVE, FEE_TEMPLATE, NON_INDIVIDUAL
 
-### Community 109 - "coa.test.ts"
-Cohesion: 0.14
-Nodes (13): BIR_LINES, BirGroup, BirLine, BirLineKey, codes, PNL, COA_TEMPLATES, FS_LINES (+5 more)
+### Community 109 - "gap.ts"
+Cohesion: 0.27
+Nodes (9): estimateProfile(), gapFor(), GapRow, has(), items, PRICES, schedule, settings (+1 more)
 
 ### Community 110 - "proof-upload.tsx"
-Cohesion: 0.18
-Nodes (17): ProofReview(), METHODS, ProofUpload(), send(), amount, date, ProofState, refresh() (+9 more)
+Cohesion: 0.21
+Nodes (15): METHODS, ProofUpload(), send(), amount, date, ProofState, refresh(), rejectProofAction() (+7 more)
 
-### Community 111 - "index.ts"
-Cohesion: 0.14
-Nodes (15): acct(), ADVANCES_FROM, ASSETS, build(), CONTRA, COST, EQUITY, EXPENSES (+7 more)
-
-### Community 112 - "books/export/route.ts"
-Cohesion: 0.48
-Nodes (6): dayBefore(), GET(), safe(), fromWorkbookData(), accountFromRow(), loadAccounts()
-
-### Community 113 - "requireOwner"
-Cohesion: 0.30
-Nodes (15): addChargeAction(), applyCreditAction(), date, depositSchema, MoneyState, peso, recordDepositAction(), refresh() (+7 more)
+### Community 112 - "documents/actions.ts"
+Cohesion: 0.50
+Nodes (4): ALLOWED, replyDocumentAction(), runOcrAction(), runOcr()
 
 ### Community 114 - "acting-approver.test.ts"
 Cohesion: 0.29
 Nodes (3): as(), root, signIn()
 
-### Community 115 - "brand/actions.ts"
-Cohesion: 0.21
-Nodes (11): BrandSettingsState, refresh(), saveBrandSectionAction(), SAVED, StartBrandUpload, BRAND_FILES, BrandFileKind, parseSection() (+3 more)
+### Community 115 - "brand/forms.tsx"
+Cohesion: 0.17
+Nodes (19): BrandSettingsState, finishBrandUpload(), refresh(), saveBrandSectionAction(), SAVED, StartBrandUpload, startBrandUpload(), BrandFileUpload() (+11 more)
 
 ### Community 116 - "filters.tsx"
-Cohesion: 0.39
-Nodes (5): ClientSelect(), PeriodKey, periodRange(), PERIODS, ym()
+Cohesion: 0.48
+Nodes (4): PeriodKey, periodRange(), PERIODS, ym()
 
 ### Community 117 - "copy-opencv.mjs"
 Cohesion: 0.25
@@ -580,37 +572,25 @@ Nodes (11): firmBlockLines(), formatTin(), cents(), CLIENT_MONEY_KINDS, FEE_KIND
 Cohesion: 0.33
 Nodes (3): asCommit(), failsAtCommit(), root
 
-### Community 121 - "brand/forms.tsx"
-Cohesion: 0.29
-Nodes (11): finishBrandUpload(), startBrandUpload(), BrandFileUpload(), upload(), FieldDef, FIELDS, pesoInput(), Result() (+3 more)
-
-### Community 122 - "acting-approver/actions.ts"
-Cohesion: 0.50
-Nodes (6): ActingState, appointActingAction(), endActingAction(), refresh(), AppointForm(), EndButton()
-
-### Community 123 - "Building UIs with BoardUI"
-Cohesion: 0.29
-Nodes (7): BoardUI Pro, Building UIs with BoardUI, Choosing components, Design rules, Going deeper, Known gotchas, The workflow
-
 ## Knowledge Gaps
 - **18 isolated node(s):** `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx`, `Server-Only Keys (SUPABASE_SECRET_KEY, CRON_SECRET)`, `Withholding Returns Follow Calendar Year (calendar_year flag)` (+13 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 815 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 834 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `manilaToday`, `package.json`, `review-form.tsx`, `cycle/page.tsx`, `dependencies`, `fees/[id]/page.tsx`, `scores/page.tsx`, `Button`, `payroll/forms.tsx`, `Card`, `manilaToday`, `statement-view.tsx`, `parties/[id]/page.tsx`, `supabaseServer`, `payroll/data.ts`, `books/page.tsx`, `Notice`, `cx`, `dropdown.tsx`, `clients/[id]/page.tsx`, `settings/page.tsx`, `stat-cards.tsx`, `quote/page.tsx`, `theme-toggle.tsx`, `filings/[id]/page.tsx`, `button.tsx`, `notification.tsx`, `cx.ts`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `settings/actions.ts`, `social-button.tsx`, `file-upload.tsx`, `books/forms.tsx`, `breadcrumb.tsx`, `settings/page.tsx`, `proof-upload.tsx`, `filters.tsx`, `checkbox.tsx`, `brand/forms.tsx`, `acting-approver/actions.ts`?**
-  _High betweenness centrality (0.162) - this node is a cross-community bridge._
+- **Why does `react` connect `react` to `money.ts`, `manilaToday`, `package.json`, `cycle-forms.tsx`, `dependencies`, `payroll/data.ts`, `scores/page.tsx`, `Notice`, `payroll/forms.tsx`, `Card`, `manilaToday`, `statement-view.tsx`, `parties/[id]/page.tsx`, `supabaseServer`, `[month]/page.tsx`, `books/page.tsx`, `sign-off-actions.tsx`, `cx`, `dropdown.tsx`, `clients/[id]/page.tsx`, `books/actions.ts`, `settings/page.tsx`, `stat-cards.tsx`, `quote/page.tsx`, `theme-toggle.tsx`, `form-2316.tsx`, `filings/[id]/page.tsx`, `button.tsx`, `notification.tsx`, `cx.ts`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `settings/actions.ts`, `social-button.tsx`, `file-upload.tsx`, `print/page.tsx`, `breadcrumb.tsx`, `Card`, `proof-upload.tsx`, `brand/forms.tsx`, `filters.tsx`, `checkbox.tsx`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _18 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `sign-off.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.09425287356321839 - nodes in this community are weakly interconnected._
-- **Why does `next` connect `supabaseServer` to `sign-off.ts`, `manilaToday`, `package.json`, `review-form.tsx`, `cycle/page.tsx`, `dependencies`, `fees/[id]/page.tsx`, `register-xlsx.ts`, `scores/page.tsx`, `payroll/forms.tsx`, `Card`, `fees/data.ts`, `manilaToday`, `parties/[id]/page.tsx`, `payroll/data.ts`, `src/app/layout.tsx`, `books/page.tsx`, `server-only`, `Notice`, `clients/[id]/page.tsx`, `books/actions.ts`, `settings/page.tsx`, `quote/page.tsx`, `form-2316.tsx`, `filings/[id]/page.tsx`, `app/app/layout.tsx`, `react`, `settings/actions.ts`, `social-button.tsx`, `books/forms.tsx`, `breadcrumb.tsx`, `proxy.ts`, `settings/page.tsx`, `proof-upload.tsx`, `books/export/route.ts`, `requireOwner`, `brand/actions.ts`, `brand/forms.tsx`, `acting-approver/actions.ts`?**
-  _High betweenness centrality (0.126) - this node is a cross-community bridge._
+  _Cohesion score 0.11594202898550725 - nodes in this community are weakly interconnected._
+- **Why does `next` connect `supabaseServer` to `manilaToday`, `package.json`, `review-form.tsx`, `cycle-forms.tsx`, `dependencies`, `payroll/data.ts`, `payroll/payroll.test.ts`, `scores/page.tsx`, `Notice`, `payroll/forms.tsx`, `Card`, `returns/load.ts`, `fees/data.ts`, `manilaToday`, `parties/[id]/page.tsx`, `[month]/page.tsx`, `src/app/layout.tsx`, `books/page.tsx`, `sign-off-actions.tsx`, `clients/[id]/page.tsx`, `books/actions.ts`, `settings/page.tsx`, `quote/page.tsx`, `theme-toggle.tsx`, `form-2316.tsx`, `filings/[id]/page.tsx`, `app/app/layout.tsx`, `react`, `settings/actions.ts`, `social-button.tsx`, `print/page.tsx`, `breadcrumb.tsx`, `proxy.ts`, `Card`, `proof-upload.tsx`, `documents/actions.ts`, `brand/forms.tsx`?**
+  _High betweenness centrality (0.138) - this node is a cross-community bridge._
 - **Should `engine.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08376623376623377 - nodes in this community are weakly interconnected._
-- **Why does `cx()` connect `form-2316.tsx` to `Building UIs with BoardUI`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
-- **Should `payroll/payroll.test.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.1477832512315271 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07243460764587525 - nodes in this community are weakly interconnected._
+- **Should `manilaToday` be split into smaller, more focused modules?**
+  _Cohesion score 0.07948568088836938 - nodes in this community are weakly interconnected._
+- **Should `vat.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.11733615221987315 - nodes in this community are weakly interconnected._

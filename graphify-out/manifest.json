@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795507131.894559,
-    "seen": 1795507134.800738,
-    "ast_hash": "6fcf7c4f76285571fc339bd500fe7cef",
+    "mtime": 1795507677.9512715,
+    "seen": 1795507680.904296,
+    "ast_hash": "ff934620594253cde632e4bc6a4f05b8",
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795507131.8941505,
-    "seen": 1795507134.8008304,
-    "ast_hash": "0fb6b34fa37a09d526e7b751c74ea5a2",
+    "mtime": 1795507677.9508197,
+    "seen": 1795507680.904338,
+    "ast_hash": "8641f41ca63259acddec581f60d08051",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/edit/page.tsx": {
@@ -2154,21 +2154,21 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/actions.ts": {
-    "mtime": 1795507021.7374494,
-    "seen": 1795507134.7930574,
-    "ast_hash": "b05a2787fd1ce8cf7c05c06367080bb1",
+    "mtime": 1795507604.3590322,
+    "seen": 1795507680.8949142,
+    "ast_hash": "3128602ce40a21fd870eed9ffe0c9cbd",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/export/route.ts": {
-    "mtime": 1795507021.7380118,
-    "seen": 1795507134.7930605,
-    "ast_hash": "24e170976a14a4cec8f4632c6828dd6a",
+    "mtime": 1795507604.3585138,
+    "seen": 1795507680.8949168,
+    "ast_hash": "ddb3c1894fe14e006421c172f1f1f5bc",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/forms.tsx": {
-    "mtime": 1795507039.137425,
-    "seen": 1795507134.7930632,
-    "ast_hash": "bd2c8fc5c2736d74b6056d691c0df2d7",
+    "mtime": 1795507604.3595688,
+    "seen": 1795507680.8949194,
+    "ast_hash": "f6d78fee3409118842081c0f54d5c938",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/journal/new/page.tsx": {
@@ -2178,9 +2178,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/page.tsx": {
-    "mtime": 1795507071.0479877,
-    "seen": 1795507134.7930999,
-    "ast_hash": "48808bc346ab30b7f2a4efbd8441bde8",
+    "mtime": 1795507604.3599536,
+    "seen": 1795507680.8949583,
+    "ast_hash": "c44f80f6541ca19d47785e150106af8e",
     "semantic_hash": ""
   },
   "src/lib/ledger/bir-lines.ts": {
@@ -2202,9 +2202,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/data.ts": {
-    "mtime": 1795507071.0474443,
-    "seen": 1795507134.7983365,
-    "ast_hash": "12f3d3f930caa9d891d7dc79bcd0956f",
+    "mtime": 1795507408.8157866,
+    "seen": 1795507680.9015465,
+    "ast_hash": "4cf1a4819974cd1480a4beffc06d7f40",
     "semantic_hash": ""
   },
   "src/lib/ledger/fs-lines.ts": {
@@ -2238,9 +2238,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/ledger.test.ts": {
-    "mtime": 1795506352.1267438,
-    "seen": 1795506442.304593,
-    "ast_hash": "993b8e21d376ad1bdfde5a5718755028",
+    "mtime": 1795507631.8241854,
+    "seen": 1795507680.9039073,
+    "ast_hash": "fb9936bb9915cf0d2b2de03bbb2b55c8",
     "semantic_hash": ""
   },
   "src/lib/ledger/arap-xlsx.ts": {
@@ -2271,6 +2271,42 @@
     "mtime": 1795506837.7366745,
     "seen": 1795507134.8004098,
     "ast_hash": "9935e8502706310cbbe870ad0a0c4a7c",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/print/page.tsx": {
+    "mtime": 1795507522.7828133,
+    "seen": 1795507680.8949606,
+    "ast_hash": "827217269fbbc2b7debce27b167dd7f9",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/print/print-button.tsx": {
+    "mtime": 1795507522.7618473,
+    "seen": 1795507680.8949628,
+    "ast_hash": "0c3017ea72053b5a342b4e45c7f59302",
+    "semantic_hash": ""
+  },
+  "src/lib/ledger/books-xlsx.ts": {
+    "mtime": 1795507604.343344,
+    "seen": 1795507680.9014866,
+    "ast_hash": "ead877dd164153cc1eed25ac9cc86d6a",
+    "semantic_hash": ""
+  },
+  "src/lib/ledger/books.test.ts": {
+    "mtime": 1795507631.824792,
+    "seen": 1795507680.9014885,
+    "ast_hash": "92f8a3db4ad46083ee01bc4a8921b3fa",
+    "semantic_hash": ""
+  },
+  "src/lib/ledger/books.ts": {
+    "mtime": 1795507470.7303638,
+    "seen": 1795507680.9014907,
+    "ast_hash": "4db2a2ad32946200877eb8fbd09807c7",
+    "semantic_hash": ""
+  },
+  "src/lib/ledger/print.ts": {
+    "mtime": 1795507522.7538767,
+    "seen": 1795507680.9016378,
+    "ast_hash": "2b0d8ca092df2228f93e750828194851",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

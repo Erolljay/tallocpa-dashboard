@@ -6,7 +6,7 @@ import { AGING, aging } from "@/lib/ledger/arap";
 import { booksAccess, loadAccounts, loadEntries, loadOpenItems, loadOpening, loadTrialBalance } from "@/lib/ledger/data";
 import { BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount } from "@/lib/returns/money";
-import { ArapDecision, ArapUpload, ConfirmAllButton, ConfirmButton, OpeningUpload, ReverseForm, SetupForm } from "./forms";
+import { ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, ReverseForm, SetupForm } from "./forms";
 
 export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
   return (
@@ -73,6 +73,7 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
     { label: "Accounts Payable", ledger: -closingOf("ap"), open: sumOpen("payable") },
   ];
   const todayIso = new Date().toISOString().slice(0, 10);
+  const lastMonthStart = (() => { const d = new Date(`${todayIso.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); const m = d.toISOString().slice(0, 10); return m < books.booksStart ? books.booksStart : m; })();
   const lastMonth = (() => { const d = new Date(`${todayIso.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); })();
   const accountName = new Map(accounts.map((a) => [a.id, `${a.code} · ${a.name}`]));
   const shown = tb.filter((r) => r.closing !== 0 || r.debit !== 0 || r.credit !== 0);
@@ -122,6 +123,19 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
             </ul>
           </Card>
         )}
+
+        <Card title="Books of account">
+          <div className="space-y-4">
+            <p className="text-body-regular text-text-secondary">
+              {client.book_type === "manual"
+                ? "This client keeps manual bound books: print the pages and copy them into the books."
+                : "This client keeps loose-leaf books: print the pages for the period, then bind them at year end."}{" "}
+              Page numbers continue from the start of the taxable year.
+            </p>
+            <BookPicker clientId={id} defaultFrom={`${lastMonthStart}`} defaultTo={monthEnd(lastMonthStart.slice(0, 7))} />
+            {client.book_type !== "manual" && <PermitForm clientId={id} permit={books.permit} />}
+          </div>
+        </Card>
 
         <Card title="Receivables and payables">
           <div className="space-y-6">

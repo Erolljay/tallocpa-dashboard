@@ -224,3 +224,12 @@ export async function returnArapAction(clientId: string, updateId: string, _: Fo
   revalidatePath(path(clientId), "layout");
   return { ok: "Returned." };
 }
+
+/** The loose-leaf books permit / registration reference printed on every page. */
+export async function savePermitAction(clientId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const { error } = await supabase.rpc("set_books_permit", { p_client: clientId, p_permit: String(form.get("permit") ?? "") });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  return { ok: "Saved." };
+}

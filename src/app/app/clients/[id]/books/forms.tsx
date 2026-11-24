@@ -8,6 +8,7 @@ import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import {
   confirmAllAction,
+  savePermitAction,
   confirmEntryAction,
   postArapAction,
   previewArapAction,
@@ -326,5 +327,51 @@ export function ArapDecision({ clientId, updateId }: { clientId: string; updateI
       </form>
       {(posted.error || ret.error) && <span className="text-caption-1-regular text-text-error-primary">{posted.error ?? ret.error}</span>}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Books of account: print or download a book for a period.
+// ---------------------------------------------------------------------------
+const BOOK_OPTIONS = [
+  ["general_journal", "General Journal"],
+  ["general_ledger", "General Ledger"],
+  ["cash_receipts", "Cash Receipts Book"],
+  ["cash_disbursements", "Cash Disbursements Book"],
+  ["sales", "Sales Journal"],
+  ["purchases", "Purchase Journal"],
+] as const;
+
+export function BookPicker({ clientId, defaultFrom, defaultTo }: { clientId: string; defaultFrom: string; defaultTo: string }) {
+  const [book, setBook] = useState<string>("general_journal");
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(defaultTo);
+  const qs = `book=${book}&from=${from}&to=${to}`;
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <Field label="Book" htmlFor="book_kind">
+        <Select id="book_kind" value={book} onChange={(e) => setBook(e.target.value)} className="w-60">
+          {BOOK_OPTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </Select>
+      </Field>
+      <Field label="From" htmlFor="book_from"><Input id="book_from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" /></Field>
+      <Field label="To" htmlFor="book_to"><Input id="book_to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-40" /></Field>
+      <a href={`/app/clients/${clientId}/books/print?${qs}`} className="pb-2 text-body-medium text-text-primary hover:underline">Print pages</a>
+      <a href={`/app/clients/${clientId}/books/export?kind=book&${qs}`} className="pb-2 text-body-medium text-text-primary hover:underline">Excel</a>
+    </div>
+  );
+}
+
+export function PermitForm({ clientId, permit }: { clientId: string; permit: string | null }) {
+  const [state, action, pending] = useActionState(savePermitAction.bind(null, clientId), {} as FormState);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-3">
+      <Field label="Loose-leaf books permit / registration reference" htmlFor="permit" hint="Printed on every page, e.g. the ORUS books registration reference and date.">
+        <Input id="permit" name="permit" defaultValue={permit ?? ""} className="w-96 max-w-full" />
+      </Field>
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+      {state.ok && <span className="pb-2 text-body-regular text-text-secondary">{state.ok}</span>}
+      {state.error && <span className="pb-2 text-body-regular text-text-error-primary">{state.error}</span>}
+    </form>
   );
 }

@@ -1,0 +1,66 @@
+/*
+ * Books of account printed like the firm's columnar journal pads: numbered
+ * ruled lines down both edges, red column rules, blue line rules, money columns
+ * split into pesos and centavos. A paper replica (like the BIR 2316 module), so
+ * it keeps paper colours in both themes: white sheet, red and blue rules.
+ * Portrait: 8.5 × 13 in (long bond). Landscape: 13 × 8.5 in.
+ */
+@page padPortrait { size: 8.5in 13in; margin: 0.35in; }
+@page padLandscape { size: 13in 8.5in; margin: 0.35in; }
+
+.sheet {
+  --red: #d9534f;
+  --blue: #8db7df;
+  --ink: #1d2a3a;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: #fffdf8;
+  margin: 0 auto 24px;
+  padding: 18px 20px 14px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.18);
+  break-after: page;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.sheet:last-child { break-after: auto; }
+.portrait { page: padPortrait; width: 816px; }
+.landscape { page: padLandscape; width: 1248px; }
+
+.head { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 6px; border-bottom: 2px solid var(--red); margin-bottom: 4px; }
+.who { font-size: 11px; line-height: 1.35; }
+.who strong { font-size: 13px; }
+.book { text-align: end; font-size: 11px; line-height: 1.35; }
+.book strong { font-size: 15px; letter-spacing: 0.02em; text-transform: uppercase; }
+.note { font-size: 9.5px; font-style: italic; }
+
+.pad { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px; }
+.pad th {
+  font-weight: 700; font-size: 9px; line-height: 1.15; text-align: center; vertical-align: bottom;
+  padding: 3px 2px; border-bottom: 2px solid var(--red); border-inline-start: 1px solid var(--red);
+}
+.pad td {
+  height: 19px; padding: 0 3px; border-bottom: 1px solid var(--blue); border-inline-start: 1px solid var(--blue);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.landscape .pad td { height: 21px; }
+/* Line numbers on both edges, set off by double red rules. */
+.pad .no { width: 24px; text-align: center; color: var(--red); font-size: 8.5px; border-inline-start: none; }
+.pad .noEnd { border-inline-start: 3px double var(--red); }
+.pad .first { border-inline-start: 3px double var(--red); }
+/* Money: pesos | centavos, each column framed in red. */
+.pad .pesos { text-align: end; border-inline-start: 1px solid var(--red); font-variant-numeric: tabular-nums; }
+.pad .cents { width: 20px; text-align: center; border-inline-start: 1px solid var(--blue); font-variant-numeric: tabular-nums; }
+.pad th.money { border-inline-start: 1px solid var(--red); }
+
+.heading td { font-weight: 700; }
+.total td { font-weight: 700; }
+.total .pesos, .total .cents { border-top: 1px solid var(--ink); }
+.indent .text1 { padding-inline-start: 22px; }
+.noteRow .text1 { font-style: italic; padding-inline-start: 34px; }
+
+.foot { display: flex; justify-content: space-between; font-size: 9px; padding-top: 5px; }
+
+@media print {
+  .sheet { margin: 0; box-shadow: none; padding: 0; background: #fff; }
+  .portrait, .landscape { width: auto; }
+}
