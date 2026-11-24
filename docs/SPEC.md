@@ -69,6 +69,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 - A **brand** holds: display name, legal name, logo files, color tokens, BIR registration (TIN, RDO, COR), **tax-on-fee setting** (non-VAT 3% percentage tax ↔ 12% VAT), bank and e-wallet accounts for payments, fee schedule, portal domain, email sender.
 - Only **Tallo CPA** is configured now. Every client belongs to one brand.
+- **Branches (Q68):** each brand has branches; **Iloilo** is the only one now. Every client and every staff member except the Owner belongs to one branch. When the Owner assigns a client, staff are listed by branch with the client's branch first. Access still follows assignments, not branches. Settings → Branches adds, renames and closes branches; a closed branch keeps its history.
 - **Gross receipts watch (Q55):** the OS sums the brand's own year-to-date collections and warns the Owner at **₱2.5M**, before the ₱3M VAT registration threshold. Switching the setting to VAT updates SOAs and quotes; existing prices are not changed by themselves.
 
 ### 3.2 Clients & engagements (Q3, Q17, Q33)
@@ -174,6 +175,8 @@ Prepared (Staff)
   - Client who lets the firm remit (firm-remits): the firm pays BIR from its own funds and records **"Advances to clients – taxes"** (Q32).
   - Client who pays BIR directly (client-pays-direct): the dues stay as **"BIR payment pending (client)"** with reminders (Q32).
 - The Acting Approver **cannot** approve an unpaid return (Q58).
+
+**Acting approver (Q58), built:** the Owner names one active **Reviewer** at a time in Settings → Acting approver, for whole Manila days, with a limit on the tax due per return and a reason, and can end it early. While named, the Reviewer sees every client-approved return on the Review page and gives the final approval only if the tax due is within the limit, the return is **fully paid** (payment check), and they **did not prepare it**; everything else waits for the Owner. The step is recorded as "as acting approver" with the appointment and limit. The Owner gets a **daily email digest** (nightly job, for the day before) and sees a notice on the Dashboard; Settings → Acting approver lists the last 30 days of such approvals.
 
 ### 3.9 Collections & Statement of Account (Q24–Q27, Q31, Q32)
 

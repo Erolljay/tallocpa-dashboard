@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
+import { activeFor, type Delegation } from "@/lib/acting/period";
 import { availableActions, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DocumentUpload } from "@/components/document-upload";
@@ -59,13 +60,17 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   if (!f) notFound();
   const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
 
-  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }] = await Promise.all([
+  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
     supabase.from("staff_assignments").select("user_id, role").eq("client_id", f.client_id),
     supabase.from("staff_profiles").select("user_id, full_name"),
     supabase.from("client_users").select("user_id, full_name").eq("client_id", f.client_id),
     supabase.from("documents").select("id, doc_type, file_name, created_at").eq("filing_instance_id", id).neq("status", "uploading").order("created_at"),
+    me.staff.role === "reviewer"
+      ? supabase.from("acting_approver_delegations").select("id, delegate_user_id, starts_at, ends_at, max_tax_due, reason, ended_at").eq("delegate_user_id", me.userId).is("ended_at", null)
+      : Promise.resolve({ data: [] as Delegation[] }),
   ]);
+  const acting = activeFor((delegations ?? []) as Delegation[], me.userId);
   const canAttach = me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId);
   const thisMonth = `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date()).slice(0, 7)}-01`;
   const nameOf = new Map([...(staff ?? []), ...(clientUsers ?? [])].map((p) => [p.user_id, p.full_name]));
@@ -75,11 +80,12 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   const done = stepIndex(status);
 
   const actions = availableActions(
-    { status, openQuery: f.open_query, preparedBy },
+    { status, openQuery: f.open_query, preparedBy, taxDue: f.tax_due == null ? null : Number(f.tax_due) },
     {
       userId: me.userId,
       role: me.staff.role,
       assignedAs: (team ?? []).filter((t) => t.user_id === me.userId).map((t) => t.role as "preparer" | "reviewer"),
+      actingLimit: acting ? Number(acting.max_tax_due) : null,
     },
   );
 
@@ -133,7 +139,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             )}
             <div className="mt-4">
               {actions.length > 0 ? (
-                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} />
+                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} />
               ) : (
                 <p className="text-body-regular text-text-secondary">{status === "proof_uploaded" ? "This return is done." : "Nothing for you to do on this return right now."}</p>
               )}
@@ -149,6 +155,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
                   <li key={e.id} className="border-l-2 border-separator-border pl-3">
                     <p className="text-text-primary">
                       <span className="font-medium">{(e.actor && nameOf.get(e.actor)) ?? "Someone"}</span> {eventText[e.action ?? ""] ?? `moved it to ${filingStatusLabel[e.to_status] ?? e.to_status}`}
+                      {e.action === "owner_approve" && e.data.acting_approver === true ? " as acting approver" : ""}
                       {e.action === "owner_approve" && typeof e.data.payment_status === "string" ? ` · payment: ${paymentText[e.data.payment_status] ?? e.data.payment_status}${e.data.approve_unpaid ? " (approved unpaid)" : ""}` : ""}
                     </p>
                     {e.note && <p className="text-text-secondary">“{e.note}”</p>}

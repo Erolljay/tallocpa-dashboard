@@ -31,6 +31,7 @@ export async function inviteStaffAction(_: FormState, form: FormData): Promise<F
     brand_id: owner.staff.brandId,
     full_name: parsed.data.full_name,
     role: parsed.data.role,
+    branch_id: parsed.data.branch_id,
   });
   if (error) return { error: error.code === "23505" ? "That person is already on the staff list." : `Could not add staff: ${error.message}` };
   revalidatePath("/app/staff");

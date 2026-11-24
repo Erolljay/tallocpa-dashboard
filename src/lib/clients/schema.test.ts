@@ -10,6 +10,7 @@ const base = {
   book_type: "loose_leaf",
   payment_mode: "firm_remits",
   submission_cutoff_day: "5",
+  branch_id: "00000000-0000-4000-8000-0000000000b1",
 };
 
 describe("newClientSchema", () => {

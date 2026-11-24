@@ -27,6 +27,8 @@ export function SignOffActions(props: {
   audience?: "staff" | "client";
   paymentCheck?: PaymentCheck | null;
   clientId?: string;
+  /** Set when the viewer gives the final approval as acting approver (Q58): their limit. */
+  actingLimit?: number | null;
 }) {
   if (props.actions.length === 0) return null;
   return (
@@ -38,7 +40,7 @@ export function SignOffActions(props: {
   );
 }
 
-function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string }) {
+function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null }) {
   const [state, run, pending] = useActionState(advanceFilingAction.bind(null, filingId, action), {} as SignOffState);
   const id = (n: string) => `${action}-${n}`;
   const secondary = action === "kick_back" || action === "client_query";
@@ -51,7 +53,7 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
         </Field>
       )}
 
-      {action === "owner_approve" && <PaymentCheckView check={paymentCheck ?? null} taxDue={taxDue} paymentMode={paymentMode} clientId={clientId} />}
+      {action === "owner_approve" && <PaymentCheckView check={paymentCheck ?? null} taxDue={taxDue} paymentMode={paymentMode} clientId={actingLimit == null ? clientId : undefined} actingLimit={actingLimit ?? null} />}
 
       {action === "file" && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -119,8 +121,9 @@ const checkTone = { paid: "done", partial: "waiting", unpaid: "blocked", not_app
 const checkWord = { paid: "Paid", partial: "Partly paid", unpaid: "Unpaid", not_applicable: "Nothing to pay" } as const;
 
 /** The payment check at the Owner's approval (Q21, Q25), with the tick to approve anyway. */
-function PaymentCheckView({ check, taxDue, paymentMode, clientId }: { check: PaymentCheck | null; taxDue: number | null; paymentMode: string; clientId?: string }) {
+function PaymentCheckView({ check, taxDue, paymentMode, clientId, actingLimit }: { check: PaymentCheck | null; taxDue: number | null; paymentMode: string; clientId?: string; actingLimit: number | null }) {
   const short = check && (check.status === "partial" || check.status === "unpaid");
+  const acting = actingLimit != null;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -142,7 +145,14 @@ function PaymentCheckView({ check, taxDue, paymentMode, clientId }: { check: Pay
       {clientId && (
         <Link href={`/app/collections/${clientId}`} className="text-body-regular text-button-ghost-foreground hover:underline">Open the client in Collections</Link>
       )}
-      {short && (
+      {acting && (
+        <Notice tone={short ? "blocked" : "waiting"}>
+          {short
+            ? "Not fully paid. Only the Owner can approve this return; leave it for them."
+            : `You approve as acting approver (limit ${peso.format(actingLimit)} tax due). The Owner sees this in the daily digest.`}
+        </Notice>
+      )}
+      {short && !acting && (
         <label className="flex items-center gap-2 text-body-regular text-text-primary">
           <input type="checkbox" name="approve_unpaid" className="size-4" />
           Approve even though unpaid (the balance stays a client receivable{paymentMode === "firm_remits" ? ": an advance to the client for taxes" : ""})

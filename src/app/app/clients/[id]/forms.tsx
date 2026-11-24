@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
+import type { Branch } from "@/lib/branches";
+import { StaffOptions } from "../client-form";
 import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
@@ -27,7 +29,7 @@ export function EngagementForm({ clientId, serviceLines }: { clientId: string; s
   );
 }
 
-export function AssignForm({ clientId, staff }: { clientId: string; staff: { user_id: string; full_name: string }[] }) {
+export function AssignForm({ clientId, staff, branches, branch }: { clientId: string; staff: { user_id: string; full_name: string; role: string; branch_id: string | null }[]; branches: Branch[]; branch: string | null }) {
   const [state, action, pending] = useActionState(assignStaffAction.bind(null, clientId), {} as FormState);
   return (
     <form action={action} className="mt-4 grid gap-3 border-t border-separator-border pt-4 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
@@ -35,7 +37,7 @@ export function AssignForm({ clientId, staff }: { clientId: string; staff: { use
       <Field label="Staff member" htmlFor="user_id">
         <Select id="user_id" name="user_id" defaultValue="" required>
           <option value="" disabled>Choose…</option>
-          {staff.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+          <StaffOptions staff={staff} branches={branches} branch={branch} />
         </Select>
       </Field>
       <Field label="Role" htmlFor="role">
