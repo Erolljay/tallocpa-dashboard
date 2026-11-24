@@ -23,7 +23,7 @@ async function Detail({ params }: Pick<PageProps<"/portal/statement/[id]">, "par
   if (!s) notFound();
   return (
     <div className="space-y-4">
-      <Link href="/portal/statement" className="text-sm text-link hover:underline print:hidden">← All statements</Link>
+      <Link href="/portal/statement" className="text-body-regular text-button-ghost-foreground hover:underline print:hidden">← All statements</Link>
       <StatementView s={s} today={manilaToday()} />
     </div>
   );

@@ -51,19 +51,19 @@ async function Queue() {
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => me.staff.role === "owner" || mine.has(r.client_id));
 
   return (
-    <Card title={`Waiting for review (${rows.length})`} actions={<span className="text-xs text-ink-subtle">Oldest first</span>}>
+    <Card title={`Waiting for review (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Oldest first</span>}>
       {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">Nothing waiting. New uploads appear here.</p>
+        <p className="text-body-regular text-text-secondary">Nothing waiting. New uploads appear here.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead className="text-left text-ink-subtle">
+          <table className="w-full min-w-[44rem] text-body-regular">
+            <thead className="text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="pb-2 font-medium">Received</th>
-                <th scope="col" className="pb-2 font-medium">Client</th>
-                <th scope="col" className="pb-2 font-medium">Document</th>
-                <th scope="col" className="pb-2 font-medium">Month</th>
-                <th scope="col" className="pb-2 font-medium">OCR</th>
+                <th scope="col" className="text-start pb-2">Received</th>
+                <th scope="col" className="text-start pb-2">Client</th>
+                <th scope="col" className="text-start pb-2">Document</th>
+                <th scope="col" className="text-start pb-2">Month</th>
+                <th scope="col" className="text-start pb-2">OCR</th>
               </tr>
             </thead>
             <tbody>
@@ -71,18 +71,18 @@ async function Queue() {
                 const e = r.extractions;
                 const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
                 return (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-2 pr-4 tabular-nums text-ink-muted">{when(r.created_at)}</td>
-                    <td className="py-2 pr-4 text-ink-heading">{r.clients?.name ?? "—"}</td>
+                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                    <td className="py-2 pr-4 tabular-nums text-text-secondary">{when(r.created_at)}</td>
+                    <td className="py-2 pr-4 text-text-primary">{r.clients?.name ?? "—"}</td>
                     <td className="py-2 pr-4">
-                      <Link href={`/app/documents/${r.id}`} className="font-medium text-link hover:underline">{DOC_TYPES[r.doc_type]}</Link>
-                      <p className="max-w-56 truncate text-xs text-ink-subtle">{r.file_name}</p>
+                      <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[r.doc_type]}</Link>
+                      <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.file_name}</p>
                     </td>
-                    <td className="py-2 pr-4 text-ink-muted">
+                    <td className="py-2 pr-4 text-text-secondary">
                       {showMonth(r.period)}
-                      {r.late && <span className="ml-1 text-xs text-warning">late</span>}
-                      {r.carried_from && <span className="ml-1 text-xs text-warning" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
-                      {r.prior_year && <span className="ml-1 text-xs text-danger-text">prior year</span>}
+                      {r.late && <span className="ml-1 text-caption-1-regular text-status-yellow-text">late</span>}
+                      {r.carried_from && <span className="ml-1 text-caption-1-regular text-status-yellow-text" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
+                      {r.prior_year && <span className="ml-1 text-caption-1-regular text-text-error-primary">prior year</span>}
                     </td>
                     <td className="py-2">
                       {!e ? <Badge>Not read yet</Badge> : e.status === "failed" ? <Badge tone="blocked">Failed</Badge> : e.status === "pending" ? <Badge tone="progress">Reading…</Badge> : low ? <Badge tone="waiting">{low} to check</Badge> : <Badge tone={docStatusTone[r.status]}>{docStatusLabel[r.status]}</Badge>}

@@ -97,16 +97,16 @@ export function ClientForm(props: Props) {
             <legend className="sr-only">Tax types on the COR</legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {(Object.keys(TAX_TYPES) as TaxType[]).map((t) => (
-                <label key={t} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-ink-strong has-checked:border-action has-checked:bg-surface-tint">
-                  <input type="checkbox" name="tax_types" value={t} checked={taxTypes.includes(t)} onChange={() => toggle(t)} className="size-4 accent-[var(--action)]" />
+                <label key={t} className="flex items-center gap-2 rounded-lg border border-separator-border px-3 py-2 text-body-regular text-text-primary has-checked:border-accent-500 has-checked:bg-button-ghost-background">
+                  <input type="checkbox" name="tax_types" value={t} checked={taxTypes.includes(t)} onChange={() => toggle(t)} className="size-4" />
                   {TAX_TYPES[t]}
                 </label>
               ))}
             </div>
-            {(e.tax_types || previewError) && <p className="mt-2 text-xs text-danger-text">{e.tax_types ?? previewError}</p>}
+            {(e.tax_types || previewError) && <p className="mt-2 text-caption-1-regular text-text-error-primary">{e.tax_types ?? previewError}</p>}
           </fieldset>
           {taxSetupChanged && (
-            <div className="mt-4 border-t border-border pt-4">
+            <div className="mt-4 border-t border-separator-border pt-4">
               <Field
                 label="Change took effect on"
                 htmlFor="effective_date"
@@ -181,13 +181,13 @@ export function ClientForm(props: Props) {
       <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
         <Card title="Filing obligations">
           {preview.length === 0 && changes.end.length === 0 ? (
-            <p className="text-sm text-ink-muted">Tick the tax types on the COR to see the forms this client will file.</p>
+            <p className="text-body-regular text-text-secondary">Tick the tax types on the COR to see the forms this client will file.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {preview.map((o) => (
                 <li key={o.form} className="flex items-center justify-between gap-2 py-2">
-                  <span className="font-medium text-ink-heading">{o.form}</span>
-                  <span className="flex items-center gap-2 text-ink-muted">
+                  <span className="font-medium text-text-primary">{o.form}</span>
+                  <span className="flex items-center gap-2 text-text-secondary">
                     {starting.has(o.form) && initial && <Badge tone="progress">Starts</Badge>}
                     {frequencyLabel[o.frequency]}
                   </span>
@@ -195,13 +195,13 @@ export function ClientForm(props: Props) {
               ))}
               {changes.end.map((form) => (
                 <li key={form} className="flex items-center justify-between gap-2 py-2">
-                  <span className="font-medium text-ink-subtle line-through">{form}</span>
+                  <span className="font-medium text-text-tertiary line-through">{form}</span>
                   <Badge tone="waiting">Stops</Badge>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-4 text-xs text-ink-subtle">
+          <p className="mt-4 text-caption-1-regular text-text-tertiary">
             {props.mode === "new" ? "Check against the COR. You can edit the client after saving." : "Filings already started stay; dropped forms stop from the effective date."}
           </p>
         </Card>

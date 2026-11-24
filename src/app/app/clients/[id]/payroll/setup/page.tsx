@@ -32,7 +32,7 @@ async function Setup({ params }: Pick<PageProps<"/app/clients/[id]/payroll/setup
       <div className="space-y-6">
         {(["earning", "deduction", "employer_contribution"] as const).map((k) => (
           <Card key={k} title={`${ITEM_KINDS[k]}s`}>
-            <ul className="space-y-4 divide-y divide-border">
+            <ul className="space-y-4 divide-y divide-separator-border">
               {items.filter((i) => i.kind === k).map((i) => (
                 <li key={i.id} className="pt-4 first:pt-0"><ItemForm clientId={id} item={i} used={used.get(i.id) ?? false} /></li>
               ))}
@@ -43,19 +43,19 @@ async function Setup({ params }: Pick<PageProps<"/app/clients/[id]/payroll/setup
           <ItemForm clientId={id} item={null} used={false} />
         </Card>
         <Card title="BIR 2316 signatory">
-          <p className="mb-3 text-sm text-ink-muted">Printed on every BIR 2316 of this client as the present employer&rsquo;s authorized agent (items 53 and 55), with the employer&rsquo;s ZIP code (item 14A).</p>
+          <p className="mb-3 text-body-regular text-text-secondary">Printed on every BIR 2316 of this client as the present employer&rsquo;s authorized agent (items 53 and 55), with the employer&rsquo;s ZIP code (item 14A).</p>
           <PayrollSettingsForm clientId={id} settings={settings} />
         </Card>
         <Card title="What the BIR categories mean">
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+          <dl className="grid gap-3 text-body-regular sm:grid-cols-2">
             {CATEGORY_KEYS.map((c) => (
               <div key={c}>
-                <dt className="font-medium text-ink-heading">{CATEGORIES[c].label} <span className="font-normal text-ink-subtle">· {ITEM_KINDS[CATEGORIES[c].kind]}</span></dt>
-                <dd className="text-ink-muted">{CATEGORIES[c].help}</dd>
+                <dt className="font-medium text-text-primary">{CATEGORIES[c].label} <span className="font-normal text-text-tertiary">· {ITEM_KINDS[CATEGORIES[c].kind]}</span></dt>
+                <dd className="text-text-secondary">{CATEGORIES[c].help}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-4 text-sm text-ink-muted">An item already used on the payroll cannot be deleted or change category; deactivate it and add a new one. Deactivated items leave the Excel register but stay in past months.</p>
+          <p className="mt-4 text-body-regular text-text-secondary">An item already used on the payroll cannot be deleted or change category; deactivate it and add a new one. Deactivated items leave the Excel register but stay in past months.</p>
         </Card>
       </div>
     </>

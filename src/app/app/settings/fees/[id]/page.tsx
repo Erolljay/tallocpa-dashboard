@@ -39,7 +39,7 @@ async function Editor({ params }: Pick<PageProps<"/app/settings/fees/[id]">, "pa
             <Badge tone={statusTone[schedule.status]}>{statusLabel[schedule.status]}</Badge>{" "}
             Takes effect {longDate(schedule.effective_from)}.{" "}
             {draft ? "Enter prices, then activate. Nothing here reaches clients until it is active." : "This schedule can no longer be edited. To change prices, start a new version."}{" "}
-            <Link href="/app/settings/fees" className="text-link hover:underline">All schedules</Link>
+            <Link href="/app/settings/fees" className="text-button-ghost-foreground hover:underline">All schedules</Link>
           </>
         }
         actions={<LinkButton href={`/app/settings/fees/quote?schedule=${schedule.id}`} variant="secondary">Preview a quote</LinkButton>}
@@ -93,24 +93,24 @@ function ReadOnly({ items, settings, taxLabel, notes }: { items: Awaited<ReturnT
   return (
     <div className="space-y-6">
       <Card title="Schedule settings">
-        <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-ink-muted">Tax on our fee</dt><dd className="text-ink-heading">{taxLabel}, {settings.pricesIncludeTax ? "included in prices" : "added on top"}</dd></div>
-          <div><dt className="text-ink-muted">Quotes valid for</dt><dd className="text-ink-heading">{settings.quoteValidDays} days</dd></div>
-          <div><dt className="text-ink-muted">Minimum monthly retainer</dt><dd className="amount text-left text-ink-heading">{settings.minimumMonthlyRetainer === null ? "None" : peso.format(settings.minimumMonthlyRetainer)}</dd></div>
+        <dl className="grid gap-x-6 gap-y-3 text-body-regular sm:grid-cols-2">
+          <div><dt className="text-text-secondary">Tax on our fee</dt><dd className="text-text-primary">{taxLabel}, {settings.pricesIncludeTax ? "included in prices" : "added on top"}</dd></div>
+          <div><dt className="text-text-secondary">Quotes valid for</dt><dd className="text-text-primary">{settings.quoteValidDays} days</dd></div>
+          <div><dt className="text-text-secondary">Minimum monthly retainer</dt><dd className="amount text-start text-text-primary">{settings.minimumMonthlyRetainer === null ? "None" : peso.format(settings.minimumMonthlyRetainer)}</dd></div>
           <div>
-            <dt className="text-ink-muted">Late-submission surcharge</dt>
-            <dd className="text-ink-heading">{settings.lateSurchargeAmount === null ? "None" : `${peso.format(settings.lateSurchargeAmount)} a month, ${settings.lateSurchargeAuto ? "added automatically" : "after Owner approval"}`}</dd>
+            <dt className="text-text-secondary">Late-submission surcharge</dt>
+            <dd className="text-text-primary">{settings.lateSurchargeAmount === null ? "None" : `${peso.format(settings.lateSurchargeAmount)} a month, ${settings.lateSurchargeAuto ? "added automatically" : "after Owner approval"}`}</dd>
           </div>
-          {notes && <div className="sm:col-span-2"><dt className="text-ink-muted">Notes</dt><dd className="whitespace-pre-line text-ink-heading">{notes}</dd></div>}
+          {notes && <div className="sm:col-span-2"><dt className="text-text-secondary">Notes</dt><dd className="whitespace-pre-line text-text-primary">{notes}</dd></div>}
         </dl>
       </Card>
       {[...groups.entries()].map(([letter, list]) => (
         <Card key={letter} title={`${letter}. ${COMPONENTS[letter].title}`}>
-          <ul className="divide-y divide-border text-sm">
+          <ul className="divide-y divide-separator-border text-body-regular">
             {list.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-4 py-2">
-                <span className="min-w-0 flex-1 text-ink-heading">{itemName(i)}</span>
-                <span className="amount shrink-0 tabular-nums text-ink-heading">{show(i)}</span>
+                <span className="min-w-0 flex-1 text-text-primary">{itemName(i)}</span>
+                <span className="amount shrink-0 tabular-nums text-text-primary">{show(i)}</span>
               </li>
             ))}
           </ul>

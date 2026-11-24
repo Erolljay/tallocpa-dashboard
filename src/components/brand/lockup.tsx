@@ -1,13 +1,13 @@
 import { Mark } from "./mark";
 
-/** Header lockup (design system: SectionHeading): 40px mark, space-3, name in heading-md, tagline in eyebrow. */
+/** Header lockup: 32px mark beside the wordmark (Montserrat) and the tagline (Caption 2). */
 export function Lockup() {
   return (
-    <div className="flex items-center gap-3">
-      <Mark className="size-10 shrink-0" />
-      <div>
-        <p className="font-display text-xl font-semibold leading-7 text-ink-heading">Tallo CPA</p>
-        <p className="-mt-0.5 text-[10px] leading-[15px] uppercase tracking-[0.05em] text-ink-subtle">Clear Numbers. Clean Compliance.</p>
+    <div className="flex items-center gap-2">
+      <Mark className="size-8 shrink-0 rounded-lg" />
+      <div className="min-w-0">
+        <p className="font-display text-title-3-semibold text-text-primary">Tallo CPA</p>
+        <p className="text-caption-2-regular whitespace-nowrap text-text-tertiary">Clear Numbers. Clean Compliance.</p>
       </div>
     </div>
   );

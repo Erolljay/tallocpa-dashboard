@@ -140,15 +140,15 @@ export function TaxForm({ taxOnFee, warning }: { taxOnFee: TaxOnFee; warning: nu
   return (
     <form action={run} className="space-y-4">
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-ink-strong">Tax on our fee</legend>
+        <legend className="mb-2 text-body-medium text-text-primary">Tax on our fee</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {(Object.keys(TAX_ON_FEE) as TaxOnFee[]).map((k) => (
-            <label key={k} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm ${chosen === k ? "border-action bg-surface-muted" : "border-border"}`}>
+            <label key={k} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-body-regular ${chosen === k ? "border-accent-500 bg-background-secondary-default" : "border-separator-border"}`}>
               <input type="radio" name="tax_on_fee" value={k} checked={chosen === k} onChange={() => setChosen(k)} className="mt-0.5 size-4 accent-action" />
               <span>
-                <span className="block font-medium text-ink-heading">{TAX_ON_FEE[k]}</span>
-                <span className="text-ink-muted">{k === "vat_12" ? "Only once the firm is registered for VAT with the BIR." : "For a non-VAT firm with gross receipts up to ₱3,000,000 a year."}</span>
-                {k === taxOnFee && <span className="mt-1 block text-xs text-ink-subtle">Current setting</span>}
+                <span className="block font-medium text-text-primary">{TAX_ON_FEE[k]}</span>
+                <span className="text-text-secondary">{k === "vat_12" ? "Only once the firm is registered for VAT with the BIR." : "For a non-VAT firm with gross receipts up to ₱3,000,000 a year."}</span>
+                {k === taxOnFee && <span className="mt-1 block text-caption-1-regular text-text-tertiary">Current setting</span>}
               </span>
             </label>
           ))}
@@ -170,7 +170,7 @@ export function TaxForm({ taxOnFee, warning }: { taxOnFee: TaxOnFee; warning: nu
         </Notice>
       )}
       <Field label="Warn me when gross receipts reach" htmlFor="gross_receipts_warning" hint="Year-to-date fees collected. The VAT registration threshold is ₱3,000,000.">
-        <Input id="gross_receipts_warning" name="gross_receipts_warning" inputMode="decimal" defaultValue={state.values?.gross_receipts_warning ?? pesoInput(warning)} required className="w-48 text-right tabular-nums" />
+        <Input id="gross_receipts_warning" name="gross_receipts_warning" inputMode="decimal" defaultValue={state.values?.gross_receipts_warning ?? pesoInput(warning)} required className="w-48 text-end tabular-nums" />
       </Field>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant={switching ? "primary" : "secondary"} disabled={pending}>{pending ? "Saving…" : switching ? "Confirm Switch" : "Save"}</Button>
@@ -218,7 +218,7 @@ export function BrandFileUpload({ kind, hasFile }: { kind: BrandFileKind; hasFil
       <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>
         {busy ? "Uploading…" : hasFile ? `Replace ${noun}` : `Upload ${noun}`}
       </Button>
-      <span className="text-xs text-ink-subtle">{kind === "cor" ? "PDF, PNG or JPEG, up to 5 MB." : "SVG or PNG, up to 1 MB."}</span>
+      <span className="text-caption-1-regular text-text-tertiary">{kind === "cor" ? "PDF, PNG or JPEG, up to 5 MB." : "SVG or PNG, up to 1 MB."}</span>
       <Result state={state} />
     </div>
   );

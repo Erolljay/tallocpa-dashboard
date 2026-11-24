@@ -14,8 +14,8 @@ export function AddPaymentAccountForm() {
   const [state, run, pending] = useActionState(addPaymentAccountAction, {} as PaymentSettingsState);
   return (
     <details>
-      <summary className="cursor-pointer list-none text-sm font-medium text-link hover:underline">Add a bank or e-wallet account</summary>
-      <form action={run} className="mt-3 grid gap-3 rounded-xl border border-border bg-surface-muted p-4 sm:grid-cols-2">
+      <summary className="cursor-pointer list-none text-body-medium text-button-ghost-foreground hover:underline">Add a bank or e-wallet account</summary>
+      <form action={run} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-primary-default-muted p-4 sm:grid-cols-2">
         <Field label="Type" htmlFor="pa-kind">
           <Select id="pa-kind" name="kind" defaultValue="bank">
             <option value="bank">Bank</option>
@@ -58,7 +58,7 @@ export function ReplaceQrForm({ accountId, oldPath }: { accountId: string; oldPa
   const [state, run, pending] = useActionState(replaceQrAction.bind(null, accountId, oldPath), {} as PaymentSettingsState);
   return (
     <details>
-      <summary className="cursor-pointer list-none text-sm text-link hover:underline">{oldPath ? "Replace QR" : "Add QR"}</summary>
+      <summary className="cursor-pointer list-none text-body-regular text-button-ghost-foreground hover:underline">{oldPath ? "Replace QR" : "Add QR"}</summary>
       <form action={run} className="mt-2 flex flex-wrap items-end gap-2">
         <Input name="qr" type="file" accept="image/png,image/jpeg,image/webp" required aria-label="QR code image" className="w-60 py-2" />
         <Button type="submit" variant="secondary" size="sm" disabled={pending}>{pending ? "Uploading…" : "Upload"}</Button>
@@ -71,7 +71,7 @@ export function ReplaceQrForm({ accountId, oldPath }: { accountId: string; oldPa
 export function ToggleAccountButton({ accountId, active }: { accountId: string; active: boolean }) {
   const [pending, start] = useTransition();
   return (
-    <button type="button" disabled={pending} onClick={() => start(async () => void (await setAccountActiveAction(accountId, !active)))} className="text-sm text-link hover:underline disabled:opacity-50">
+    <button type="button" disabled={pending} onClick={() => start(async () => void (await setAccountActiveAction(accountId, !active)))} className="text-body-regular text-button-ghost-foreground hover:underline disabled:opacity-50">
       {pending ? "Saving…" : active ? "Hide" : "Show again"}
     </button>
   );
@@ -82,7 +82,7 @@ export function PaymentDaysForm({ days }: { days: number }) {
   return (
     <form action={run} className="flex flex-wrap items-end gap-3">
       <Field label="Days to pay a statement" htmlFor="soa_payment_days" hint="A statement issued on the 10th with 5 days is payable by the 15th. Tax items keep their own BIR due date.">
-        <Input id="soa_payment_days" name="soa_payment_days" type="number" min={0} max={31} defaultValue={days} required className="w-24 text-right tabular-nums" />
+        <Input id="soa_payment_days" name="soa_payment_days" type="number" min={0} max={31} defaultValue={days} required className="w-24 text-end tabular-nums" />
       </Field>
       <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
       <Result state={state} />

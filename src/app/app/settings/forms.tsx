@@ -26,8 +26,8 @@ export function RuleEditor(props: {
 
   return (
     <details className="group">
-      <summary className="cursor-pointer list-none text-sm text-link hover:underline">Edit</summary>
-      <form action={action} className="mt-3 grid gap-3 rounded-xl border border-border bg-surface-muted p-4 sm:grid-cols-2">
+      <summary className="cursor-pointer list-none text-body-regular text-button-ghost-foreground hover:underline">Edit</summary>
+      <form action={action} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-primary-default-muted p-4 sm:grid-cols-2">
         <Field label="Due" htmlFor={id("due_kind")}>
           <Select id={id("due_kind")} name="due_kind" value={kind} onChange={(ev) => setKind(ev.target.value as DueRule["kind"])}>
             <option value="day_of_month_after">A day of a month after the {p}</option>
@@ -61,13 +61,13 @@ export function RuleEditor(props: {
         <Field label="BIR issuance" htmlFor={id("source")} hint="e.g. RR 8-2024, RMC 12-2026" error={e.source}>
           <Input id={id("source")} name="source" defaultValue={props.source === "UNVERIFIED" ? "" : props.source} />
         </Field>
-        <label className="flex items-center gap-2 text-sm text-ink-strong">
-          <input type="checkbox" name="verified" defaultChecked={props.verified} className="size-4 accent-[var(--action)]" />
+        <label className="flex items-center gap-2 text-body-regular text-text-primary">
+          <input type="checkbox" name="verified" defaultChecked={props.verified} className="size-4" />
           I checked this against the issuance
         </label>
         {props.isEfps && (
-          <label className="flex items-center gap-2 text-sm text-ink-strong">
-            <input type="checkbox" name="all_efps_groups" className="size-4 accent-[var(--action)]" />
+          <label className="flex items-center gap-2 text-body-regular text-text-primary">
+            <input type="checkbox" name="all_efps_groups" className="size-4" />
             Use this deadline for all eFPS groups of {props.form}
           </label>
         )}
@@ -84,7 +84,7 @@ export function HolidayForm() {
   const [state, action, pending] = useActionState(addHolidayAction, {} as SettingsState);
   const e = state.fieldErrors ?? {};
   return (
-    <form action={action} className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[10rem_1fr_10rem_10rem_auto] sm:items-end">
+    <form action={action} className="grid gap-3 border-t border-separator-border pt-4 sm:grid-cols-[10rem_1fr_10rem_10rem_auto] sm:items-end">
       <Field label="Date" htmlFor="h_date" error={e.date}>
         <Input id="h_date" name="date" type="date" required />
       </Field>
@@ -111,8 +111,8 @@ export function RemoveHolidayButton({ date }: { date: string }) {
   const [state, action, pending] = useActionState(async () => removeHolidayAction(date), {} as SettingsState);
   return (
     <form action={action}>
-      <button type="submit" disabled={pending} className="text-xs text-danger-text hover:underline">{pending ? "Removing…" : "Remove"}</button>
-      {state.error && <span className="ml-2 text-xs text-danger-text">{state.error}</span>}
+      <button type="submit" disabled={pending} className="text-caption-1-regular text-text-error-primary hover:underline">{pending ? "Removing…" : "Remove"}</button>
+      {state.error && <span className="ml-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }

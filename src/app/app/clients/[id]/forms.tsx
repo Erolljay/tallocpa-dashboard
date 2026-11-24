@@ -9,14 +9,14 @@ export function EngagementForm({ clientId, serviceLines }: { clientId: string; s
   const [state, action, pending] = useActionState(addEngagementAction.bind(null, clientId), {} as FormState);
   const e = state.fieldErrors ?? {};
   return (
-    <form action={action} className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_9rem_10rem_auto] sm:items-end">
+    <form action={action} className="mt-4 grid gap-3 border-t border-separator-border pt-4 sm:grid-cols-[1fr_9rem_10rem_auto] sm:items-end">
       <Field label="Service line" htmlFor="service_line" error={e.service_line}>
         <Select id="service_line" name="service_line" defaultValue="tax_compliance">
           {serviceLines.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
         </Select>
       </Field>
       <Field label="Monthly fee (₱)" htmlFor="monthly_retainer" error={e.monthly_retainer}>
-        <Input id="monthly_retainer" name="monthly_retainer" type="number" min={0} step="0.01" required className="text-right tabular-nums" />
+        <Input id="monthly_retainer" name="monthly_retainer" type="number" min={0} step="0.01" required className="text-end tabular-nums" />
       </Field>
       <Field label="Starts" htmlFor="start_date" error={e.start_date}>
         <Input id="start_date" name="start_date" type="date" required />
@@ -30,8 +30,8 @@ export function EngagementForm({ clientId, serviceLines }: { clientId: string; s
 export function AssignForm({ clientId, staff }: { clientId: string; staff: { user_id: string; full_name: string }[] }) {
   const [state, action, pending] = useActionState(assignStaffAction.bind(null, clientId), {} as FormState);
   return (
-    <form action={action} className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
-      <p className="text-sm font-medium text-ink-heading sm:col-span-3">Assign a preparer or reviewer</p>
+    <form action={action} className="mt-4 grid gap-3 border-t border-separator-border pt-4 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
+      <p className="text-body-medium text-text-primary sm:col-span-3">Assign a preparer or reviewer</p>
       <Field label="Staff member" htmlFor="user_id">
         <Select id="user_id" name="user_id" defaultValue="" required>
           <option value="" disabled>Choose…</option>
@@ -54,8 +54,8 @@ export function RemoveAssignmentButton({ clientId, userId, role }: { clientId: s
   const [state, action, pending] = useActionState(async () => removeAssignmentAction(clientId, userId, role), {} as FormState);
   return (
     <form action={action}>
-      <button type="submit" disabled={pending} className="text-xs text-danger-text hover:underline">{pending ? "Removing…" : "Remove"}</button>
-      {state.error && <span className="ml-2 text-xs text-danger-text">{state.error}</span>}
+      <button type="submit" disabled={pending} className="text-caption-1-regular text-text-error-primary hover:underline">{pending ? "Removing…" : "Remove"}</button>
+      {state.error && <span className="ml-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }
@@ -65,7 +65,7 @@ export function StatusButton({ clientId, to, label }: { clientId: string; to: "a
   return (
     <form action={action}>
       <Button type="submit" variant={to === "active" ? "primary" : "secondary"} disabled={pending}>{label}</Button>
-      {state.error && <p className="mt-2 text-xs text-danger-text">{state.error}</p>}
+      {state.error && <p className="mt-2 text-caption-1-regular text-text-error-primary">{state.error}</p>}
     </form>
   );
 }
@@ -74,7 +74,7 @@ export function ClientUserForm({ clientId }: { clientId: string }) {
   const [state, action, pending] = useActionState(addClientUserAction.bind(null, clientId), {} as StaffFormState);
   const e = state.fieldErrors ?? {};
   return (
-    <form action={action} className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+    <form action={action} className="mt-4 grid gap-3 border-t border-separator-border pt-4 sm:grid-cols-2">
       <Field label="Full name" htmlFor="cu_full_name" error={e.full_name}>
         <Input id="cu_full_name" name="full_name" required />
       </Field>
@@ -98,8 +98,8 @@ export function RemoveClientUserButton({ clientId, userId }: { clientId: string;
   const [state, action, pending] = useActionState(async () => removeClientUserAction(clientId, userId), {} as StaffFormState);
   return (
     <form action={action}>
-      <button type="submit" disabled={pending} className="text-xs text-danger-text hover:underline">{pending ? "Removing…" : "Remove"}</button>
-      {state.error && <span className="ml-2 text-xs text-danger-text">{state.error}</span>}
+      <button type="submit" disabled={pending} className="text-caption-1-regular text-text-error-primary hover:underline">{pending ? "Removing…" : "Remove"}</button>
+      {state.error && <span className="ml-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }

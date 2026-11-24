@@ -39,13 +39,13 @@ export function StaffRowForm({ userId, role, capacity, active }: { userId: strin
         <option value="reviewer">Reviewer</option>
       </Select>
       <label className="sr-only" htmlFor={`cap-${userId}`}>Capacity points</label>
-      <Input id={`cap-${userId}`} name="capacity_points" type="number" min={0} max={500} step="1" defaultValue={capacity} className="w-20 text-right tabular-nums" />
-      <label className="flex items-center gap-1.5 text-sm text-ink-strong">
-        <input type="checkbox" name="active" defaultChecked={active} className="size-4 accent-[var(--action)]" /> Active
+      <Input id={`cap-${userId}`} name="capacity_points" type="number" min={0} max={500} step="1" defaultValue={capacity} className="w-20 text-end tabular-nums" />
+      <label className="flex items-center gap-1.5 text-body-regular text-text-primary">
+        <input type="checkbox" name="active" defaultChecked={active} className="size-4" /> Active
       </label>
       <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
-      {state.error && <span className="text-xs text-danger-text">{state.error}</span>}
-      {state.ok && !pending && <span className="text-xs text-success">{state.ok}</span>}
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+      {state.ok && !pending && <span className="text-caption-1-regular text-status-lime-text">{state.ok}</span>}
     </form>
   );
 }

@@ -32,9 +32,9 @@ export function PortalPayrollUpload({ clients, months }: { clients: { id: string
           <Select id="pp_month" value={month} onChange={(e) => setMonth(e.target.value)}>{months.map((m) => <option key={m} value={m}>{showMonth(m)}</option>)}</Select>
         </Field>
       </div>
-      <p className="text-sm">
-        <a href={`/portal/payroll/template?client=${clientId}&month=${month.slice(0, 7)}`} className="font-medium text-link underline">Download the {showMonth(month)} payroll register (.xlsx)</a>
-        <span className="text-ink-muted"> — one row per employee per payday; leave blank anyone not paid.</span>
+      <p className="text-body-regular">
+        <a href={`/portal/payroll/template?client=${clientId}&month=${month.slice(0, 7)}`} className="font-medium text-button-ghost-foreground underline">Download the {showMonth(month)} payroll register (.xlsx)</a>
+        <span className="text-text-secondary"> — one row per employee per payday; leave blank anyone not paid.</span>
       </p>
       <form action={(fd) => previewAction(withFields(fd))} className="flex flex-wrap items-end gap-3">
         <Field label="Filled-in register" htmlFor="pp_file">
@@ -51,11 +51,11 @@ export function PortalPayrollUpload({ clients, months }: { clients: { id: string
               <ul className="list-disc space-y-0.5 pl-5">{p.errors.map((x, i) => <li key={i}>{x.line ? `Row ${x.line}: ` : ""}{x.message}</li>)}</ul>
             </Notice>
           )}
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm shadow-sm">
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular shadow-xs">
             {p.rows.map((r, i) => (
               <li key={i} className="flex items-center justify-between gap-3 px-4 py-2">
-                <span className="min-w-0 text-ink-heading">{r.name} {r.isNew && <Badge tone="waiting">New</Badge>}</span>
-                <span className="text-right tabular-nums text-ink-muted">Net {formatAmount(toCentavos(r.net) ?? 0)}<br /><span className="text-xs">Gross {formatAmount(toCentavos(r.gross) ?? 0)}</span></span>
+                <span className="min-w-0 text-text-primary">{r.name} {r.isNew && <Badge tone="waiting">New</Badge>}</span>
+                <span className="text-end tabular-nums text-text-secondary">Net {formatAmount(toCentavos(r.net) ?? 0)}<br /><span className="text-caption-1-regular">Gross {formatAmount(toCentavos(r.gross) ?? 0)}</span></span>
               </li>
             ))}
           </ul>

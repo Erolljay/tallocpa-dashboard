@@ -44,10 +44,10 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
   const secondary = action === "kick_back" || action === "client_query";
 
   return (
-    <form action={run} className="space-y-3 rounded-xl border border-border p-4">
+    <form action={run} className="space-y-3 rounded-xl border border-separator-border p-4">
       {action === "prepare" && (
         <Field label="Tax due on this return (₱)" htmlFor={id("tax_due")} hint="0 if nothing is payable.">
-          <Input id={id("tax_due")} name="tax_due" type="number" min={0} step="0.01" required className="text-right tabular-nums" />
+          <Input id={id("tax_due")} name="tax_due" type="number" min={0} step="0.01" required className="text-end tabular-nums" />
         </Field>
       )}
 
@@ -124,27 +124,27 @@ function PaymentCheckView({ check, taxDue, paymentMode, clientId }: { check: Pay
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-ink-strong">Payment check</span>
+        <span className="text-body-medium text-text-primary">Payment check</span>
         {check && <Badge tone={checkTone[check.status]}>{checkWord[check.status]}</Badge>}
       </div>
-      <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-        <dt className="text-ink-muted">Tax on this return</dt>
-        <dd className="tabular-nums text-ink-heading">
+      <dl className="grid gap-x-6 gap-y-1 text-body-regular sm:grid-cols-2">
+        <dt className="text-text-secondary">Tax on this return</dt>
+        <dd className="tabular-nums text-text-primary">
           {paymentMode !== "firm_remits"
             ? `${taxDue ? peso.format(taxDue) : "—"} · client pays BIR directly`
             : check
               ? `${peso.format(check.tax_paid)} paid of ${peso.format(check.tax_due)}`
               : "—"}
         </dd>
-        <dt className="text-ink-muted">Other balances due (retainer, charges)</dt>
-        <dd className="tabular-nums text-ink-heading">{check ? (check.other_open > 0 ? `${peso.format(check.other_open)} unpaid` : "None") : "—"}</dd>
+        <dt className="text-text-secondary">Other balances due (retainer, charges)</dt>
+        <dd className="tabular-nums text-text-primary">{check ? (check.other_open > 0 ? `${peso.format(check.other_open)} unpaid` : "None") : "—"}</dd>
       </dl>
       {clientId && (
-        <Link href={`/app/collections/${clientId}`} className="text-sm text-link hover:underline">Open the client in Collections</Link>
+        <Link href={`/app/collections/${clientId}`} className="text-body-regular text-button-ghost-foreground hover:underline">Open the client in Collections</Link>
       )}
       {short && (
-        <label className="flex items-center gap-2 text-sm text-ink-strong">
-          <input type="checkbox" name="approve_unpaid" className="size-4 accent-[var(--action)]" />
+        <label className="flex items-center gap-2 text-body-regular text-text-primary">
+          <input type="checkbox" name="approve_unpaid" className="size-4" />
           Approve even though unpaid (the balance stays a client receivable{paymentMode === "firm_remits" ? ": an advance to the client for taxes" : ""})
         </label>
       )}

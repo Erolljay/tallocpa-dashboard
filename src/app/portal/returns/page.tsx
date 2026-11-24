@@ -45,18 +45,18 @@ async function Returns() {
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <h1 className="font-display text-xl font-semibold text-ink-heading">Waiting for your approval</h1>
+        <h1 className="text-title-2-semibold text-text-primary">Waiting for your approval</h1>
         {waiting.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-sm text-ink-muted">Nothing to approve right now.</p>
+          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Nothing to approve right now.</p>
         ) : (
           waiting.map((r) => (
-            <article key={r.id} className="space-y-4 rounded-2xl border border-border bg-surface shadow-sm p-4 sm:p-5">
+            <article key={r.id} className="space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <p className="font-medium text-ink-heading">{r.form} · {r.period_label}</p>
-                  <p className="text-sm text-ink-muted">{several && r.clients ? `${r.clients.name} · ` : ""}Due {showDate(r.due_date)}</p>
+                  <p className="font-medium text-text-primary">{r.form} · {r.period_label}</p>
+                  <p className="text-body-regular text-text-secondary">{several && r.clients ? `${r.clients.name} · ` : ""}Due {showDate(r.due_date)}</p>
                 </div>
-                <p className="text-sm text-ink-muted">Tax due <span className="amount font-medium tabular-nums text-ink-heading">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</span></p>
+                <p className="text-body-regular text-text-secondary">Tax due <span className="amount font-medium tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</span></p>
               </div>
               {r.open_query ? (
                 <Notice tone="waiting">You asked: “{r.open_query}” — we will reply before you approve.</Notice>
@@ -70,21 +70,21 @@ async function Returns() {
 
       {recent.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-display text-lg font-semibold text-ink-heading">Your returns</h2>
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-sm text-sm">
+          <h2 className="text-title-3-semibold text-text-primary">Your returns</h2>
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs text-body-regular">
             {recent.map((r) => {
               const mine = (files ?? []).filter((f) => f.filing_instance_id === r.id);
               return (
                 <li key={r.id} className="space-y-1 px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
-                    <p className="font-medium text-ink-heading">{r.form} · {r.period_label}</p>
+                    <p className="font-medium text-text-primary">{r.form} · {r.period_label}</p>
                     <Badge tone={filingStatusTone[r.status]}>{r.status === "client_approved" ? "Approved by you" : filingStatusLabel[r.status]}</Badge>
                   </div>
-                  <p className="text-xs text-ink-subtle">{several && r.clients ? `${r.clients.name} · ` : ""}{r.filing_reference ? `Ref. ${r.filing_reference}` : `Due ${showDate(r.due_date)}`}</p>
+                  <p className="text-caption-1-regular text-text-tertiary">{several && r.clients ? `${r.clients.name} · ` : ""}{r.filing_reference ? `Ref. ${r.filing_reference}` : `Due ${showDate(r.due_date)}`}</p>
                   {mine.length > 0 && (
-                    <p className="flex flex-wrap gap-3 text-xs">
+                    <p className="flex flex-wrap gap-3 text-caption-1-regular">
                       {mine.map((f) => (
-                        <a key={f.id} href={`/files/${f.id}`} target="_blank" rel="noopener" className="text-link underline">
+                        <a key={f.id} href={`/files/${f.id}`} target="_blank" rel="noopener" className="text-button-ghost-foreground underline">
                           {f.doc_type === "filed_return" ? "Filed return" : "Proof of payment"}
                         </a>
                       ))}

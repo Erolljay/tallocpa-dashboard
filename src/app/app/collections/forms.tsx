@@ -25,10 +25,10 @@ export function RunBillingForm({ clientId, today }: { clientId: string | null; t
   const [state, run, pending] = useActionState(runBillingAction.bind(null, clientId), {} as MoneyState);
   return (
     <details className="group relative">
-      <summary className="pressable inline-flex h-10 cursor-pointer list-none items-center rounded-[6px] border border-border-strong bg-surface px-5 text-sm font-medium text-ink-strong shadow-sm hover:bg-surface-muted pointer-coarse:h-11">
+      <summary className="pressable inline-flex h-10 cursor-pointer list-none items-center rounded-2lg border border-border-button-default bg-background-primary-default px-5 text-body-medium text-text-primary shadow-xs hover:bg-background-secondary-hover pointer-coarse:h-11">
         {clientId ? "Bill this client now" : "Run billing"}
       </summary>
-      <form action={run} className="absolute right-0 z-10 mt-2 w-80 space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-lift">
+      <form action={run} className="absolute right-0 z-10 mt-2 w-80 space-y-3 rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-lift">
         <Field label="Billing date" htmlFor="billing_date" hint={clientId ? "Issues a statement with everything ready to bill." : "Bills every client whose billing days include this day."}>
           <Input id="billing_date" name="billing_date" type="date" defaultValue={today} required />
         </Field>
@@ -68,24 +68,24 @@ export function RecordDepositForm(props: { clientId: string; today: string; item
     <form action={run} className="space-y-4">
       {props.items.length > 0 && (
         <fieldset className="space-y-2">
-          <legend className="mb-1 text-sm font-medium text-ink-strong">Apply to</legend>
-          <ul className="divide-y divide-border rounded-xl border border-border">
+          <legend className="mb-1 text-body-medium text-text-primary">Apply to</legend>
+          <ul className="divide-y divide-separator-border rounded-xl border border-separator-border">
             {props.items.map((i) => (
               <li key={i.id}>
-                <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm hover:bg-surface-muted pointer-coarse:min-h-11">
-                  <input type="checkbox" name="due_ids" value={i.id} checked={ticked.has(i.id)} onChange={() => toggle(i.id)} className="size-4 accent-[var(--action)]" />
-                  <span className="min-w-0 flex-1 text-ink-heading">{i.description}</span>
-                  <span className="amount shrink-0 text-ink">{peso.format(i.open_amount)}</span>
+                <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-body-regular hover:bg-background-secondary-hover pointer-coarse:min-h-11">
+                  <input type="checkbox" name="due_ids" value={i.id} checked={ticked.has(i.id)} onChange={() => toggle(i.id)} className="size-4" />
+                  <span className="min-w-0 flex-1 text-text-primary">{i.description}</span>
+                  <span className="amount shrink-0 text-text-primary">{peso.format(i.open_amount)}</span>
                 </label>
               </li>
             ))}
           </ul>
-          <p className="text-sm text-ink-muted">Ticked: <span className="tabular-nums text-ink-heading">{peso.format(tickedTotal)}</span>. Paid oldest first; anything left over becomes the client&apos;s credit.</p>
+          <p className="text-body-regular text-text-secondary">Ticked: <span className="tabular-nums text-text-primary">{peso.format(tickedTotal)}</span>. Paid oldest first; anything left over becomes the client&apos;s credit.</p>
         </fieldset>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Amount received (₱)" htmlFor="amount">
-          <Input id="amount" name="amount" type="number" inputMode="decimal" min="0.01" step="0.01" required defaultValue={tickedTotal ? tickedTotal.toFixed(2) : undefined} key={tickedTotal} className="text-right tabular-nums" />
+          <Input id="amount" name="amount" type="number" inputMode="decimal" min="0.01" step="0.01" required defaultValue={tickedTotal ? tickedTotal.toFixed(2) : undefined} key={tickedTotal} className="text-end tabular-nums" />
         </Field>
         <Field label="Date received" htmlFor="received_on">
           <Input id="received_on" name="received_on" type="date" required defaultValue={props.today} max={props.today} />
@@ -175,7 +175,7 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
           </Field>
         )}
         <Field label="Amount (₱)" htmlFor="charge_amount">
-          <Input id="charge_amount" name="amount" type="number" inputMode="decimal" min="0.01" step="0.01" required className="text-right tabular-nums" />
+          <Input id="charge_amount" name="amount" type="number" inputMode="decimal" min="0.01" step="0.01" required className="text-end tabular-nums" />
         </Field>
         <Field label="Due on" htmlFor="due_on" hint="When the client must pay it.">
           <Input id="due_on" name="due_on" type="date" required defaultValue={today} />
@@ -194,13 +194,13 @@ function ReasonAction({ label, confirm, reasonLabel, action }: { label: string; 
   const [state, run, pending] = useActionState(action, {} as MoneyState);
   return (
     <details>
-      <summary className="cursor-pointer list-none text-sm text-danger-text hover:underline">{label}</summary>
+      <summary className="cursor-pointer list-none text-body-regular text-text-error-primary hover:underline">{label}</summary>
       <form action={run} className="mt-2 space-y-2">
         <Field label={reasonLabel} htmlFor={`${label}-reason`}>
           <Input id={`${label}-reason`} name="reason" required />
         </Field>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" variant="secondary" size="sm" disabled={pending} className="border-danger text-danger-text">{pending ? "Saving…" : confirm}</Button>
+          <Button type="submit" variant="secondary" size="sm" disabled={pending} className="border-border-error-default text-text-error-primary">{pending ? "Saving…" : confirm}</Button>
           <Result state={state} />
         </div>
       </form>

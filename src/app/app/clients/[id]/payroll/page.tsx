@@ -56,11 +56,11 @@ async function Payroll({ params, searchParams }: Pick<PageProps<"/app/clients/[i
       <div className="space-y-6">
         {(submissions.data ?? []).length > 0 && (
           <Card title="Registers sent by the client">
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {submissions.data!.map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                  <span className="text-ink-heading">{showMonth(s.pay_month)} · {s.file_name} · {s.row_count} row{s.row_count === 1 ? "" : "s"}{s.late ? " · late" : ""}</span>
-                  <Link href={`/app/clients/${id}/payroll/month/${String(s.pay_month).slice(0, 7)}`} className="text-link hover:underline">Review</Link>
+                  <span className="text-text-primary">{showMonth(s.pay_month)} · {s.file_name} · {s.row_count} row{s.row_count === 1 ? "" : "s"}{s.late ? " · late" : ""}</span>
+                  <Link href={`/app/clients/${id}/payroll/month/${String(s.pay_month).slice(0, 7)}`} className="text-button-ghost-foreground hover:underline">Review</Link>
                 </li>
               ))}
             </ul>
@@ -71,22 +71,22 @@ async function Payroll({ params, searchParams }: Pick<PageProps<"/app/clients/[i
         <Card
           title={`Months of ${year}`}
           actions={
-            <span className="flex gap-3 text-sm">
-              <Link href={`?year=${year - 1}`} className="text-link hover:underline">{year - 1}</Link>
-              {year < Number(today.slice(0, 4)) && <Link href={`?year=${year + 1}`} className="text-link hover:underline">{year + 1}</Link>}
+            <span className="flex gap-3 text-body-regular">
+              <Link href={`?year=${year - 1}`} className="text-button-ghost-foreground hover:underline">{year - 1}</Link>
+              {year < Number(today.slice(0, 4)) && <Link href={`?year=${year + 1}`} className="text-button-ghost-foreground hover:underline">{year + 1}</Link>}
             </span>
           }
         >
           {months.length === 0 ? (
-            <p className="text-sm text-ink-muted">Nothing yet for {year}.</p>
+            <p className="text-body-regular text-text-secondary">Nothing yet for {year}.</p>
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {months.map((m) => (
                 <li key={m}>
-                  <Link href={`/app/clients/${id}/payroll/month/${m}`} className="flex items-center justify-between gap-2 rounded-xl border border-border px-4 py-3 text-sm hover:bg-surface-muted">
-                    <span className="font-medium text-ink-heading">{showMonth(`${m}-01`)}</span>
+                  <Link href={`/app/clients/${id}/payroll/month/${m}`} className="flex items-center justify-between gap-2 rounded-xl border border-separator-border px-4 py-3 text-body-regular hover:bg-background-secondary-hover">
+                    <span className="font-medium text-text-primary">{showMonth(`${m}-01`)}</span>
                     <span className="flex items-center gap-2">
-                      <span className="text-ink-muted">{paid.get(m) ?? 0} paid</span>
+                      <span className="text-text-secondary">{paid.get(m) ?? 0} paid</span>
                       {filed.has(m) && <Badge tone="done">Filed</Badge>}
                     </span>
                   </Link>
@@ -97,8 +97,8 @@ async function Payroll({ params, searchParams }: Pick<PageProps<"/app/clients/[i
         </Card>
 
         <Card title="Import employees">
-          <p className="mb-3 text-sm text-ink-muted">
-            <a href={`/app/clients/${id}/payroll/export?kind=employees`} className="text-link underline">Download the employee master (.xlsx)</a>, prefilled with the employees below, with dropdowns for status, MWE, region and separation.
+          <p className="mb-3 text-body-regular text-text-secondary">
+            <a href={`/app/clients/${id}/payroll/export?kind=employees`} className="text-button-ghost-foreground underline">Download the employee master (.xlsx)</a>, prefilled with the employees below, with dropdowns for status, MWE, region and separation.
             Add or correct rows, then upload it. Rows are matched by Employee No. (or TIN).
           </p>
           <EmployeeUpload clientId={id} />
@@ -106,14 +106,14 @@ async function Payroll({ params, searchParams }: Pick<PageProps<"/app/clients/[i
 
         <Card title={`Employees (${active.length} active)`}>
           {list.length === 0 ? (
-            <p className="text-sm text-ink-muted">No employees yet. Add them one by one, or upload the client&rsquo;s payroll register for a month and add the new names from there.</p>
+            <p className="text-body-regular text-text-secondary">No employees yet. Add them one by one, or upload the client&rsquo;s payroll register for a month and add the new names from there.</p>
           ) : (
-            <ul className="divide-y divide-border text-sm">
+            <ul className="divide-y divide-separator-border text-body-regular">
               {[...active, ...inactive].map((e) => (
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <Link href={`/app/clients/${id}/payroll/employees/${e.id}`} className="font-medium text-link hover:underline">{displayName(e)}</Link>
-                    <p className="text-xs text-ink-subtle">
+                    <Link href={`/app/clients/${id}/payroll/employees/${e.id}`} className="font-medium text-button-ghost-foreground hover:underline">{displayName(e)}</Link>
+                    <p className="text-caption-1-regular text-text-tertiary">
                       {e.employeeNo ? `No. ${e.employeeNo} · ` : ""}{e.tin ? `TIN ${e.tin}` : "no TIN"} · {EMPLOYMENT_STATUSES[e.employmentStatus]}
                       {e.separationDate ? ` · left ${e.separationDate}` : ""}
                     </p>

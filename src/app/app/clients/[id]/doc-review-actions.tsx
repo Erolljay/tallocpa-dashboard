@@ -13,17 +13,17 @@ export function DocReviewActions({ documentId, status }: { documentId: string; s
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Link href={`/app/documents/${documentId}`} className="text-xs font-medium text-link hover:underline">Review figures</Link>
+      <Link href={`/app/documents/${documentId}`} className="text-caption-1-medium text-button-ghost-foreground hover:underline">Review figures</Link>
       {returning ? (
         <form action={ret} className="flex flex-1 flex-wrap items-center gap-2">
           <label htmlFor={`reason-${documentId}`} className="sr-only">Reason</label>
-          <Input id={`reason-${documentId}`} name="reason" required placeholder="Blurry, please retake" className="min-w-48 flex-1 py-1 text-xs" />
-          <Button type="submit" variant="secondary" className="px-3 py-1 text-xs" disabled={retPending}>Return to client</Button>
+          <Input id={`reason-${documentId}`} name="reason" required placeholder="Blurry, please retake" className="min-w-48 flex-1 py-1 text-caption-1-regular" />
+          <Button type="submit" variant="secondary" className="px-3 py-1 text-caption-1-regular" disabled={retPending}>Return to client</Button>
         </form>
       ) : (
-        <button type="button" onClick={() => setReturning(true)} className="text-xs text-danger-text hover:underline">Return…</button>
+        <button type="button" onClick={() => setReturning(true)} className="text-caption-1-regular text-text-error-primary hover:underline">Return…</button>
       )}
-      {retState.error && <span className="text-xs text-danger-text">{retState.error}</span>}
+      {retState.error && <span className="text-caption-1-regular text-text-error-primary">{retState.error}</span>}
     </div>
   );
 }

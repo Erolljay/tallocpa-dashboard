@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Card, LinkButton, PageHeader, Skeleton } from "@/components/ui";
+import { Chip } from "@/components/base/badges/chip";
+import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { addDays } from "@/lib/deadlines/dates";
 import { showMonth } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
+import { DashboardStats } from "./dashboard-stats";
 import { OwnerSections } from "./owner-sections";
 
 export default function DashboardPage() {
@@ -52,43 +54,49 @@ async function Summary() {
   const missedRows = (missed.data ?? []) as unknown as { client_id: string; period: string; cutoff_date: string; clients: { name: string } | null }[];
   const rows = [...((overdue.data ?? []) as unknown as FilingListRow[]), ...((next14.data ?? []) as unknown as FilingListRow[])];
 
+  const n = (c: number | null) => c ?? 0;
+  const flag = (c: number | null, bad: string, good: string) => (n(c) > 0 ? { delta: bad, deltaColor: "rose" as const } : { delta: good, deltaColor: "lime" as const });
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title={me.staff.role === "owner" ? "Active clients" : "My clients"}>
-          <p className="text-4xl leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{clients.count ?? 0}</p>
-          <LinkButton href="/app/clients" variant="ghost" className="mt-3 -ml-5">View clients</LinkButton>
-        </Card>
-        <Card title="Overdue">
-          <p className={`text-4xl leading-none font-semibold tracking-tight tabular-nums ${(overdue.count ?? 0) > 0 ? "text-danger-text" : "text-ink-heading"}`}>{overdue.count ?? 0}</p>
-          <p className="mt-2 text-sm text-ink-muted">Past due and not filed.</p>
-        </Card>
-        <Card title="Due in 14 days">
-          <p className="text-4xl leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{next14.count ?? 0}</p>
-          <LinkButton href="/app/deadlines" variant="ghost" className="mt-3 -ml-5">All deadlines</LinkButton>
-        </Card>
-        <Card title="Missed the cutoff">
-          <p className={`text-4xl leading-none font-semibold tracking-tight tabular-nums ${(missed.count ?? 0) > 0 ? "text-danger-text" : "text-ink-heading"}`}>{missed.count ?? 0}</p>
+    <div className="flex flex-col gap-6">
+      <DashboardStats
+        stats={[
+          { icon: "clients", label: me.staff.role === "owner" ? "Active clients" : "My clients", value: String(n(clients.count)), delta: "Onboarding + active", deltaColor: "neutral" },
+          { icon: "overdue", label: "Overdue filings", value: String(n(overdue.count)), ...flag(overdue.count, "Past due", "None") },
+          { icon: "due", label: "Due in 14 days", value: String(n(next14.count)), delta: "Upcoming", deltaColor: "neutral" },
+          { icon: "missed", label: "Missed the cutoff", value: String(n(missed.count)), ...flag(missed.count, "Follow up", "All in") },
+        ]}
+      />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card title="Missed the document cutoff" className="lg:col-span-2" actions={<LinkButton href="/app/cycle" variant="secondary" size="sm">Monthly cycle</LinkButton>}>
           {missedRows.length > 0 ? (
-            <ul className="mt-2 space-y-0.5 text-sm text-ink-muted">
+            <ul className="flex flex-col divide-y divide-separator-border">
               {missedRows.map((r) => (
-                <li key={`${r.client_id}-${r.period}`} className="truncate">
-                  <Link href={`/app/cycle?month=${r.period.slice(0, 7)}`} className="hover:underline">{r.clients?.name ?? "—"}</Link>
-                  <span className="text-ink-subtle"> · {showMonth(r.period)}</span>
+                <li key={`${r.client_id}-${r.period}`} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <Link href={`/app/cycle?month=${r.period.slice(0, 7)}`} className="truncate text-body-medium text-text-primary hover:underline">{r.clients?.name ?? "—"}</Link>
+                  <Chip variant="caption" color="rose">{showMonth(r.period)}</Chip>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-ink-muted">Every client sent their documents.</p>
+            <p className="text-body-regular text-text-secondary">Every client sent their documents.</p>
           )}
-          {(exceptions.count ?? 0) > 0 && (
-            <p className="mt-2 text-sm text-warning">{exceptions.count} prior-year exception{exceptions.count === 1 ? "" : "s"} to decide</p>
+          {n(exceptions.count) > 0 && (
+            <div className="mt-4">
+              <Notice tone="waiting">{exceptions.count} prior-year exception{exceptions.count === 1 ? "" : "s"} to decide.</Notice>
+            </div>
           )}
-          <LinkButton href="/app/cycle" variant="ghost" className="mt-3 -ml-5">Monthly cycle</LinkButton>
+        </Card>
+        <Card title="Shortcuts">
+          <div className="flex flex-col gap-2">
+            <LinkButton href="/app/clients" variant="secondary" className="justify-start">View clients</LinkButton>
+            <LinkButton href="/app/deadlines" variant="secondary" className="justify-start">All deadlines</LinkButton>
+            <LinkButton href="/app/documents" variant="secondary" className="justify-start">Documents inbox</LinkButton>
+          </div>
         </Card>
       </div>
       <section>
-        <h2 className="mb-3 font-display text-lg font-semibold text-ink-heading">Overdue and due in the next 14 days</h2>
+        <h2 className="mb-3 text-title-2-medium text-text-primary">Overdue and due in the next 14 days</h2>
         <FilingTable rows={rows} today={today} empty="Nothing due in the next 14 days." />
       </section>
     </div>

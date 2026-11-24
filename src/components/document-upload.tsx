@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { CheckCircle2, ScanLine, CircleAlert, FileUp, LoaderCircle } from "lucide-react";
+import { RiCheckboxCircleLine, RiErrorWarningLine, RiFileUploadLine, RiLoader4Line, RiScan2Line } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { DocumentScanner } from "@/components/document-scanner";
@@ -124,36 +124,36 @@ export function DocumentUpload(props: {
           type="button"
           disabled={busy || !clientId}
           onClick={() => ("getUserMedia" in (navigator.mediaDevices ?? {}) ? setScanning(true) : camera.current?.click())}
-          className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 text-base font-medium text-ink-on-action hover:bg-action-hover disabled:opacity-60"
+          className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-headline-medium text-text-white hover:bg-accent-700 disabled:opacity-60"
         >
-          <ScanLine aria-hidden className="size-5" /> Scan document
+          <RiScan2Line aria-hidden className="size-5" /> Scan document
         </button>
         <button
           type="button"
           disabled={busy || !clientId}
           onClick={() => files.current?.click()}
-          className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 py-3 text-base font-medium text-ink-heading hover:bg-surface-sunken disabled:opacity-60"
+          className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-border-button-default bg-background-primary-default px-4 py-3 text-headline-medium text-text-primary hover:bg-background-tertiary-default disabled:opacity-60"
         >
-          <FileUp aria-hidden className="size-5" /> Choose photos or PDFs
+          <RiFileUploadLine aria-hidden className="size-5" /> Choose photos or PDFs
         </button>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
         <input ref={files} type="file" accept="image/*,application/pdf" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
       </div>
 
       {items.length > 0 && (
-        <ul className="divide-y divide-border rounded-xl border border-border text-sm" aria-live="polite">
+        <ul className="divide-y divide-separator-border rounded-xl border border-separator-border text-body-regular" aria-live="polite">
           {items.map((i) => (
             <li key={i.key} className="flex items-start gap-3 px-3 py-2">
               {i.state === "done" ? (
-                <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />
+                <RiCheckboxCircleLine aria-hidden className="mt-0.5 size-4 shrink-0 text-status-lime-text" />
               ) : i.state === "failed" ? (
-                <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-danger-text" />
+                <RiErrorWarningLine aria-hidden className="mt-0.5 size-4 shrink-0 text-text-error-primary" />
               ) : (
-                <LoaderCircle aria-hidden className="mt-0.5 size-4 shrink-0 animate-spin text-ink-subtle" />
+                <RiLoader4Line aria-hidden className="mt-0.5 size-4 shrink-0 animate-spin text-text-tertiary" />
               )}
               <div className="min-w-0">
-                <p className="truncate text-ink-heading">{i.name}</p>
-                <p className="text-xs text-ink-subtle">
+                <p className="truncate text-text-primary">{i.name}</p>
+                <p className="text-caption-1-regular text-text-tertiary">
                   {i.state === "done" ? "Received" : i.state === "failed" ? i.error : i.state === "sending" ? "Sending…" : "Waiting"}
                 </p>
               </div>

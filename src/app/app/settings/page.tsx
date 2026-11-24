@@ -16,11 +16,11 @@ export default function SettingsPage() {
         description="Brand and fee schedule, where clients pay, BIR deadline rules and non-working days. Rule changes move the due dates of filings not yet filed; filed ones keep their dates."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <Card title="Brand" actions={<Link href="/app/settings/brand" className="text-sm text-link hover:underline">Open</Link>}>
-          <p className="text-sm text-ink-muted">Legal name, TIN and COR, contact details on statements, credentials, invoicing, tax on our fee and the gross receipts watch.</p>
+        <Card title="Brand" actions={<Link href="/app/settings/brand" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Legal name, TIN and COR, contact details on statements, credentials, invoicing, tax on our fee and the gross receipts watch.</p>
         </Card>
-        <Card title="Fee schedule" actions={<Link href="/app/settings/fees" className="text-sm text-link hover:underline">Open</Link>}>
-          <p className="text-sm text-ink-muted">Prices for new clients, quote preview, and how current clients&apos; fees compare.</p>
+        <Card title="Fee schedule" actions={<Link href="/app/settings/fees" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Prices for new clients, quote preview, and how current clients&apos; fees compare.</p>
         </Card>
       </div>
       <Suspense fallback={<Skeleton rows={4} />}>
@@ -80,34 +80,34 @@ async function DeadlineSettings() {
         const rows = all.filter((r) => r.frequency === section.frequency);
         if (rows.length === 0) return null;
         return (
-          <Card key={section.frequency} title={section.title} actions={<span className="text-xs text-ink-subtle">{section.hint}</span>}>
+          <Card key={section.frequency} title={section.title} actions={<span className="text-caption-1-regular text-text-tertiary">{section.hint}</span>}>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[46rem] text-sm">
-                <thead className="text-left text-ink-subtle">
+              <table className="w-full min-w-[46rem] text-body-regular">
+                <thead className="text-start text-body-medium text-text-tertiary">
                   <tr>
-                    <th scope="col" className="pb-2 font-medium">Form</th>
-                    <th scope="col" className="pb-2 font-medium">Applies to</th>
-                    <th scope="col" className="pb-2 font-medium">Deadline</th>
-                    <th scope="col" className="pb-2 font-medium">Source</th>
-                    <th scope="col" className="pb-2 font-medium"><span className="sr-only">Edit</span></th>
+                    <th scope="col" className="text-start pb-2">Form</th>
+                    <th scope="col" className="text-start pb-2">Applies to</th>
+                    <th scope="col" className="text-start pb-2">Deadline</th>
+                    <th scope="col" className="text-start pb-2">Source</th>
+                    <th scope="col" className="text-start pb-2"><span className="sr-only">Edit</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.id} className="border-t border-border align-top">
+                    <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                       <td className="py-3 pr-4">
-                        <p className="font-medium text-ink-heading">{r.form}</p>
-                        <p className="text-xs text-ink-subtle">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}{periodNote[r.period_filter]}</p>
+                        <p className="font-medium text-text-primary">{r.form}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}{periodNote[r.period_filter]}</p>
                       </td>
-                      <td className="py-3 pr-4 text-ink-muted">{appliesTo(r)}</td>
-                      <td className="py-3 pr-4 text-ink-heading">
+                      <td className="py-3 pr-4 text-text-secondary">{appliesTo(r)}</td>
+                      <td className="py-3 pr-4 text-text-primary">
                         {describeDue(r.due, r.frequency)}
-                        <p className="text-xs text-ink-subtle">From periods ending {fmtDate(r.effective_from)}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">From periods ending {fmtDate(r.effective_from)}</p>
                       </td>
                       <td className="py-3 pr-4">
                         {r.verified_at ? <Badge tone="done">{r.source}</Badge> : <Badge tone="waiting">Unverified</Badge>}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 text-end">
                         <RuleEditor
                           ruleId={r.id}
                           form={r.form}
@@ -127,16 +127,16 @@ async function DeadlineSettings() {
           </Card>
         );
       })}
-      {unverified > 0 && <p className="text-sm text-ink-muted">{unverified} rule(s) still to check against current BIR issuances.</p>}
+      {unverified > 0 && <p className="text-body-regular text-text-secondary">{unverified} rule(s) still to check against current BIR issuances.</p>}
 
-      <Card title="Non-working days" actions={<span className="text-xs text-ink-subtle">A due date on a weekend or one of these days moves to the next working day.</span>}>
-        <ul className="divide-y divide-border text-sm">
+      <Card title="Non-working days" actions={<span className="text-caption-1-regular text-text-tertiary">A due date on a weekend or one of these days moves to the next working day.</span>}>
+        <ul className="divide-y divide-separator-border text-body-regular">
           {(holidays ?? []).map((h) => (
             <li key={h.date} className="flex items-center justify-between gap-4 py-2">
-              <span className="w-32 shrink-0 tabular-nums text-ink-heading">{fmtDate(h.date)}</span>
-              <span className="flex-1 text-ink-heading">{h.name}</span>
-              <span className="hidden w-40 text-ink-muted sm:block">{kindLabel[h.kind] ?? h.kind}</span>
-              <span className="hidden w-28 text-xs text-ink-subtle sm:block">{h.source === "UNVERIFIED" ? "Unverified" : h.source}</span>
+              <span className="w-32 shrink-0 tabular-nums text-text-primary">{fmtDate(h.date)}</span>
+              <span className="flex-1 text-text-primary">{h.name}</span>
+              <span className="hidden w-40 text-text-secondary sm:block">{kindLabel[h.kind] ?? h.kind}</span>
+              <span className="hidden w-28 text-caption-1-regular text-text-tertiary sm:block">{h.source === "UNVERIFIED" ? "Unverified" : h.source}</span>
               <RemoveHolidayButton date={h.date} />
             </li>
           ))}
@@ -163,25 +163,25 @@ async function PaymentSettings() {
     for (const s of data ?? []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl);
   }
   return (
-    <Card title="Where Clients Pay" actions={<span className="text-xs text-ink-subtle">Shown on every statement under Pay Now</span>}>
+    <Card title="Where Clients Pay" actions={<span className="text-caption-1-regular text-text-tertiary">Shown on every statement under Pay Now</span>}>
       {rows.length === 0 ? (
-        <p className="mb-4 text-sm text-ink-muted">No accounts yet. Add the banks and e-wallets clients pay into, with their QR codes.</p>
+        <p className="mb-4 text-body-regular text-text-secondary">No accounts yet. Add the banks and e-wallets clients pay into, with their QR codes.</p>
       ) : (
-        <ul className="mb-4 divide-y divide-border">
+        <ul className="mb-4 divide-y divide-separator-border">
           {rows.map((a) => (
             <li key={a.id} className={`flex flex-wrap items-center gap-4 py-3 ${a.active ? "" : "opacity-60"}`}>
               {a.qr_path && signed.get(a.qr_path) ? (
                 // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
-                <img src={signed.get(a.qr_path)} alt={`QR code for ${a.institution}`} className="size-16 rounded-lg border border-border bg-white object-contain p-1" />
+                <img src={signed.get(a.qr_path)} alt={`QR code for ${a.institution}`} className="size-16 rounded-lg border border-separator-border bg-white object-contain p-1" />
               ) : (
-                <div className="grid size-16 place-items-center rounded-lg border border-dashed border-border-strong text-center text-[10px] text-ink-subtle">No QR</div>
+                <div className="grid size-16 place-items-center rounded-lg border border-dashed border-border-button-default text-center text-caption-2-regular text-text-tertiary">No QR</div>
               )}
-              <div className="min-w-0 flex-1 text-sm">
-                <p className="font-medium text-ink-heading">
-                  {a.institution} <span className="font-normal text-ink-subtle">· {a.kind === "bank" ? "Bank" : "E-wallet"}</span>
+              <div className="min-w-0 flex-1 text-body-regular">
+                <p className="font-medium text-text-primary">
+                  {a.institution} <span className="font-normal text-text-tertiary">· {a.kind === "bank" ? "Bank" : "E-wallet"}</span>
                 </p>
-                <p className="text-ink-strong">{a.account_name} · <span className="tabular-nums">{a.account_number}</span></p>
-                {a.instructions && <p className="text-xs text-ink-muted">{a.instructions}</p>}
+                <p className="text-text-primary">{a.account_name} · <span className="tabular-nums">{a.account_number}</span></p>
+                {a.instructions && <p className="text-caption-1-regular text-text-secondary">{a.instructions}</p>}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 {a.purpose === "client_tax_funds" ? <Badge tone="progress">Client tax payments</Badge> : <Badge tone="neutral">Our fees</Badge>}
@@ -194,7 +194,7 @@ async function PaymentSettings() {
         </ul>
       )}
       <AddPaymentAccountForm />
-      <div className="mt-6 border-t border-border pt-5">
+      <div className="mt-6 border-t border-separator-border pt-5">
         <PaymentDaysForm days={brand?.soa_payment_days ?? 5} />
       </div>
     </Card>

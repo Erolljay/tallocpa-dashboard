@@ -22,7 +22,7 @@ async function Home() {
   const today = manilaToday();
   const first = id.clients[0];
   if (clients.length === 0) {
-    return <p className="rounded-2xl border border-border bg-surface shadow-sm p-6 text-sm text-ink-muted">Your portal is being set up. Please check back soon.</p>;
+    return <p className="rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
   }
   const [{ count: returned }, { count: approvals }] = await Promise.all([
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("status", "returned"),
@@ -45,8 +45,8 @@ async function Home() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-ink-heading">Hi{first ? `, ${first.fullName.split(" ")[0]}` : ""}</h1>
-        <p className="mt-1 text-sm text-ink-muted">{clients.map((x) => x.name).join(" · ")}</p>
+        <h1 className="text-title-1-bold text-text-primary">Hi{first ? `, ${first.fullName.split(" ")[0]}` : ""}</h1>
+        <p className="mt-1 text-body-regular text-text-secondary">{clients.map((x) => x.name).join(" · ")}</p>
       </div>
 
       {(returned ?? 0) > 0 && (
@@ -61,22 +61,22 @@ async function Home() {
       )}
 
       <Card title="Send your documents">
-        <p className="mb-4 text-sm text-ink-muted">
-          {showMonth(c.month)} documents are due by <span className="font-medium text-ink-heading">{showDate(c.cutoff)}</span>
+        <p className="mb-4 text-body-regular text-text-secondary">
+          {showMonth(c.month)} documents are due by <span className="font-medium text-text-primary">{showDate(c.cutoff)}</span>
           {c.daysLeft > 0 ? ` — ${c.daysLeft} day${c.daysLeft === 1 ? "" : "s"} left.` : " — today is the last day."}
           {" "}Take a clear photo of each receipt, flat and in good light.
         </p>
         <ul className="mb-4 space-y-2">
           {status.map((x) => (
-            <li key={x.client.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              {clients.length > 1 && <span className="font-medium text-ink-heading">{x.client.name}:</span>}
+            <li key={x.client.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-regular">
+              {clients.length > 1 && <span className="font-medium text-text-primary">{x.client.name}:</span>}
               {x.nothing ? (
                 <Badge tone="done">Nothing to submit for {showMonth(x.month)}</Badge>
               ) : x.count > 0 ? (
                 <Badge tone="done">{x.count} document{x.count === 1 ? "" : "s"} sent for {showMonth(x.month)}</Badge>
               ) : (
                 <>
-                  <span className="text-ink-muted">Nothing sent yet for {showMonth(x.month)}.</span>
+                  <span className="text-text-secondary">Nothing sent yet for {showMonth(x.month)}.</span>
                   {x.open && <NothingToSubmitButton clientId={x.client.id} period={x.month} label="No transactions this month" />}
                 </>
               )}

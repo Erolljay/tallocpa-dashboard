@@ -67,8 +67,8 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
 
         {(submissions.data ?? []).map((s) => (
           <Card key={s.id} title={`Sent by the client · ${when(s.created_at)}${s.late ? " · late" : ""}`}>
-            <p className="mb-3 text-sm text-ink-muted">
-              {s.file_name} · <a href={`/app/clients/${id}/payroll/export?kind=submission&id=${s.id}`} className="text-link underline">download the file</a>. Posting replaces this month&rsquo;s figures for the employees in it; tax adjustments and notes are kept.
+            <p className="mb-3 text-body-regular text-text-secondary">
+              {s.file_name} · <a href={`/app/clients/${id}/payroll/export?kind=submission&id=${s.id}`} className="text-button-ghost-foreground underline">download the file</a>. Posting replaces this month&rsquo;s figures for the employees in it; tax adjustments and notes are kept.
             </p>
             <SubmissionReview clientId={id} submissionId={s.id} preview={previewOf(checkRegister(s.rows as RegisterRow[], employees, items, month), employees, items)} />
           </Card>
@@ -76,7 +76,7 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
 
         {!locked && (
           <Card title="Upload a filled-in register">
-            <p className="mb-3 text-sm text-ink-muted">
+            <p className="mb-3 text-body-regular text-text-secondary">
               Download the register, fill in one row per employee per payday (one column for each of the {activeItems} active payslip items), then upload it here.
               Rows are matched by Employee No.; several rows for one employee in the month are added together. Columns are matched by header. You see a preview before anything is saved.
             </p>
@@ -86,11 +86,11 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
 
         <Card title="Monthly payroll">
           {rows.length === 0 ? (
-            <p className="text-sm text-ink-muted">No active employees for this month. Add employees first, or upload a register.</p>
+            <p className="text-body-regular text-text-secondary">No active employees for this month. Add employees first, or upload a register.</p>
           ) : (
             <>
-              <p className="mb-4 text-sm text-ink-muted">
-                Amounts in pesos, one input per payslip item (<a href={`/app/clients/${id}/payroll/setup`} className="text-link underline">set up items</a>). Under each employee: gross, deductions and net pay as on the client&rsquo;s register,
+              <p className="mb-4 text-body-regular text-text-secondary">
+                Amounts in pesos, one input per payslip item (<a href={`/app/clients/${id}/payroll/setup`} className="text-button-ghost-foreground underline">set up items</a>). Under each employee: gross, deductions and net pay as on the client&rsquo;s register,
                 taxable compensation (1601-C item 22) and the suggested tax — the BIR monthly table, or in December (and the month an employee leaves) the year-end adjustment. A difference of more than ₱1 is flagged.
                 Tax adjustment: corrections of earlier months&rsquo; tax for the employee, negative for a refund.
               </p>

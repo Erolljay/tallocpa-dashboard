@@ -71,35 +71,35 @@ async function Queue() {
 
 function Section({ title, hint, rows, today, nameOf, empty }: { title: string; hint: string; rows: Row[]; today: string; nameOf: Map<string, string>; empty: string }) {
   return (
-    <Card title={`${title} (${rows.length})`} actions={<span className="text-xs text-ink-subtle">{hint}</span>}>
+    <Card title={`${title} (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">{hint}</span>}>
       {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">{empty}</p>
+        <p className="text-body-regular text-text-secondary">{empty}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead className="text-left text-ink-subtle">
+          <table className="w-full min-w-[44rem] text-body-regular">
+            <thead className="text-start text-body-medium text-text-tertiary">
               <tr>
-                <th scope="col" className="pb-2 font-medium">Due</th>
-                <th scope="col" className="pb-2 font-medium">Client</th>
-                <th scope="col" className="pb-2 font-medium">Return</th>
-                <th scope="col" className="pb-2 text-right font-medium">Tax due</th>
-                <th scope="col" className="pb-2 font-medium">Prepared by</th>
-                <th scope="col" className="pb-2 font-medium"><span className="sr-only">Notes</span></th>
+                <th scope="col" className="text-start pb-2">Due</th>
+                <th scope="col" className="text-start pb-2">Client</th>
+                <th scope="col" className="text-start pb-2">Return</th>
+                <th scope="col" className="pb-2 text-end">Tax due</th>
+                <th scope="col" className="text-start pb-2">Prepared by</th>
+                <th scope="col" className="text-start pb-2"><span className="sr-only">Notes</span></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => {
                 const overdue = r.due_date < today;
                 return (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className={`py-2 pr-4 tabular-nums ${overdue ? "font-medium text-danger-text" : "text-ink-heading"}`}>{showDate(r.due_date)}</td>
-                    <td className="py-2 pr-4 text-ink-heading">{r.clients?.name ?? "—"}</td>
+                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                    <td className={`py-2 pr-4 tabular-nums ${overdue ? "font-medium text-text-error-primary" : "text-text-primary"}`}>{showDate(r.due_date)}</td>
+                    <td className="py-2 pr-4 text-text-primary">{r.clients?.name ?? "—"}</td>
                     <td className="py-2 pr-4">
-                      <Link href={`/app/filings/${r.id}`} className="font-medium text-link hover:underline">{r.form} · {r.period_label}</Link>
+                      <Link href={`/app/filings/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{r.form} · {r.period_label}</Link>
                     </td>
-                    <td className="amount py-2 pr-4 text-right tabular-nums text-ink-heading">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</td>
-                    <td className="py-2 pr-4 text-ink-muted">{(r.prepared_by && nameOf.get(r.prepared_by)) ?? "—"}</td>
-                    <td className="py-2 text-right">
+                    <td className="amount py-2 pr-4 text-end tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</td>
+                    <td className="py-2 pr-4 text-text-secondary">{(r.prepared_by && nameOf.get(r.prepared_by)) ?? "—"}</td>
+                    <td className="py-2 text-end">
                       {overdue && <Badge tone="blocked">Overdue</Badge>} {r.open_query && <Badge tone="waiting">Client question</Badge>}
                     </td>
                   </tr>

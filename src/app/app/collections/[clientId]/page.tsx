@@ -79,7 +79,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         description={
           <>
             {client.code} · {client.payment_mode === "firm_remits" ? "We remit this client's taxes, so reviewed returns are billed." : "The client pays BIR directly; we bill fees and charges only."}{" "}
-            <Link href={`/app/clients/${client.id}`} className="text-link hover:underline">Client details</Link>
+            <Link href={`/app/clients/${client.id}`} className="text-button-ghost-foreground hover:underline">Client details</Link>
           </>
         }
         actions={<RunBillingForm clientId={client.id} today={today} />}
@@ -87,19 +87,19 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
-            <p className="text-sm font-medium text-ink-muted">Owes now</p>
-            <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(aging.total)}</p>
-            <p className={`mt-2 text-sm ${aging.overdue > 0 ? "font-medium text-danger-text" : "text-ink-muted"}`}>{aging.overdue > 0 ? `${peso.format(aging.overdue)} overdue` : "Nothing overdue."}</p>
+            <p className="text-body-medium text-text-secondary">Owes now</p>
+            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(aging.total)}</p>
+            <p className={`mt-2 text-body-regular ${aging.overdue > 0 ? "font-medium text-text-error-primary" : "text-text-secondary"}`}>{aging.overdue > 0 ? `${peso.format(aging.overdue)} overdue` : "Nothing overdue."}</p>
           </Card>
           <Card>
-            <p className="text-sm font-medium text-ink-muted">Credit</p>
-            <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{peso.format(credit)}</p>
-            <div className="mt-2">{credit > 0 && open.length > 0 ? <ApplyCreditButton clientId={client.id} /> : <p className="text-sm text-ink-muted">Overpayments are used on the next statement.</p>}</div>
+            <p className="text-body-medium text-text-secondary">Credit</p>
+            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(credit)}</p>
+            <div className="mt-2">{credit > 0 && open.length > 0 ? <ApplyCreditButton clientId={client.id} /> : <p className="text-body-regular text-text-secondary">Overpayments are used on the next statement.</p>}</div>
           </Card>
           <Card>
-            <p className="text-sm font-medium text-ink-muted">Billed on the {describeBillingDays(client.billing_days)}</p>
-            <p className="mt-2 text-[28px] leading-none font-semibold tracking-tight tabular-nums text-ink-heading">{next ? showDate(next) : "—"}</p>
-            <p className="mt-2 text-sm text-ink-muted">Next billing run.</p>
+            <p className="text-body-medium text-text-secondary">Billed on the {describeBillingDays(client.billing_days)}</p>
+            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{next ? showDate(next) : "—"}</p>
+            <p className="mt-2 text-body-regular text-text-secondary">Next billing run.</p>
           </Card>
         </div>
 
@@ -117,7 +117,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
             <Card title="Add a Contribution or Charge">
               <AddChargeForm clientId={client.id} today={today} />
               {unbilled.length > 0 && (
-                <p className="mt-4 text-sm text-ink-muted">
+                <p className="mt-4 text-body-regular text-text-secondary">
                   Waiting for the next statement: {unbilled.map((d) => d.description).join("; ")}.
                 </p>
               )}
@@ -129,40 +129,40 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         </div>
 
         <section>
-          <h2 className="mb-3 font-display text-lg font-semibold text-ink-heading">Items billed</h2>
+          <h2 className="mb-3 text-title-3-semibold text-text-primary">Items billed</h2>
           {allDues.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center text-sm text-ink-muted">Nothing billed yet.</p>
+            <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">Nothing billed yet.</p>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
-              <table className="w-full min-w-[48rem] text-sm">
-                <thead className="border-b border-border bg-surface-muted text-left text-xs text-ink-muted">
+            <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+              <table className="w-full min-w-[48rem] text-body-regular">
+                <thead className="border-b border-separator-border bg-background-secondary-default text-start text-body-medium text-text-tertiary">
                   <tr>
-                    <th scope="col" className="px-4 py-3 font-medium">Item</th>
-                    <th scope="col" className="px-4 py-3 font-medium">Due</th>
-                    <th scope="col" className="px-4 py-3 text-right font-medium">Amount</th>
-                    <th scope="col" className="px-4 py-3 text-right font-medium">Paid</th>
-                    <th scope="col" className="px-4 py-3 text-right font-medium">Open</th>
-                    <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                    <th scope="col" className="px-4 py-3"><span className="sr-only">Waive</span></th>
+                    <th scope="col" className="text-start px-4 py-3">Item</th>
+                    <th scope="col" className="text-start px-4 py-3">Due</th>
+                    <th scope="col" className="px-4 py-3 text-end">Amount</th>
+                    <th scope="col" className="px-4 py-3 text-end">Paid</th>
+                    <th scope="col" className="px-4 py-3 text-end">Open</th>
+                    <th scope="col" className="text-start px-4 py-3">Status</th>
+                    <th scope="col" className="text-start px-4 py-3"><span className="sr-only">Waive</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...allDues].reverse().map((d) => {
                     const openAmt = Number(d.open_amount);
                     return (
-                      <tr key={d.id} className="border-t border-border align-top first:border-t-0">
+                      <tr key={d.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top first:border-t-0">
                         <td className="px-4 py-3">
-                          <p className="text-ink-heading">{d.description}</p>
-                          <p className="text-xs text-ink-subtle">{dueKindLabel[d.kind]}{d.waive_reason ? ` · waived: ${d.waive_reason}` : ""}</p>
+                          <p className="text-text-primary">{d.description}</p>
+                          <p className="text-caption-1-regular text-text-tertiary">{dueKindLabel[d.kind]}{d.waive_reason ? ` · waived: ${d.waive_reason}` : ""}</p>
                         </td>
-                        <td className="px-4 py-3 tabular-nums text-ink-muted">{showDate(d.due_on)}</td>
-                        <td className="amount px-4 py-3 text-ink">{peso.format(Number(d.amount))}</td>
-                        <td className="amount px-4 py-3 text-ink-muted">{Number(d.paid) ? peso.format(Number(d.paid)) : "—"}</td>
-                        <td className="amount px-4 py-3 font-medium text-ink-heading">{peso.format(openAmt)}</td>
+                        <td className="px-4 py-3 tabular-nums text-text-secondary">{showDate(d.due_on)}</td>
+                        <td className="amount px-4 py-3 text-text-primary">{peso.format(Number(d.amount))}</td>
+                        <td className="amount px-4 py-3 text-text-secondary">{Number(d.paid) ? peso.format(Number(d.paid)) : "—"}</td>
+                        <td className="amount px-4 py-3 font-medium text-text-primary">{peso.format(openAmt)}</td>
                         <td className="px-4 py-3">
                           {d.waived_at ? <Badge tone="neutral">Waived</Badge> : openAmt <= 0 ? <Badge tone="done">Paid</Badge> : d.due_on < today ? <Badge tone="blocked">Overdue</Badge> : Number(d.paid) > 0 ? <Badge tone="waiting">Partly paid</Badge> : <Badge tone="neutral">{d.soa_id ? "Billed" : "Not billed yet"}</Badge>}
                         </td>
-                        <td className="px-4 py-3 text-right">{openAmt > 0 && <WaiveDueForm clientId={client.id} dueId={d.id} />}</td>
+                        <td className="px-4 py-3 text-end">{openAmt > 0 && <WaiveDueForm clientId={client.id} dueId={d.id} />}</td>
                       </tr>
                     );
                   })}
@@ -175,23 +175,23 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         <div className="grid gap-6 lg:grid-cols-2">
           <Card title="Payments Received">
             {deps.length === 0 ? (
-              <p className="text-sm text-ink-muted">No payments recorded yet.</p>
+              <p className="text-body-regular text-text-secondary">No payments recorded yet.</p>
             ) : (
-              <ul className="divide-y divide-border text-sm">
+              <ul className="divide-y divide-separator-border text-body-regular">
                 {deps.map((d) => (
                   <li key={d.id} className="space-y-1 py-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className={`tabular-nums font-medium ${d.voided_at ? "text-ink-subtle line-through" : "text-ink-heading"}`}>{peso.format(Number(d.amount))}</span>
-                      <span className="tabular-nums text-ink-muted">{showDate(d.received_on)}</span>
+                      <span className={`tabular-nums font-medium ${d.voided_at ? "text-text-tertiary line-through" : "text-text-primary"}`}>{peso.format(Number(d.amount))}</span>
+                      <span className="tabular-nums text-text-secondary">{showDate(d.received_on)}</span>
                     </div>
-                    <p className="text-xs text-ink-subtle">
+                    <p className="text-caption-1-regular text-text-tertiary">
                       {methodLabel[d.method]}
                       {d.reference ? ` · ${d.method === "check" ? "check" : "ref."} ${d.reference}` : ""}
                       {d.payment_account_id ? ` · into ${accountLabel.get(d.payment_account_id) ?? "firm account"}` : ""}
                       {d.deposited_by ? ` · deposited by ${staffName.get(d.deposited_by) ?? "staff"}` : ""}
                       {d.bir_invoice_number ? ` · BIR invoice ${d.bir_invoice_number}` : ""}
                     </p>
-                    {d.note && <p className="text-xs text-ink-muted">{d.note}</p>}
+                    {d.note && <p className="text-caption-1-regular text-text-secondary">{d.note}</p>}
                     {d.voided_at ? (
                       <Badge tone="neutral">Voided: {d.void_reason}</Badge>
                     ) : (
@@ -207,13 +207,13 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
           </Card>
           <Card title="Statements">
             {(soas.data ?? []).length === 0 ? (
-              <p className="text-sm text-ink-muted">No statements yet.</p>
+              <p className="text-body-regular text-text-secondary">No statements yet.</p>
             ) : (
-              <ul className="divide-y divide-border text-sm">
+              <ul className="divide-y divide-separator-border text-body-regular">
                 {(soas.data ?? []).map((s) => (
                   <li key={s.id} className="flex items-center justify-between gap-4 py-2.5">
-                    <Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-link hover:underline">{s.reference}</Link>
-                    <span className="tabular-nums text-ink-muted">{showDate(s.billing_date)}</span>
+                    <Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-button-ghost-foreground hover:underline">{s.reference}</Link>
+                    <span className="tabular-nums text-text-secondary">{showDate(s.billing_date)}</span>
                   </li>
                 ))}
               </ul>

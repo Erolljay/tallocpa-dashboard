@@ -52,17 +52,17 @@ async function Schedules() {
 
       <Card title="Schedules">
         {schedules.length === 0 ? (
-          <p className="text-sm text-ink-muted">None yet.</p>
+          <p className="text-body-regular text-text-secondary">None yet.</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-separator-border">
             {schedules.map((s) => {
               const c = counts.get(s.id) ?? { total: 0, unpriced: 0 };
               return (
                 <li key={s.id}>
-                  <Link href={`/app/settings/fees/${s.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 hover:bg-surface-muted sm:-mx-2 sm:rounded-lg sm:px-2">
+                  <Link href={`/app/settings/fees/${s.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 hover:bg-background-secondary-hover sm:-mx-2 sm:rounded-lg sm:px-2">
                     <span className="min-w-0 flex-1">
-                      <span className="block font-medium text-ink-heading">{s.name}</span>
-                      <span className="block text-sm text-ink-muted">
+                      <span className="block font-medium text-text-primary">{s.name}</span>
+                      <span className="block text-body-regular text-text-secondary">
                         Takes effect {longDate(s.effective_from)}
                         {s.status === "draft" && (c.unpriced ? ` · ${c.unpriced} of ${c.total} items without a price` : ` · all ${c.total} items priced`)}
                         {s.status === "retired" && s.retired_at && ` · retired ${longDate(s.retired_at)}`}

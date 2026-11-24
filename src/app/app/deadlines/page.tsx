@@ -34,7 +34,7 @@ async function Deadlines() {
     <div className="space-y-6">
       {me.staff.role === "owner" && (
         <Notice>
-          Deadline rules and holidays are starting figures until checked. Review and edit them in <Link href="/app/settings" className="text-link underline">Settings</Link>.
+          Deadline rules and holidays are starting figures until checked. Review and edit them in <Link href="/app/settings" className="text-button-ghost-foreground underline">Settings</Link>.
         </Notice>
       )}
       {me.staff.role === "owner" && <GenerateButton />}

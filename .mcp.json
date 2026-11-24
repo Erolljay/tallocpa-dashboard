@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "boardui": {
+      "command": "npx",
+      "args": ["-y", "boardui@latest", "mcp"],
+      "env": { "NODE_USE_ENV_PROXY": "1", "DO_NOT_TRACK": "1" }
+    }
+  }
+}

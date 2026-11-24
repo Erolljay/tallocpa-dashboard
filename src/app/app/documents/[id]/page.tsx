@@ -67,7 +67,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
         title={DOC_TYPES[doc.doc_type as DocType]}
         description={
           <span>
-            <Link href={`/app/clients/${doc.client_id}`} className="text-link hover:underline">{client?.name}</Link> · {showMonth(doc.period)}
+            <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link> · {showMonth(doc.period)}
             {doc.late ? " · late" : ""}{doc.prior_year ? " · prior taxable year" : ""} · {doc.source === "staff" ? "staff upload" : "from client"}
           </span>
         }
@@ -76,12 +76,12 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={doc.file_name}>
           {isPdf ? (
-            <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-border" />
+            <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed link, not an optimisable asset
-            <img src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} className="max-h-[75vh] w-full rounded-lg border border-border object-contain" />
+            <img src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} className="max-h-[75vh] w-full rounded-lg border border-separator-border object-contain" />
           )}
-          <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-sm text-link hover:underline">Open full size</a>
+          <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
         </Card>
         <div className="space-y-4">
           {doc.client_reply && <Notice tone="waiting">Client replied: “{doc.client_reply}”</Notice>}

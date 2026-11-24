@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Check, Copy, Wallet } from "lucide-react";
+import { RiBuilding2Line, RiCheckLine, RiFileCopyLine, RiWallet3Line } from "@remixicon/react";
 import { useState } from "react";
 import type { PayAccount } from "@/lib/collections/statement";
 
@@ -15,7 +15,7 @@ export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]
   const hasTaxAccount = accounts.some((a) => a.purpose === "client_tax_funds");
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-ink-muted">Payment details will appear here once the firm adds them. Please contact us for how to pay.</p>;
+    return <p className="text-body-regular text-text-secondary">Payment details will appear here once the firm adds them. Please contact us for how to pay.</p>;
   }
 
   return (
@@ -23,7 +23,7 @@ export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]
       <div role="radiogroup" aria-label="Pay through" className="grid gap-2 sm:grid-cols-2">
         {accounts.map((a) => {
           const on = a.id === chosen;
-          const Icon = a.kind === "bank" ? Building2 : Wallet;
+          const Icon = a.kind === "bank" ? RiBuilding2Line : RiWallet3Line;
           return (
             <button
               key={a.id}
@@ -31,38 +31,38 @@ export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]
               role="radio"
               aria-checked={on}
               onClick={() => setChosen(a.id)}
-              className={`pressable flex min-h-14 items-center gap-3 rounded-xl border px-4 py-3 text-left ${
-                on ? "border-action bg-surface-tint shadow-sm" : "border-border bg-surface hover:bg-surface-muted"
+              className={`pressable flex min-h-14 items-center gap-3 rounded-xl border px-4 py-3 text-start ${
+                on ? "border-accent-500 bg-button-ghost-background shadow-xs" : "border-separator-border bg-background-primary-default hover:bg-background-secondary-hover"
               }`}
             >
-              <Icon aria-hidden className={`size-5 shrink-0 ${on ? "text-ink-on-tint" : "text-accent"}`} strokeWidth={2} />
+              <Icon aria-hidden className={`size-5 shrink-0 ${on ? "text-button-ghost-foreground" : "text-button-ghost-foreground"}`} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-ink-heading">{a.institution}</span>
-                <span className="block text-xs text-ink-subtle">{a.purpose === "client_tax_funds" ? "For tax payments" : "For our fees"}</span>
+                <span className="block text-body-medium text-text-primary">{a.institution}</span>
+                <span className="block text-caption-1-regular text-text-tertiary">{a.purpose === "client_tax_funds" ? "For tax payments" : "For our fees"}</span>
               </span>
-              {on && <Check aria-hidden className="size-4 shrink-0 text-ink-on-tint" strokeWidth={3} />}
+              {on && <RiCheckLine aria-hidden className="size-4 shrink-0 text-button-ghost-foreground" />}
             </button>
           );
         })}
       </div>
 
       {account && (
-        <div className="grid gap-5 rounded-2xl bg-surface-muted p-5 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div className="grid gap-5 rounded-2xl bg-background-secondary-default p-5 sm:grid-cols-[auto_1fr] sm:items-center">
           {account.qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
-            <img src={account.qrUrl} alt={`QR code for ${account.institution}`} className="mx-auto size-48 rounded-xl border border-border bg-white object-contain p-2 sm:mx-0" />
+            <img src={account.qrUrl} alt={`QR code for ${account.institution}`} className="mx-auto size-48 rounded-xl border border-separator-border bg-white object-contain p-2 sm:mx-0" />
           ) : (
-            <div className="mx-auto grid size-48 place-items-center rounded-xl border border-dashed border-border-strong p-4 text-center text-sm text-ink-muted sm:mx-0">No QR code for this account</div>
+            <div className="mx-auto grid size-48 place-items-center rounded-xl border border-dashed border-border-button-default p-4 text-center text-body-regular text-text-secondary sm:mx-0">No QR code for this account</div>
           )}
           <dl className="space-y-3">
             <Detail label="Account name" value={account.account_name} />
             <Detail label="Account number" value={account.account_number} copy mono />
             <Detail label="Payment reference" value={reference} copy mono />
-            {account.instructions && <p className="text-sm text-ink-muted">{account.instructions}</p>}
+            {account.instructions && <p className="text-body-regular text-text-secondary">{account.instructions}</p>}
           </dl>
         </div>
       )}
-      <p className="text-sm text-ink-muted">
+      <p className="text-body-regular text-text-secondary">
         Put the payment reference in the transfer note so we can match your payment.
         {hasTax && hasTaxAccount ? " Please send tax amounts to the account marked for tax payments, and our fees to an account for our fees." : ""}
       </p>
@@ -74,9 +74,9 @@ function Detail({ label, value, copy, mono }: { label: string; value: string; co
   const [copied, setCopied] = useState(false);
   return (
     <div>
-      <dt className="text-xs text-ink-subtle">{label}</dt>
+      <dt className="text-caption-1-regular text-text-tertiary">{label}</dt>
       <dd className="flex items-center gap-2">
-        <span className={`text-[17px] font-semibold text-ink-heading ${mono ? "tabular-nums tracking-wide" : ""}`}>{value}</span>
+        <span className={`text-[17px] font-semibold text-text-primary ${mono ? "tabular-nums tracking-wide" : ""}`}>{value}</span>
         {copy && (
           <button
             type="button"
@@ -86,9 +86,9 @@ function Detail({ label, value, copy, mono }: { label: string; value: string; co
                 setTimeout(() => setCopied(false), 1500);
               });
             }}
-            className="pressable inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-link hover:bg-surface-sunken pointer-coarse:min-h-9"
+            className="pressable inline-flex items-center gap-1 rounded-full px-2 py-1 text-caption-1-medium text-button-ghost-foreground hover:bg-background-tertiary-default pointer-coarse:min-h-9"
           >
-            {copied ? <Check aria-hidden className="size-3.5" strokeWidth={3} /> : <Copy aria-hidden className="size-3.5" />}
+            {copied ? <RiCheckLine aria-hidden className="size-3.5" /> : <RiFileCopyLine aria-hidden className="size-3.5" />}
             {copied ? "Copied" : "Copy"}
           </button>
         )}
