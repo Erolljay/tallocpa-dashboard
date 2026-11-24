@@ -44,16 +44,17 @@ async function Returns() {
 
   return (
     <div className="space-y-8">
-      <section className="space-y-4">
-        <h1 className="text-title-2-semibold text-text-primary">Waiting for your approval</h1>
+      <h1 className="text-title-1-medium text-text-primary">Returns</h1>
+      <section className="space-y-3">
+        <h2 className="text-title-3-semibold text-text-primary">Waiting for your approval</h2>
         {waiting.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Nothing to approve right now.</p>
+          <p className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Nothing to approve right now.</p>
         ) : (
           waiting.map((r) => (
-            <article key={r.id} className="space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs p-4 sm:p-5">
+            <article key={r.id} className="space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <p className="font-medium text-text-primary">{r.form} · {r.period_label}</p>
+                  <p className="text-headline-semibold text-text-primary">{r.form} · {r.period_label}</p>
                   <p className="text-body-regular text-text-secondary">{several && r.clients ? `${r.clients.name} · ` : ""}Due {showDate(r.due_date)}</p>
                 </div>
                 <p className="text-body-regular text-text-secondary">Tax due <span className="amount font-medium tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</span></p>
@@ -71,7 +72,7 @@ async function Returns() {
       {recent.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-title-3-semibold text-text-primary">Your returns</h2>
-          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs text-body-regular">
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular">
             {recent.map((r) => {
               const mine = (files ?? []).filter((f) => f.filing_instance_id === r.id);
               return (
@@ -80,7 +81,7 @@ async function Returns() {
                     <p className="font-medium text-text-primary">{r.form} · {r.period_label}</p>
                     <Badge tone={filingStatusTone[r.status]}>{r.status === "client_approved" ? "Approved by you" : filingStatusLabel[r.status]}</Badge>
                   </div>
-                  <p className="text-caption-1-regular text-text-tertiary">{several && r.clients ? `${r.clients.name} · ` : ""}{r.filing_reference ? `Ref. ${r.filing_reference}` : `Due ${showDate(r.due_date)}`}</p>
+                  <p className="text-caption-1-regular text-text-secondary">{several && r.clients ? `${r.clients.name} · ` : ""}{r.filing_reference ? `Ref. ${r.filing_reference}` : `Due ${showDate(r.due_date)}`}</p>
                   {mine.length > 0 && (
                     <p className="flex flex-wrap gap-3 text-caption-1-regular">
                       {mine.map((f) => (

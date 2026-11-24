@@ -32,7 +32,7 @@ async function Portal2316({ params }: Pick<PageProps<"/portal/payroll/2316/[clie
     <div className="space-y-6">
       <div className="space-y-2 print:hidden">
         <Link href="/portal/payroll" className="text-body-regular text-button-ghost-foreground hover:underline">← Payroll</Link>
-        <h1 className="text-title-2-semibold text-text-primary">BIR 2316 · {y}</h1>
+        <h1 className="text-title-1-medium text-text-primary">BIR 2316 · {y}</h1>
         <p className="text-body-regular text-text-secondary">
           {set.clientName}: {set.forms.length} certificate{set.forms.length === 1 ? "" : "s"}, one per page. Print them (or save as PDF), have your authorized representative and each employee sign, and give each employee their copy.
         </p>

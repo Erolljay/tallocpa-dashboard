@@ -113,6 +113,7 @@ const control = cx(
   "aria-invalid:bg-background-tertiary-error aria-invalid:ring-2 aria-invalid:ring-border-error-default",
   "disabled:cursor-not-allowed disabled:bg-input-disabled-background disabled:text-input-disabled-text",
   "read-only:hover:ring-1 read-only:hover:ring-border-button-default",
+  "file:me-3 file:h-7 file:cursor-pointer file:rounded-lg file:border file:border-border-button-default file:bg-background-primary-default file:px-2.5 file:text-body-medium file:text-text-primary",
 );
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
@@ -157,17 +158,17 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof tone
 }
 
 const noticeTones = {
-  waiting: "bg-status-yellow-background text-status-yellow-text",
-  blocked: "bg-status-rose-background text-status-rose-text",
-  done: "bg-status-lime-background text-status-lime-text",
+  waiting: { box: "bg-status-yellow-background/50", icon: "text-status-yellow-text" },
+  blocked: { box: "bg-status-rose-background/50", icon: "text-status-rose-text" },
+  done: { box: "bg-status-lime-background/50", icon: "text-status-lime-text" },
 };
 
-/** Inline callout in BoardUI's status colours. */
+/** Inline callout: a soft BoardUI status tint, readable primary text, the glyph carries the colour. */
 export function Notice({ tone = "waiting", children }: { tone?: keyof typeof noticeTones; children: ReactNode }) {
   const { Icon } = tones[tone];
   return (
-    <div role="status" className={cx("flex items-start gap-2.5 rounded-2xl p-4 text-body-medium", noticeTones[tone])}>
-      <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
+    <div role="status" className={cx("flex items-start gap-2.5 rounded-2xl px-4 py-3 text-body-regular text-text-primary", noticeTones[tone].box)}>
+      <Icon aria-hidden className={cx("mt-0.5 size-4 shrink-0", noticeTones[tone].icon)} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

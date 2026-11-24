@@ -30,7 +30,7 @@ export function SignOffActions(props: {
 }) {
   if (props.actions.length === 0) return null;
   return (
-    <div className="space-y-4">
+    <div className={props.audience === "client" ? "divide-y divide-separator-border [&>form]:py-4 [&>form:first-child]:pt-0 [&>form:last-child]:pb-0" : "space-y-4"}>
       {props.actions.map((a) => (
         <StepForm key={a} {...props} action={a} />
       ))}
@@ -44,7 +44,7 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
   const secondary = action === "kick_back" || action === "client_query";
 
   return (
-    <form action={run} className="space-y-3 rounded-xl border border-separator-border p-4">
+    <form action={run} className={audience === "client" ? "space-y-3" : "space-y-3 rounded-2xl border border-separator-border p-4"}>
       {action === "prepare" && (
         <Field label="Tax due on this return (₱)" htmlFor={id("tax_due")} hint="0 if nothing is payable.">
           <Input id={id("tax_due")} name="tax_due" type="number" min={0} step="0.01" required className="text-end tabular-nums" />
