@@ -20,6 +20,9 @@ export default function DashboardPage() {
       <Suspense fallback={null}>
         <ActingNotice />
       </Suspense>
+      <Suspense fallback={null}>
+        <AmendmentNotice />
+      </Suspense>
       <Suspense fallback={<Skeleton rows={6} />}>
         <Summary />
       </Suspense>
@@ -63,6 +66,30 @@ async function ActingNotice() {
         {active ? `${who?.full_name ?? "A reviewer"} is acting approver until the end of ${showDate(lastDay(active.ends_at))}. ` : ""}
         {count ? `${count} return${count === 1 ? "" : "s"} approved by an acting approver in the last 7 days. ` : ""}
         <Link href="/app/settings/acting-approver" className="font-medium underline">Acting approver</Link>
+      </Notice>
+    </div>
+  );
+}
+
+/** Book amendments waiting for the Owner's approval (spec §4.3, Q30). */
+async function AmendmentNotice() {
+  const me = await requireStaff();
+  if (me.staff.role !== "owner") return null;
+  const supabase = await supabaseServer();
+  const { data } = await supabase.from("ledger_amendments").select("id, client_id, clients(name)").eq("status", "requested").order("requested_at").limit(20);
+  const rows = (data ?? []) as unknown as { id: string; client_id: string; clients: { name: string } | null }[];
+  if (!rows.length) return null;
+  const clients = [...new Map(rows.map((r) => [r.client_id, r.clients?.name ?? "A client"])).entries()];
+  return (
+    <div className="mb-6">
+      <Notice tone="waiting">
+        {rows.length} book amendment{rows.length === 1 ? "" : "s"} waiting for your approval:{" "}
+        {clients.map(([id, name], i) => (
+          <span key={id}>
+            {i > 0 && ", "}
+            <Link href={`/app/clients/${id}/books`} className="font-medium underline">{name}</Link>
+          </span>
+        ))}
       </Notice>
     </div>
   );

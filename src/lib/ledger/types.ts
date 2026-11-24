@@ -114,3 +114,10 @@ export const ENTRY_SOURCES = {
   closing: "Closing entry",
 } as const;
 export type EntrySource = keyof typeof ENTRY_SOURCES;
+
+/**
+ * Returns that lock their months of the books once filed (spec §3.6, Q30). The
+ * same list as private.book_lock_forms() in the database; a database test keeps
+ * them equal. Information returns (1604-C, 1604-E, Inventory List) do not lock.
+ */
+export const BOOK_LOCK_FORMS = ["0619-E", "1601-C", "1601-EQ", "2550M", "2550Q", "2551M", "2551Q", "1701Q", "1702Q", "1701", "1701A", "1702-RT", "1702-EX", "1702-MX"] as const;
