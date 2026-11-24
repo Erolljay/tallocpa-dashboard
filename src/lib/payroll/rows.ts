@@ -3,10 +3,10 @@ import { toCentavos, toDecimalString } from "@/lib/returns/money";
 import type { Centavos } from "@/lib/returns/types";
 import { computeEmployeeYear } from "./compute";
 import { categoryTotals, type BirCategory, type ItemKind, type PayrollItem } from "./items";
-import type { Employee, EmploymentStatus, PayAmounts, PayrollEntry, SeparationReason } from "./types";
+import type { Employee, EmploymentStatus, PayAmounts, PayrollEntry, PriorEmployer, SeparationReason } from "./types";
 
 export const EMPLOYEE_COLUMNS =
-  "id, employee_no, last_name, first_name, middle_name, tin, tin_branch, birth_date, address, zip_code, region, nationality, employment_status, is_mwe, mwe_daily_rate, hire_date, separation_date, separation_reason, substituted_filing, active, needs_details";
+  "id, employee_no, last_name, first_name, middle_name, tin, tin_branch, birth_date, address, zip_code, region, nationality, employment_status, is_mwe, mwe_daily_rate, mwe_monthly_rate, hire_date, separation_date, separation_reason, substituted_filing, active, needs_details";
 export const ITEM_COLUMNS = "id, name, kind, bir_category, sort_order, active";
 /** payroll_entries with their lines embedded. */
 export const ENTRY_COLUMNS = "employee_id, pay_month, adjustment, note, payroll_entry_lines(item_id, amount)";
@@ -32,12 +32,29 @@ export function employeeFromRow(r: Row): Employee {
     employmentStatus: (str(r.employment_status) ?? "R") as EmploymentStatus,
     isMwe: r.is_mwe === true,
     mweDailyRate: r.mwe_daily_rate == null ? null : cents(r.mwe_daily_rate),
+    mweMonthlyRate: r.mwe_monthly_rate == null ? null : cents(r.mwe_monthly_rate),
     hireDate: str(r.hire_date),
     separationDate: str(r.separation_date),
     separationReason: str(r.separation_reason) as SeparationReason | null,
     substitutedFiling: r.substituted_filing !== false,
     active: r.active !== false,
     needsDetails: r.needs_details === true,
+  };
+}
+
+export const PRIOR_EMPLOYER_COLUMNS = "employee_id, year, tin, name, address, zip_code, taxable_compensation, non_taxable_compensation, tax_withheld";
+
+export function priorEmployerFromRow(r: Row): PriorEmployer {
+  return {
+    employeeId: String(r.employee_id),
+    year: Number(r.year),
+    tin: str(r.tin),
+    name: String(r.name),
+    address: str(r.address),
+    zipCode: str(r.zip_code),
+    taxable: cents(r.taxable_compensation),
+    nonTaxable: cents(r.non_taxable_compensation),
+    withheld: cents(r.tax_withheld),
   };
 }
 

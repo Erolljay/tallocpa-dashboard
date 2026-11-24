@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { showMonth } from "@/lib/documents/labels";
 import { previewOf } from "@/lib/payroll/apply";
-import { employeesForMonth, loadEmployees, loadItems, loadStored, monthLocked, payrollAccess } from "@/lib/payroll/data";
+import { employeesForMonth, loadEmployees, loadItems, loadPriorEmployers, loadStored, monthLocked, payrollAccess } from "@/lib/payroll/data";
 import { checkRegister, type RegisterRow } from "@/lib/payroll/register";
 import { toEntries } from "@/lib/payroll/rows";
 import { byName } from "@/lib/payroll/year";
@@ -27,11 +27,12 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
   const m = Number(ym.slice(5, 7)) - 1;
   const { supabase, client } = await payrollAccess(id);
   const items = await loadItems(supabase, id, true);
-  const [employees, stored, locked, submissions] = await Promise.all([
+  const [employees, stored, locked, submissions, prior] = await Promise.all([
     loadEmployees(supabase, id),
     loadStored(supabase, id, `${year}-01-01`, month),
     monthLocked(supabase, id, month),
     supabase.from("payroll_submissions").select("id, file_name, rows, late, created_at").eq("client_id", id).eq("pay_month", month).eq("status", "pending").order("created_at"),
+    loadPriorEmployers(supabase, id, year),
   ]);
   const earlier = toEntries(stored.filter((s) => s.payMonth < month), items);
   const current = new Map(stored.filter((s) => s.payMonth === month).map((s) => [s.employeeId, s]));
@@ -43,6 +44,7 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
       lines: Object.fromEntries(cur?.lines ?? []),
       adjustment: cur?.adjustment ?? 0,
       note: cur?.note ?? null,
+      prior: prior.find((p) => p.employeeId === e.id) ?? null,
       earlier: Array.from({ length: m }, (_, i) => earlier.find((x) => x.employeeId === e.id && x.payMonth === `${year}-${String(i + 1).padStart(2, "0")}-01`) ?? null),
     };
   });

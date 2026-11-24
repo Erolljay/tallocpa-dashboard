@@ -4,8 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { PayrollItem } from "./items";
-import { EMPLOYEE_COLUMNS, ENTRY_COLUMNS, ITEM_COLUMNS, employeeFromRow, itemFromRow, storedMonthsFromRows, toEntries, type StoredMonth } from "./rows";
-import type { Employee, PayrollEntry } from "./types";
+import { EMPLOYEE_COLUMNS, ENTRY_COLUMNS, ITEM_COLUMNS, PRIOR_EMPLOYER_COLUMNS, employeeFromRow, itemFromRow, priorEmployerFromRow, storedMonthsFromRows, toEntries, type StoredMonth } from "./rows";
+import type { Employee, PayrollEntry, PriorEmployer } from "./types";
 
 export interface PayrollClient {
   id: string;
@@ -35,6 +35,33 @@ export async function loadEmployees(supabase: SupabaseClient, clientId: string):
   const { data, error } = await supabase.from("employees").select(EMPLOYEE_COLUMNS).eq("client_id", clientId);
   if (error) throw new Error(`Could not load employees: ${error.message}`);
   return (data ?? []).map((r) => employeeFromRow(r as unknown as Record<string, unknown>));
+}
+
+/** Employees' previous employers within `year` (BIR 2316 Part III). */
+export async function loadPriorEmployers(supabase: SupabaseClient, clientId: string, year: number): Promise<PriorEmployer[]> {
+  const { data, error } = await supabase.from("employee_prior_employers").select(PRIOR_EMPLOYER_COLUMNS).eq("client_id", clientId).eq("year", year);
+  if (error) throw new Error(`Could not load previous employers: ${error.message}`);
+  return (data ?? []).map((r) => priorEmployerFromRow(r as unknown as Record<string, unknown>));
+}
+
+/** Per-client 2316 settings (payroll_settings): employer ZIP code and signatory. */
+export interface PayrollSettings {
+  employerZipCode: string | null;
+  signatoryName: string | null;
+  signatoryTitle: string | null;
+}
+
+export async function loadPayrollSettings(supabase: SupabaseClient, clientId: string): Promise<PayrollSettings> {
+  const { data, error } = await supabase.from("payroll_settings").select("employer_zip_code, signatory_name, signatory_title").eq("client_id", clientId).maybeSingle();
+  if (error) throw new Error(`Could not load payroll settings: ${error.message}`);
+  return { employerZipCode: data?.employer_zip_code ?? null, signatoryName: data?.signatory_name ?? null, signatoryTitle: data?.signatory_title ?? null };
+}
+
+/** When a year's 2316s were released to the client's portal users (null if not released). */
+export async function load2316Release(supabase: SupabaseClient, clientId: string, year: number): Promise<{ releasedAt: string; releasedBy: string } | null> {
+  const { data, error } = await supabase.from("payroll_2316_releases").select("released_at, released_by").eq("client_id", clientId).eq("year", year).maybeSingle();
+  if (error) throw new Error(`Could not load the 2316 release: ${error.message}`);
+  return data ? { releasedAt: String(data.released_at), releasedBy: String(data.released_by) } : null;
 }
 
 /** The client's payslip items (sorted for the register). Adds the default set the first time, when `seed` and none exist. */

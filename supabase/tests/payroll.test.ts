@@ -264,6 +264,75 @@ describe.skipIf(!url)("payroll database", () => {
     });
   });
 
+  it("BIR 2316: previous employers, signatory and release to the client's portal (migration 20261123000018)", async () => {
+    await db.query("begin");
+    try {
+      await db.query("set local role authenticated");
+      const asUser = (u: string) => db.query(`select set_config('request.jwt.claim.sub', $1, true)`, [u]);
+      await asUser(STAFF);
+      await db.query(`select public.save_payroll_month($1, '2025-03-01', $2::jsonb)`, [clientA, entry(juan)]);
+      // Previous employer: one per employee and year, same access as employees.
+      await db.query(
+        `insert into public.employee_prior_employers (client_id, employee_id, year, tin, name, taxable_compensation, non_taxable_compensation, tax_withheld)
+         values ($1, $2, 2025, '999-888-777-00000', 'Old Employer Corp.', 200000, 30000, 8000)`,
+        [clientA, juan],
+      );
+      await fails(`insert into public.employee_prior_employers (client_id, employee_id, year, name) values ($1, $2, 2025, 'Again')`, [clientA, juan], /employee_prior_employers_employee_id_year_key/);
+      await fails(`insert into public.employee_prior_employers (client_id, employee_id, year, name) values ($1, $2, 2024, 'Wrong client')`, [clientB, juan], /row-level security|foreign key/);
+      await fails(`insert into public.employee_prior_employers (client_id, employee_id, year, name, tax_withheld) values ($1, $2, 2024, 'X', -1)`, [clientA, juan], /check constraint/);
+      await fails(`update public.employees set mwe_monthly_rate = 0 where id = $1`, [juan], /check constraint/);
+      // Signatory, per client.
+      await db.query(`insert into public.payroll_settings (client_id, employer_zip_code, signatory_name, signatory_title) values ($1, '5000', 'Ana Reyes', 'HR Manager')`, [clientA]);
+      expect((await db.query(`select updated_by from public.payroll_settings where client_id = $1`, [clientA])).rows[0].updated_by).toBe(STAFF);
+      await fails(`insert into public.payroll_settings (client_id, employer_zip_code) values ($1, '50000')`, [clientB], /row-level security|check constraint/);
+
+      // Staff read the data for the certificates at any time.
+      const data = (await db.query(`select public.payroll_2316_data($1, 2025) as d`, [clientA])).rows[0].d;
+      expect(data.client.name).toBe("Client A");
+      expect(data.settings).toEqual({ employer_zip_code: "5000", signatory_name: "Ana Reyes", signatory_title: "HR Manager" });
+      expect(data.release).toBeNull();
+      expect(data.entries).toHaveLength(1);
+      expect(data.entries[0].payroll_entry_lines).toHaveLength(2);
+      expect(data.prior_employers[0]).toMatchObject({ name: "Old Employer Corp.", taxable_compensation: 200000, tax_withheld: 8000 });
+      expect((await db.query(`select public.payroll_2316_data($1, 2024) as d`, [clientA])).rows[0].d.entries).toEqual([]);
+
+      // Client users: no payroll tables, and no certificates until the year is released.
+      await asUser(CLIENT_USER);
+      expect((await db.query(`select id from public.employee_prior_employers`)).rows).toEqual([]);
+      expect((await db.query(`select client_id from public.payroll_settings`)).rows).toEqual([]);
+      await fails(`select public.payroll_2316_data($1, 2025)`, [clientA], /not available/);
+      await fails(`insert into public.payroll_2316_releases (client_id, year) values ($1, 2025)`, [clientA], /row-level security/);
+
+      // Other staff cannot release; assigned staff can, and who/when are set by the database.
+      await asUser(OTHER_STAFF);
+      await fails(`insert into public.payroll_2316_releases (client_id, year) values ($1, 2025)`, [clientA], /row-level security/);
+      await fails(`select public.payroll_2316_data($1, 2025)`, [clientA], /not available/);
+      await asUser(STAFF);
+      const rel = (await db.query(`insert into public.payroll_2316_releases (client_id, year, released_by) values ($1, 2025, $2) returning released_by`, [clientA, OWNER])).rows[0];
+      expect(rel.released_by).toBe(STAFF);
+
+      await asUser(CLIENT_USER);
+      expect((await db.query(`select year from public.payroll_2316_releases`)).rows).toEqual([{ year: 2025 }]);
+      const released = (await db.query(`select public.payroll_2316_data($1, 2025) as d`, [clientA])).rows[0].d;
+      expect(released.release).not.toBeNull();
+      expect(released.employees.map((e: { last_name: string }) => e.last_name)).toEqual(["Dela Cruz"]);
+      expect(released.entries).toHaveLength(1);
+      // Still only for the released year, and never another client's.
+      await fails(`select public.payroll_2316_data($1, 2024)`, [clientA], /not available/);
+      await fails(`select public.payroll_2316_data($1, 2025)`, [clientB], /not available/);
+      expect((await db.query(`select id from public.payroll_entries`)).rows).toEqual([]);
+      expect((await db.query(`delete from public.payroll_2316_releases returning year`)).rows).toEqual([]);
+
+      // Withdrawing the release hides them again.
+      await asUser(STAFF);
+      expect((await db.query(`delete from public.payroll_2316_releases where client_id = $1 and year = 2025 returning year`, [clientA])).rows).toHaveLength(1);
+      await asUser(CLIENT_USER);
+      await fails(`select public.payroll_2316_data($1, 2025)`, [clientA], /not available/);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
   it("writes payroll changes to the audit log", async () => {
     const n = (await db.query(`select count(*)::int as n from public.audit_log where table_name in ('employees', 'payroll_entries')`)).rows[0].n;
     expect(n).toBeGreaterThan(0);

@@ -19,7 +19,7 @@ const P = (pesos: number) => Math.round(pesos * 100);
 const employee = (over: Partial<Employee>): Employee => ({
   id: "e1", employeeNo: "001", lastName: "Dela Cruz", firstName: "Juan", middleName: "Santos",
   tin: "111-222-333", tinBranch: "0000", birthDate: null, address: null, zipCode: null, region: null,
-  nationality: "FILIPINO", employmentStatus: "R", isMwe: false, mweDailyRate: null,
+  nationality: "FILIPINO", employmentStatus: "R", isMwe: false, mweDailyRate: null, mweMonthlyRate: null,
   hireDate: null, separationDate: null, separationReason: null, substitutedFiling: true, active: true, needsDetails: false,
   ...over,
 });
@@ -141,7 +141,7 @@ function fixtureContext(): PayrollContext {
   const juan = employee({ id: "a", employeeNo: "1", tin: "111-222-333", hireDate: "2020-03-15", nationality: "" });
   const maria = employee({
     id: "b", employeeNo: "2", lastName: "Bautista", firstName: "Maria", middleName: null, tin: "444-555-666", nationality: "Filipino",
-    employmentStatus: "C", isMwe: true, region: null, mweDailyRate: P(645), hireDate: "2025-02-01", separationDate: "2025-11-30", separationReason: "T", substitutedFiling: false,
+    employmentStatus: "C", isMwe: true, region: null, mweDailyRate: P(645), mweMonthlyRate: null, hireDate: "2025-02-01", separationDate: "2025-11-30", separationReason: "T", substitutedFiling: false,
   });
   const c = { sssEmployee: 1350, philhealthEmployee: 1000, pagibigEmployee: 200 };
   const mc = { sssEmployee: 675, philhealthEmployee: 375, pagibigEmployee: 200 };

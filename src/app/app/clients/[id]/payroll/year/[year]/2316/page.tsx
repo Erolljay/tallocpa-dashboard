@@ -1,11 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
-import { tinDashed } from "@/lib/payroll/alphalist";
-import { certificate2316 } from "@/lib/payroll/certificate";
+import { Form2316Sheet } from "@/components/bir/form-2316-sheet";
+import { PrintButton } from "@/components/bir/print-button";
+import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { payrollAccess } from "@/lib/payroll/data";
-import { loadPayrollContext } from "@/lib/payroll/load";
-import { buildYear, displayName } from "@/lib/payroll/year";
+import { load2316 } from "@/lib/payroll/load";
 import { formatAmount } from "@/lib/returns/money";
 
 export default function Form2316Page(props: PageProps<"/app/clients/[id]/payroll/year/[year]/2316">) {
@@ -16,66 +16,81 @@ export default function Form2316Page(props: PageProps<"/app/clients/[id]/payroll
   );
 }
 
-/** BIR 2316 worksheets, one per employee paid in the year (or just ?employee=…), to copy into the official form. Print-friendly. */
+/**
+ * BIR 2316 for a year. With ?employee=…, that employee's certificate, ready to
+ * print; without, the list of employees paid in the year, each with their
+ * figures and what to check, and a link to print them all.
+ */
 async function Certificates({ params, searchParams }: Pick<PageProps<"/app/clients/[id]/payroll/year/[year]/2316">, "params" | "searchParams">) {
   const { id, year: y } = await params;
   const only = (await searchParams).employee;
   if (!/^\d{4}$/.test(y)) notFound();
   const year = Number(y);
   const { supabase, client } = await payrollAccess(id);
-  const payroll = await loadPayrollContext(supabase, id, "1604-C", `${year}-01-01`, `${year}-12-31`);
-  const years = buildYear(payroll).filter((e) => e.lines.some((l) => l.hasEntry) && (!only || e.employee.id === only));
+  const employeeId = typeof only === "string" ? only : undefined;
+  const set = await load2316(supabase, id, year, employeeId);
+  if (!set) notFound();
+  const base = `/app/clients/${id}/payroll/year/${year}`;
+
+  if (employeeId) {
+    const form = set.forms[0];
+    return (
+      <>
+        <div className="print:hidden">
+          <PageHeader
+            title={form ? `BIR 2316 · ${form.employeeName} · ${year}` : `BIR 2316 · ${year}`}
+            description={client.name}
+            actions={
+              <>
+                <LinkButton href={`${base}/2316`} variant="ghost">All employees</LinkButton>
+                <LinkButton href={`/app/clients/${id}/payroll/employees/${employeeId}?year=${year}`} variant="secondary">Employee &amp; previous employer</LinkButton>
+                {form && <PrintButton />}
+              </>
+            }
+          />
+          {!form && <Notice tone="waiting">No compensation for this employee in {year}.</Notice>}
+          {form && form.warnings.length > 0 && (
+            <div className="mb-6"><Notice tone="waiting"><ul className="list-disc pl-5">{form.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul></Notice></div>
+          )}
+        </div>
+        {form && <Form2316Sheet forms={[form]} />}
+      </>
+    );
+  }
 
   return (
     <>
-      <div className="print:hidden">
-        <PageHeader
-          title={`BIR 2316 · ${year}`}
-          description={<>{client.name}: Certificate of Compensation Payment / Tax Withheld worksheets (items as on BIR Form 2316, September 2021 ENCS). Print, or copy into the official form.</>}
-          actions={<LinkButton href={`/app/clients/${id}/payroll/year/${year}`} variant="ghost">Back</LinkButton>}
-        />
-      </div>
-      {years.length === 0 && <Notice tone="waiting">No payroll for {year}.</Notice>}
-      <div className="space-y-8">
-        {years.map((e) => {
-          const c = certificate2316(e, year);
-          const block = (title: string, rows: { no: string; label: string; amount: number }[]) => (
-            <section>
-              <h3 className="mb-1 text-sm font-medium text-ink-heading">{title}</h3>
-              <dl className="divide-y divide-border text-sm">
-                {rows.map((r) => (
-                  <div key={r.no} className="flex items-baseline justify-between gap-4 py-1">
-                    <dt className="text-ink-muted"><span className="mr-2 inline-block w-8 text-ink-subtle tabular-nums">{r.no}</span>{r.label}</dt>
-                    <dd className="tabular-nums text-ink-heading">{formatAmount(r.amount)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          );
-          return (
-            <article key={e.employee.id} className="break-after-page rounded-2xl border border-border bg-surface p-6 shadow-sm print:border-0 print:shadow-none">
-              <header className="mb-4 grid gap-1 text-sm sm:grid-cols-2">
-                <p><span className="text-ink-subtle">1 Year</span> {year} · <span className="text-ink-subtle">2 Period</span> {e.employee.hireDate && e.employee.hireDate > `${year}-01-01` ? e.employee.hireDate.slice(5).replace("-", "/") : "01/01"} – {e.employee.separationDate?.startsWith(String(year)) ? e.employee.separationDate.slice(5).replace("-", "/") : "12/31"}</p>
-                <p><span className="text-ink-subtle">3 TIN</span> {e.employee.tin ? `${tinDashed(e.employee.tin)}-${e.employee.tinBranch}` : "—"}</p>
-                <p className="font-medium text-ink-heading"><span className="font-normal text-ink-subtle">4 Employee</span> {displayName(e.employee)}</p>
-                <p><span className="text-ink-subtle">11 MWE</span> {e.employee.isMwe ? `Yes${e.employee.mweDailyRate ? ` · ₱${formatAmount(e.employee.mweDailyRate)}/day (item 9)` : ""}` : "No"}</p>
-                <p><span className="text-ink-subtle">12 Employer TIN</span> {client.tin ?? "—"}</p>
-                <p><span className="text-ink-subtle">13 Employer</span> {client.name}</p>
-              </header>
-              <div className="grid gap-6 lg:grid-cols-2">
-                {block("Part IV-A — Summary", c.items)}
-                <div className="space-y-4">
-                  {block("Part IV-B A. Non-taxable / exempt compensation", c.partA)}
-                  {block("Part IV-B B. Taxable compensation", c.partB)}
+      <PageHeader
+        title={`BIR 2316 · ${year}`}
+        description={<>{client.name}: Certificates of Compensation Payment / Tax Withheld (BIR Form 2316, September 2021 ENCS), one per employee paid in {year}.</>}
+        actions={
+          <>
+            <LinkButton href={base} variant="ghost">Back</LinkButton>
+            {set.forms.length > 0 && <LinkButton href={`${base}/2316/all`}>Print all 2316s</LinkButton>}
+          </>
+        }
+      />
+      {set.forms.length === 0 ? (
+        <Notice tone="waiting">No payroll for {year}.</Notice>
+      ) : (
+        <Card>
+          <ul className="divide-y divide-border text-sm">
+            {set.forms.map((f) => (
+              <li key={f.employeeId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+                <div className="min-w-0">
+                  <Link href={`${base}/2316?employee=${f.employeeId}`} className="font-medium text-link hover:underline">{f.employeeName}</Link>
+                  <p className="text-xs text-ink-subtle">
+                    {f.mwe.isMwe ? "MWE · " : ""}gross {formatAmount(f.amounts["19"])} · taxable {formatAmount(f.amounts["23"])} · tax due {formatAmount(f.amounts["24"])} · withheld {formatAmount(f.amounts["28"])}
+                    {f.previous ? " · with previous employer" : ""}
+                  </p>
+                  {f.warnings.length > 0 && <p className="text-xs text-warning">{f.warnings.join(" ")}</p>}
                 </div>
-              </div>
-              {e.employee.substitutedFiling && c.taxDue !== c.withheld && (
-                <p className="mt-3 text-sm text-warning">Marked for substituted filing, but tax due ({formatAmount(c.taxDue)}) does not equal tax withheld ({formatAmount(c.withheld)}).</p>
-              )}
-            </article>
-          );
-        })}
-      </div>
+                <Link href={`${base}/2316?employee=${f.employeeId}`} className="text-link hover:underline">View / print</Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </>
   );
 }

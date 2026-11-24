@@ -9,8 +9,9 @@ import { CATEGORIES, type BirCategory, type ItemKind } from "@/lib/payroll/items
 import { checkRegister, type RegisterRow } from "@/lib/payroll/register";
 import { readRegister } from "@/lib/payroll/register-xlsx";
 import { categoryToDb, monthPayload, sameMonth, toEntries, type MonthInput } from "@/lib/payroll/rows";
-import { employeeSchema } from "@/lib/payroll/schema";
+import { employeeSchema, payrollSettingsSchema, priorEmployerSchema } from "@/lib/payroll/schema";
 import { toCentavos } from "@/lib/returns/money";
+import { yearWorksheet } from "./year-data";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string };
 export type RegisterState = { error?: string; ok?: string; preview?: RegisterPreview };
@@ -231,4 +232,65 @@ export async function saveEmployeesAction(clientId: string, _: EmployeeImportSta
   }
   revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
   return { ok: `Saved: ${checked.creates.length} added, ${checked.updates.length} updated.` };
+}
+
+// ---------------------------------------------------------------------------
+// BIR 2316.
+// ---------------------------------------------------------------------------
+const YEAR_RE = /^\d{4}$/;
+
+/** Employer ZIP code (item 14A) and the authorized representative who signs the 2316s (items 53 and 55). */
+export async function savePayrollSettingsAction(clientId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await payrollAccess(clientId);
+  const parsed = payrollSettingsSchema.safeParse(Object.fromEntries(form.entries()));
+  if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+  const { error } = await supabase.from("payroll_settings").upsert({ client_id: clientId, ...parsed.data }, { onConflict: "client_id" });
+  if (error) return { error: `Could not save: ${error.message}` };
+  revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
+  return { ok: "Saved." };
+}
+
+/** An employee's previous employer within a year (2316 Part III, items 22 and 25B). */
+export async function savePriorEmployerAction(clientId: string, employeeId: string, year: number, _: FormState, form: FormData): Promise<FormState> {
+  if (!YEAR_RE.test(String(year))) return { error: "Unknown year." };
+  const { supabase } = await payrollAccess(clientId);
+  const parsed = priorEmployerSchema.safeParse(Object.fromEntries(form.entries()));
+  if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+  const { error } = await supabase
+    .from("employee_prior_employers")
+    .upsert({ client_id: clientId, employee_id: employeeId, year, ...parsed.data }, { onConflict: "employee_id,year" });
+  if (error) return { error: `Could not save the previous employer: ${error.message}` };
+  revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
+  return { ok: "Saved." };
+}
+
+export async function deletePriorEmployerAction(clientId: string, employeeId: string, year: number): Promise<FormState> {
+  const { supabase } = await payrollAccess(clientId);
+  const { error } = await supabase.from("employee_prior_employers").delete().eq("client_id", clientId).eq("employee_id", employeeId).eq("year", year);
+  if (error) return { error: `Could not remove the previous employer: ${error.message}` };
+  revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
+  return { ok: "Removed." };
+}
+
+/** Release a year's 2316s to the client's portal users, once the alphalist has no problems. */
+export async function release2316Action(clientId: string, year: number): Promise<FormState> {
+  if (!YEAR_RE.test(String(year))) return { error: "Unknown year." };
+  const { supabase, client } = await payrollAccess(clientId);
+  const { result } = await yearWorksheet(supabase, client, year);
+  if (result.errors.length) return { error: "Fix the problems listed above before releasing the 2316s." };
+  const { error } = await supabase.from("payroll_2316_releases").insert({ client_id: clientId, year });
+  if (error && error.code !== "23505") return { error: `Could not release: ${error.message}` };
+  revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
+  revalidatePath("/portal", "layout");
+  return { ok: "Released to the client's portal." };
+}
+
+/** Withdraw a release: client users can no longer print the year's 2316s. */
+export async function withdraw2316Action(clientId: string, year: number): Promise<FormState> {
+  const { supabase } = await payrollAccess(clientId);
+  const { error } = await supabase.from("payroll_2316_releases").delete().eq("client_id", clientId).eq("year", year);
+  if (error) return { error: `Could not withdraw: ${error.message}` };
+  revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
+  revalidatePath("/portal", "layout");
+  return { ok: "Withdrawn from the client's portal." };
 }

@@ -42,6 +42,8 @@ export interface Employee {
   employmentStatus: EmploymentStatus;
   isMwe: boolean;
   mweDailyRate: Centavos | null;
+  /** Statutory minimum wage per month (BIR 2316 item 10), when known. */
+  mweMonthlyRate: Centavos | null;
   hireDate: string | null;
   separationDate: string | null;
   separationReason: SeparationReason | null;
@@ -109,6 +111,29 @@ export interface PayrollContext {
   employees: Employee[];
   /** Entries for January … throughMonth of `year`. */
   entries: PayrollEntry[];
+  /** Employees' previous employers within `year` (BIR 2316 Part III); none when absent. */
+  priorEmployers?: PriorEmployer[];
+}
+
+/**
+ * An employee's previous employer within the year (employee_prior_employers),
+ * from that employer's 2316: BIR 2316 Part III (items 16–18) and the amounts
+ * that enter items 22 and 25B and the alphalist's previous-employer columns.
+ */
+export interface PriorEmployer {
+  employeeId: string;
+  year: number;
+  /** "123-456-789" or with the branch, "123-456-789-00000". */
+  tin: string | null;
+  name: string;
+  address: string | null;
+  zipCode: string | null;
+  /** Taxable compensation (the previous employer's item 21). */
+  taxable: Centavos;
+  /** Non-taxable / exempt compensation (its item 20). */
+  nonTaxable: Centavos;
+  /** Tax withheld (its item 26). */
+  withheld: Centavos;
 }
 
 export const emptyAmounts = (): PayAmounts => Object.fromEntries(AMOUNT_FIELDS.map((f) => [f, 0])) as PayAmounts;

@@ -20,7 +20,7 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
           </Suspense>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-28 sm:pb-10">{children}</main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-28 sm:pb-10 print:max-w-none print:p-0">{children}</main>
       <nav aria-label="Portal" className="material material-edge-t fixed inset-x-0 bottom-0 z-10 pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden">
         <Suspense fallback={null}>
           <Nav variant="bottom" />

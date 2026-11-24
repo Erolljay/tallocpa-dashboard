@@ -91,7 +91,7 @@ export const form1604C: FormModule = {
     const totAdj = monthly.reduce((s, x) => s + x.adjustment, 0);
 
     const all = [...list.schedule1, ...list.schedule2];
-    const sum = (k: "c7a" | "c7f" | "c7j" | "c14" | "c15b" | "c17a" | "c17b") => all.reduce((s, r) => s + alphaCols(r)[k], 0);
+    const sum = (k: "c7a" | "c7f" | "c7j" | "c12j" | "c13" | "c14" | "c15a" | "c15b" | "c17a" | "c17b") => all.reduce((s, r) => s + alphaCols(r)[k], 0);
     if (all.length === 0) warnings.push(`No payroll entered for ${year}. Enter it on the client's Payroll page.`);
     for (const r of all) {
       const name = displayName(r.employee);
@@ -100,6 +100,7 @@ export const form1604C: FormModule = {
       if (r.under > 100) warnings.push(`${name}: tax due ${formatAmount(r.taxDue)} is ${formatAmount(r.under)} more than withheld — the year-end adjustment was not fully withheld.`);
       if (r.over > 100) warnings.push(`${name}: ${formatAmount(r.over)} over-withheld — refund it to the employee (enter it as a negative adjustment).`);
       if (r.employee.substitutedFiling && (r.under > 100 || r.over > 100)) warnings.push(`${name} is marked for substituted filing, but tax due does not equal tax withheld.`);
+      if (r.employee.substitutedFiling && (r.priorTaxable || r.priorNonTaxable || r.priorWithheld)) warnings.push(`${name} had a previous employer this year, so is not qualified for substituted filing (only employees with one employer for the calendar year qualify, RR 2-98 as amended): untick it on their record.`);
     }
 
     return {
@@ -121,7 +122,14 @@ export const form1604C: FormModule = {
             { key: "gross_compensation", line: "7a", label: "Gross compensation", amount: sum("c7a") },
             { key: "non_taxable", line: "7f", label: "Total non-taxable/exempt compensation", amount: sum("c7f") },
             { key: "taxable", line: "7j", label: "Total taxable compensation", amount: sum("c7j"), emphasis: "subtotal" },
+            ...(sum("c12j") || sum("c15a")
+              ? [
+                  { key: "prior_taxable", line: "12j", label: "Taxable compensation from previous employers", amount: sum("c12j") },
+                  { key: "total_taxable", line: "13", label: "Total taxable compensation (present and previous)", amount: sum("c13") },
+                ]
+              : []),
             { key: "tax_due", line: "14", label: "Tax due", amount: sum("c14"), emphasis: "subtotal" },
+            ...(sum("c15a") ? [{ key: "tax_withheld_previous", line: "15a", label: "Tax withheld (previous employers)", amount: sum("c15a") }] : []),
             { key: "tax_withheld", line: "15b", label: "Tax withheld (present employer)", amount: sum("c15b"), emphasis: "subtotal" },
             { key: "under_withheld", line: "17a", label: "Tax due not yet withheld", amount: sum("c17a") },
             { key: "over_withheld", line: "17b", label: "Over-withheld (to refund)", amount: sum("c17b") },

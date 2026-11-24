@@ -143,7 +143,7 @@ Intake channel in v1: **portal upload only** (Q10). **Staff can also upload docu
 
 - Per client: **payslip items** (earning / deduction / employer contribution), each mapped to a BIR category (taxify's list; "none" for loans and cash advances), and an **employee list** with every alphalist field. Employees are added one by one or in bulk from an Excel template.
 - Each month's payroll is encoded in a **downloaded Excel register** (one column per payslip item, prefilled with the employees) and uploaded with a checked preview. Staff uploads are saved directly; **client uploads from the portal** wait for the assigned staff to post or return them.
-- From it: 1601-C (with the December / separation annualization), 1604-C, the alphalist DAT and CSV, and a 2316 worksheet per employee. A month locks once its 1601-C is filed.
+- From it: 1601-C (with the December / separation annualization), 1604-C, the alphalist DAT and CSV, and **BIR Form 2316** in the official September 2021 layout (one employee or print all; previous employer in Part III; per-client signatory). Clients can print their employees' 2316s in the portal once staff release the year. A month locks once its 1601-C is filed.
 
 ### 3.7b Parties directory
 
@@ -347,7 +347,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | O13 | Brand details for Settings → Brand: TIN and branch code, RDO, COR, addresses, contact details, CPA / PRC-BOA / BIR tax agent / PTR / DTI numbers and validity, signatory name and title, Service Invoice method and series | Owner | Statements, quotes, engagement letters |
 | O14 | ~~Whether fee advances count toward the gross receipts watch~~ **Closed 23 Nov 2026:** no. Only collected retainer and other fees applied to a charge count; unapplied advances and client tax money are excluded (as built) | Owner | Gross receipts watch (§3.1) |
 | O15 | Confirm the tax treatments chosen when building the worksheets: separation pay always exempt; December annualization (over-withholding as a negative adjustment); 13th-month ceiling applied cumulatively; percentage tax rate by document month vs income-tax rates at year end; sales with only a total treated as VAT-inclusive; 8% option and ₱250,000 reduction; MCIT start year default; branch code 0000 for head office (0001 when unknown) | Owner | Worksheets (§3.7), payroll (§3.7a) |
-| O16 | Check form item numbers written from the BIR forms rather than ported from taxify: 2551Q items 13–24, 1604-C Part I items 4–7 and Part II; and whether the alphalist DAT needs D2 records for Schedule 2 | Owner / Staff | 2551Q, 1604-C, alphalist |
+| O16 | Check form item numbers written from the BIR forms rather than ported from taxify: 2551Q items 13–24, 1604-C Part I items 4–7 and Part II; whether the alphalist DAT needs D2 records for Schedule 2; and the field order of the previous-employer fields in the alphalist DAT (assumed the same as the present employer's; validate in the BIR Alphalist module with a real case) | Owner / Staff | 2551Q, 1604-C, alphalist |
 | O17 | 2307s the client issued: OCR reads the "party" as the payor (the client), so reviewers must enter the payee's name and TIN until the OCR prompt is adjusted | Build | 0619-E, 1601-EQ, QAP |
 
 ---

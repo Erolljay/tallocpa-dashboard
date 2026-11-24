@@ -2,13 +2,18 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { Badge, Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
-import { computeEmployeeYear, enteredNet, suggestWithholding } from "@/lib/payroll/compute";
+import { computeEmployeeYear, enteredNet, suggestWithholding, type PriorAmounts } from "@/lib/payroll/compute";
 import { CATEGORIES, CATEGORY_KEYS, ITEM_KINDS, categoryTotals, payTotals, sortItems, type ItemKind, type PayrollItem } from "@/lib/payroll/items";
 import { EMPLOYMENT_STATUSES, SEPARATION_REASONS, type Employee, type PayAmounts } from "@/lib/payroll/types";
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import type { RegisterPreview } from "@/lib/payroll/apply";
 import {
   deleteItemAction,
+  deletePriorEmployerAction,
+  release2316Action,
+  savePayrollSettingsAction,
+  savePriorEmployerAction,
+  withdraw2316Action,
   postSubmissionAction,
   previewEmployeesAction,
   saveEmployeesAction,
@@ -66,6 +71,11 @@ export function EmployeeForm({ clientId, employee }: { clientId: string; employe
             <Input id="mwe_daily_rate" name="mwe_daily_rate" type="number" min={0} step="0.01" className="text-right tabular-nums" defaultValue={v?.mweDailyRate != null ? (v.mweDailyRate / 100).toFixed(2) : ""} />
           </Field>
         )}
+        {mwe && (
+          <Field label="Monthly minimum wage (₱)" htmlFor="mwe_monthly_rate" hint="BIR 2316 item 10; blank if not set." error={e.mwe_monthly_rate}>
+            <Input id="mwe_monthly_rate" name="mwe_monthly_rate" type="number" min={0} step="0.01" className="text-right tabular-nums" defaultValue={v?.mweMonthlyRate != null ? (v.mweMonthlyRate / 100).toFixed(2) : ""} />
+          </Field>
+        )}
         <label className="flex items-center gap-2 self-end pb-2 text-sm text-ink-strong">
           <input type="checkbox" name="substituted_filing" defaultChecked={v?.substitutedFiling ?? true} className="size-4" /> Qualified for substituted filing
         </label>
@@ -100,6 +110,8 @@ export interface GridRow {
   note: string | null;
   /** Category totals for January … the month before (null where none). */
   earlier: (PayAmounts | null)[];
+  /** Previous employer within the year: enters the year-end adjustment. */
+  prior: PriorAmounts | null;
 }
 
 const toInput = (c: number | undefined) => (c ? (c / 100).toFixed(2) : "");
@@ -134,7 +146,7 @@ export function MonthGrid({ clientId, month, locked, rows, items }: { clientId: 
         const any = lines.length > 0 || adj !== 0;
         const months = [...r.earlier.slice(0, m), any ? a : null, ...Array(11 - m).fill(null)];
         const yl = computeEmployeeYear(months, r.employee.isMwe, year);
-        const s = suggestWithholding(r.employee, yl, m, year);
+        const s = suggestWithholding(r.employee, yl, m, year, r.prior);
         return { a, any, pay: payTotals(a), lines: yl[m], suggestion: s, differs: any && Math.abs(enteredNet(yl[m]) - s.net) > 100 };
       }),
     [rows, values, m, year, shown, items],
@@ -423,5 +435,85 @@ export function EmployeeUpload({ clientId }: { clientId: string }) {
       {saved.error && <Notice tone="blocked">{saved.error}</Notice>}
       {saved.ok && <Notice tone="done">{saved.ok}</Notice>}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BIR 2316: signatory, previous employer, release to the portal.
+// ---------------------------------------------------------------------------
+export function PayrollSettingsForm({ clientId, settings }: { clientId: string; settings: { employerZipCode: string | null; signatoryName: string | null; signatoryTitle: string | null } }) {
+  const [state, action, pending] = useActionState(savePayrollSettingsAction.bind(null, clientId), {} as FormState);
+  const e = state.fieldErrors ?? {};
+  return (
+    <form action={action} className="grid gap-4 sm:grid-cols-[1.4fr_1.2fr_7rem_auto] sm:items-end">
+      <Field label="Authorized representative" htmlFor="signatory_name" hint="Signs items 53 and 55 for the employer." error={e.signatory_name}>
+        <Input id="signatory_name" name="signatory_name" defaultValue={settings.signatoryName ?? ""} />
+      </Field>
+      <Field label="Title" htmlFor="signatory_title" hint="e.g. HR Manager, Treasurer." error={e.signatory_title}>
+        <Input id="signatory_title" name="signatory_title" defaultValue={settings.signatoryTitle ?? ""} />
+      </Field>
+      <Field label="Employer ZIP" htmlFor="employer_zip_code" hint="Item 14A." error={e.employer_zip_code}>
+        <Input id="employer_zip_code" name="employer_zip_code" inputMode="numeric" defaultValue={settings.employerZipCode ?? ""} />
+      </Field>
+      <div className="pb-1"><Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button></div>
+      {state.error && <div className="sm:col-span-4"><Notice tone="blocked">{state.error}</Notice></div>}
+      {state.ok && <div className="sm:col-span-4"><Notice tone="done">{state.ok}</Notice></div>}
+    </form>
+  );
+}
+
+export interface PriorEmployerValues {
+  tin: string | null;
+  name: string;
+  address: string | null;
+  zipCode: string | null;
+  taxable: number;
+  nonTaxable: number;
+  withheld: number;
+}
+
+export function PriorEmployerForm({ clientId, employeeId, year, prior }: { clientId: string; employeeId: string; year: number; prior: PriorEmployerValues | null }) {
+  const [state, action, pending] = useActionState(savePriorEmployerAction.bind(null, clientId, employeeId, year), {} as FormState);
+  const [del, delAction, deleting] = useActionState(deletePriorEmployerAction.bind(null, clientId, employeeId, year), {} as FormState);
+  const e = state.fieldErrors ?? {};
+  const money = (c: number | undefined) => (c ? (c / 100).toFixed(2) : "");
+  return (
+    <form action={action} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="Employer's name (17)" htmlFor="prior_name" error={e.name}><Input id="prior_name" name="name" defaultValue={prior?.name ?? ""} required /></Field>
+        <Field label="TIN (16)" htmlFor="prior_tin" hint="123-456-789; branch optional." error={e.tin}><Input id="prior_tin" name="tin" inputMode="numeric" defaultValue={prior?.tin ?? ""} /></Field>
+        <Field label="Registered address (18)" htmlFor="prior_address" error={e.address}><Input id="prior_address" name="address" defaultValue={prior?.address ?? ""} /></Field>
+        <Field label="ZIP (18A)" htmlFor="prior_zip" error={e.zip_code}><Input id="prior_zip" name="zip_code" inputMode="numeric" defaultValue={prior?.zipCode ?? ""} /></Field>
+        <Field label="Taxable compensation (₱)" htmlFor="prior_taxable" hint="Their 2316 item 21; goes to item 22." error={e.taxable_compensation}>
+          <Input id="prior_taxable" name="taxable_compensation" type="number" min={0} step="0.01" className="text-right tabular-nums" defaultValue={money(prior?.taxable)} />
+        </Field>
+        <Field label="Non-taxable compensation (₱)" htmlFor="prior_nontaxable" hint="Their 2316 item 20." error={e.non_taxable_compensation}>
+          <Input id="prior_nontaxable" name="non_taxable_compensation" type="number" min={0} step="0.01" className="text-right tabular-nums" defaultValue={money(prior?.nonTaxable)} />
+        </Field>
+        <Field label="Tax withheld (₱)" htmlFor="prior_withheld" hint="Their 2316 item 26; goes to item 25B." error={e.tax_withheld}>
+          <Input id="prior_withheld" name="tax_withheld" type="number" min={0} step="0.01" className="text-right tabular-nums" defaultValue={money(prior?.withheld)} />
+        </Field>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save previous employer"}</Button>
+        {prior && !del.ok && (
+          <button type="submit" formAction={delAction} formNoValidate disabled={deleting} className="text-xs text-danger-text hover:underline">{deleting ? "Removing…" : "Remove"}</button>
+        )}
+      </div>
+      {(state.error || del.error) && <Notice tone="blocked">{state.error ?? del.error}</Notice>}
+      {(state.ok || del.ok) && <Notice tone="done">{state.ok ?? del.ok}</Notice>}
+    </form>
+  );
+}
+
+export function Release2316Form({ clientId, year, released }: { clientId: string; year: number; released: boolean }) {
+  const [state, action, pending] = useActionState((released ? withdraw2316Action : release2316Action).bind(null, clientId, year), {} as FormState);
+  return (
+    <form action={action} className="space-y-2">
+      <Button type="submit" size="sm" variant={released ? "secondary" : "primary"} disabled={pending}>
+        {pending ? "Saving…" : released ? "Withdraw from the portal" : "Release to the client's portal"}
+      </Button>
+      {state.error && <Notice tone="blocked">{state.error}</Notice>}
+    </form>
   );
 }

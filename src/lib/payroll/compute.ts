@@ -151,10 +151,12 @@ export function separatedInMonth(e: Pick<Employee, "separationDate">, year: numb
  * compensation so far, less everything withheld in earlier months (tax withheld
  * plus adjustments). A negative result is a refund of over-withholding.
  */
-export function suggestWithholding(e: Pick<Employee, "separationDate">, lines: MonthLines[], m: number, year: number): Suggestion {
+export function suggestWithholding(e: Pick<Employee, "separationDate">, lines: MonthLines[], m: number, year: number, prior?: PriorAmounts | null): Suggestion {
   if (m === 11 || separatedInMonth(e, year, m)) {
-    let taxable = 0;
-    let before = 0;
+    // RR 2-98 sec. 2.79(B)(5): the year-end adjustment covers compensation from a previous employer within the year,
+    // and credits the tax it withheld.
+    let taxable = prior?.taxable ?? 0;
+    let before = prior?.withheld ?? 0;
     for (let i = 0; i <= m; i++) taxable += lines[i].l22;
     for (let i = 0; i < m; i++) before += lines[i].l25 + lines[i].l26;
     const due = annualTax(taxable, year);
@@ -169,26 +171,41 @@ export const enteredNet = (l: MonthLines) => l.l25 + l.l26;
 /** More than ₱1 apart: worth a warning. */
 export const differsFromSuggestion = (l: MonthLines, s: Suggestion) => Math.abs(enteredNet(l) - s.net) > 100;
 
+/** What a previous employer within the year paid and withheld (PriorEmployer's amounts). */
+export interface PriorAmounts {
+  taxable: Centavos;
+  nonTaxable: Centavos;
+  withheld: Centavos;
+}
+
 /** One employee's year, for the alphalist and the 2316 (taxify generateAlphalist / render2316Cert totals). */
 export interface AnnualSummary {
+  /** Present employer: gross, non-taxable and taxable compensation. */
   gross: Centavos;
   nonTaxable: Centavos;
   taxable: Centavos;
+  /** Previous employer within the year (zero when none): taxable compensation and tax withheld. */
+  priorTaxable: Centavos;
+  priorWithheld: Centavos;
+  /** Tax due on the year's taxable compensation from both employers (2316 item 24, alphalist 14). */
   taxDue: Centavos;
-  /** Tax withheld for the year: items 25 plus adjustments (26). */
+  /** Tax withheld by the present employer: items 25 plus adjustments (26). */
   withheld: Centavos;
-  /** Tax due not withheld (alphalist 17a: to be withheld / paid by the employee). */
+  /** Tax due not withheld by either employer (alphalist 17a: to be withheld / paid by the employee). */
   under: Centavos;
-  /** Withheld over tax due (alphalist 17b: to be refunded to the employee). */
+  /** Withheld by both over tax due (alphalist 17b: to be refunded to the employee). */
   over: Centavos;
 }
 
-export function annualSummary(lines: MonthLines[], year: number): AnnualSummary {
+export function annualSummary(lines: MonthLines[], year: number, prior?: PriorAmounts | null): AnnualSummary {
   const sum = (k: keyof MonthLines) => lines.reduce((a, l) => a + (l[k] as number), 0);
   const gross = sum("l14");
   const nonTaxable = sum("l21");
   const taxable = sum("l22");
-  const taxDue = annualTax(taxable, year);
+  const priorTaxable = prior?.taxable ?? 0;
+  const priorWithheld = prior?.withheld ?? 0;
+  const taxDue = annualTax(taxable + priorTaxable, year);
   const withheld = sum("l25") + sum("l26");
-  return { gross, nonTaxable, taxable, taxDue, withheld, under: Math.max(0, taxDue - withheld), over: Math.max(0, withheld - taxDue) };
+  const credited = withheld + priorWithheld;
+  return { gross, nonTaxable, taxable, priorTaxable, priorWithheld, taxDue, withheld, under: Math.max(0, taxDue - credited), over: Math.max(0, credited - taxDue) };
 }

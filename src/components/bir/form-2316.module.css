@@ -1,0 +1,138 @@
+/*
+ * BIR Form 2316 (September 2021 ENCS), official-replica layout. Ported from
+ * taxify.ph alphalist.html (`.f2316-*`), scoped as a CSS module. Fixed 862px
+ * page on screen; zoomed to fit A4 portrait in print, one certificate per page.
+ */
+.page {
+  font-family: Arial, Helvetica, sans-serif;
+  width: 862px;
+  margin: 0 auto 24px;
+  color: #000;
+  background: #fff;
+  break-after: page;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.page:last-child { break-after: auto; }
+.page * { box-sizing: border-box; }
+
+.topstrip { position: relative; padding: 0 0 6px; min-height: 40px; }
+.biruse { position: absolute; left: 0; bottom: 6px; display: flex; font-weight: 700; line-height: 1.2; font-size: 7px; }
+.biruse span { border: 1px solid #000; padding: 2px 5px; white-space: nowrap; }
+.biruse .gray { background: #cfcfcf; border-right: none; }
+.gov { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.gov img { width: 40px; height: auto; }
+.govLines { font-weight: 700; font-size: 9px; line-height: 1.3; text-align: center; }
+
+.outer { width: 100%; background: #fff; border: 2px solid #000; font-size: 8px; line-height: 1.28; }
+
+.headband { display: flex; border-bottom: 2px solid #000; }
+.formno { width: 230px; border-right: 2px solid #000; display: flex; flex-direction: column; justify-content: center; padding: 5px 8px; text-align: center; }
+.formnoLbl { font-weight: 700; }
+.formnoBig { font-size: 26px; font-weight: 800; line-height: 0.95; letter-spacing: 1px; }
+.formnoRev { font-size: 7.5px; }
+.title { flex: 1; border-right: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px; text-align: center; min-height: 72px; }
+.titleT { font-weight: 800; font-size: 13px; line-height: 1.12; }
+.titleSub { font-size: 7.5px; margin-top: 3px; }
+.barcode { width: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px 4px; }
+.barcode img { width: 186px; height: auto; }
+.barcodeCode { align-self: flex-end; font-weight: 700; margin-top: 4px; }
+
+.fillnote { border-bottom: 2px solid #000; padding: 2px 8px; font-weight: 700; }
+
+.yp { display: flex; border-bottom: 2px solid #000; background: #cfcfcf; }
+.ypA { flex: 1; border-right: 2px solid #000; padding: 4px 8px; display: flex; align-items: center; gap: 8px; }
+.ypB { flex: 1; padding: 4px 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.boxwrap { display: inline-flex; }
+.boxcell { width: 21px; height: 22px; line-height: 22px; text-align: center; border: 1px solid #000; margin-left: -1px; background: #fff; font-family: "Courier New", monospace; font-weight: 700; display: inline-block; }
+
+.main { display: flex; border-bottom: 2px solid #000; background: #cfcfcf; }
+.col { flex: 1; min-width: 0; }
+.colLeft { border-right: 2px solid #000; }
+
+.parttitle { text-align: center; font-weight: 700; border-bottom: 1px solid #000; padding: 2px; background: #d7d7d7; }
+
+.tinRow { border-bottom: 1px solid #000; padding: 3px 6px; display: flex; align-items: center; gap: 8px; }
+.tinWrap { display: inline-flex; align-items: center; }
+.tinCell { display: inline-block; width: 15px; height: 19px; line-height: 19px; text-align: center; border: 1px solid #000; margin: 0 0 0 -1px; font-family: "Courier New", monospace; font-weight: 700; background: #fff; }
+.tinDash { background: #9c9c9c; width: 8px; }
+
+.row2 { display: flex; border-bottom: 1px solid #000; }
+.fieldbox { flex: 1; min-width: 0; border-right: 1px solid #000; padding: 3px 6px; }
+.fieldbox:last-child { border-right: none; }
+.narrow { flex: 0 0 120px; }
+.dob { flex: 0 0 225px; }
+.val { background: #fff; border: 1px solid #000; min-height: 20px; padding: 2px 5px; font-weight: 700; margin-top: 3px; overflow-wrap: anywhere; }
+.center { text-align: center; letter-spacing: 3px; }
+.single { border-bottom: 1px solid #000; padding: 3px 6px; }
+
+.ticks { display: flex; margin-top: 3px; background: #fff; border: 1px solid #000; height: 24px; }
+.tick { flex: 1; position: relative; text-align: center; line-height: 24px; font-family: "Courier New", monospace; font-weight: 700; }
+.tick::after { content: ""; position: absolute; right: 0; bottom: 0; width: 1px; height: 10px; background: #000; }
+.tick:last-child::after { display: none; }
+
+.inlineRow { display: flex; align-items: center; border-bottom: 1px solid #000; padding: 3px 6px; gap: 8px; }
+.employerType { gap: 14px; }
+.amtbox { width: 170px; background: #fff; border: 1px solid #000; min-height: 20px; padding: 2px 6px; font-weight: 700; text-align: right; }
+
+.mwe { display: flex; border-bottom: 1px solid #000; padding: 3px 6px; gap: 8px; align-items: flex-start; }
+.checkbox { width: 22px; height: 22px; background: #fff; border: 1px solid #000; text-align: center; line-height: 22px; font-weight: 800; flex-shrink: 0; }
+.checkboxSm { width: 20px; height: 20px; line-height: 20px; }
+.check { display: flex; align-items: center; gap: 5px; }
+
+.itemRow { display: flex; align-items: center; min-height: 30px; }
+.itemLbl { flex: 1; padding: 3px 6px; line-height: 1.2; }
+.itemAmt { width: 170px; flex-shrink: 0; margin: 3px 8px 3px 0; background: #fff; border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: 700; min-height: 20px; }
+.itemTotal .itemAmt { font-weight: 800; }
+.itemHeading { min-height: 18px; }
+.itemSub { padding-left: 18px; }
+.specify { display: inline-block; min-width: 140px; border-bottom: 1px solid #000; margin-left: 4px; }
+
+.cathdr { display: flex; border-bottom: 1px solid #000; font-weight: 700; }
+.cathdrLbl { flex: 1; padding: 3px 6px; }
+.cathdrAmt { width: 180px; border-left: 1px solid #000; padding: 3px 6px; text-align: center; }
+.subhdr { font-weight: 700; border-bottom: 1px solid #000; border-top: 1px solid #000; padding: 3px 6px; }
+
+.declaration { border-bottom: 2px solid #000; padding: 5px 10px; text-align: justify; line-height: 1.2; font-size: 7px; background: #cfcfcf; }
+
+.sigrow { display: flex; border-bottom: 1px solid #000; }
+.sigblock { flex: 1; border-right: 1px solid #000; padding: 14px 10px 4px; }
+.line { display: flex; align-items: flex-end; gap: 8px; }
+.lineVal { flex: 1; border-bottom: 1px solid #000; text-align: center; font-weight: 700; padding-bottom: 1px; min-height: 16px; }
+.lineTitle { font-weight: 400; }
+.cap { text-align: center; font-size: 7.5px; margin-top: 2px; padding-left: 16px; line-height: 1.25; }
+.datesigned { width: 250px; padding: 14px 10px 4px; display: flex; align-items: flex-start; gap: 8px; }
+.datewrap { flex: 1; display: flex; }
+.datebox { flex: 1; height: 20px; background: #fff; border: 1px solid #000; margin-left: -1px; }
+
+.conforme { border-bottom: 1px solid #000; padding: 2px 10px; font-weight: 700; }
+
+.ctcrow { display: flex; border-bottom: 2px solid #000; }
+.ctcfield { flex: 1; border-right: 1px solid #000; padding: 4px 10px; display: flex; align-items: center; gap: 6px; }
+.ctcLbl { line-height: 1.15; }
+.ctcBox { flex: 1; background: #fff; border: 1px solid #000; height: 26px; }
+.ctcDate { width: 250px; padding: 4px 10px; }
+.ctcDateRow { display: flex; align-items: center; gap: 6px; }
+.ctcDateRow + .ctcDateRow { margin-top: 5px; }
+.ctcAmt { flex: 1; background: #fff; border: 1px solid #000; height: 22px; }
+
+.subTitle { text-align: center; font-weight: 700; border-bottom: 2px solid #000; padding: 2px; background: #d7d7d7; }
+.subCols { display: flex; }
+.subCol { flex: 1; border-right: 1px solid #000; padding: 6px 10px; }
+.subCol:last-child { border-right: none; }
+.subText { text-align: justify; line-height: 1.2; font-size: 7px; }
+.subLine55 { margin-top: 26px; }
+.subLine56 { margin-top: 6px; }
+
+.note { border-top: 2px solid #000; padding: 2px 8px; font-weight: 700; }
+
+.italic { font-style: italic; }
+
+/* A4 portrait, one certificate per sheet. The 862 × ~1432px page is zoomed to
+   the printable height of A4 with 8mm margins (281mm ≈ 1062px), so it also fits
+   letter, folio and legal. */
+@page { size: A4 portrait; margin: 8mm; }
+
+@media print {
+  .page { zoom: 0.73; margin: 0 auto; }
+}

@@ -202,7 +202,8 @@ export function checkEmployeeImport(rows: EmployeeImportRow[], existing: Employe
         out.errors.push({ line, message: `TIN ${d.tin} belongs to another employee` });
         continue;
       }
-      out.updates.push({ line, id: match.id, data: d });
+      // The register has no monthly minimum wage column: keep what is on file (BIR 2316 item 10).
+      out.updates.push({ line, id: match.id, data: { ...d, mwe_monthly_rate: d.is_mwe && match.mweMonthlyRate != null ? match.mweMonthlyRate / 100 : null } });
     } else {
       if (d.tin && byTin.has(d.tin)) {
         out.errors.push({ line, message: `TIN ${d.tin} belongs to employee ${byTin.get(d.tin)!.lastName}, ${byTin.get(d.tin)!.firstName}; use their Employee No.` });

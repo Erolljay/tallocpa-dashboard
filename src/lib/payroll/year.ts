@@ -4,13 +4,15 @@
  */
 import type { Centavos } from "@/lib/returns/types";
 import { computeEmployeeYear, suggestWithholding, type MonthLines, type Suggestion } from "./compute";
-import type { Employee, PayrollContext, PayrollEntry } from "./types";
+import type { Employee, PayrollContext, PayrollEntry, PriorEmployer } from "./types";
 
 export interface EmployeeYear {
   employee: Employee;
   /** Entries by month, January = 0. */
   months: (PayrollEntry | null)[];
   lines: MonthLines[];
+  /** Previous employer within the year (BIR 2316 Part III), if any. */
+  prior: PriorEmployer | null;
 }
 
 /** "DELA CRUZ, JUAN, SANTOS" ordering as in taxify (last, first, middle joined with ", "). */
@@ -37,9 +39,10 @@ export function buildYear(ctx: PayrollContext): EmployeeYear[] {
     months[m] = e;
     byEmployee.set(e.employeeId, months);
   }
+  const prior = new Map((ctx.priorEmployers ?? []).filter((p) => p.year === ctx.year).map((p) => [p.employeeId, p]));
   return [...ctx.employees].sort(byName).map((employee) => {
     const months = byEmployee.get(employee.id) ?? Array.from({ length: 12 }, () => null);
-    return { employee, months, lines: computeEmployeeYear(months, employee.isMwe, ctx.year) };
+    return { employee, months, lines: computeEmployeeYear(months, employee.isMwe, ctx.year), prior: prior.get(employee.id) ?? null };
   });
 }
 
@@ -60,7 +63,7 @@ export function month1601C(years: EmployeeYear[], m: number, year: number): { ro
   for (const y of years) {
     const lines = y.lines[m];
     if (!lines.hasEntry) continue;
-    rows.push({ employee: y.employee, lines, suggestion: suggestWithholding(y.employee, y.lines, m, year) });
+    rows.push({ employee: y.employee, lines, suggestion: suggestWithholding(y.employee, y.lines, m, year, y.prior) });
     for (const k of LINE_KEYS) totals[k] += lines[k];
   }
   return { rows, totals };

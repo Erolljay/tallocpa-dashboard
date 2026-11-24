@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Card, Skeleton } from "@/components/ui";
 import { showMonth } from "@/lib/documents/labels";
@@ -24,9 +25,10 @@ const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { month: "short",
 async function Payroll() {
   const { supabase, clients } = await portalContext();
   const ids = clients.map((c) => c.id);
-  const [{ data: items }, { data: subs }] = await Promise.all([
+  const [{ data: items }, { data: subs }, { data: releases }] = await Promise.all([
     supabase.from("payroll_items").select("client_id").in("client_id", ids).eq("active", true),
     supabase.from("payroll_submissions").select("id, client_id, pay_month, file_name, status, return_reason, late, created_at").in("client_id", ids).order("created_at", { ascending: false }).limit(50),
+    supabase.from("payroll_2316_releases").select("client_id, year, released_at").in("client_id", ids).order("year", { ascending: false }),
   ]);
   const ready = clients.filter((c) => (items ?? []).some((i) => i.client_id === c.id));
   const today = manilaToday();
@@ -46,6 +48,23 @@ async function Payroll() {
         <Card title="Send your payroll">
           <PortalPayrollUpload clients={ready.map((c) => ({ id: c.id, name: c.name }))} months={months} />
         </Card>
+      )}
+      {(releases ?? []).length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-medium text-ink-heading">BIR 2316 certificates</h2>
+          <p className="text-sm text-ink-muted">Your employees&rsquo; Certificates of Compensation Payment / Tax Withheld, ready to print, sign and give to each employee.</p>
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-surface text-sm shadow-sm">
+            {releases!.map((r) => (
+              <li key={`${r.client_id}:${r.year}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-ink-heading">{r.year}{clients.length > 1 ? ` · ${nameOf.get(r.client_id)}` : ""}</p>
+                  <p className="text-xs text-ink-subtle">released {when(r.released_at)}</p>
+                </div>
+                <Link href={`/portal/payroll/2316/${r.client_id}/${r.year}`} className="text-link hover:underline">Print 2316s</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {(subs ?? []).length > 0 && (
         <section className="space-y-2">

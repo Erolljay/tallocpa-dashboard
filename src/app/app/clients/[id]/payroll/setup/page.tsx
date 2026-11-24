@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Card, LinkButton, PageHeader, Skeleton } from "@/components/ui";
-import { loadItems, payrollAccess } from "@/lib/payroll/data";
+import { loadItems, loadPayrollSettings, payrollAccess } from "@/lib/payroll/data";
 import { CATEGORIES, CATEGORY_KEYS, ITEM_KINDS, sortItems } from "@/lib/payroll/items";
-import { ItemForm } from "../forms";
+import { ItemForm, PayrollSettingsForm } from "../forms";
 
 export default function PayrollSetupPage(props: PageProps<"/app/clients/[id]/payroll/setup">) {
   return (
@@ -20,6 +20,7 @@ async function Setup({ params }: Pick<PageProps<"/app/clients/[id]/payroll/setup
     items.map((i) => supabase.from("payroll_entry_lines").select("id", { count: "exact", head: true }).eq("item_id", i.id).then((r) => [i.id, (r.count ?? 0) > 0] as const)),
   );
   const used = new Map(usedCounts);
+  const settings = await loadPayrollSettings(supabase, id);
 
   return (
     <>
@@ -40,6 +41,10 @@ async function Setup({ params }: Pick<PageProps<"/app/clients/[id]/payroll/setup
         ))}
         <Card title="Add an item">
           <ItemForm clientId={id} item={null} used={false} />
+        </Card>
+        <Card title="BIR 2316 signatory">
+          <p className="mb-3 text-sm text-ink-muted">Printed on every BIR 2316 of this client as the present employer&rsquo;s authorized agent (items 53 and 55), with the employer&rsquo;s ZIP code (item 14A).</p>
+          <PayrollSettingsForm clientId={id} settings={settings} />
         </Card>
         <Card title="What the BIR categories mean">
           <dl className="grid gap-3 text-sm sm:grid-cols-2">

@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
-import { payrollAccess } from "@/lib/payroll/data";
+import { load2316Release, loadPayrollSettings, payrollAccess } from "@/lib/payroll/data";
 import { formatAmount } from "@/lib/returns/money";
+import { Release2316Form } from "../../forms";
 import { yearWorksheet } from "../../year-data";
+
+const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(iso));
 
 export default function PayrollYearPage(props: PageProps<"/app/clients/[id]/payroll/year/[year]">) {
   return (
@@ -18,7 +21,7 @@ async function PayrollYear({ params }: Pick<PageProps<"/app/clients/[id]/payroll
   if (!/^\d{4}$/.test(y)) notFound();
   const year = Number(y);
   const { supabase, client } = await payrollAccess(id);
-  const { result } = await yearWorksheet(supabase, client, year);
+  const [{ result }, settings, release] = await Promise.all([yearWorksheet(supabase, client, year), loadPayrollSettings(supabase, id), load2316Release(supabase, id, year)]);
   const blocked = result.errors.length > 0;
   const dl = (kind: string, label: string) =>
     blocked ? null : <LinkButton key={kind} href={`/app/clients/${id}/payroll/export?kind=${kind}&year=${year}`} variant="secondary" prefetch={false}>{label}</LinkButton>;
@@ -31,7 +34,7 @@ async function PayrollYear({ params }: Pick<PageProps<"/app/clients/[id]/payroll
         actions={
           <>
             <LinkButton href={`/app/clients/${id}/payroll?year=${year}`} variant="ghost">Back to payroll</LinkButton>
-            <LinkButton href={`/app/clients/${id}/payroll/year/${year}/2316`} variant="secondary">BIR 2316 (all)</LinkButton>
+            <LinkButton href={`/app/clients/${id}/payroll/year/${year}/2316`} variant="secondary">BIR 2316s</LinkButton>
           </>
         }
       />
@@ -55,6 +58,24 @@ async function PayrollYear({ params }: Pick<PageProps<"/app/clients/[id]/payroll
             {blocked && <p className="text-sm text-ink-muted">Fix the problems above to download the DAT and CSV files.</p>}
           </div>
           <p className="mt-3 text-sm text-ink-muted">The same figures appear on the 1604-C worksheet of the filing. Validate the DAT in the BIR Alphalist Data Entry module before submitting.</p>
+        </Card>
+        <Card title="BIR 2316 certificates">
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href={`/app/clients/${id}/payroll/year/${year}/2316`} variant="secondary">Per employee</LinkButton>
+            <LinkButton href={`/app/clients/${id}/payroll/year/${year}/2316/all`} variant="secondary">Print all 2316s</LinkButton>
+          </div>
+          <p className="mt-3 text-sm text-ink-muted">
+            Signed for the employer by {settings.signatoryName ? <span className="text-ink-heading">{settings.signatoryName}{settings.signatoryTitle ? `, ${settings.signatoryTitle}` : ""}</span> : <span className="text-warning">no one yet</span>}
+            {" "}(<a href={`/app/clients/${id}/payroll/setup`} className="text-link underline">change in Payroll setup</a>). Previous employers within the year are entered on each employee&rsquo;s page.
+          </p>
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="mb-2 text-sm text-ink-muted">
+              {release
+                ? <>Released to the client&rsquo;s portal on {when(release.releasedAt)}: their users can print these 2316s.</>
+                : <>Not released: the client&rsquo;s users cannot see these 2316s yet. Release them once the year is final.</>}
+            </p>
+            <Release2316Form key={release ? "released" : "draft"} clientId={id} year={year} released={!!release} />
+          </div>
         </Card>
         {result.sections.slice(1).map((s) => (
           <Card key={s.title} title={s.title}>

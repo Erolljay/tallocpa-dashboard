@@ -20,6 +20,7 @@ export const employeeSchema = z
     employment_status: z.enum(Object.keys(EMPLOYMENT_STATUSES) as [EmploymentStatus, ...EmploymentStatus[]]),
     is_mwe: checkbox,
     mwe_daily_rate: optional(z.coerce.number().positive("Enter the daily minimum wage.")),
+    mwe_monthly_rate: optional(z.coerce.number().positive("Enter the monthly minimum wage, or leave it blank.")),
     hire_date: optional(z.iso.date()),
     separation_date: optional(z.iso.date()),
     separation_reason: optional(z.enum(Object.keys(SEPARATION_REASONS) as [SeparationReason, ...SeparationReason[]])),
@@ -48,6 +49,7 @@ export const employeeSchema = z
       employment_status: v.employment_status,
       is_mwe: v.is_mwe,
       mwe_daily_rate: v.is_mwe ? (v.mwe_daily_rate ?? null) : null,
+      mwe_monthly_rate: v.is_mwe ? (v.mwe_monthly_rate ?? null) : null,
       hire_date: v.hire_date ?? null,
       separation_date: v.separation_date ?? null,
       separation_reason: v.separation_reason ?? null,
@@ -59,3 +61,39 @@ export const employeeSchema = z
   });
 
 export type EmployeeInput = z.output<typeof employeeSchema>;
+
+const pesos = (label: string) =>
+  z.preprocess((v) => (v === "" || v == null ? 0 : typeof v === "string" ? v.replace(/,/g, "") : v), z.coerce.number({ message: `Enter the ${label}.` }).min(0, `The ${label} cannot be negative.`));
+
+/** An employee's previous employer within a year (BIR 2316 Part III; employee_prior_employers). */
+export const priorEmployerSchema = z
+  .object({
+    tin: optional(z.string().trim().regex(/^\d{3}-?\d{3}-?\d{3}(-?\d{3,5})?$/, "Use the format 123-456-789 (branch optional).")),
+    name: z.string().trim().min(1, "Enter the previous employer's name.").max(200),
+    address: optional(z.string().trim().max(300)),
+    zip_code: optional(z.string().trim().regex(/^\d{4}$/, "Four digits.")),
+    taxable_compensation: pesos("taxable compensation"),
+    non_taxable_compensation: pesos("non-taxable compensation"),
+    tax_withheld: pesos("tax withheld"),
+  })
+  .transform((v) => {
+    const d = (v.tin ?? "").replace(/\D/g, "");
+    return {
+      tin: d ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 9)}${d.length > 9 ? `-${d.slice(9)}` : ""}` : null,
+      name: v.name,
+      address: v.address ?? null,
+      zip_code: v.zip_code ?? null,
+      taxable_compensation: v.taxable_compensation,
+      non_taxable_compensation: v.non_taxable_compensation,
+      tax_withheld: v.tax_withheld,
+    };
+  });
+
+/** Per-client 2316 settings (payroll_settings): employer ZIP code (item 14A) and the signatory (items 53/55). */
+export const payrollSettingsSchema = z
+  .object({
+    employer_zip_code: optional(z.string().trim().regex(/^\d{4}$/, "Four digits.")),
+    signatory_name: optional(z.string().trim().max(120)),
+    signatory_title: optional(z.string().trim().max(120)),
+  })
+  .transform((v) => ({ employer_zip_code: v.employer_zip_code ?? null, signatory_name: v.signatory_name ?? null, signatory_title: v.signatory_title ?? null }));
