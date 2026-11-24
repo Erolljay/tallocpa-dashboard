@@ -72,7 +72,7 @@ async function ClientList() {
                     <p className="text-caption-1-regular tabular-nums text-text-tertiary">{c.code}</p>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{taxpayerTypeLabel[c.taxpayer_type]}</td>
-                  <td className="px-4 py-3 tabular-nums text-text-secondary">{c.tin ?? "—"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap tabular-nums text-text-secondary">{c.tin ?? "—"}</td>
                   <td className="px-4 py-3 text-text-secondary">{c.filing_channel === "efps" ? `eFPS · Group ${c.efps_group}` : "eBIRForms"}</td>
                   <td className="px-4 py-3 text-text-secondary">
                     {c.staff_assignments.filter((a) => a.role === "preparer").map((a) => a.staff_profiles?.full_name).join(", ") || "—"}

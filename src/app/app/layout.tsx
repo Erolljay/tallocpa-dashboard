@@ -30,7 +30,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
             <Lockup />
             <ThemeToggle appearance="sidebar" collapsed className="md:hidden" />
           </div>
-          <nav aria-label="Main" className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-1 md:flex-col md:overflow-y-auto md:px-0">
+          <nav aria-label="Main" className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] max-md:mask-r-from-85% md:mx-0 md:flex-1 md:flex-col md:overflow-y-auto md:px-0">
             <Suspense fallback={<NavLinksFallback keys={nav} />}>
               <NavLinks keys={nav} />
             </Suspense>

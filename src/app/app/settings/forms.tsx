@@ -27,7 +27,7 @@ export function RuleEditor(props: {
   return (
     <details className="group">
       <summary className="cursor-pointer list-none text-body-regular text-button-ghost-foreground hover:underline">Edit</summary>
-      <form action={action} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-primary-default-muted p-4 sm:grid-cols-2">
+      <form action={action} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-secondary-default p-4 sm:grid-cols-2">
         <Field label="Due" htmlFor={id("due_kind")}>
           <Select id={id("due_kind")} name="due_kind" value={kind} onChange={(ev) => setKind(ev.target.value as DueRule["kind"])}>
             <option value="day_of_month_after">A day of a month after the {p}</option>

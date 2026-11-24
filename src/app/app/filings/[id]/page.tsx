@@ -1,4 +1,6 @@
+import { RiCheckLine } from "@remixicon/react";
 import Link from "next/link";
+import { cx } from "@/utils/cx";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
@@ -100,15 +102,28 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
       />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card title="Sign-off">
-            <ol className="grid gap-2 sm:grid-cols-7">
+            {/* One row of steps: scrolls sideways on phones, shares the width on wider screens. */}
+            <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
               {SIGN_OFF_STEPS.map((s, i) => {
                 const state = i < done ? "done" : i === done ? "current" : "todo";
                 return (
-                  <li key={s.status} className={`rounded-lg border px-3 py-2 text-caption-1-regular ${state === "done" ? "border-status-lime-text bg-status-lime-background text-status-lime-text" : state === "current" ? "border-accent-500 bg-button-ghost-background text-text-primary" : "border-separator-border text-text-tertiary"}`}>
-                    <p className="font-medium">{s.label}</p>
-                    <p>{s.by}</p>
+                  <li
+                    key={s.status}
+                    aria-current={state === "current" ? "step" : undefined}
+                    className={cx(
+                      "flex min-w-24 flex-1 shrink-0 flex-col gap-0.5 rounded-xl border px-2.5 py-2",
+                      state === "done" && "border-transparent bg-status-lime-background/60",
+                      state === "current" && "border-accent-500 bg-button-ghost-background",
+                      state === "todo" && "border-separator-border",
+                    )}
+                  >
+                    <span className={cx("flex items-center gap-1 text-caption-1-semibold", state === "done" ? "text-status-lime-text" : state === "current" ? "text-text-primary" : "text-text-tertiary")}>
+                      {state === "done" && <RiCheckLine aria-hidden className="size-3.5 shrink-0" />}
+                      {s.label}
+                    </span>
+                    <span className="text-caption-2-regular text-text-tertiary">{s.by}</span>
                   </li>
                 );
               })}
