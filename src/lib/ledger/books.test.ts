@@ -6,7 +6,7 @@ import { buildPrintBook, pageBook, pageCount, splitAmount } from "./print";
 import type { LedgerAccount } from "./types";
 
 const acct = (id: string, code: string, name: string, type: LedgerAccount["type"], control: LedgerAccount["control"] = null, normalSide: LedgerAccount["normalSide"] = "debit"): LedgerAccount => ({
-  id, key: null, code, name, type, normalSide, fsLine: "x", birLine: null, control, active: true, sortOrder: Number(code),
+  id, key: null, code, name, type, normalSide, fsLine: "x", birLine: null, control, cashFlow: null, active: true, sortOrder: Number(code),
 });
 const accounts = [
   acct("cash", "1010", "Cash on Hand", "asset", "cash"),

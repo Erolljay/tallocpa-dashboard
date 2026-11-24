@@ -22,6 +22,7 @@ export function FinancialStatementsView({ fs, footer }: { fs: FinancialStatement
       <StatementTable s={fs.position} />
       <StatementTable s={fs.income} />
       <StatementTable s={fs.equity} />
+      {fs.cashFlows && <StatementTable s={fs.cashFlows} />}
       {fs.notes.length > 0 && (
         <Card title="Notes to the financial statements" className="print:break-before-page print:border-0 print:shadow-none">
           <div className="space-y-6">

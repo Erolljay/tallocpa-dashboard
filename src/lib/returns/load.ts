@@ -9,6 +9,8 @@ import { buildPriorFigures, isApproved, monthOf, taxableYearStart, toSourceDocum
 import type { Centavos, FormModule, LedgerContext, LedgerMovement, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
 import { toCentavos } from "./money";
 import { buildStatements, type FinancialStatements } from "@/lib/ledger/statements";
+import { defaultCashFlow, type CashFlowClass } from "@/lib/ledger/cash-flow";
+import type { Control, NormalSide } from "@/lib/ledger/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { lookupParties } from "@/lib/parties/lookup";
 import { loadPayrollContext } from "@/lib/payroll/load";
@@ -213,10 +215,11 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
 async function loadYearStatements(db: Supabase, ctx: WorksheetContext, yearStart: string): Promise<FinancialStatements | undefined> {
   const { data, error } = await db.rpc("trial_balance", { p_client: ctx.client.id, p_from: yearStart, p_to: ctx.filing.periodEnd });
   if (error) return undefined;
-  const rows = ((data ?? []) as Record<string, string | number>[]).map((r) => ({
+  const rows = ((data ?? []) as Record<string, string | number | null>[]).map((r) => ({
     code: String(r.code),
     name: String(r.name),
     fsLine: String(r.fs_line),
+    cashFlow: (r.cash_flow as CashFlowClass | null) ?? defaultCashFlow({ fsLine: String(r.fs_line), control: (r.control as Control | null) ?? null, normalSide: r.normal_side as NormalSide }),
     opening: toCentavos(String(r.opening)) ?? 0,
     debit: toCentavos(String(r.debit)) ?? 0,
     credit: toCentavos(String(r.credit)) ?? 0,

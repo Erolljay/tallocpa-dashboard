@@ -7,7 +7,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import type { OpenItem } from "./arap";
 import type { BookEntry } from "./books";
 import type { OpeningItem } from "./opening";
-import { buildStatements, reportPeriod, type ReportKind, type StatementRow } from "./statements";
+import { defaultCashFlow, type CashFlowClass } from "./cash-flow";
+import { buildStatements, reportPeriod, taxableYearStart, type ReportKind, type StatementRow } from "./statements";
 import type { AccountType, Book, Centavos, Control, EntrySource, LedgerAccount, NormalSide, TemplateCode } from "./types";
 
 export interface BooksClient {
@@ -45,7 +46,7 @@ export async function booksAccess(clientId: string) {
   return { me, supabase, client: client as BooksClient, books };
 }
 
-const ACCOUNT_COLUMNS = "id, template_key, code, name, type, normal_side, fs_line, bir_line, control, active, sort_order";
+const ACCOUNT_COLUMNS = "id, template_key, code, name, type, normal_side, fs_line, bir_line, control, cash_flow, active, sort_order";
 
 export function accountFromRow(r: Record<string, unknown>): LedgerAccount {
   return {
@@ -58,6 +59,7 @@ export function accountFromRow(r: Record<string, unknown>): LedgerAccount {
     fsLine: r.fs_line as string,
     birLine: (r.bir_line as string | null) ?? null,
     control: (r.control as Control | null) ?? null,
+    cashFlow: (r.cash_flow as CashFlowClass | null) ?? null,
     active: r.active as boolean,
     sortOrder: r.sort_order as number,
   };
@@ -96,6 +98,8 @@ export interface TbRowOut {
   type: AccountType;
   normalSide: NormalSide;
   fsLine: string;
+  control: Control | null;
+  cashFlow: CashFlowClass;
   opening: Centavos;
   debit: Centavos;
   credit: Centavos;
@@ -112,6 +116,8 @@ export async function loadTrialBalance(supabase: SupabaseClient, clientId: strin
     type: r.type as AccountType,
     normalSide: r.normal_side as NormalSide,
     fsLine: r.fs_line as string,
+    control: (r.control as Control | null) ?? null,
+    cashFlow: (r.cash_flow as CashFlowClass | null) ?? defaultCashFlow({ fsLine: r.fs_line as string, control: (r.control as Control | null) ?? null, normalSide: r.normal_side as NormalSide }),
     opening: cents(r.opening),
     debit: cents(r.debit),
     credit: cents(r.credit),
@@ -293,10 +299,17 @@ export async function loadAmendments(supabase: SupabaseClient, clientId: string)
 export async function loadStatements(supabase: SupabaseClient, client: BooksClient, kind: ReportKind, endMonth: string) {
   const p = reportPeriod(kind, endMonth, client.fiscal_year_end_month);
   if ("error" in p) return { error: p.error } as const;
-  const toRows = (tb: TbRowOut[]): StatementRow[] => tb.map((r) => ({ code: r.code, name: r.name, fsLine: r.fsLine, opening: r.opening, debit: r.debit, credit: r.credit, closing: r.closing }));
-  const [year, period, { count }] = await Promise.all([
+  const toRows = (tb: TbRowOut[]): StatementRow[] => tb.map((r) => ({ code: r.code, name: r.name, fsLine: r.fsLine, cashFlow: r.cashFlow, opening: r.opening, debit: r.debit, credit: r.credit, closing: r.closing }));
+  // Annual: the prior taxable year beside it, when the books hold it (its balance sheet at least as the opening balances).
+  const priorEnd = new Date(Date.parse(`${p.yearStart}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const priorStart = taxableYearStart(priorEnd, client.fiscal_year_end_month);
+  const { data: b } = await supabase.from("client_books").select("books_start").eq("client_id", client.id).maybeSingle();
+  const booksStart = (b?.books_start as string | undefined) ?? p.yearStart;
+  const withPrior = kind === "annual" && priorEnd >= new Date(Date.parse(`${booksStart}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const [year, period, prior, { count }] = await Promise.all([
     loadTrialBalance(supabase, client.id, p.yearStart, p.end),
     p.start !== p.yearStart ? loadTrialBalance(supabase, client.id, p.start, p.end) : Promise.resolve(null),
+    withPrior ? loadTrialBalance(supabase, client.id, priorStart, priorEnd) : Promise.resolve(null),
     supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", client.id).eq("status", "suggested").gte("entry_date", p.yearStart).lte("entry_date", p.end),
   ]);
   const fs = buildStatements({
@@ -307,6 +320,7 @@ export async function loadStatements(supabase: SupabaseClient, client: BooksClie
     client: { name: client.name, tin: client.tin, address: client.registered_address },
     year: toRows(year),
     period: period ? toRows(period) : undefined,
+    prior: prior ? { end: priorEnd, rows: toRows(prior), income: priorStart >= booksStart } : undefined,
   });
   return { fs, suggested: count ?? 0 } as const;
 }

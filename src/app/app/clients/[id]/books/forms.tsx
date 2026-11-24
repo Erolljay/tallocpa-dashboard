@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
+import { CASH_FLOW_CLASSES, defaultCashFlow } from "@/lib/ledger/cash-flow";
 import { FS_LINES } from "@/lib/ledger/fs-lines";
 import type { ReportKind } from "@/lib/ledger/statements";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type LedgerAccount, type TemplateCode } from "@/lib/ledger/types";
@@ -100,6 +101,12 @@ export function AccountForm({ clientId, account, used }: { clientId: string; acc
         <Select id={`bir-${p}`} name="bir_line" defaultValue={account?.birLine ?? ""} disabled={!pnl}>
           <option value="">{pnl ? "Choose…" : "Not on the income tax return"}</option>
           {pnl && Object.entries(BIR_LINES).map(([k, l]) => <option key={k} value={k}>{l.label}</option>)}
+        </Select>
+      </Field>
+      <Field label="Cash flow" htmlFor={`cf-${p}`} hint={pnl ? "Part of net income." : undefined}>
+        <Select id={`cf-${p}`} name="cash_flow" defaultValue={account?.cashFlow ?? ""} disabled={pnl}>
+          <option value="">{account && !pnl ? `Automatic: ${CASH_FLOW_CLASSES[defaultCashFlow(account)]}` : "Automatic (from the FS line)"}</option>
+          {!pnl && Object.entries(CASH_FLOW_CLASSES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </Select>
       </Field>
       <Field label="Control role" htmlFor={`control-${p}`} error={e.control} hint={used ? "Has entries: fixed." : undefined}>

@@ -4,7 +4,7 @@ import { buildOpeningTemplate, readOpeningFile } from "./opening-xlsx";
 import type { LedgerAccount } from "./types";
 
 const acct = (id: string, code: string, name: string, control: LedgerAccount["control"] = null): LedgerAccount => ({
-  id, key: null, code, name, type: "asset", normalSide: "debit", fsLine: "cash_and_equivalents", birLine: null, control, active: true, sortOrder: 0,
+  id, key: null, code, name, type: "asset", normalSide: "debit", fsLine: "cash_and_equivalents", birLine: null, control, cashFlow: null, active: true, sortOrder: 0,
 });
 const accounts = [
   acct("a1", "1010", "Cash on Hand", "cash"),
