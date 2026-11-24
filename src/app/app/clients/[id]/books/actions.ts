@@ -233,3 +233,42 @@ export async function savePermitAction(clientId: string, _: FormState, form: For
   revalidatePath(path(clientId), "layout");
   return { ok: "Saved." };
 }
+
+// ---------------------------------------------------------------------------
+// Period lock and amendments (spec §3.6, §4.3).
+// ---------------------------------------------------------------------------
+
+/** The Owner or the client's reviewer asks to reopen a filed return's months (the Owner's own request reopens them at once). */
+export async function requestAmendmentAction(clientId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase, me } = await booksAccess(clientId);
+  const filing = String(form.get("filing") ?? "");
+  const reason = String(form.get("reason") ?? "").trim();
+  if (!filing) return { error: "Choose the filed return." };
+  if (!reason) return { error: "Give the reason for the amendment." };
+  const { error } = await supabase.rpc("request_ledger_amendment", { p_filing: filing, p_reason: reason });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  revalidatePath("/app");
+  return { ok: me.staff.role === "owner" ? "Reopened. Lock the months again once the books are corrected." : "Sent to the Owner for approval." };
+}
+
+export async function decideAmendmentAction(clientId: string, amendmentId: string, approve: boolean, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const note = String(form.get("note") ?? "").trim();
+  if (!approve && !note) return { error: "Give the reason for rejecting it." };
+  const { error } = await supabase.rpc("decide_ledger_amendment", { p_amendment: amendmentId, p_approve: approve, p_note: note || null });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  revalidatePath("/app");
+  return { ok: approve ? "Approved: the months are reopened." : "Rejected." };
+}
+
+export async function relockAmendmentAction(clientId: string, amendmentId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const changes = String(form.get("changes") ?? "").trim();
+  if (!changes) return { error: "Note what was changed in the books." };
+  const { error } = await supabase.rpc("relock_ledger_amendment", { p_amendment: amendmentId, p_changes: changes });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  return { ok: "Locked again." };
+}

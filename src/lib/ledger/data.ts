@@ -211,3 +211,73 @@ export async function loadBookEntries(supabase: SupabaseClient, clientId: string
       }),
   }));
 }
+
+/** A month of the books: open, locked by the returns filed for it, or reopened by an amendment. */
+export interface BooksMonth {
+  month: string;
+  /** The filed returns that lock the month, e.g. "2550Q Q1 2027"; null when none. */
+  filed: string | null;
+  /** The amendment that has reopened the month, if any. */
+  amendmentId: string | null;
+}
+
+export const monthState = (m: BooksMonth): "open" | "locked" | "reopened" => (!m.filed ? "open" : m.amendmentId ? "reopened" : "locked");
+
+/** Each month of the books up to `to`, with its lock (spec §3.6, Q30). */
+export async function loadBooksMonths(supabase: SupabaseClient, clientId: string, to: string): Promise<BooksMonth[]> {
+  const { data, error } = await supabase.rpc("books_periods", { p_client: clientId, p_to: to });
+  if (error) throw new Error(`Could not load the period lock: ${error.message}`);
+  return ((data ?? []) as { month: string; filed: string | null; amendment_id: string | null }[]).map((r) => ({ month: r.month, filed: r.filed, amendmentId: r.amendment_id }));
+}
+
+export type AmendmentStatus = "requested" | "reopened" | "rejected" | "relocked";
+
+export interface Amendment {
+  id: string;
+  filingId: string;
+  filing: string;
+  periodStart: string;
+  periodEnd: string;
+  reason: string;
+  status: AmendmentStatus;
+  requestedBy: string | null;
+  requestedAt: string;
+  decidedBy: string | null;
+  decisionNote: string | null;
+  relockedBy: string | null;
+  relockedAt: string | null;
+  changesNote: string | null;
+}
+
+/** The client's book amendments, newest first, with the names of the people involved. */
+export async function loadAmendments(supabase: SupabaseClient, clientId: string): Promise<Amendment[]> {
+  const { data, error } = await supabase
+    .from("ledger_amendments")
+    .select("id, filing_instance_id, period_start, period_end, reason, status, requested_by, requested_at, decided_by, decision_note, relocked_by, relocked_at, changes_note, filing_instances(form, period_label)")
+    .eq("client_id", clientId)
+    .order("requested_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(`Could not load the amendments: ${error.message}`);
+  const ids = [...new Set((data ?? []).flatMap((a) => [a.requested_by, a.decided_by, a.relocked_by]).filter(Boolean))] as string[];
+  const { data: people } = ids.length ? await supabase.from("staff_profiles").select("user_id, full_name").in("user_id", ids) : { data: [] };
+  const name = new Map(((people ?? []) as { user_id: string; full_name: string }[]).map((p) => [p.user_id, p.full_name]));
+  return (data ?? []).map((a) => {
+    const f = (Array.isArray(a.filing_instances) ? a.filing_instances[0] : a.filing_instances) as { form: string; period_label: string } | null;
+    return {
+      id: a.id,
+      filingId: a.filing_instance_id,
+      filing: f ? `${f.form} ${f.period_label}` : "Return",
+      periodStart: a.period_start,
+      periodEnd: a.period_end,
+      reason: a.reason,
+      status: a.status as AmendmentStatus,
+      requestedBy: a.requested_by ? name.get(a.requested_by) ?? null : null,
+      requestedAt: a.requested_at,
+      decidedBy: a.decided_by ? name.get(a.decided_by) ?? null : null,
+      decisionNote: a.decision_note,
+      relockedBy: a.relocked_by ? name.get(a.relocked_by) ?? null : null,
+      relockedAt: a.relocked_at,
+      changesNote: a.changes_note,
+    };
+  });
+}

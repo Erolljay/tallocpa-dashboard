@@ -3,10 +3,10 @@ import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { COA_TEMPLATES } from "@/lib/ledger/coa";
 import { AGING, aging } from "@/lib/ledger/arap";
-import { booksAccess, loadAccounts, loadEntries, loadOpenItems, loadOpening, loadTrialBalance } from "@/lib/ledger/data";
-import { BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
+import { booksAccess, loadAccounts, loadAmendments, loadBooksMonths, loadEntries, loadOpenItems, loadOpening, loadTrialBalance, monthState, type AmendmentStatus } from "@/lib/ledger/data";
+import { BOOK_LOCK_FORMS, BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount } from "@/lib/returns/money";
-import { ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, ReverseForm, SetupForm } from "./forms";
+import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, RelockForm, ReverseForm, SetupForm } from "./forms";
 
 export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
   return (
@@ -16,6 +16,13 @@ export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
   );
 }
 
+const fmtMonth = (d: string) => new Intl.DateTimeFormat("en-PH", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${d.slice(0, 10)}T00:00:00Z`));
+const AMENDMENT_BADGE: Record<AmendmentStatus, { tone: "waiting" | "progress" | "blocked" | "done"; label: string }> = {
+  requested: { tone: "waiting", label: "Waiting for the Owner" },
+  reopened: { tone: "progress", label: "Reopened" },
+  rejected: { tone: "blocked", label: "Rejected" },
+  relocked: { tone: "done", label: "Locked again" },
+};
 const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
 const dayBefore = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 const monthEnd = (ym: string) => {
@@ -26,7 +33,7 @@ const monthEnd = (ym: string) => {
 async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]/books">, "params" | "searchParams">) {
   const { id } = await params;
   const q = await searchParams;
-  const { supabase, client, books } = await booksAccess(id);
+  const { supabase, client, books, me } = await booksAccess(id);
   const back = <LinkButton href={`/app/clients/${id}`} variant="ghost">Back to client</LinkButton>;
 
   if (!books) {
@@ -51,7 +58,7 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const toMonth = asOfParam ?? (today < books.booksStart.slice(0, 7) ? books.booksStart.slice(0, 7) : today);
   const to = monthEnd(toMonth);
   const from = `${toMonth.slice(0, 4)}-01-01` < books.booksStart ? dayBefore(books.booksStart) : `${toMonth.slice(0, 4)}-01-01`;
-  const [accounts, opening, tb, entries, suggested, openItems, { data: pendingUpdates }] = await Promise.all([
+  const [accounts, opening, tb, entries, suggested, openItems, { data: pendingUpdates }, months, amendments, { data: filedReturns }, { data: reviewerOf }] = await Promise.all([
     loadAccounts(supabase, id),
     loadOpening(supabase, id),
     loadTrialBalance(supabase, id, from, to),
@@ -59,7 +66,19 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
     loadEntries(supabase, id, 200, true),
     loadOpenItems(supabase, id),
     supabase.from("arap_updates").select("id, month, rows, submitted_at").eq("client_id", id).eq("status", "submitted").order("submitted_at"),
+    loadBooksMonths(supabase, id, `${today}-01`),
+    loadAmendments(supabase, id),
+    supabase.from("filing_instances").select("id, form, period_label, period_start").eq("client_id", id).in("form", [...BOOK_LOCK_FORMS])
+      .in("status", ["filed", "paid", "proof_uploaded"]).gte("period_end", books.booksStart).order("period_start", { ascending: false }).limit(60),
+    supabase.from("staff_assignments").select("user_id").eq("client_id", id).eq("user_id", me.userId).eq("role", "reviewer").limit(1),
   ]);
+  const isOwner = me.staff.role === "owner";
+  const canAmend = isOwner || (reviewerOf ?? []).length > 0;
+  const inProgress = new Set(amendments.filter((a) => a.status === "requested" || a.status === "reopened").map((a) => a.filingId));
+  const amendable = ((filedReturns ?? []) as { id: string; form: string; period_label: string }[])
+    .filter((f) => !inProgress.has(f.id))
+    .map((f) => ({ id: f.id, label: `${f.form} ${f.period_label}` }));
+  const lockedCount = months.filter((m) => monthState(m) === "locked").length;
   // The AR and AP control accounts against the open items (all dates: open items are as of now).
   const { data: allTb } = await supabase.rpc("trial_balance", { p_client: id, p_from: "1900-01-01", p_to: "9999-12-31" });
   const closingOf = (control: "ar" | "ap") => {
@@ -134,6 +153,71 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
             </p>
             <BookPicker clientId={id} defaultFrom={`${lastMonthStart}`} defaultTo={monthEnd(lastMonthStart.slice(0, 7))} />
             {client.book_type !== "manual" && <PermitForm clientId={id} permit={books.permit} />}
+          </div>
+        </Card>
+
+        <Card
+          title="Period lock"
+          actions={<span className="text-body-regular text-text-secondary">{lockedCount} of {months.length} month{months.length === 1 ? "" : "s"} locked</span>}
+        >
+          <div className="space-y-5">
+            <p className="text-body-regular text-text-secondary">
+              A month locks once a return covering it is filed (withholding, VAT or percentage tax, income tax). Nothing is posted to a locked month: correct it by reversing in an open month, or ask for an amendment, which the Owner approves. Documents dated in a locked month are booked on the next open month of the taxable year.
+            </p>
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {months.map((m) => {
+                const st = monthState(m);
+                return (
+                  <li key={m.month} className="flex items-start justify-between gap-3 rounded-xl px-3 py-2 ring-1 ring-border-button-default ring-inset">
+                    <div className="min-w-0">
+                      <div className="text-body-medium text-text-primary">{fmtMonth(m.month)}</div>
+                      {m.filed && <div className="truncate text-caption-1-regular text-text-tertiary" title={m.filed}>{m.filed}</div>}
+                    </div>
+                    {st === "open" ? <Badge tone="neutral">Open</Badge> : st === "locked" ? <Badge tone="done">Locked</Badge> : <Badge tone="progress">Reopened</Badge>}
+                  </li>
+                );
+              })}
+            </ul>
+
+            {amendments.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-headline-medium text-text-primary">Amendments</h3>
+                <ul className="divide-y divide-separator-border">
+                  {amendments.map((a) => (
+                    <li key={a.id} className="space-y-1.5 py-3 first:pt-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-body-medium text-text-primary">{a.filing}</span>
+                        <span className="text-caption-1-regular text-text-tertiary">{fmtMonth(a.periodStart)}{a.periodStart.slice(0, 7) !== a.periodEnd.slice(0, 7) ? ` – ${fmtMonth(a.periodEnd)}` : ""}</span>
+                        <Badge tone={AMENDMENT_BADGE[a.status].tone}>{AMENDMENT_BADGE[a.status].label}</Badge>
+                      </div>
+                      <p className="text-body-regular text-text-secondary">
+                        {a.reason} <span className="text-text-tertiary">· {a.requestedBy ?? "Someone"}, {fmtDate(a.requestedAt.slice(0, 10))}</span>
+                      </p>
+                      {a.status === "rejected" && <p className="text-body-regular text-text-secondary">Rejected by {a.decidedBy ?? "the Owner"}: {a.decisionNote}</p>}
+                      {a.status === "relocked" && (
+                        <p className="text-body-regular text-text-secondary">
+                          Changed: {a.changesNote} <span className="text-text-tertiary">· locked again by {a.relockedBy ?? "—"}{a.relockedAt ? `, ${fmtDate(a.relockedAt.slice(0, 10))}` : ""}</span>
+                        </p>
+                      )}
+                      {a.status === "requested" && isOwner && <AmendmentDecision clientId={id} amendmentId={a.id} />}
+                      {a.status === "reopened" && (
+                        <>
+                          <p className="text-caption-1-regular text-text-tertiary">Approved by {a.decidedBy ?? "the Owner"}. Post the corrections, then lock the months again. The amended return is filed as a new return.</p>
+                          {canAmend && <RelockForm clientId={id} amendmentId={a.id} />}
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {canAmend && amendable.length > 0 && (
+              <div className="space-y-2 border-t border-separator-border pt-4">
+                <h3 className="text-headline-medium text-text-primary">Reopen a filed return&rsquo;s months</h3>
+                <AmendmentRequestForm clientId={id} filings={amendable} owner={isOwner} />
+              </div>
+            )}
           </div>
         </Card>
 

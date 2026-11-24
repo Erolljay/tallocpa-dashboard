@@ -1,13 +1,16 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { Button, Field, Input, Notice, Select } from "@/components/ui";
+import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
 import { FS_LINES } from "@/lib/ledger/fs-lines";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type LedgerAccount, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import {
   confirmAllAction,
+  decideAmendmentAction,
+  relockAmendmentAction,
+  requestAmendmentAction,
   savePermitAction,
   confirmEntryAction,
   postArapAction,
@@ -372,6 +375,65 @@ export function PermitForm({ clientId, permit }: { clientId: string; permit: str
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
       {state.ok && <span className="pb-2 text-body-regular text-text-secondary">{state.ok}</span>}
       {state.error && <span className="pb-2 text-body-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Period lock: amendments.
+// ---------------------------------------------------------------------------
+
+/** Ask to reopen a filed return's months. The Owner's own request reopens them at once. */
+export function AmendmentRequestForm({ clientId, filings, owner }: { clientId: string; filings: { id: string; label: string }[]; owner: boolean }) {
+  const [state, action, pending] = useActionState(requestAmendmentAction.bind(null, clientId), {} as FormState);
+  if (state.ok) return <Notice tone="done">{state.ok}</Notice>;
+  return (
+    <form action={action} className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[16rem_1fr]">
+        <Field label="Filed return" htmlFor="amend_filing">
+          <Select id="amend_filing" name="filing" required defaultValue="">
+            <option value="" disabled>Choose…</option>
+            {filings.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </Select>
+        </Field>
+        <Field label="Reason" htmlFor="amend_reason" hint="What has to change in the books, and why it cannot wait for an open month.">
+          <Textarea id="amend_reason" name="reason" required rows={2} />
+        </Field>
+      </div>
+      {state.error && <Notice tone="blocked">{state.error}</Notice>}
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+        {pending ? "Sending…" : owner ? "Reopen the months" : "Ask the Owner to reopen"}
+      </Button>
+    </form>
+  );
+}
+
+/** The Owner approves a requested amendment, or rejects it with a reason. */
+export function AmendmentDecision({ clientId, amendmentId }: { clientId: string; amendmentId: string }) {
+  const [approved, approve, approving] = useActionState(decideAmendmentAction.bind(null, clientId, amendmentId, true), {} as FormState);
+  const [rejected, reject, rejecting] = useActionState(decideAmendmentAction.bind(null, clientId, amendmentId, false), {} as FormState);
+  if (approved.ok || rejected.ok) return <span className="text-caption-1-regular text-text-secondary">{approved.ok ?? rejected.ok}</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <form action={approve}><Button type="submit" size="sm" disabled={approving}>{approving ? "Approving…" : "Approve and reopen"}</Button></form>
+      <form action={reject} className="flex items-center gap-2">
+        <Input name="note" required placeholder="Reason to reject" aria-label="Reason to reject" className="w-48" />
+        <Button type="submit" size="sm" variant="secondary" disabled={rejecting}>Reject</Button>
+      </form>
+      {(approved.error || rejected.error) && <span className="text-caption-1-regular text-text-error-primary">{approved.error ?? rejected.error}</span>}
+    </div>
+  );
+}
+
+/** Lock the reopened months again, noting what was changed. */
+export function RelockForm({ clientId, amendmentId }: { clientId: string; amendmentId: string }) {
+  const [state, action, pending] = useActionState(relockAmendmentAction.bind(null, clientId, amendmentId), {} as FormState);
+  if (state.ok) return <span className="text-caption-1-regular text-text-secondary">{state.ok}</span>;
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <Input name="changes" required placeholder="What was changed, e.g. booked OR-77 on 10 Feb" aria-label="What was changed in the books" className="w-80 max-w-full" />
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Locking…" : "Lock again"}</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
 }

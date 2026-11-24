@@ -30,6 +30,7 @@ Phase 1A in progress. Built so far:
 - Bookkeeping (Phase 1B, slice 1): books per bookkeeping client from a chart-of-accounts template (sole proprietorship, partnership, stock corporation, OPC, non-stock) mapped to FS and BIR income tax lines; opening balances workbook with AR/AP detail; manual journal entries, reversals and the trial balance; balanced, unchangeable posted entries enforced by the database
 - Bookkeeping slice 2: approved documents become suggested entries booked to an account title (client history → supplier preset in the parties directory → default); cash or charge read by OCR; receivables and payables by customer and supplier with aging; 2307s and the monthly AR/AP update workbook settle them
 - Bookkeeping slice 3: General Journal, General Ledger, Cash Receipts, Cash Disbursements, Sales and Purchase books printed on ruled journal-pad pages (loose-leaf, page numbers through the taxable year) and as Excel
+- Bookkeeping slice 4: period lock — a month locks once a return covering it is filed; late documents book to the next open month; amendments (reviewer asks, Owner approves) reopen and relock a filed return's months
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 
