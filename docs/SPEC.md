@@ -136,6 +136,9 @@ Intake channel in v1: **portal upload only** (Q10). **Staff can also upload docu
 - **Books produced:** General Journal, General Ledger, Cash Receipts Book, Cash Disbursements Book, Sales Journal, Purchase Journal — as **loose-leaf printouts**, and as printouts manual-book clients copy into their bound books.
 - **Opening balances:** trial balance as of 31 December 2026 per client, imported from Manager.io / Excel.
 - **Period lock (Q30):** when a period's return is Filed, that period is locked. Changes only through a logged **Amendment** that the Owner approves and that reopens the period.
+- **AR / AP:** charge invoices open receivables and payables by customer / supplier. Collections and payments come from a **monthly AR/AP update workbook** the client downloads at month end, fills in and uploads (staff post or return it); they post to the Cash Receipts and Cash Disbursements Books. The AR and AP control accounts always equal the open items.
+- **Account title on each document:** prefilled from the client's history with that supplier, then the supplier's firm-wide preset in the parties directory (e.g. Starbucks → Representation), then the document type's default; staff can change it.
+- **Built (slice 1):** client books set up from five chart-of-accounts templates (single proprietorship, partnership, stock corporation, OPC, non-stock), each account mapped to its FS line and, for income and expenses, its BIR income tax line; chart editing; opening balances workbook (trial balance + open receivables and payables, which must tie to AR and AP); manual journal entries and reversals; trial balance by month. The database refuses unbalanced entries and changes to posted ones. Not yet: entries from documents and the AR/AP update (slice 2), books printouts (3), period lock and amendments (4), income tax from the ledger (5), reports and full FS (6).
 
 ### 3.7 Tax computation & returns (Q22)
 

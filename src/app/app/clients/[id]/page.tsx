@@ -59,7 +59,12 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone[client.status as keyof typeof statusTone]}>{statusLabel[client.status]}</Badge>
-            {(isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)) && <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>}
+            {(isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)) && (
+              <>
+                {(engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active") && <LinkButton href={`/app/clients/${id}/books`} variant="secondary">Books</LinkButton>}
+                <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>
+              </>
+            )}
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
             {isOwner && client.status === "onboarding" && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
