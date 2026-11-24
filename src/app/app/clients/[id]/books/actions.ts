@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { templatePayload } from "@/lib/ledger/coa";
-import { booksAccess, loadAccounts } from "@/lib/ledger/data";
+import { booksAccess, loadAccounts, loadStatements } from "@/lib/ledger/data";
+import { REPORT_KINDS, type ReportKind } from "@/lib/ledger/statements";
 import { checkOpening, openingPayload, type CheckedOpening } from "@/lib/ledger/opening";
 import { readOpeningFile } from "@/lib/ledger/opening-xlsx";
 import { checkUpdate, fromWorkbookData, updatePayload, type CheckedUpdate } from "@/lib/ledger/arap";
@@ -271,4 +272,35 @@ export async function relockAmendmentAction(clientId: string, amendmentId: strin
   if (error) return { error: friendly(error.message) };
   revalidatePath(path(clientId), "layout");
   return { ok: "Locked again." };
+}
+
+// ---------------------------------------------------------------------------
+// Reports released to the client (spec §3.4, §3.6 slice 6; Q42).
+// ---------------------------------------------------------------------------
+
+/** The Owner releases the statements as they stand now; they are rebuilt from the ledger here, never taken from the browser. */
+export async function releaseReportAction(clientId: string, kind: ReportKind, endMonth: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase, client, me } = await booksAccess(clientId);
+  if (me.staff.role !== "owner") return { error: "Only the Owner releases reports to clients." };
+  if (!(kind in REPORT_KINDS)) return { error: "Choose the kind of report." };
+  const r = await loadStatements(supabase, client, kind, endMonth);
+  if ("error" in r) return { error: r.error };
+  if (r.fs.difference !== 0) return { error: "The statements do not balance; check the books before releasing." };
+  if (r.fs.unclassified.length) return { error: `Set the FS line of ${r.fs.unclassified.join(", ")} before releasing.` };
+  const { error } = await supabase.rpc("release_client_report", {
+    p_client: clientId, p_kind: kind, p_start: r.fs.periodStart, p_end: r.fs.periodEnd, p_statements: r.fs, p_note: String(form.get("note") ?? ""),
+  });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  revalidatePath("/portal/reports", "layout");
+  return { ok: "Released to the client's portal." };
+}
+
+export async function withdrawReportAction(clientId: string, reportId: string): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const { error } = await supabase.rpc("withdraw_client_report", { p_report: reportId });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  revalidatePath("/portal/reports", "layout");
+  return { ok: "Withdrawn." };
 }

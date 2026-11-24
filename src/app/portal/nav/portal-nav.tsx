@@ -1,6 +1,6 @@
 "use client";
 
-import { RiFileList3Line, RiFileTextLine, RiFolderOpenLine, RiGroupLine, RiUploadCloud2Line } from "@remixicon/react";
+import { RiBarChartBoxLine, RiFileList3Line, RiFileTextLine, RiFolderOpenLine, RiGroupLine, RiUploadCloud2Line } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/utils/cx";
@@ -12,15 +12,17 @@ const baseTabs = [
   { href: "/portal/statement", label: "Statement", icon: RiFileList3Line },
 ] as const;
 const payrollTab = { href: "/portal/payroll", label: "Payroll", icon: RiGroupLine } as const;
+const reportsTab = { href: "/portal/reports", label: "Reports", icon: RiBarChartBoxLine } as const;
+const GRID_COLS: Record<number, string> = { 4: "grid-cols-4", 5: "grid-cols-5", 6: "grid-cols-6" };
 
-/** `payroll`: show the Payroll tab (the business has payroll set up). */
-export function PortalNav({ variant, payroll = false }: { variant: "top" | "bottom"; payroll?: boolean }) {
+/** `payroll`: show the Payroll tab (the business has payroll set up). `reports`: show Reports (a report has been released). */
+export function PortalNav({ variant, payroll = false, reports = false }: { variant: "top" | "bottom"; payroll?: boolean; reports?: boolean }) {
   const path = usePathname();
-  const tabs = payroll ? [...baseTabs.slice(0, 3), payrollTab, baseTabs[3]] : baseTabs;
+  const tabs = [...baseTabs.slice(0, 3), ...(payroll ? [payrollTab] : []), ...(reports ? [reportsTab] : []), baseTabs[3]];
   const active = (href: string) => (href === "/portal" ? path === "/portal" : path.startsWith(href));
   if (variant === "bottom") {
     return (
-      <ul className={`grid ${payroll ? "grid-cols-5" : "grid-cols-4"}`}>
+      <ul className={cx("grid", GRID_COLS[tabs.length])}>
         {tabs.map(({ href, label, icon: Icon }) => (
           <li key={href}>
             <Link href={href} aria-current={active(href) ? "page" : undefined} className={cx("flex min-h-[52px] flex-col items-center justify-center gap-1 text-caption-2-medium transition-colors", active(href) ? "text-button-ghost-foreground" : "text-text-tertiary")}>

@@ -38,11 +38,15 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
   );
 }
 
-/** The tabs, with Payroll only for businesses whose payroll is set up (they have payslip items). */
+/** The tabs, with Payroll only for businesses whose payroll is set up (they have payslip items), and Reports once one is released. */
 async function Nav({ variant }: { variant: "top" | "bottom" }) {
   const { supabase, clients } = await portalContext();
-  const { count } = clients.length
-    ? await supabase.from("payroll_items").select("id", { count: "exact", head: true }).in("client_id", clients.map((c) => c.id)).eq("active", true)
-    : { count: 0 };
-  return <PortalNav variant={variant} payroll={(count ?? 0) > 0} />;
+  const ids = clients.map((c) => c.id);
+  const [{ count }, { count: reports }] = ids.length
+    ? await Promise.all([
+        supabase.from("payroll_items").select("id", { count: "exact", head: true }).in("client_id", ids).eq("active", true),
+        supabase.from("client_reports").select("id", { count: "exact", head: true }).in("client_id", ids),
+      ])
+    : [{ count: 0 }, { count: 0 }];
+  return <PortalNav variant={variant} payroll={(count ?? 0) > 0} reports={(reports ?? 0) > 0} />;
 }

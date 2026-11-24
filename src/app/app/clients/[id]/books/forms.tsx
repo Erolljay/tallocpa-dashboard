@@ -4,12 +4,15 @@ import { useActionState, useMemo, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
 import { FS_LINES } from "@/lib/ledger/fs-lines";
+import type { ReportKind } from "@/lib/ledger/statements";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type LedgerAccount, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import {
   confirmAllAction,
   decideAmendmentAction,
   relockAmendmentAction,
+  releaseReportAction,
+  withdrawReportAction,
   requestAmendmentAction,
   savePermitAction,
   confirmEntryAction,
@@ -433,6 +436,34 @@ export function RelockForm({ clientId, amendmentId }: { clientId: string; amendm
     <form action={action} className="flex flex-wrap items-center gap-2">
       <Input name="changes" required placeholder="What was changed, e.g. booked OR-77 on 10 Feb" aria-label="What was changed in the books" className="w-80 max-w-full" />
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Locking…" : "Lock again"}</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reports: the Owner releases statements to the client's portal.
+// ---------------------------------------------------------------------------
+export function ReleaseReportForm({ clientId, kind, endMonth, released }: { clientId: string; kind: ReportKind; endMonth: string; released: boolean }) {
+  const [state, action, pending] = useActionState(releaseReportAction.bind(null, clientId, kind, endMonth), {} as FormState);
+  if (state.ok) return <Notice tone="done">{state.ok}</Notice>;
+  return (
+    <form action={action} className="space-y-3">
+      <Field label="Note to the client (optional)" htmlFor="report_note" hint="Shown above the statements in the portal.">
+        <Input id="report_note" name="note" className="w-full" />
+      </Field>
+      {state.error && <Notice tone="blocked">{state.error}</Notice>}
+      <Button type="submit" size="sm" disabled={pending}>{pending ? "Releasing…" : released ? "Release again (replaces the released copy)" : "Release to the client"}</Button>
+    </form>
+  );
+}
+
+export function WithdrawReportButton({ clientId, reportId }: { clientId: string; reportId: string }) {
+  const [state, action, pending] = useActionState(async () => withdrawReportAction(clientId, reportId), {} as FormState);
+  if (state.ok) return <span className="text-caption-1-regular text-text-secondary">{state.ok}</span>;
+  return (
+    <form action={action} className="flex items-center gap-2">
+      <Button type="submit" size="sm" variant="ghost" disabled={pending}>{pending ? "Withdrawing…" : "Withdraw"}</Button>
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
   );
