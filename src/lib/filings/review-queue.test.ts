@@ -28,4 +28,10 @@ describe("reviewQueue", () => {
     expect(ids(q.toReview)).toEqual(["late", "mine", "other-client"]);
     expect(ids(q.toApprove)).toEqual(["final"]);
   });
+
+  it("gives the acting approver the final approvals as well", () => {
+    const q = reviewQueue(filings, { userId: "r", owner: false, reviewerOf: new Set(["a"]), acting: true });
+    expect(ids(q.toApprove)).toEqual(["final"]);
+    expect(ids(q.toReview)).toEqual(["late"]);
+  });
 });

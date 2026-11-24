@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
+import type { Branch } from "@/lib/branches";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
@@ -31,16 +32,18 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const { data: client } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (!client) notFound();
 
-  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties] = await Promise.all([
+  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties, branchRows] = await Promise.all([
     supabase.from("client_registrations").select("registration_date, tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("id, form, frequency, start_date, end_date").eq("client_id", id).order("form"),
     supabase.from("engagements").select("id, service_line, monthly_retainer, start_date, status, service_lines(name)").eq("client_id", id).order("start_date"),
     supabase.from("staff_assignments").select("user_id, role, staff_profiles(full_name)").eq("client_id", id),
     supabase.from("service_lines").select("code, name").eq("available", true).order("sort_order"),
-    isOwner ? supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
+    isOwner ? supabase.from("staff_profiles").select("user_id, full_name, role, branch_id").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
     supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
+    supabase.from("branches").select("id, code, name, address, active").order("name"),
   ]);
+  const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
   const portalEmailOf = new Map(((portalEmails ?? []) as { user_id: string; email: string; last_sign_in_at: string | null }[]).map((e) => [e.user_id, e]));
@@ -69,6 +72,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Registration">
           <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-body-regular">
+            <dt className="text-text-tertiary">Branch</dt><dd className="min-w-0 break-words text-text-primary">{branches.find((b) => b.id === client.branch_id)?.name ?? "—"}</dd>
             <dt className="text-text-tertiary">RDO</dt><dd className="min-w-0 break-words text-text-primary">{client.rdo_code ?? "—"}</dd>
             <dt className="text-text-tertiary">Address</dt><dd className="min-w-0 break-words text-text-primary">{client.registered_address ?? "—"}</dd>
             <dt className="text-text-tertiary">Registered</dt><dd className="min-w-0 break-words text-text-primary">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
@@ -137,7 +141,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
               ))}
             </ul>
           )}
-          {isOwner && <AssignForm clientId={id} staff={staff.data ?? []} />}
+          {isOwner && <AssignForm clientId={id} staff={(staff.data ?? []) as { user_id: string; full_name: string; role: string; branch_id: string | null }[]} branches={branches} branch={client.branch_id} />}
         </Card>
 
         <DocumentsCard

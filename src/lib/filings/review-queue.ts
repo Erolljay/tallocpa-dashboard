@@ -20,12 +20,14 @@ export interface QueueViewer {
   owner: boolean;
   /** Clients where the viewer is the assigned reviewer. */
   reviewerOf: ReadonlySet<string>;
+  /** True while the viewer is the acting approver (Q58): they see the final approvals too. */
+  acting?: boolean;
 }
 
 export interface ReviewQueue<T extends QueueFiling> {
   /** Prepared returns this person can review (not their own work, unless Owner). */
   toReview: T[];
-  /** Client-approved returns waiting for the Owner's final approval. */
+  /** Client-approved returns waiting for the final approval (the Owner's, or the acting approver's). */
   toApprove: T[];
   /** Reviewed returns waiting for the client; queries flagged. */
   withClient: T[];
@@ -36,7 +38,7 @@ export function reviewQueue<T extends QueueFiling>(filings: readonly T[], v: Que
   const mine = (f: T) => v.owner || v.reviewerOf.has(f.client_id);
   return {
     toReview: filings.filter((f) => f.status === "prepared" && mine(f) && (v.owner || f.prepared_by !== v.userId)).sort(byDue),
-    toApprove: v.owner ? filings.filter((f) => f.status === "client_approved").sort(byDue) : [],
+    toApprove: v.owner || v.acting ? filings.filter((f) => f.status === "client_approved").sort(byDue) : [],
     withClient: filings.filter((f) => f.status === "reviewed" && mine(f)).sort(byDue),
   };
 }

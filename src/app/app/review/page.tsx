@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
+import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
+import { activeFor, lastDay, type Delegation } from "@/lib/acting/period";
 import { requireStaff } from "@/lib/auth";
 import { showDate } from "@/lib/filings/labels";
 import { reviewQueue, type QueueFiling } from "@/lib/filings/review-queue";
@@ -33,6 +34,11 @@ async function Queue() {
   const supabase = await supabaseServer();
   const { data: assignments } = await supabase.from("staff_assignments").select("client_id").eq("user_id", me.userId).eq("role", "reviewer");
   const reviewerOf = new Set((assignments ?? []).map((a) => a.client_id));
+  const { data: delegations } = owner
+    ? { data: [] as Delegation[] }
+    : await supabase.from("acting_approver_delegations").select("id, delegate_user_id, starts_at, ends_at, max_tax_due, reason, ended_at").eq("delegate_user_id", me.userId).is("ended_at", null);
+  const acting = activeFor((delegations ?? []) as Delegation[], me.userId);
+  const limit = acting ? Number(acting.max_tax_due) : null;
   if (!owner && reviewerOf.size === 0 && me.staff.role !== "reviewer") redirect("/app");
 
   const { data } = await supabase
@@ -55,7 +61,10 @@ async function Queue() {
   const nameOf = new Map((staff ?? []).map((s) => [s.user_id, s.full_name]));
 
   const rows: Row[] = filings.map((f) => ({ ...f, prepared_by: preparedBy.get(f.id) ?? null }));
-  const q = reviewQueue(rows, { userId: me.userId, owner, reviewerOf });
+  const q = reviewQueue(rows, { userId: me.userId, owner, reviewerOf, acting: acting != null });
+  // What the acting approver must leave for the Owner (the database also checks payment).
+  const leaveForOwner = (r: Row) =>
+    limit == null ? null : Number(r.tax_due ?? 0) > limit ? "Over your limit" : r.prepared_by === me.userId ? "Your own work" : null;
   const today = manilaToday();
 
   return (
@@ -63,13 +72,21 @@ async function Queue() {
       {owner && (
         <Section title="Waiting for your final approval" hint="Client has approved. Check payment, then approve." rows={q.toApprove} today={today} nameOf={nameOf} empty="Nothing waiting for your approval." />
       )}
+      {acting && limit != null && (
+        <>
+          <Notice tone="waiting">
+            You are the acting approver until the end of {showDate(lastDay(acting.ends_at))}. You can give the final approval on fully paid returns up to {peso.format(limit)} tax due. The rest waits for the Owner.
+          </Notice>
+          <Section title="Waiting for the final approval" hint="You approve for the Owner. Check payment first." rows={q.toApprove} today={today} nameOf={nameOf} empty="Nothing waiting for the final approval." flag={leaveForOwner} />
+        </>
+      )}
       <Section title="Ready for review" hint={owner ? "Prepared by staff. You or the client's reviewer can review or send back." : "Prepared by staff on your clients. You cannot review your own work."} rows={q.toReview} today={today} nameOf={nameOf} empty="Nothing to review." />
       <Section title="Waiting for the client" hint="Reviewed and with the client. A question from the client needs an answer from staff." rows={q.withClient} today={today} nameOf={nameOf} empty="Nothing with clients." />
     </div>
   );
 }
 
-function Section({ title, hint, rows, today, nameOf, empty }: { title: string; hint: string; rows: Row[]; today: string; nameOf: Map<string, string>; empty: string }) {
+function Section({ title, hint, rows, today, nameOf, empty, flag }: { title: string; hint: string; rows: Row[]; today: string; nameOf: Map<string, string>; empty: string; flag?: (r: Row) => string | null }) {
   return (
     <Card title={`${title} (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">{hint}</span>}>
       {rows.length === 0 ? (
@@ -100,7 +117,8 @@ function Section({ title, hint, rows, today, nameOf, empty }: { title: string; h
                     <td className="amount py-2 pr-4 text-end tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</td>
                     <td className="py-2 pr-4 text-text-secondary">{(r.prepared_by && nameOf.get(r.prepared_by)) ?? "—"}</td>
                     <td className="py-2 text-end">
-                      {overdue && <Badge tone="blocked">Overdue</Badge>} {r.open_query && <Badge tone="waiting">Client question</Badge>}
+                      {overdue && <Badge tone="blocked">Overdue</Badge>} {r.open_query && <Badge tone="waiting">Client question</Badge>}{" "}
+                      {flag?.(r) && <Badge>{`${flag(r)}: waits for the Owner`}</Badge>}
                     </td>
                   </tr>
                 );

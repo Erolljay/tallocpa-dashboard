@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Badge, Button, Card, Field, Input, Notice, Select } from "@/components/ui";
 import { months, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { obligationChanges, obligationsForTaxTypes, TAX_TYPES, TAXPAYER_TYPES, type PlannedObligation, type TaxpayerType, type TaxType } from "@/lib/clients/obligations";
+import { groupByBranch, type Branch } from "@/lib/branches";
 import type { FormState } from "./actions";
 
 const frequencyLabel = { monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
@@ -21,6 +22,7 @@ export interface ClientValues {
   book_type: "manual" | "loose_leaf";
   payment_mode: "client_pays_direct" | "firm_remits";
   submission_cutoff_day: number;
+  branch_id: string;
   tax_types: TaxType[];
   /** Forms the client files now (open obligations). */
   open_forms: string[];
@@ -31,9 +33,10 @@ type Props =
       mode: "new";
       action: (state: FormState, form: FormData) => Promise<FormState>;
       /** Active staff who can be assigned as preparer or reviewer. */
-      staff: { user_id: string; full_name: string; role: string }[];
+      staff: { user_id: string; full_name: string; role: string; branch_id: string | null }[];
+      branches: Branch[];
     }
-  | { mode: "edit"; action: (state: FormState, form: FormData) => Promise<FormState>; client: ClientValues };
+  | { mode: "edit"; action: (state: FormState, form: FormData) => Promise<FormState>; client: ClientValues; branches: Branch[] };
 
 /** New-client and edit-client form (spec §3.2). */
 export function ClientForm(props: Props) {
@@ -42,6 +45,8 @@ export function ClientForm(props: Props) {
   const [type, setType] = useState<TaxpayerType>(initial?.taxpayer_type ?? "corporation");
   const [taxTypes, setTaxTypes] = useState<TaxType[]>(initial?.tax_types ?? ["income_tax"]);
   const [channel, setChannel] = useState<string>(initial?.filing_channel ?? "ebirforms");
+  const openBranches = props.branches.filter((b) => b.active || b.id === initial?.branch_id);
+  const [branch, setBranch] = useState<string>(initial?.branch_id ?? (openBranches.length === 1 ? openBranches[0].id : ""));
   const e = state.fieldErrors ?? {};
 
   let preview: PlannedObligation[] = [];
@@ -121,6 +126,12 @@ export function ClientForm(props: Props) {
 
         <Card title="How we work with this client">
           <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Branch" htmlFor="branch_id" hint="The office that serves this client." error={e.branch_id}>
+              <Select id="branch_id" name="branch_id" value={branch} onChange={(ev) => setBranch(ev.target.value)} required>
+                {!branch && <option value="" disabled>Choose…</option>}
+                {openBranches.map((b) => <option key={b.id} value={b.id}>{b.name}{b.active ? "" : " (closed)"}</option>)}
+              </Select>
+            </Field>
             <Field label="Filing channel" htmlFor="filing_channel">
               <Select id="filing_channel" name="filing_channel" value={channel} onChange={(ev) => setChannel(ev.target.value)}>
                 <option value="ebirforms">eBIRForms</option>
@@ -164,16 +175,19 @@ export function ClientForm(props: Props) {
               <Field label="Preparer" htmlFor="preparer_id" hint="Does the client's work." error={e.preparer_id}>
                 <Select id="preparer_id" name="preparer_id" defaultValue="">
                   <option value="">Assign later</option>
-                  {props.staff.filter((s) => s.role !== "owner").map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+                  <StaffOptions staff={props.staff} branches={props.branches} branch={branch} />
                 </Select>
               </Field>
               <Field label="Reviewer" htmlFor="reviewer_id" hint="Checks the work before it goes to you." error={e.reviewer_id}>
                 <Select id="reviewer_id" name="reviewer_id" defaultValue="">
                   <option value="">Assign later</option>
-                  {props.staff.filter((s) => s.role !== "owner").map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+                  <StaffOptions staff={props.staff.filter((s) => s.role === "reviewer")} branches={props.branches} branch={branch} />
                 </Select>
               </Field>
             </div>
+            {props.branches.length > 1 && (
+              <p className="mt-3 text-caption-1-regular text-text-tertiary">Staff of the client&apos;s branch are listed first.</p>
+            )}
           </Card>
         )}
       </div>
@@ -211,4 +225,15 @@ export function ClientForm(props: Props) {
       </aside>
     </form>
   );
+}
+
+/** Staff for a picker, grouped by branch with the client's branch first (Q68). One branch: a plain list. */
+export function StaffOptions({ staff, branches, branch }: { staff: { user_id: string; full_name: string; role: string; branch_id: string | null }[]; branches: Branch[]; branch: string | null }) {
+  const people = staff.filter((s) => s.role !== "owner");
+  if (branches.length <= 1) return people.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>);
+  return groupByBranch(people, branches, branch).map((g) => (
+    <optgroup key={g.branch?.id ?? "none"} label={g.branch ? `${g.branch.name}${g.branch.id === branch ? " (client's branch)" : ""}` : "No branch"}>
+      {g.people.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name}</option>)}
+    </optgroup>
+  ));
 }

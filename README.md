@@ -25,6 +25,8 @@ Phase 1A in progress. Built so far:
 - Monthly cycle: each active client's month is opened nightly; document request on the 1st and a reminder the day before the cutoff (email through Resend, and the portal); missed cutoffs recorded and shown on the Dashboard; "nothing to submit" from the portal; closing a month (nightly two months on, or by staff after the cutoff) carries unposted documents to the next month of the same taxable year as late-recorded; prior-year documents go to an exceptions queue for the Reviewer or Owner
 - Owner dashboard and Scores page: late returns split into client- and staff-caused, clients in the red (compliance score), receivables overdue, OCR correction rate, and each staff member's clients, load and work waiting; client compliance scores (green / yellow / red) and staff KPIs with a 12-month trend
 - OCR (Gemini) reads each uploaded document; review queue with the image beside the figures, low-confidence fields highlighted, checks (TIN, VAT 12%, totals, duplicates, dates); approval logs every correction
+- Branches (Iloilo now): clients and staff belong to a branch; staff are listed by branch when assigning a client
+- Acting approver: a Reviewer named by the Owner gives the final approval within a peso limit (fully paid returns only, never their own work), with a daily digest to the Owner
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

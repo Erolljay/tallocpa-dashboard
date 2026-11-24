@@ -53,6 +53,11 @@ export interface Viewer {
   role: "owner" | "reviewer" | "staff" | "client";
   /** The viewer's assignments on this filing's client. */
   assignedAs: readonly ("preparer" | "reviewer")[];
+  /**
+   * Set while the viewer is the acting approver (Q58): the most tax due they may
+   * approve. The database also refuses unpaid returns and the approver's own work.
+   */
+  actingLimit?: number | null;
 }
 
 export interface FilingState {
@@ -60,6 +65,13 @@ export interface FilingState {
   openQuery: string | null;
   /** Who marked the return prepared most recently. */
   preparedBy: string | null;
+  /** Tax due on the return, once prepared. */
+  taxDue?: number | null;
+}
+
+/** Whether an acting approver with this limit may give the final approval (payment is checked by the database). */
+export function withinActingLimit(f: FilingState, v: Viewer): boolean {
+  return v.actingLimit != null && (f.taxDue ?? 0) <= v.actingLimit && f.preparedBy !== v.userId;
 }
 
 /** Actions this person can take on the filing now, in the order to show them. */
@@ -85,7 +97,7 @@ export function availableActions(f: FilingState, v: Viewer): SignOffAction[] {
       if (owner || reviewer) out.push("kick_back");
       break;
     case "client_approved":
-      if (owner) out.push("owner_approve");
+      if (owner || withinActingLimit(f, v)) out.push("owner_approve");
       break;
     case "owner_approved":
       if (owner || assigned) out.push("file");
