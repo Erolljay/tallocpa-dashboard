@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import type { Branch } from "@/lib/branches";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
+import { CASE_KINDS } from "@/lib/registration/steps";
 import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DocumentsCard } from "./documents-card";
@@ -32,7 +33,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const { data: client } = await supabase.from("clients").select("*").eq("id", id).maybeSingle();
   if (!client) notFound();
 
-  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties, branchRows] = await Promise.all([
+  const [registration, obligations, engagements, team, serviceLines, staff, portalUsers, parties, branchRows, registrationCase] = await Promise.all([
     supabase.from("client_registrations").select("registration_date, tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("id, form, frequency, start_date, end_date").eq("client_id", id).order("form"),
     supabase.from("engagements").select("id, service_line, monthly_retainer, start_date, status, service_lines(name)").eq("client_id", id).order("start_date"),
@@ -42,12 +43,15 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
+    supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
   ]);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
   const portalEmailOf = new Map(((portalEmails ?? []) as { user_id: string; email: string; last_sign_in_at: string | null }[]).map((e) => [e.user_id, e]));
 
+  const cases = registrationCase.data ?? [];
+  const openNewBusiness = cases.some((c) => c.kind === "new_business" && c.status === "open");
   const taxTypes = ((registration.data?.tax_types ?? []) as TaxType[]).map((t) => TAX_TYPES[t] ?? t);
   const retainerTotal = (engagements.data ?? []).filter((e) => e.status === "active").reduce((s, e) => s + Number(e.monthly_retainer), 0);
 
@@ -66,7 +70,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
               </>
             )}
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
-            {isOwner && client.status === "onboarding" && <StatusButton clientId={id} to="active" label="Mark active" />}
+            {isOwner && client.status === "onboarding" && !openNewBusiness && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
         }
       />
@@ -147,6 +151,31 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
             </ul>
           )}
           {isOwner && <AssignForm clientId={id} staff={(staff.data ?? []) as { user_id: string; full_name: string; role: string; branch_id: string | null }[]} branches={branches} branch={client.branch_id} />}
+        </Card>
+
+        <Card title="Registration & changes">
+          {cases.length === 0 ? (
+            <p className="text-body-regular text-text-secondary">No registration cases.</p>
+          ) : (
+            <ul className="divide-y divide-separator-border text-body-regular">
+              {cases.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-4 py-2">
+                  <Link href={`/app/registrations/${c.id}`} className="font-medium text-text-primary hover:underline">
+                    {CASE_KINDS[c.kind as keyof typeof CASE_KINDS]}{c.period_year ? ` ${c.period_year}` : ""}{c.kind === "branch" ? ` · ${(c.details as { branch_name?: string }).branch_name}` : ""}
+                  </Link>
+                  <Badge tone={c.status === "open" ? "progress" : c.status === "completed" ? "done" : "neutral"}>{c.status === "open" ? "Open" : c.status === "completed" ? "Completed" : "Cancelled"}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+          {isOwner && (client.status === "active" || client.status === "onboarding") && (
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-separator-border pt-4">
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=renewal`} variant="secondary" size="sm">Annual renewal</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update (1905)</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=branch`} variant="secondary" size="sm">New branch</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=closure`} variant="secondary" size="sm">Close the business</LinkButton>
+            </div>
+          )}
         </Card>
 
         <DocumentsCard

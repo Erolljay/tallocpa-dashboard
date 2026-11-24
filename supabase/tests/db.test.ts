@@ -81,7 +81,7 @@ describe.skipIf(!url)("database", () => {
         (select count(*)::int from public.holidays) as holidays`)
     ).rows[0];
     expect(counts.legal_name).toBe("EJ Tallo Cloud Accounting and Auditing Services");
-    expect(counts.service_lines).toBe(8);
+    expect(counts.service_lines).toBe(10);
     expect(counts.rules).toBeGreaterThan(10);
     expect(counts.unverified).toBe(counts.rules);
     expect(counts.holidays).toBeGreaterThan(10);

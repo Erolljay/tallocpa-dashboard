@@ -34,6 +34,10 @@ Phase 1A in progress. Built so far:
 - Bookkeeping slice 5: 1701Q and 1702Q computed from the ledger by BIR line (sales, cost of sales, other income, itemized deductions) for clients whose books cover the taxable year
 - Bookkeeping slice 6: financial statements from the ledger (financial position, comprehensive income, changes in equity, notes) for a month, quarter or year; the Owner releases them to the client portal's Reports tab
 - Bookkeeping slice 7: year-end closing entries; annual 1702-RT and 1701 / 1701A worksheets from the books; statement of cash flows with a cash-flow class per account; prior-year column on annual statements; amended returns as new filings of the same period through the sign-off chain
+- Business Registration (Phase 1C, slice 1): registration cases for new businesses — DTI or SEC, barangay, City Hall, BIR (ORUS, COR, books, invoices, eFiling) and SSS / PhilHealth / Pag-IBIG steps, shown as a routing slip with days held at each office; the COR feeds client onboarding
+- Business Registration slice 2: annual renewals (barangay, fire, sanitary and mayor's permits, SEC GIS or DTI renewal, books) — one client or every active client for the year — and closing a business (City Hall retirement, BIR 1905 and cancellation, DTI/SEC, employer numbers), which ends the client's obligations and makes it inactive
+- Business Registration slice 3: BIR updates on Form 1905 (address, RDO transfer, tax types, name, line of business — steps follow the changes ticked; a tax type change needs the new tax setup on the client) and new branch registration (branch code, COR, books, invoices)
+- Requests & tickets: staff ask clients for documents (from the Requests page or a registration step, which then waits on the client); clients reply with files and open their own tickets in the portal. Portal Registration tab shows each case as a routing slip with what we need from them
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 
