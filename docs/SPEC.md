@@ -39,7 +39,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 - Website, lead capture, proposals, e-sign (Phase 2, Q17, Q43)
 - Full billing, issuing BIR invoices, automatic bank matching (Phase 3; BIR invoices stay manual, Q27)
 - Time tracking: **not planned at all**, the firm charges fixed retainers (Q37)
-- Business Registration and BIR LOA Services (after Phase 1B, see §2)
+- Business Registration (Phase 1C) and BIR LOA Services with LOA risk analytics (Phase 4), see §2
 - **Not in the OS at all (Q66):** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation, Business Processing, Systems Implementation, AI & Business Automation. These run on another platform.
 - Viber, SMS, Messenger channels (later, through n8n, Q10, Q38)
 - Registering clients' books as a computerized accounting system (CAS) with BIR (Q18)
@@ -54,9 +54,9 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 | **1A — Compliance core** | Brand/entity settings, clients & engagements, filing obligations, deadline engine, client portal + OCR intake + review queue, sign-off chain, Collections & SOA, owner dashboard & scores | **Live for the January 2027 cycle** (December 2026 returns stay in the current tools) |
 | **1B — Bookkeeping** | Per-client ledger, chart-of-accounts templates, posting from reviewed documents, BIR loose-leaf books, returns computed from the ledger, period lock, client reports | A few weeks after 1A; **posts back to 1 January 2027** from opening trial balances as of 31 December 2026 |
 | **1C — Business Registration** | New-business registration as a service: DTI / SEC, barangay and mayor's permit (where served), BIR registration (ORUS, COR / Form 2303, books, invoices), SSS / PhilHealth / Pag-IBIG employer registration; checklist and status per step; the finished COR feeds client onboarding (§4.1) | Right after 1B (Q66) |
-| **1D — BIR LOA Services** | Support when a client receives a BIR Letter of Authority: LOA and notices received, BIR deadlines on each notice (e.g. document submission, PAN / FAN replies), documents requested and submitted, assessments and how they were settled | After 1C (Q66) |
 | **2 — Growth** | Public website (tallocpa.com) → lead → auto-quote from COR + fee schedule → proposal → e-signed engagement → client set up automatically | After Phase 1 runs one clean cycle |
 | **3 — Money** | Full billing, retainers, collections, reference-based automatic payment matching | After Phase 2 |
+| **4 — BIR LOA Services & LOA risk analytics** | (a) Support when a client receives a BIR Letter of Authority: LOA and notices received, BIR deadlines on each notice (e.g. document submission, PAN / FAN replies), documents requested and submitted, assessments and how they were settled. (b) **LOA risk analytics** (§3.15): ratios from each client's ledger and returns compared against benchmarks by industry, to flag clients likely to draw an LOA before BIR does | Last, after Phase 3 (Q66). Analytics need at least one full year of ledger data per client |
 | **Later** | Nationwide brand, Viber/SMS. **No other service lines** are planned (Q66) | — |
 
 **Cutover rule (Q7, Q33):** clients are entered in the OS from their COR (there is no Moxie import, §8); Moxie stays read-only for reference until the OS completes one full monthly cycle, then it is cancelled. Manager.io stays for 2026 books and is retired after the 2026 annual filings.
@@ -246,6 +246,19 @@ Per client per month:
 - **Retention:** nothing is deleted automatically; keep at least **10 years** (above the 5-year BIR requirement under the EOPT Act).
 
 ---
+
+### 3.15 LOA risk analytics (Phase 4; Q67)
+
+Goal: show which clients look like LOA targets to BIR, early enough to fix the cause, and help keep each client's figures in a defensible range.
+
+- **Ratios per client and period**, computed from the ledger (Phase 1B) and the filed returns, never retyped:
+  - **Effective income tax rate:** income tax due ÷ gross sales or receipts (e.g. the Owner's working floor of about **2%**).
+  - **Gross profit rate (GPR):** gross profit ÷ net sales, compared with the client's industry.
+  - Others to confirm with the Owner: expense-to-sales ratios (e.g. purchases, rent, salaries), VAT payable ÷ VATable sales, input VAT ÷ output VAT, year-on-year swings in sales or tax, repeated losses or zero-tax returns, and gaps between returns (e.g. sales on 2550Q vs the income tax return, salaries on 1601-C vs the ledger).
+- **Benchmarks are data, not code**, like the deadline rules: industry (by PSIC code or the COR line of business) × ratio × floor / range × effective dates × source (BIR issuance, industry study, or the Owner's own rule). The Owner edits them in Settings. **The benchmark figures are the Owner's decision**; the OS ships with none filled in, so no one mistakes a placeholder for a BIR rule.
+- **Firm-wide data:** once enough clients are on the ledger, the OS also shows each industry's actual median and range across the firm's own clients (anonymised), as a cross-check for the Owner's benchmarks.
+- **Output:** an LOA risk score per client (green / yellow / red, like the compliance score), the ratios that caused it, and the trend; a firm-wide list of red clients on the Owner dashboard; a warning on the return worksheet **before** a return goes out with a ratio below its benchmark, so staff and the Reviewer see it at sign-off.
+- The score is a working tool for the firm. It is not shown to clients unless the Owner releases a report to them.
 
 ## 4. Key workflows
 

@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
-    "mtime": 1795502568.969638,
-    "seen": 1795502576.8903227,
-    "ast_hash": "d1f4090651a6eb5c0b8e1b9f9c31f36e",
+    "mtime": 1795502766.8426983,
+    "seen": 1795502768.7091699,
+    "ast_hash": "d486bd3fa3126a301ce94364eabdf9d4",
     "semantic_hash": ""
   },
   "docs/SETUP.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795502568.969291,
-    "seen": 1795502576.8903275,
-    "ast_hash": "9ab285ae98a2c9fc250cdaf84389e256",
+    "mtime": 1795502766.842342,
+    "seen": 1795502768.709193,
+    "ast_hash": "79bb675003f59807fd0f571eb674aae6",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/edit/page.tsx": {
