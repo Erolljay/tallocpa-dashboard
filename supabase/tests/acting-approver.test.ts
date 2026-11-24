@@ -1,6 +1,6 @@
 /**
  * Branches and the acting approver (spec §3.1, §3.8; Q58, Q68;
- * migration 20261124000002_branches_acting_approver.sql).
+ * migration 20261124000003_branches_acting_approver.sql).
  *
  * Runs in its own database so it can run alongside db.test.ts. `pnpm test:db`.
  */
