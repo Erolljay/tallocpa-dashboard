@@ -193,6 +193,20 @@ describe.skipIf(!url)("ledger database", () => {
     expect(total).toBe(0);
   });
 
+  it("sums income and expenses by BIR line for the income tax worksheets, without suggestions or the opening balances", async () => {
+    await asCommit(STAFF, `select public.post_journal_entry($1, '2027-02-03', 'Fees', null, $2)`, [
+      clientA,
+      JSON.stringify([{ account_id: acct.cash_on_hand, debit: "5000", credit: "0" }, { account_id: acct.service_income, debit: "0", credit: "5000" }]),
+    ]);
+    const income = (from: string, to: string, user = STAFF) =>
+      as(user, async () => (await db.query(`select code, bir_line, net from public.ledger_income($1, $2, $3)`, [clientA, from, to])).rows);
+    // January: rent posted and reversed nets to nil; February: the fees.
+    expect(await income("2027-01-01", "2027-01-31")).toEqual([{ code: expect.any(String), bir_line: "ded_rental", net: "0.00" }]);
+    expect(await income("2027-02-01", "2027-02-28")).toEqual([{ code: expect.any(String), bir_line: "sales", net: "-5000.00" }]);
+    expect(await income("2026-01-01", "2026-12-31")).toEqual([]);
+    expect(await income("2027-01-01", "2027-12-31", CLIENT_USER)).toEqual([]);
+  });
+
   it("records the loose-leaf books permit for assigned staff only", async () => {
     await expect(asCommit(OTHER_STAFF, `select public.set_books_permit($1, 'x')`, [clientA])).rejects.toThrow(/Only the Owner or staff assigned/);
     await asCommit(STAFF, `select public.set_books_permit($1, ' ORUS 2026-12345 ')`, [clientA]);

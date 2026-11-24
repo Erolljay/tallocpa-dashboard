@@ -7,6 +7,7 @@ import { DOC_TYPES, showMonth, type DocType } from "@/lib/documents/labels";
 import { filingStatusLabel, filingStatusTone } from "@/lib/filings/labels";
 import type { FilingStatus } from "@/lib/filings/sign-off";
 import { LOCKED_STATUSES, loadWorksheet } from "@/lib/returns/load";
+import { booksCover } from "@/lib/returns/forms/business/income";
 import { formatAmount, formatPeso } from "@/lib/returns/money";
 import { flattenFigures } from "@/lib/returns/source";
 import type { WorksheetLine, WorksheetResult, WorksheetSchedule } from "@/lib/returns/types";
@@ -163,6 +164,7 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
   const stale = !locked && saved?.result != null && !sameFigures(flattenFigures(saved.result), flattenFigures(live));
   const used = new Set(shown.documentIds);
   const attachments = form.attachments?.(ctx, shown) ?? [];
+  const fromBooks = !!form.usesLedger && booksCover(ctx);
 
   return (
     <>
@@ -171,8 +173,8 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
         <div className="min-w-0 space-y-6">
           <div className="space-y-3">
             {locked && <Notice tone="done">This return has been filed. The worksheet is locked and shows the figures as saved{saved?.computedAt ? ` on ${when(saved.computedAt)}` : ""}.</Notice>}
-            {!saved?.result && !locked && <Notice tone="waiting">Not saved yet. These figures are worked out from the approved documents now; press Recompute and Save to keep them.</Notice>}
-            {stale && <Notice tone="waiting">The figures have changed since the worksheet was saved (documents approved or edited since). Recompute and save before preparing the return.</Notice>}
+            {!saved?.result && !locked && <Notice tone="waiting">Not saved yet. These figures are worked out from the {fromBooks ? "books" : "approved documents"} now; press Recompute and Save to keep them.</Notice>}
+            {stale && <Notice tone="waiting">The figures have changed since the worksheet was saved ({fromBooks ? "entries posted to the books or documents approved since" : "documents approved or edited since"}). Recompute and save before preparing the return.</Notice>}
             <Problems result={shown} />
           </div>
 
@@ -213,6 +215,15 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
                   ))}
                 </ul>
               )}
+            </Card>
+          )}
+
+          {fromBooks && (
+            <Card title="From the books">
+              <p className="text-body-regular text-text-secondary">
+                Sales, cost of sales, other income and deductions are the posted entries of the taxable year to date, by each account&rsquo;s BIR line. Creditable tax withheld comes from the 2307s below.
+              </p>
+              <Link href={`/app/clients/${filing.clientId}/books`} className="mt-3 inline-block text-body-medium text-button-ghost-foreground hover:underline">Open the books</Link>
             </Card>
           )}
 

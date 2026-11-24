@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { form1701Q, form1702Q } from "./income";
-import { amounts, cert2307, ctxFor, lineNo, purchase, sale } from "./testing";
+import type { WorksheetContext } from "../../types";
+import { amounts, cert2307, ctxFor, lineNo, mv, purchase, sale } from "./testing";
 
 const individual = { taxpayerType: "individual" as const, name: "Juan Dela Cruz", tin: "123-456-789-000" };
 const q = (n: number, year = 2026) => {
@@ -311,5 +312,107 @@ describe("1702Q", () => {
   it("requires the deduction method and rate, and a non-individual", () => {
     expect(form1702Q.compute(ctxFor({ form: "1702Q", ...q(1), documents: [] })).errors).toEqual(["Choose the deduction method (OSD or itemized) and the regular income tax rate."]);
     expect(form1702Q.compute(ctxFor({ form: "1702Q", ...q(1), client: individual, documents: [] })).errors[0]).toMatch(/files 1701Q/);
+  });
+});
+
+describe("income tax from the books", () => {
+  const books = (period: ReturnType<typeof mv>[], earlier: ReturnType<typeof mv>[] = [], extra: Partial<NonNullable<WorksheetContext["ledger"]>> = {}) => ({
+    booksStart: "2026-01-01",
+    period,
+    earlier,
+    suggested: 0,
+    ...extra,
+  });
+  const q1 = [
+    mv("sales", -1_000_000),
+    mv("cost_of_sales", 500_000, "cost"),
+    mv("other_taxable_income", -10_000, "other_income"),
+    mv("final_tax_income", -1_000, "other_income"),
+    mv("ded_salaries", 300_000),
+    mv("ded_rental", 100_000),
+    mv("nondeductible", 5_000),
+  ];
+  const corp = { vatRegistered: true };
+  const inputs = { deduction: "itemized", corporate_rate: "regular", year_operations_commenced: "2020", cost_of_sales: "999", non_operating_income: "999" };
+
+  it("1702Q itemized: sales, cost of sales, other income and deductions from the ledger; typed figures not asked", () => {
+    const ctx = ctxFor({
+      form: "1702Q",
+      ...q(1),
+      client: corp,
+      inputs,
+      ledger: books(q1),
+      documents: [
+        sale({ month: "2026-01", vatable: 7, vat: 0, total: 7 }),
+        cert2307({ month: "2026-03", atc: "WC158", total: 100_000, withholding: 1_000, partyName: "Top WA", partyTin: "555-555-555" }),
+      ],
+    });
+    const r = form1702Q.compute(ctx);
+    expect(r.errors).toEqual([]);
+    expect(amounts(r)).toMatchObject({
+      sales: 1_000_000,
+      cost_of_sales: 500_000,
+      gross_income_operations: 500_000,
+      non_operating_income: 10_000,
+      total_gross_income: 510_000,
+      deductions: 400_000,
+      taxable_income_quarter: 110_000,
+      previous_quarters_income: 0,
+      taxable_income_to_date: 110_000,
+      cwt_this_quarter: 1_000,
+      cost_of_sales_to_date: 500_000,
+      non_operating_income_to_date: 10_000,
+    });
+    expect(r.warnings.some((w) => w.includes("rough proxy"))).toBe(false);
+    expect(r.warnings.some((w) => w.includes("final tax"))).toBe(true);
+    expect(r.warnings.some((w) => w.includes("Non-deductible"))).toBe(true);
+    expect(form1702Q.manualInputs(ctx).map((i) => i.key)).not.toContain("cost_of_sales");
+    expect(form1702Q.manualInputs(ctx).map((i) => i.key)).not.toContain("non_operating_income");
+    expect(r.schedules[0].title).toBe("Year to date from the books, by BIR line");
+    expect(r.schedules[0].rows.map((x) => x.item)).toContain("Salaries and allowances");
+  });
+
+  it("1702Q: the earlier quarters come from the books too", () => {
+    const r = form1702Q.compute(
+      ctxFor({ form: "1702Q", ...q(2), client: corp, inputs, ledger: books([mv("sales", -200_000), mv("ded_rental", 50_000)], q1), documents: [] }),
+    );
+    expect(r.errors).toEqual([]);
+    expect(amounts(r)).toMatchObject({ sales: 200_000, deductions: 50_000, taxable_income_quarter: 150_000, previous_quarters_income: 110_000, taxable_income_to_date: 260_000, mcit_gross_income: 710_000 });
+  });
+
+  it("1701Q graduated + itemized from the books; OSD leaves cost of sales out", () => {
+    const individual = { taxpayerType: "individual" as const };
+    const itemized = form1701Q.compute(
+      ctxFor({ form: "1701Q", ...q(2), client: individual, inputs: { regime: "graduated_itemized" }, ledger: books([mv("sales", -300_000), mv("cost_of_sales", 100_000, "cost"), mv("ded_rental", 50_000)], [mv("sales", -100_000), mv("ded_rental", 20_000)]), documents: [] }),
+    );
+    expect(itemized.errors).toEqual([]);
+    expect(amounts(itemized)).toMatchObject({ sales: 300_000, cost_of_sales: 100_000, gross_income: 200_000, itemized_deductions: 50_000, net_income_quarter: 150_000, previous_quarters_income: 80_000, taxable_income_to_date: 230_000 });
+    const osd = form1701Q.compute(
+      ctxFor({ form: "1701Q", ...q(2), client: individual, inputs: { regime: "graduated_osd" }, ledger: books([mv("sales", -300_000), mv("cost_of_sales", 100_000, "cost")], [mv("sales", -100_000)]), documents: [] }),
+    );
+    expect(amounts(osd)).toMatchObject({ sales: 300_000, cost_of_sales: 0, osd: 120_000, net_income_quarter: 180_000, previous_quarters_income: 60_000 });
+  });
+
+  it("blocks on accounts without a BIR line and warns about suggested entries not yet posted", () => {
+    const r = form1702Q.compute(
+      ctxFor({ form: "1702Q", ...q(1), client: corp, inputs, ledger: books([...q1, mv(null, 1_234, "expense", "6999")], [], { suggested: 3 }), documents: [] }),
+    );
+    expect(r.errors.join(" ")).toMatch(/6999 Unmapped/);
+    expect(r.warnings.join(" ")).toMatch(/3 suggested entries are not posted/);
+  });
+
+  it("uses documents when the books start after the taxable year began", () => {
+    const ctx = ctxFor({
+      form: "1702Q",
+      ...q(2),
+      client: corp,
+      inputs: { ...inputs, cost_of_sales: "0", non_operating_income: "0" },
+      ledger: books(q1, [], { booksStart: "2026-04-01" }),
+      documents: [sale({ month: "2026-04", vatable: 50_000, vat: 6_000, total: 56_000 })],
+    });
+    const r = form1702Q.compute(ctx);
+    expect(amounts(r).sales).toBe(50_000);
+    expect(r.warnings.join(" ")).toMatch(/books start on 2026-04-01/);
+    expect(form1702Q.manualInputs(ctx).map((i) => i.key)).toContain("cost_of_sales");
   });
 });
