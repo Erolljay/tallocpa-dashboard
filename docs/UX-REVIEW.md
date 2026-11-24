@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | For Owner review. Nothing here is built. |
 | **Date** | 2026-11-24, against `main` at 2f2a2ec |
-| **Mock** | [`mockups/tallocpa-ux-review.html`](./mockups/tallocpa-ux-review.html): journeys, findings and a clickable Workpapers mock (sample data) |
+| **Mock** | [`mockups/tallocpa-ux-review.html`](./mockups/tallocpa-ux-review.html): today's journeys, findings, recommendations, data flow, deadline safeguards, final journeys per role, a clickable mock (sample data) and the questions |
 
 Screens were read from the source. This review has not yet been tested with staff on real client data.
 
@@ -118,12 +118,38 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `workpaper_ticks`, `review_notes`. Schedules stay computed. Only sign-offs, ticks, adjustments and notes are stored. The file locks with the period's last return, the same way worksheets lock today.
 
-## Open decisions for the Owner
+## Questions for the Owner
 
-- W/P reference letters: A–T as drafted, or match the firm's audit working-paper index?
-- Tie-out tolerance before "Mark prepared" is blocked (₱1 rounding? ₱100?)
-- Must every schedule be reviewer-signed, or only B, C and T?
-- The account and BIR line for the SC/PWD discount, and what happens to CWT still without a 2307 at year end.
-- Should every client get account titles on every line (proposed), with the engagement deciding only which outputs are delivered?
-- Fixed assets: the capitalization threshold (the mock uses ₱10,000), default useful life per class, residual value, and whether depreciation starts in the month of purchase or the month after.
-- Step targets per form (the 1601-C example uses one working day between steps), and the hour of the morning email.
+Numbered as in the mock's Questions tab, each with the suggested answer.
+
+**Before go-live**
+1. Which slices are ready for the January 2027 cycle? *Suggested: D1, P1 and W1; R1 too if it fits.*
+2. Every client, tax-only included, gets an account title on every register line; the engagement decides only which outputs are delivered? *Suggested: yes.*
+3. Share a blank sales, purchases and payroll worksheet, to copy the exact columns.
+
+**Deadlines**
+4. 1601-C steps: register Apr 5, prepared 6, reviewed 7, client 8, Owner and filing 9, proof 12 — right, or an earlier internal deadline? *Suggested: as shown.*
+5. Time of the morning email? *Suggested: 7:00 am Manila.*
+
+**Workpapers**
+6. W/P reference letters A–T, or the firm's audit index? *Suggested: the audit index if one is in use.*
+7. Tie-out difference that blocks "Mark prepared"? *Suggested: ₱1.*
+8. Reviewer signs every register, or only B, C and T? *Suggested: B, C and T always; others when active.*
+
+**Entries and cash**
+9. Account and BIR line for the SC/PWD discount (RR 7-2010)? *Suggested: Sales Discount – SC/PWD, a deduction line; confirm.*
+10. CWT without a 2307 at year end? *Suggested: pending until the annual return, then decided per client.*
+11. Default cash account for cash sales? *Suggested: set per client at onboarding.*
+
+**Fixed assets**
+12. Capitalization threshold? *Suggested: ₱10,000 per item.*
+13. Useful lives? *Suggested: furniture, office and transportation equipment 60 months; IT 36; building 240.*
+14. Residual value? *Suggested: zero unless set per asset.*
+15. Depreciation starts the month of purchase or the month after? *Suggested: the month after.*
+16. Input VAT on capital goods claimed in full since 2022 (TRAIN, RR 13-2018)? *Suggested: yes.*
+17. Vehicles and the RR 12-2012 limits? *Suggested: flag those over the limit; tax column only for them.*
+
+**Client portal and intake**
+18. Missing-invoice check blocks "I've sent everything", or only warns? *Suggested: blocks; one tap to answer.*
+19. Can the client undo the confirmation before the cutoff? *Suggested: yes; after the cutoff staff reopen.*
+20. Mailbox for invoices@tallocpa.com, and plus-addressing (invoices+CODE@) for people with several businesses? *Suggested: Google Workspace; plus-addressing works there.*

@@ -233,6 +233,18 @@ textarea{resize:vertical;min-height:54px}
 .pills button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px}
 .pills button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .pills button:disabled{opacity:.5;cursor:not-allowed}
+.fstep{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+.fstep:first-child{border-top:0}
+.fstep .n{width:26px;height:26px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:600}
+.fstep .when{font-size:12px;color:var(--faint)}
+.fstep .fx{font-size:12px;color:var(--faint);margin-top:4px}
+@media (max-width:600px){.fstep{grid-template-columns:34px 1fr}.fstep>button{grid-column:2;justify-self:start}}
+.qgrp h3{margin-bottom:4px}
+.q{display:grid;grid-template-columns:40px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.q:first-of-type{border-top:0}
+.q .qn{font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.q .sug{margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--sunk);border:1px solid var(--line);color:var(--muted);font-size:13px}
+.q .sug b{color:var(--fg);font-weight:500}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:20}
 
 @media (max-width:900px){
@@ -257,16 +269,18 @@ textarea{resize:vertical;min-height:54px}
   <header class="top">
     <span class="eyebrow">Tallo CPA · TalloCPA OS Phase 1</span>
     <h1>Staff and Owner journey review</h1>
-    <p class="lede">How a preparer, a reviewer and the Owner move through the app today, where each journey breaks, and a proposed <b>Workpapers</b> layer between Documents and Returns. Reviewed against the code on <code>main</code> (commit 2f2a2ec, 24 Nov 2026). Screens were read from the source; this has not yet been tested with your staff on real client data.</p>
+    <p class="lede">How a preparer, a reviewer and the Owner move through the app today, where each journey breaks, and the proposed design: one register from intake to returns, workpapers, deadline safeguards and a clearer client portal. See <b>Final journeys</b> for how each person will work, and <b>Questions</b> for the decisions waiting on you. Reviewed against the code on <code>main</code> (commit 2f2a2ec, 24 Nov 2026). Screens were read from the source; this has not yet been tested with your staff on real client data.</p>
   </header>
 
   <nav class="tabs" aria-label="Review sections" id="tabs">
-    <a href="#journeys">1 · Journeys</a>
+    <a href="#journeys">1 · Journeys today</a>
     <a href="#findings">2 · Findings <span class="c">15</span></a>
     <a href="#recommendations">3 · Recommendations <span class="c">14</span></a>
     <a href="#flow">4 · Data flow</a>
     <a href="#deadlines">5 · Deadlines</a>
-    <a href="#mock">6 · Mock app</a>
+    <a href="#final">6 · Final journeys</a>
+    <a href="#mock">7 · Mock app</a>
+    <a href="#questions">8 · Questions <span class="c">20</span></a>
   </nav>
 
   <!-- ================= JOURNEYS ================= -->
@@ -526,6 +540,29 @@ textarea{resize:vertical;min-height:54px}
     <div><a class="btn pri" href="#mock" data-mockview="deadlines">Open the deadline tracker in the mock</a></div>
   </section>
 
+  <!-- ================= FINAL JOURNEYS ================= -->
+  <section id="v-final" class="stack" hidden>
+    <div class="card">
+      <h2>How each person will work</h2>
+      <p class="lede" style="margin-top:6px">The proposed journeys for one client's month: Jaro Agri Supply, March 2027 documents, filed in April. Every step opens its screen in the mock.</p>
+      <div class="legend" style="margin-top:10px">
+        <span><span class="chip ok">As built</span> works today, unchanged</span>
+        <span><span class="chip info">Improved</span> built, with the changes proposed here</span>
+        <span><span class="chip warn">New</span> proposed in this review</span>
+      </div>
+    </div>
+    <div id="final-list" class="stack"></div>
+  </section>
+
+  <!-- ================= QUESTIONS ================= -->
+  <section id="v-questions" class="stack" hidden>
+    <div class="card">
+      <h2>Questions for you</h2>
+      <p class="lede" style="margin-top:6px">Numbered so you can answer one by one. Each has my suggestion; “yes” to a suggestion is a complete answer.</p>
+    </div>
+    <div id="q-list" class="stack"></div>
+  </section>
+
   <!-- ================= MOCK APP ================= -->
   <section id="v-mock" hidden>
     <div class="mockbar">
@@ -678,6 +715,79 @@ const SG = [
   "The tag feeds the staff KPIs (Q40) and client compliance scores (Q41) without anyone arguing about whose fault it was."],
 ];
 document.getElementById("safeguards").innerHTML = SG.map((s,i)=>`<div class="rec"><span class="fid">${i+1}</span><div><h3>${s[0]}</h3><p class="muted" style="margin-top:6px;max-width:78ch">${s[1]}</p><p class="why-b"><b>Why:</b> ${s[2]}</p></div></div>`).join("");
+
+/* ---------------- final journeys + questions ---------------- */
+const FJ = [
+ {who:"Preparer",name:"Rhea, preparer",steps:[
+  ["Apr 1–5","Documents arrive by portal, email to invoices@tallocpa.com, or staff upload","Reviews them inside Jaro Agri Supply's own list: figures checked, account title chosen from this client's chart, approve selected. Firm suggestions for a new supplier must be confirmed.","info","F14 · R13 · R11","preparer|docs"],
+  ["Apr 3","The client confirms “I've sent everything for March”","A notice shows the month is complete; the 1601-C's first step is done, so preparing starts before the cutoff.","warn","F15 · R14","preparer|docs"],
+  ["Every morning","Opens My work","Own filings and workpapers ordered by the next step's date, red first: a Critical 1601-C at Molo Bakeshop, a review today at Jaro.","warn","F6 · F11 · R5","preparer|mywork"],
+  ["Apr 6","Prepares the March 1601-C","From payroll register F; tie-out T-6 checks tax withheld against the 1601-C; marks it prepared. Net pay posts to cash in bank.","info","R9 · R10","preparer|file|F"],
+  ["Apr 6–16","Works the Q1 workpapers, generated from the register","Registers B (sales: discount, CWT, net receipt), C (purchases: EWT, net paid; asset titles go to H) and D–F are already filled. Each line shows its entry and where it goes on the returns.","warn","F1 · F12 · F13 · R1 · R9 · R10","preparer|file|B"],
+  ["Apr 6–16","Fixed assets and depreciation","Office tables bought Mar 12 are now asset H-3; input VAT stays on the 2550Q in full; the depreciation schedule generates the monthly entry.","warn","R12","preparer|file|H"],
+  ["Apr 6–16","Explains differences and records adjustments","Tie-outs T-1 to T-10; a difference needs a written reason. Disallowed input VAT is an adjustment with reason and support, not a typed figure.","warn","F2 · F3 · R2 · R3","preparer|file|T"],
+  ["Apr 16","Answers review notes, marks the 2550Q prepared","Prepared only when tie-outs are clean, B and C are signed and their notes are cleared.","warn","F5 · R4","preparer|file|A"],
+  ["Apr 23–26","Files, pays and records the proof","As built: filing reference and proof go to the client's Returns. The filing closes only with both.","ok","Safeguard 5","preparer|deadlines"],
+ ]},
+ {who:"Reviewer",name:"Marco, reviewer",steps:[
+  ["Every morning","Opens My work","Registers waiting for review, and At risk filings on the clients he reviews, first.","warn","F6 · R5","reviewer|mywork"],
+  ["Apr 7","Reviews the 1601-C and the registers","Ticks lines agreed to documents and traced to the books; opens each line's entry and tax part.","warn","R1 · R9","reviewer|file|B"],
+  ["Apr 7–19","Raises review notes on a row","Notes are anchored to a register and row; the preparer answers; he clears them.","warn","F5 · R4","reviewer|file|N"],
+  ["Apr 19","Checks adjustments and tie-outs, signs","Ticks each adjustment; signs a register only when its notes are cleared. A later adjustment clears his signature.","warn","F3 · R2 · R3","reviewer|file|C"],
+  ["When stuck","Watches At risk filings","The Deadlines tracker shows the steps and whose they are; he reviews late ones first.","warn","F11","reviewer|deadlines"],
+ ]},
+ {who:"Owner",name:"You, Owner",steps:[
+  ["Every morning","Opens the Deadlines tracker for the month","Every client × form in one grid: Critical, At risk, coverage gaps, filed. Assigns a preparer to Arevalo, adds Oton's missing 1601-C obligation.","warn","F11 · R8","owner|deadlines"],
+  ["As returns arrive","Gives the final approval with the approval memo","Tax due against the last period, rate on sales, adjustments, tie-outs, review notes, who prepared and reviewed, then the payment check you already have.","info","F7 · R6","owner|approval"],
+  ["Monthly","Watches money, people and clients","Collections, staff load, scores, amendments and the acting approver: as built.","ok","Q21–Q41","owner|deadlines"],
+  ["Once, then rarely","Sets the policies","Deadline step targets, tie-out tolerance, capitalization threshold, useful lives, the SC/PWD account: the Questions tab.","warn","Questions","owner|deadlines"],
+  ["Quarter end","Releases reports, keeps the binder","Reports released to the portal (as built); the period's workpapers print as a binder for an LOA.","info","R1 · W4","owner|approval"],
+ ]},
+ {who:"Client",name:"The client (for reference)",steps:[
+  ["During the month","Uploads in the portal or emails invoices@tallocpa.com","Either way the documents land in the same review.","info","R11","client|portal"],
+  ["By the cutoff","Sees what was sent, answers gaps, confirms the month","Missing invoice numbers: uploaded or cancelled? Then “I've sent everything for March”.","warn","F15 · R14","client|portal"],
+  ["After","Sees what happens next and approves returns","A timeline with dates for checking, each approval, filing and proof; one-click approval as built.","warn","R14","client|portal"],
+ ]},
+];
+const FCH = {ok:"As built",info:"Improved",warn:"New"};
+document.getElementById("final-list").innerHTML = FJ.map(j=>`<div class="card"><div class="card-h"><h2>${j.name}</h2><span class="chip neutral">${j.who}</span></div>${j.steps.map((st,i)=>`<div class="fstep"><span class="n">${i+1}</span><div style="min-width:0"><p class="when">${st[0]}</p><div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><b>${st[1]}</b><span class="chip ${st[3]}">${FCH[st[3]]}</span></div><p class="muted" style="margin-top:4px;max-width:75ch">${st[2]}</p><p class="fx">Answers ${st[4]}</p></div><button class="btn sm" data-jump="${st[5]}">Open in mock</button></div>`).join("")}</div>`).join("");
+
+const QS = [
+ ["Before go-live",[
+  ["Which slices should be ready for the January 2027 cycle?","D1 deadline safeguards, P1 portal completion and per-client documents, and W1 registers with tie-outs. R1 (one register) too if it fits; otherwise W1's tie-outs cover the gap until it lands."],
+  ["Is it right that every client, tax-only included, gets an account title on every register line, with the engagement deciding only which outputs you deliver and bill?","Yes. The 1701Q/1702Q needs the titles anyway."],
+  ["Can you share a blank sales, purchases and payroll worksheet you use now?","So the registers copy your exact column order and names."],
+ ]],
+ ["Deadlines",[
+  ["Are the 1601-C step dates right (register Apr 5, prepared 6, reviewed 7, client approval 8, your approval and filing 9, proof 12), or do you work to an earlier internal deadline?","As shown, with the last internal target one working day before the BIR date."],
+  ["What time should the morning email go out?","7:00 am Manila."],
+ ]],
+ ["Workpapers",[
+  ["W/P reference letters: keep A–T as drafted, or match your audit working-paper index?","Match your audit index if you have one in use, so staff see one system."],
+  ["How large a tie-out difference blocks “Mark prepared”?","₱1, for rounding only."],
+  ["Must the reviewer sign every register, or only sales (B), purchases (C) and tie-outs (T)?","B, C and T always; the others when they have activity."],
+ ]],
+ ["Entries and cash",[
+  ["Which account and BIR line for the SC/PWD discount? My understanding is RR 7-2010 lets the seller deduct it from gross income.","Its own account, Sales Discount – SC/PWD, mapped to a deduction line. Please confirm your treatment."],
+  ["CWT still without a 2307 at year end: charge it to expense, or keep it pending another request?","Keep pending until the annual return is prepared, then you decide per client."],
+  ["Client default cash account: cash sales to the bank, or Cash on Hand until deposited?","Set per client at onboarding: bank for clients who deposit daily, cash on hand otherwise."],
+ ]],
+ ["Fixed assets",[
+  ["Capitalization threshold?","₱10,000 per item, as in the mock."],
+  ["Default useful life per class?","Furniture and fixtures 60 months, office and transportation equipment 60, IT equipment 36, building 240; changeable per asset."],
+  ["Residual value?","Zero unless set per asset."],
+  ["Does depreciation start in the month of purchase or the month after?","The month after, as in the mock."],
+  ["Confirm that input VAT on capital goods is claimed in full in the quarter of purchase since 2022 (TRAIN law, RR 13-2018).","Yes; only purchases before 2022 were spread over 60 months."],
+  ["Vehicles: track book and tax depreciation separately for the RR 12-2012 limits?","Flag vehicles over the limit and keep a tax column only for those."],
+ ]],
+ ["Client portal and intake",[
+  ["Should the missing-invoice check block “I've sent everything” until answered, or only warn?","Block, as in the mock. The answer takes one tap."],
+  ["After confirming, can the client undo it before the cutoff, or must they ask you to reopen the month?","They can undo it themselves until the cutoff; after that, staff reopen it."],
+  ["Which mailbox hosts invoices@tallocpa.com, and is invoices+CODE@tallocpa.com acceptable for people who handle several businesses?","Google Workspace if that's your mail; plus-addressing works there."],
+ ]],
+];
+let qn=0;
+document.getElementById("q-list").innerHTML = QS.map(([g,qs])=>`<div class="card qgrp"><h3>${g}</h3>${qs.map(([q,sug])=>{qn++;return `<div class="q"><span class="qn">${qn}</span><div style="min-width:0"><p>${q}</p><p class="sug"><b>My suggestion:</b> ${sug}</p></div></div>`;}).join("")}</div>`).join("");
 
 /* ---------------- mock state ---------------- */
 const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"},client:{i:"AR",n:"Ana R.",r:"Client · Jaro Agri Supply"}};
@@ -1219,6 +1329,12 @@ $("#roleSeg").addEventListener("click",e=>{
   render();
 });
 document.addEventListener("click",e=>{
+  const j=e.target.closest("[data-jump]"); if(!j) return;
+  const [role,view,extra]=j.dataset.jump.split("|");
+  setRole(role); S.view=view; if(view==="file"&&extra) S.sched=extra;
+  location.hash="#mock"; render(); window.scrollTo(0,0);
+});
+document.addEventListener("click",e=>{
   const a=e.target.closest("[data-mockview]"); if(!a) return;
   setRole("owner"); S.view=a.dataset.mockview; render();
 });
@@ -1283,7 +1399,7 @@ document.getElementById("v-mock").addEventListener("submit",e=>{
 });
 
 /* ---------------- routing ---------------- */
-const views=["journeys","findings","recommendations","flow","deadlines","mock"];
+const views=["journeys","findings","recommendations","flow","deadlines","final","mock","questions"];
 function route(){
   const h=(location.hash||"#journeys").slice(1); const v=views.includes(h)?h:"journeys";
   views.forEach(x=>document.getElementById("v-"+x).hidden = x!==v);
