@@ -193,6 +193,12 @@ describe.skipIf(!url)("ledger database", () => {
     expect(total).toBe(0);
   });
 
+  it("records the loose-leaf books permit for assigned staff only", async () => {
+    await expect(asCommit(OTHER_STAFF, `select public.set_books_permit($1, 'x')`, [clientA])).rejects.toThrow(/Only the Owner or staff assigned/);
+    await asCommit(STAFF, `select public.set_books_permit($1, ' ORUS 2026-12345 ')`, [clientA]);
+    expect((await db.query(`select books_permit from public.client_books where client_id = $1`, [clientA])).rows[0].books_permit).toBe("ORUS 2026-12345");
+  });
+
   it("shows the books to staff who can see the client, never to client users or other staff", async () => {
     const count = (user: string, table: string) =>
       as(user, async () => Number((await db.query(`select count(*) from public.${table} where client_id = $1`, [clientA])).rows[0].count));

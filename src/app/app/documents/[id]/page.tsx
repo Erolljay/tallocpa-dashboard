@@ -12,7 +12,8 @@ import { lookupParties } from "@/lib/parties/lookup";
 import { resolveParty } from "@/lib/parties/resolve";
 import { partyKey } from "@/lib/parties/tin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { ReviewForm } from "./review-form";
+import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { ReviewForm, type Booking } from "./review-form";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
   return (
@@ -28,7 +29,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const supabase = await supabaseServer();
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, return_reason, client_reply, created_at, clients(name)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, return_reason, client_reply, created_at, ledger_account_id, clients(name)")
     .eq("id", id)
     .maybeSingle();
   if (!doc) notFound();
@@ -66,6 +67,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const resolved = entry ? resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry) : null;
   const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year });
   const client = doc.clients as unknown as { name: string } | null;
+  const booking = await loadBooking(supabase, doc, entry?.id ?? null);
   const isPdf = doc.mime_type === "application/pdf";
 
   return (
@@ -111,9 +113,48 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
             canRead={canAct && !ext?.approved_at}
             model={ext?.model ?? null}
             directory={resolved && { partyId: resolved.party!.id, name: resolved.name, tin: resolved.tin, address: resolved.address, verified: Boolean(resolved.party!.verified_at), warning: resolved.warning }}
+            booking={booking}
           />
         </div>
       </div>
     </>
   );
+}
+
+const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
+
+/** The books side of the review: only for clients whose books are set up, and document types that are booked. */
+async function loadBooking(
+  supabase: Awaited<ReturnType<typeof supabaseServer>>,
+  doc: { id: string; client_id: string; doc_type: string; ledger_account_id: string | null },
+  partyId: string | null,
+): Promise<Booking | null> {
+  if (!BOOKED_TYPES.includes(doc.doc_type)) return null;
+  const { data: books } = await supabase.from("client_books").select("client_id").eq("client_id", doc.client_id).maybeSingle();
+  if (!books) return null;
+  const [{ data: accounts }, { data: def }, { data: entries }, history, preset] = await Promise.all([
+    supabase.from("ledger_accounts").select("id, code, name, type, active").eq("client_id", doc.client_id).order("sort_order").order("code"),
+    supabase.rpc("document_account_default", { p_document: doc.id }),
+    supabase.from("journal_entries").select("status, created_at").eq("document_id", doc.id).order("created_at", { ascending: false }).limit(1),
+    partyId ? supabase.from("client_party_accounts").select("account_id").eq("client_id", doc.client_id).eq("party_id", partyId).limit(1) : Promise.resolve({ data: [] }),
+    partyId ? supabase.from("parties").select("preset_account_key").eq("id", partyId).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const accountId = (def as string | null) ?? null;
+  const source = doc.ledger_account_id
+    ? "Chosen for this document."
+    : (history.data ?? []).length
+      ? "The account last used for this supplier or customer."
+      : (preset.data as { preset_account_key: string | null } | null)?.preset_account_key
+        ? "The preset account title for this supplier in the parties directory."
+        : "The default for this kind of document; change it if needed.";
+  return {
+    accounts: (accounts ?? [])
+      .filter((a) => a.active || a.id === accountId)
+      .map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type as keyof typeof ACCOUNT_TYPES] })),
+    accountId,
+    source,
+    entry: entries?.[0] ? { status: entries[0].status as "suggested" | "posted" | "reversed" } : null,
+    terms: doc.doc_type === "sales_invoice" || doc.doc_type === "purchase_receipt",
+    booksHref: `/app/clients/${doc.client_id}/books`,
+  };
 }

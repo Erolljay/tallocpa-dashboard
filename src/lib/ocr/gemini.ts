@@ -18,6 +18,7 @@ Return every field you can read; use null for a field that is not on the documen
 - party_name, party_tin, party_address: the OTHER party — the seller on a purchase receipt, the buyer/customer on a sales invoice, the payor (withholding agent) on a 2307.
 - vatable, vat_exempt, zero_rated, vat, total: amounts in pesos as plain numbers, no currency sign or commas.
 - atc and withholding: the ATC code and tax withheld, on a 2307 only.
+- payment_terms: on an invoice or receipt, "cash" if it is a cash sale / paid in cash (the "Cash" box is ticked or it is an official receipt for payment), "charge" if it is a charge / credit sale on account (the "Charge" box is ticked, or it shows terms such as "30 days"); null if the document does not say.
 For each field also give your confidence from 0 to 1 that you read it exactly right.`;
 
 const nullableString = { type: "STRING", nullable: true };

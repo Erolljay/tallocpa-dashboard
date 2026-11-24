@@ -5,7 +5,7 @@ import { useActionState, useRef, useState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/documents/actions";
 import type { Issue } from "@/lib/ocr/checks";
-import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
+import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PAYMENT_TERMS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { approveDocumentAction } from "./actions";
 
 const typeLabel: Record<string, string> = {
@@ -26,8 +26,25 @@ export interface DirectoryParty {
   warning: string | null;
 }
 
+/**
+ * Booking a bookkeeping client's document (spec §3.6): the account title it goes
+ * to, prefilled from the client's history with the party, then the party's
+ * firm-wide preset, then the default for the document type.
+ */
+export interface Booking {
+  accounts: { id: string; label: string; group: string }[];
+  accountId: string | null;
+  /** Where the default came from, for the hint. */
+  source: string;
+  /** The document's journal entry, if any. */
+  entry: { status: "suggested" | "posted" | "reversed" } | null;
+  /** Whether cash / charge applies (sales and purchases). */
+  terms: boolean;
+  booksHref: string;
+}
+
 /** The figures beside the image: low-confidence fields highlighted, check warnings inline. */
-export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null }) {
+export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null; booking?: Booking | null }) {
   const [state, approve, pending] = useActionState(approveDocumentAction.bind(null, props.documentId, props.mode), {} as DocActionState);
   const [retState, ret, retPending] = useActionState(reviewDocumentAction.bind(null, props.documentId, "return"), {} as DocActionState);
   const [readState, read, readPending] = useActionState(async () => runOcrAction(props.documentId), {} as DocActionState);
@@ -69,6 +86,11 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
                       <option value="">—</option>
                       {OCR_DOC_TYPES.map((t) => <option key={t} value={t}>{typeLabel[t]}</option>)}
                     </Select>
+                  ) : f.kind === "terms" ? (
+                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
+                      <option value="">Not stated (cash)</option>
+                      {Object.entries(PAYMENT_TERMS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                    </Select>
                   ) : (
                     <Input
                       id={id}
@@ -99,6 +121,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
             )}
           </div>
         )}
+        {props.booking && <BookingFields booking={props.booking} canAct={props.canAct} />}
         {props.issues.some((i) => !OCR_FIELDS.some((f) => f.key === i.field)) && (
           <Notice tone="waiting">{props.issues.filter((i) => !OCR_FIELDS.some((f) => f.key === i.field)).map((i) => i.message).join(" ")}</Notice>
         )}
@@ -130,6 +153,37 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+const ENTRY_STATUS = { suggested: "Suggested entry waiting to be confirmed", posted: "Posted to the books", reversed: "Entry reversed" } as const;
+
+/** Account title for the books, inside the approve form (field `ledger_account`). */
+function BookingFields({ booking, canAct }: { booking: Booking; canAct: boolean }) {
+  const locked = booking.entry?.status === "posted";
+  const groups = [...new Set(booking.accounts.map((a) => a.group))];
+  return (
+    <div className="space-y-2 rounded-xl bg-background-secondary-default p-3">
+      <Field
+        label="Account title (books)"
+        htmlFor="ledger_account"
+        hint={locked ? "Posted: reverse the entry on the Books page to change it." : booking.source}
+      >
+        <Select id="ledger_account" name="ledger_account" defaultValue={booking.accountId ?? ""} disabled={!canAct || locked}>
+          <option value="">Choose…</option>
+          {groups.map((g) => (
+            <optgroup key={g} label={g}>
+              {booking.accounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+            </optgroup>
+          ))}
+        </Select>
+      </Field>
+      <p className="text-caption-1-regular text-text-tertiary">
+        {booking.entry ? ENTRY_STATUS[booking.entry.status] : "Approving makes a suggested journal entry"}
+        {booking.terms ? "; a charge opens a receivable or payable for the customer or supplier." : "."}{" "}
+        <Link href={booking.booksHref} className="hover:underline">Books</Link>
+      </p>
     </div>
   );
 }

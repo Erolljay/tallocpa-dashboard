@@ -26,6 +26,12 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
   revalidatePath("/app", "layout");
   revalidatePath("/portal", "layout");
   const clientId = (data as { client_id?: string } | null)?.client_id;
+  // Bookkeeping clients: the approved document becomes a suggested journal entry (no-op for other clients).
+  if (form.has("ledger_account")) {
+    const account = String(form.get("ledger_account") ?? "");
+    const booked = await supabase.rpc("book_document", { p_document: documentId, p_account: account || null });
+    if (booked.error) return { error: `The figures were approved, but the document was not booked: ${booked.error.message}` };
+  }
   if (mode === "edit" && clientId) redirect(`/app/documents?tab=approved&client=${clientId}`);
   redirect(clientId ? `/app/documents?client=${clientId}` : "/app/documents");
 }

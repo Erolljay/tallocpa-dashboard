@@ -18,7 +18,21 @@ export const OCR_FIELDS = [
   { key: "total", label: "Total", kind: "amount" },
   { key: "atc", label: "ATC (2307)", kind: "text" },
   { key: "withholding", label: "Tax withheld (2307)", kind: "amount" },
+  { key: "payment_terms", label: "Cash or charge", kind: "terms" },
 ] as const;
+
+/** Invoice terms: a cash sale/purchase, or a charge (on account) that opens a receivable or payable. */
+export const PAYMENT_TERMS = { cash: "Cash", charge: "Charge (on account)" } as const;
+export type PaymentTerms = keyof typeof PAYMENT_TERMS;
+
+/** "Cash", "CASH SALE" → cash; "Charge", "on account", "credit", "terms" → charge; anything else → null. */
+export function normalizeTerms(v: string | null | undefined): PaymentTerms | null {
+  const t = (v ?? "").trim().toLowerCase();
+  if (!t) return null;
+  if (/^cash/.test(t)) return "cash";
+  if (/charge|account|credit|terms|\bnet\b|days/.test(t)) return "charge";
+  return null;
+}
 
 export type FieldKey = (typeof OCR_FIELDS)[number]["key"];
 export type OcrFields = Partial<Record<FieldKey, string | null>>;
@@ -64,6 +78,7 @@ export function normalizeFields(f: OcrFields): OcrFields {
     if (def.kind === "amount") out[def.key] = normalizeAmount(v);
     if (def.kind === "tin") out[def.key] = v == null ? null : (normalizeTin(v) ?? v);
     if (def.kind === "date") out[def.key] = v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    if (def.kind === "terms") out[def.key] = normalizeTerms(v);
   }
   return out;
 }

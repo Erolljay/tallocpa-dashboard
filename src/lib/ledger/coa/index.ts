@@ -201,3 +201,18 @@ export function templatePayload(code: TemplateCode) {
     fs_line: a.fsLine, bir_line: a.birLine, control: a.control, sort_order: (i + 1) * 10,
   }));
 }
+
+/**
+ * Account titles a supplier or customer can be preset to (parties directory):
+ * every income and expense account of the templates, by key. The key finds the
+ * same account in each client's books.
+ */
+export const PRESET_ACCOUNTS: { key: string; name: string; type: AccountType }[] = (() => {
+  const seen = new Map<string, { key: string; name: string; type: AccountType }>();
+  for (const list of Object.values(COA_TEMPLATES)) {
+    for (const a of list) {
+      if (["revenue", "cost", "expense", "other_income"].includes(a.type) && !seen.has(a.key)) seen.set(a.key, { key: a.key, name: a.name, type: a.type });
+    }
+  }
+  return [...seen.values()];
+})();

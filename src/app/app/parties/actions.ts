@@ -64,3 +64,14 @@ export async function mergePartyAction(partyId: string, _: PartyFormState, form:
   revalidatePath("/app/parties", "layout");
   redirect(`/app/parties/${(data as { id: string }).id}`);
 }
+
+/** A party's preset account title for the books (a template key; "" clears it). Any staff member. */
+export async function setPresetAccountAction(partyId: string, _: PartyFormState, form: FormData): Promise<PartyFormState> {
+  await requireStaff();
+  const key = String(form.get("preset_account_key") ?? "");
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("set_party_preset", { p_party: partyId, p_key: key });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/parties/${partyId}`);
+  return { ok: key ? "Preset saved." : "Preset cleared." };
+}
