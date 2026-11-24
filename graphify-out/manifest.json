@@ -378,8 +378,8 @@
     "semantic_hash": ""
   },
   "supabase/tests/db.test.ts": {
-    "mtime": 1795501334.9414983,
-    "seen": 1795501478.3352191,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4433465,
     "ast_hash": "f60d12b758faf2e48d568dc8072ae747",
     "semantic_hash": ""
   },
@@ -588,9 +588,9 @@
     "semantic_hash": ""
   },
   "src/app/portal/documents/page.tsx": {
-    "mtime": 1795500965.332628,
-    "seen": 1795501478.3349028,
-    "ast_hash": "328de97f919a457f31dfae9f5874e5a1",
+    "mtime": 1795503875.6820376,
+    "seen": 1795503887.4373078,
+    "ast_hash": "c42eb9f223071579879ee426ddd42dd1",
     "semantic_hash": ""
   },
   "src/app/portal/documents/reply-form.tsx": {
@@ -852,14 +852,14 @@
     "semantic_hash": ""
   },
   "src/app/app/collections/page.tsx": {
-    "mtime": 1795501424.392347,
-    "seen": 1795501478.3348207,
+    "mtime": 1795503767.7325063,
+    "seen": 1795503887.4348466,
     "ast_hash": "864891fa3f167f9aa65f527b370f9e20",
     "semantic_hash": ""
   },
   "src/app/app/collections/statements/[id]/page.tsx": {
-    "mtime": 1795501411.2246413,
-    "seen": 1795501478.3348222,
+    "mtime": 1795503767.7325063,
+    "seen": 1795503887.43485,
     "ast_hash": "ef56430f88bebbece0abd6d7c7133ddc",
     "semantic_hash": ""
   },
@@ -1068,8 +1068,8 @@
     "semantic_hash": ""
   },
   "src/app/portal/statement/page.tsx": {
-    "mtime": 1795501424.391845,
-    "seen": 1795501478.3349164,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4376793,
     "ast_hash": "2488efecef8f376427ba58827c39ab52",
     "semantic_hash": ""
   },
@@ -1104,8 +1104,8 @@
     "semantic_hash": ""
   },
   "src/components/statement/pay-now.tsx": {
-    "mtime": 1795501378.1124997,
-    "seen": 1795501478.334977,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4391327,
     "ast_hash": "acca0157fdfffa1dbf292a256d169a3a",
     "semantic_hash": ""
   },
@@ -1116,8 +1116,8 @@
     "semantic_hash": ""
   },
   "src/components/statement/statement-view.tsx": {
-    "mtime": 1795501411.2241814,
-    "seen": 1795501478.334983,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.439175,
     "ast_hash": "7dbc74ba28485c2dc5418eca99d757fb",
     "semantic_hash": ""
   },
@@ -1134,8 +1134,8 @@
     "semantic_hash": ""
   },
   "src/lib/brand/profile.ts": {
-    "mtime": 1795501351.820372,
-    "seen": 1795501478.3349895,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4392803,
     "ast_hash": "f4da4ae581d9cca5392941efd6efbb17",
     "semantic_hash": ""
   },
@@ -1158,8 +1158,8 @@
     "semantic_hash": ""
   },
   "src/lib/collections/statement.ts": {
-    "mtime": 1795501344.9931843,
-    "seen": 1795501478.3350022,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4395666,
     "ast_hash": "74acf7fe67ca3004bb1a6a29322a61d5",
     "semantic_hash": ""
   },
@@ -2028,20 +2028,20 @@
     "semantic_hash": ""
   },
   "src/components/statement/proof-review.tsx": {
-    "mtime": 1795501387.4752758,
-    "seen": 1795501478.33498,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4391687,
     "ast_hash": "b692eb4ff33cdabd06bc40e946ac1ff2",
     "semantic_hash": ""
   },
   "src/components/statement/proof-upload.tsx": {
-    "mtime": 1795501368.6752746,
-    "seen": 1795501478.3349817,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.4391718,
     "ast_hash": "e29182adf39cd25e36fc238c413f3a60",
     "semantic_hash": ""
   },
   "src/lib/collections/proof-actions.ts": {
-    "mtime": 1795501344.99272,
-    "seen": 1795501478.3350008,
+    "mtime": 1795503767.7365062,
+    "seen": 1795503887.439563,
     "ast_hash": "95c93967c4b041b129b80ea57626fff6",
     "semantic_hash": ""
   },
@@ -2055,6 +2055,12 @@
     "mtime": 1795500965.2603877,
     "seen": 1795501478.335245,
     "ast_hash": "56b2f9db32197569a4a53b69bd8e859d",
+    "semantic_hash": ""
+  },
+  "src/app/portal/documents/year-select.tsx": {
+    "mtime": 1795503809.5165086,
+    "seen": 1795503887.4373384,
+    "ast_hash": "cd4f21576813d872855cc566d34385e8",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
