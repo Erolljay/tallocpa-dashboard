@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
+import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import type { Branch } from "@/lib/branches";
 import { loadPoints } from "@/lib/people/schema";
@@ -23,12 +23,29 @@ async function StaffList() {
   // The Staff page is the Owner's: staff and reviewers are sent back to the Dashboard.
   await requireOwner();
   const supabase = await supabaseServer();
-  const [{ data: staff }, { data: assignments }, { data: engagements }, { data: branchRows }] = await Promise.all([
+  const results = await Promise.all([
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active, branch_id").order("full_name"),
     supabase.from("staff_assignments").select("user_id, client_id, role"),
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
   ]);
+  // A failed query must not look like "no staff": say so, with the database's reason.
+  const failed = results.find((r) => r.error)?.error;
+  if (failed) {
+    console.error("Staff page query failed", failed);
+    return (
+      <Notice tone="blocked">
+        <p className="text-body-medium">The staff list could not be loaded.</p>
+        <p className="mt-1 text-text-secondary">
+          {failed.message}
+          {failed.code === "42703" || failed.code === "42P01" || failed.code === "PGRST204" || failed.code === "PGRST205"
+            ? " The database is missing a column or table this page needs: apply the pending migrations in supabase/migrations."
+            : " Reload the page; if it keeps happening, check the Supabase logs."}
+        </p>
+      </Notice>
+    );
+  }
+  const [{ data: staff }, { data: assignments }, { data: engagements }, { data: branchRows }] = results;
   const branches = (branchRows ?? []) as Branch[];
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
   // With more than one branch, list people by branch; the Owner stays on top.
