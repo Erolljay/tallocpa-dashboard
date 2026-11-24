@@ -7,11 +7,13 @@ export const inviteStaffSchema = z.object({
   full_name: name,
   email,
   role: z.enum(["reviewer", "staff"], "Choose a role."),
+  branch_id: z.uuid("Choose a branch."),
 });
 
 export const updateStaffSchema = z.object({
   role: z.enum(["reviewer", "staff"]),
   capacity_points: z.coerce.number().min(0).max(500),
+  branch_id: z.uuid("Choose a branch."),
   active: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
 });
 

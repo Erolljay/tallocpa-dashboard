@@ -13,7 +13,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        description="Brand and fee schedule, where clients pay, BIR deadline rules and non-working days. Rule changes move the due dates of filings not yet filed; filed ones keep their dates."
+        description="Brand, fee schedule, branches and your stand-in, where clients pay, BIR deadline rules and non-working days. Rule changes move the due dates of filings not yet filed; filed ones keep their dates."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <Card title="Brand" actions={<Link href="/app/settings/brand" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
@@ -21,6 +21,12 @@ export default function SettingsPage() {
         </Card>
         <Card title="Fee schedule" actions={<Link href="/app/settings/fees" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
           <p className="text-body-regular text-text-secondary">Prices for new clients, quote preview, and how current clients&apos; fees compare.</p>
+        </Card>
+        <Card title="Branches" actions={<Link href="/app/settings/branches" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Iloilo now; add branches as the firm grows. Clients and staff each belong to one.</p>
+        </Card>
+        <Card title="Acting approver" actions={<Link href="/app/settings/acting-approver" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Name a Reviewer to give the final approval while you are away, with a peso limit and a daily digest.</p>
         </Card>
       </div>
       <Suspense fallback={<Skeleton rows={4} />}>

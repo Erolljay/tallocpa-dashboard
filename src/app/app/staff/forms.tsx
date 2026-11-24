@@ -4,11 +4,20 @@ import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import { inviteStaffAction, updateStaffAction, type FormState } from "./actions";
 
-export function InviteStaffForm() {
+type BranchOption = { id: string; name: string; active: boolean };
+
+function BranchOptions({ branches, current }: { branches: BranchOption[]; current?: string | null }) {
+  return branches
+    .filter((b) => b.active || b.id === current)
+    .map((b) => <option key={b.id} value={b.id}>{b.name}{b.active ? "" : " (closed)"}</option>);
+}
+
+export function InviteStaffForm({ branches }: { branches: BranchOption[] }) {
   const [state, action, pending] = useActionState(inviteStaffAction, {} as FormState);
   const e = state.fieldErrors ?? {};
+  const open = branches.filter((b) => b.active);
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-[1fr_1fr_9rem_auto] sm:items-end">
+    <form action={action} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_9rem_10rem_auto] lg:items-end">
       <Field label="Full name" htmlFor="full_name" error={e.full_name}>
         <Input id="full_name" name="full_name" required />
       </Field>
@@ -21,15 +30,21 @@ export function InviteStaffForm() {
           <option value="reviewer">Reviewer</option>
         </Select>
       </Field>
+      <Field label="Branch" htmlFor="branch_id" error={e.branch_id}>
+        <Select id="branch_id" name="branch_id" defaultValue={open.length === 1 ? open[0].id : ""} required>
+          {open.length !== 1 && <option value="" disabled>Choose…</option>}
+          <BranchOptions branches={branches} />
+        </Select>
+      </Field>
       <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add staff"}</Button>
       {(state.ok || (state.error && !state.fieldErrors)) && (
-        <div className="sm:col-span-4"><Notice tone={state.ok ? "done" : "blocked"}>{state.ok ?? state.error}</Notice></div>
+        <div className="sm:col-span-2 lg:col-span-5"><Notice tone={state.ok ? "done" : "blocked"}>{state.ok ?? state.error}</Notice></div>
       )}
     </form>
   );
 }
 
-export function StaffRowForm({ userId, role, capacity, active }: { userId: string; role: string; capacity: number; active: boolean }) {
+export function StaffRowForm({ userId, role, capacity, active, branchId, branches }: { userId: string; role: string; capacity: number; active: boolean; branchId: string | null; branches: BranchOption[] }) {
   const [state, action, pending] = useActionState(updateStaffAction.bind(null, userId), {} as FormState);
   return (
     <form action={action} className="flex flex-wrap items-center gap-2">
@@ -37,6 +52,11 @@ export function StaffRowForm({ userId, role, capacity, active }: { userId: strin
       <Select id={`role-${userId}`} name="role" defaultValue={role} className="w-32">
         <option value="staff">Staff</option>
         <option value="reviewer">Reviewer</option>
+      </Select>
+      <label className="sr-only" htmlFor={`branch-${userId}`}>Branch</label>
+      <Select id={`branch-${userId}`} name="branch_id" defaultValue={branchId ?? ""} className="w-36" required>
+        {!branchId && <option value="" disabled>Branch…</option>}
+        <BranchOptions branches={branches} current={branchId} />
       </Select>
       <label className="sr-only" htmlFor={`cap-${userId}`}>Capacity points</label>
       <Input id={`cap-${userId}`} name="capacity_points" type="number" min={0} max={500} step="1" defaultValue={capacity} className="w-20 text-end tabular-nums" />

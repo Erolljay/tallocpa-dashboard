@@ -16,6 +16,7 @@ const clientFields = {
   book_type: z.enum(["manual", "loose_leaf"]),
   payment_mode: z.enum(["client_pays_direct", "firm_remits"]),
   submission_cutoff_day: z.coerce.number().int().min(1).max(28),
+  branch_id: z.uuid("Choose the branch."),
   tax_types: z.array(z.enum(Object.keys(TAX_TYPES) as [keyof typeof TAX_TYPES, ...(keyof typeof TAX_TYPES)[]])).default([]),
 };
 

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
+import type { Branch } from "@/lib/branches";
 import type { TaxType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
 import { updateClientAction } from "../../actions";
@@ -19,10 +20,11 @@ async function EditClient({ params }: { params: PageProps<"/app/clients/[id]/edi
   const { id } = await params;
   await requireOwner();
   const supabase = await supabaseServer();
-  const [{ data: client }, { data: registration }, { data: open }] = await Promise.all([
+  const [{ data: client }, { data: registration }, { data: open }, { data: branches }] = await Promise.all([
     supabase.from("clients").select("*").eq("id", id).maybeSingle(),
     supabase.from("client_registrations").select("tax_types").eq("client_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("obligations").select("form").eq("client_id", id).is("end_date", null),
+    supabase.from("branches").select("id, code, name, address, active").order("name"),
   ]);
   if (!client) notFound();
 
@@ -38,6 +40,7 @@ async function EditClient({ params }: { params: PageProps<"/app/clients/[id]/edi
     book_type: client.book_type,
     payment_mode: client.payment_mode,
     submission_cutoff_day: client.submission_cutoff_day,
+    branch_id: client.branch_id,
     tax_types: (registration?.tax_types ?? []) as TaxType[],
     open_forms: (open ?? []).map((o) => o.form),
   };
@@ -45,7 +48,7 @@ async function EditClient({ params }: { params: PageProps<"/app/clients/[id]/edi
   return (
     <>
       <PageHeader title={`Edit ${client.name}`} description={<span className="tabular-nums">{client.code}</span>} />
-      <ClientForm mode="edit" action={updateClientAction.bind(null, id)} client={values} />
+      <ClientForm mode="edit" action={updateClientAction.bind(null, id)} client={values} branches={(branches ?? []) as Branch[]} />
     </>
   );
 }

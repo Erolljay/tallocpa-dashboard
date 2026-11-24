@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { Chip } from "@/components/base/badges/chip";
-import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
+import { Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
+import { delegationState, lastDay, type Delegation } from "@/lib/acting/period";
 import { requireStaff } from "@/lib/auth";
 import { addDays } from "@/lib/deadlines/dates";
 import { showMonth } from "@/lib/documents/labels";
+import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
@@ -15,6 +17,9 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Dashboard" description="What needs attention across your clients." />
+      <Suspense fallback={null}>
+        <ActingNotice />
+      </Suspense>
       <Suspense fallback={<Skeleton rows={6} />}>
         <Summary />
       </Suspense>
@@ -22,6 +27,44 @@ export default function DashboardPage() {
         <OwnerView />
       </Suspense>
     </>
+  );
+}
+
+/**
+ * Acting approver (Q58): the stand-in sees that they are acting; the Owner sees who is
+ * acting and how many returns they approved in the last 7 days.
+ */
+async function ActingNotice() {
+  const me = await requireStaff();
+  if (me.staff.role === "staff") return null;
+  const supabase = await supabaseServer();
+  const query = supabase.from("acting_approver_delegations").select("id, delegate_user_id, starts_at, ends_at, max_tax_due, reason, ended_at").is("ended_at", null);
+  const { data } = await (me.staff.role === "owner" ? query : query.eq("delegate_user_id", me.userId));
+  const now = new Date();
+  const active = ((data ?? []) as Delegation[]).find((d) => delegationState(d, now) === "active");
+  if (me.staff.role === "reviewer") {
+    if (!active) return null;
+    return (
+      <div className="mb-6">
+        <Notice tone="waiting">
+          You are the acting approver until the end of {showDate(lastDay(active.ends_at))}, for fully paid returns up to {peso.format(Number(active.max_tax_due))} tax due.{" "}
+          <Link href="/app/review" className="font-medium underline">Open the final approvals</Link>
+        </Notice>
+      </div>
+    );
+  }
+  const since = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+  const { count } = await supabase.from("filing_events").select("id", { count: "exact", head: true }).eq("action", "owner_approve").eq("data->>acting_approver", "true").gte("created_at", since);
+  if (!active && !count) return null;
+  const { data: who } = active ? await supabase.from("staff_profiles").select("full_name").eq("user_id", active.delegate_user_id).maybeSingle() : { data: null };
+  return (
+    <div className="mb-6">
+      <Notice tone="waiting">
+        {active ? `${who?.full_name ?? "A reviewer"} is acting approver until the end of ${showDate(lastDay(active.ends_at))}. ` : ""}
+        {count ? `${count} return${count === 1 ? "" : "s"} approved by an acting approver in the last 7 days. ` : ""}
+        <Link href="/app/settings/acting-approver" className="font-medium underline">Acting approver</Link>
+      </Notice>
+    </div>
   );
 }
 

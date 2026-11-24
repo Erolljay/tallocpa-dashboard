@@ -29,6 +29,12 @@ describe("availableActions", () => {
     expect(availableActions(at("client_approved"), owner)).toEqual(["owner_approve"]);
     expect(availableActions(at("client_approved"), reviewer)).toEqual([]);
   });
+  it("lets the acting approver give it within the limit, not on their own work", () => {
+    const acting: Viewer = { ...reviewer, actingLimit: 50000 };
+    expect(availableActions(at("client_approved", { taxDue: 50000 }), acting)).toEqual(["owner_approve"]);
+    expect(availableActions(at("client_approved", { taxDue: 50000.01 }), acting)).toEqual([]);
+    expect(availableActions(at("client_approved", { taxDue: 100, preparedBy: "r" }), acting)).toEqual([]);
+  });
   it("lets assigned staff record filing, payment and proof", () => {
     expect(availableActions(at("owner_approved"), preparer)).toEqual(["file"]);
     expect(availableActions(at("filed"), preparer)).toEqual(["pay"]);

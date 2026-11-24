@@ -20,7 +20,7 @@ TalloCPA OS is the firm's own operating system. It **replaces Moxie (CRM, projec
 2. Lets clients send their documents themselves, read by OCR, so the firm can price low and scale (Q1, Q8, Q54).
 3. Keeps each client's books as true double-entry and computes returns from them, so the books and the returns can't disagree (Q18, Q22).
 4. Gives the Owner control over approvals, money and staff capacity (Q21, Q25, Q36, Q39–Q41).
-5. Is built from day one to add more service lines and a second brand (Q17, Q60).
+5. Covers exactly four service lines — Tax Compliance, Bookkeeping, Business Registration and BIR LOA Services — and is built to take a second brand (Q17, Q60, Q66).
 
 ### 1.1 Who uses it (Q2, Q21)
 
@@ -39,7 +39,8 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 - Website, lead capture, proposals, e-sign (Phase 2, Q17, Q43)
 - Full billing, issuing BIR invoices, automatic bank matching (Phase 3; BIR invoices stay manual, Q27)
 - Time tracking: **not planned at all**, the firm charges fixed retainers (Q37)
-- Audit, AUP, Business Processing, Systems Implementation, AI & Business Automation, Receivership & Liquidation (later; the data model allows them, Q4, Q17)
+- Business Registration (Phase 1C) and BIR LOA Services with LOA risk analytics (Phase 4), see §2
+- **Not in the OS at all (Q66):** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation, Business Processing, Systems Implementation, AI & Business Automation. These run on another platform.
 - Viber, SMS, Messenger channels (later, through n8n, Q10, Q38)
 - Registering clients' books as a computerized accounting system (CAS) with BIR (Q18)
 - The nationwide brand (later, Q56, Q60)
@@ -52,9 +53,11 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 |---|---|---|
 | **1A — Compliance core** | Brand/entity settings, clients & engagements, filing obligations, deadline engine, client portal + OCR intake + review queue, sign-off chain, Collections & SOA, owner dashboard & scores | **Live for the January 2027 cycle** (December 2026 returns stay in the current tools) |
 | **1B — Bookkeeping** | Per-client ledger, chart-of-accounts templates, posting from reviewed documents, BIR loose-leaf books, returns computed from the ledger, period lock, client reports | A few weeks after 1A; **posts back to 1 January 2027** from opening trial balances as of 31 December 2026 |
+| **1C — Business Registration** | New-business registration as a service: DTI / SEC, barangay and mayor's permit (where served), BIR registration (ORUS, COR / Form 2303, books, invoices), SSS / PhilHealth / Pag-IBIG employer registration; checklist and status per step; the finished COR feeds client onboarding (§4.1) | Right after 1B (Q66) |
 | **2 — Growth** | Public website (tallocpa.com) → lead → auto-quote from COR + fee schedule → proposal → e-signed engagement → client set up automatically | After Phase 1 runs one clean cycle |
 | **3 — Money** | Full billing, retainers, collections, reference-based automatic payment matching | After Phase 2 |
-| **Later** | Other service lines, Receivership & Liquidation module, nationwide brand, Viber/SMS | — |
+| **4 — BIR LOA Services & LOA risk analytics** | (a) Support when a client receives a BIR Letter of Authority: LOA and notices received, BIR deadlines on each notice (e.g. document submission, PAN / FAN replies), documents requested and submitted, assessments and how they were settled. (b) **LOA risk analytics** (§3.15): ratios from each client's ledger and returns compared against benchmarks by industry, to flag clients likely to draw an LOA before BIR does | Last, after Phase 3 (Q66). Analytics need at least one full year of ledger data per client |
+| **Later** | Nationwide brand, Viber/SMS. **No other service lines** are planned (Q66) | — |
 
 **Cutover rule (Q7, Q33):** clients are entered in the OS from their COR (there is no Moxie import, §8); Moxie stays read-only for reference until the OS completes one full monthly cycle, then it is cancelled. Manager.io stays for 2026 books and is retired after the 2026 annual filings.
 
@@ -66,13 +69,14 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 - A **brand** holds: display name, legal name, logo files, color tokens, BIR registration (TIN, RDO, COR), **tax-on-fee setting** (non-VAT 3% percentage tax ↔ 12% VAT), bank and e-wallet accounts for payments, fee schedule, portal domain, email sender.
 - Only **Tallo CPA** is configured now. Every client belongs to one brand.
+- **Branches (Q68):** each brand has branches; **Iloilo** is the only one now. Every client and every staff member except the Owner belongs to one branch. When the Owner assigns a client, staff are listed by branch with the client's branch first. Access still follows assignments, not branches. Settings → Branches adds, renames and closes branches; a closed branch keeps its history.
 - **Gross receipts watch (Q55):** the OS sums the brand's own year-to-date collections and warns the Owner at **₱2.5M**, before the ₱3M VAT registration threshold. Switching the setting to VAT updates SOAs and quotes; existing prices are not changed by themselves.
 
 ### 3.2 Clients & engagements (Q3, Q17, Q33)
 
 - **Client:** taxpayer type (individual / OPC / partnership / corporation / non-stock), TIN, RDO, registered address, COR data (from the COR reader), filing channel (eFPS group or eBIRForms), fiscal year end, book type (manual / loose-leaf), payment mode (firm-remits or client-pays-direct, Q23), assigned Staff and Reviewer, submission cutoff day (default 5th, Q28).
 - **Engagement:** client, brand, **service line**, services subscribed (from the fee schedule), monthly retainer, start date, status. Phase 1 is a minimal record; the full proposal → engagement flow comes in Phase 2.
-- **Service lines** (configured, Phase 1 uses the first two): Tax Compliance, Bookkeeping, Business Processing, FS Audit, Agreed-Upon Procedures, AI & Business Automation, Systems Implementation, Receivership & Liquidation.
+- **Service lines** (final list, Q66): Tax Compliance, Bookkeeping, Business Registration, BIR LOA Services. Phase 1 uses the first two. Audit, AUP, Receivership & Liquidation and the firm's other services are handled on another platform, not in the OS.
 - **Contacts / client users:** several per client, each with a portal login.
 
 ### 3.3 Filing obligations & deadline engine (Q6, Q20)
@@ -172,6 +176,8 @@ Prepared (Staff)
   - Client who pays BIR directly (client-pays-direct): the dues stay as **"BIR payment pending (client)"** with reminders (Q32).
 - The Acting Approver **cannot** approve an unpaid return (Q58).
 
+**Acting approver (Q58), built:** the Owner names one active **Reviewer** at a time in Settings → Acting approver, for whole Manila days, with a limit on the tax due per return and a reason, and can end it early. While named, the Reviewer sees every client-approved return on the Review page and gives the final approval only if the tax due is within the limit, the return is **fully paid** (payment check), and they **did not prepare it**; everything else waits for the Owner. The step is recorded as "as acting approver" with the appointment and limit. The Owner gets a **daily email digest** (nightly job, for the day before) and sees a notice on the Dashboard; Settings → Acting approver lists the last 30 days of such approvals.
+
 ### 3.9 Collections & Statement of Account (Q24–Q27, Q31, Q32)
 
 - **SOA per billing run (Q62):** each client has billing days (default the 10th and 20th; once a month for some). A run issues a statement with whatever is ready and not billed yet: the month's retainer (on the month's first statement), tax due on returns the firm remits once reviewed (withholding on the 10th, VAT on the 20th), SSS / PhilHealth / Pag-IBIG contributions and other charges — plus carried balance − credits. Nothing new means no statement. The nightly job runs each day's billing; the Owner can run it by hand. Unique **payment reference** per SOA (e.g. `TC-0042-2026-11-10`).
@@ -243,6 +249,19 @@ Per client per month:
 - **Retention:** nothing is deleted automatically; keep at least **10 years** (above the 5-year BIR requirement under the EOPT Act).
 
 ---
+
+### 3.15 LOA risk analytics (Phase 4; Q67)
+
+Goal: show which clients look like LOA targets to BIR, early enough to fix the cause, and help keep each client's figures in a defensible range.
+
+- **Ratios per client and period**, computed from the ledger (Phase 1B) and the filed returns, never retyped:
+  - **Effective income tax rate:** income tax due ÷ gross sales or receipts (e.g. the Owner's working floor of about **2%**).
+  - **Gross profit rate (GPR):** gross profit ÷ net sales, compared with the client's industry.
+  - Others to confirm with the Owner: expense-to-sales ratios (e.g. purchases, rent, salaries), VAT payable ÷ VATable sales, input VAT ÷ output VAT, year-on-year swings in sales or tax, repeated losses or zero-tax returns, and gaps between returns (e.g. sales on 2550Q vs the income tax return, salaries on 1601-C vs the ledger).
+- **Benchmarks are data, not code**, like the deadline rules: industry (by PSIC code or the COR line of business) × ratio × floor / range × effective dates × source (BIR issuance, industry study, or the Owner's own rule). The Owner edits them in Settings. **The benchmark figures are the Owner's decision**; the OS ships with none filled in, so no one mistakes a placeholder for a BIR rule.
+- **Firm-wide data:** once enough clients are on the ledger, the OS also shows each industry's actual median and range across the firm's own clients (anonymised), as a cross-check for the Owner's benchmarks.
+- **Output:** an LOA risk score per client (green / yellow / red, like the compliance score), the ratios that caused it, and the trend; a firm-wide list of red clients on the Owner dashboard; a warning on the return worksheet **before** a return goes out with a ratio below its benchmark, so staff and the Reviewer see it at sign-off.
+- The score is a working tool for the firm. It is not shown to clients unless the Owner releases a report to them.
 
 ## 4. Key workflows
 
