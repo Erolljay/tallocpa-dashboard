@@ -107,6 +107,7 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
         description={<>{client.name} · {TEMPLATES[books.template]} chart · books from {fmtDate(books.booksStart)}</>}
         actions={
           <div className="flex flex-wrap items-center gap-3">
+            <LinkButton href={`/app/clients/${id}/books/reports`} variant="secondary">Financial statements</LinkButton>
             <LinkButton href={`/app/clients/${id}/books/accounts`} variant="secondary">Chart of accounts</LinkButton>
             <LinkButton href={`/app/clients/${id}/books/journal/new`} variant="secondary">New journal entry</LinkButton>
             {back}

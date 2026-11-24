@@ -7,6 +7,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import type { OpenItem } from "./arap";
 import type { BookEntry } from "./books";
 import type { OpeningItem } from "./opening";
+import { buildStatements, reportPeriod, type ReportKind, type StatementRow } from "./statements";
 import type { AccountType, Book, Centavos, Control, EntrySource, LedgerAccount, NormalSide, TemplateCode } from "./types";
 
 export interface BooksClient {
@@ -94,6 +95,7 @@ export interface TbRowOut {
   name: string;
   type: AccountType;
   normalSide: NormalSide;
+  fsLine: string;
   opening: Centavos;
   debit: Centavos;
   credit: Centavos;
@@ -109,6 +111,7 @@ export async function loadTrialBalance(supabase: SupabaseClient, clientId: strin
     name: r.name as string,
     type: r.type as AccountType,
     normalSide: r.normal_side as NormalSide,
+    fsLine: r.fs_line as string,
     opening: cents(r.opening),
     debit: cents(r.debit),
     credit: cents(r.credit),
@@ -280,4 +283,46 @@ export async function loadAmendments(supabase: SupabaseClient, clientId: string)
       changesNote: a.changes_note,
     };
   });
+}
+
+/**
+ * The client's financial statements for a report (spec §3.6 slice 6), built
+ * from the ledger now, with the number of suggested entries in the period not
+ * yet posted. `endMonth` is "YYYY-MM".
+ */
+export async function loadStatements(supabase: SupabaseClient, client: BooksClient, kind: ReportKind, endMonth: string) {
+  const p = reportPeriod(kind, endMonth, client.fiscal_year_end_month);
+  if ("error" in p) return { error: p.error } as const;
+  const toRows = (tb: TbRowOut[]): StatementRow[] => tb.map((r) => ({ code: r.code, name: r.name, fsLine: r.fsLine, opening: r.opening, debit: r.debit, credit: r.credit, closing: r.closing }));
+  const [year, period, { count }] = await Promise.all([
+    loadTrialBalance(supabase, client.id, p.yearStart, p.end),
+    p.start !== p.yearStart ? loadTrialBalance(supabase, client.id, p.start, p.end) : Promise.resolve(null),
+    supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", client.id).eq("status", "suggested").gte("entry_date", p.yearStart).lte("entry_date", p.end),
+  ]);
+  const fs = buildStatements({
+    kind,
+    periodStart: p.start,
+    periodEnd: p.end,
+    yearStart: p.yearStart,
+    client: { name: client.name, tin: client.tin, address: client.registered_address },
+    year: toRows(year),
+    period: period ? toRows(period) : undefined,
+  });
+  return { fs, suggested: count ?? 0 } as const;
+}
+
+export interface ReleasedReport {
+  id: string;
+  kind: ReportKind;
+  periodStart: string;
+  periodEnd: string;
+  note: string | null;
+  releasedAt: string;
+}
+
+/** Reports released to the client's portal, newest first (without the statements). */
+export async function loadReleasedReports(supabase: SupabaseClient, clientId: string): Promise<ReleasedReport[]> {
+  const { data, error } = await supabase.from("client_reports").select("id, kind, period_start, period_end, note, released_at").eq("client_id", clientId).order("period_end", { ascending: false }).order("kind");
+  if (error) throw new Error(`Could not load the released reports: ${error.message}`);
+  return (data ?? []).map((r) => ({ id: r.id, kind: r.kind as ReportKind, periodStart: r.period_start, periodEnd: r.period_end, note: r.note, releasedAt: r.released_at }));
 }
