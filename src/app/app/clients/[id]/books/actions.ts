@@ -304,3 +304,21 @@ export async function withdrawReportAction(clientId: string, reportId: string): 
   revalidatePath("/portal/reports", "layout");
   return { ok: "Withdrawn." };
 }
+
+// ---------------------------------------------------------------------------
+// Year-end closing (slice 7).
+// ---------------------------------------------------------------------------
+
+/** Closes the taxable year ending `yearEnd`. Partnerships give each partner's share (form fields share_<account id>). */
+export async function closeYearAction(clientId: string, yearEnd: string, partners: string[], _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  let shares: { account_id: string; percent: number }[] | null = null;
+  if (partners.length > 1) {
+    shares = partners.map((a) => ({ account_id: a, percent: Number(String(form.get(`share_${a}`) ?? "").trim()) }));
+    if (shares.some((s) => !Number.isFinite(s.percent) || s.percent < 0)) return { error: "Enter each partner's share as a percentage." };
+  }
+  const { error } = await supabase.rpc("close_books_year", { p_client: clientId, p_year_end: yearEnd, p_shares: shares });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  return { ok: "Closed." };
+}
