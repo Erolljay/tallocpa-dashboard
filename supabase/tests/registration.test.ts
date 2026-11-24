@@ -11,7 +11,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { closureStepsFor, renewalStepsFor, stepsFor, stepsPayload } from "../../src/lib/registration/steps";
+import { branchStepsFor, closureStepsFor, renewalStepsFor, updateStepsFor, stepsFor, stepsPayload } from "../../src/lib/registration/steps";
 
 const url = process.env.TEST_DATABASE_URL;
 const root = path.resolve(import.meta.dirname, "..");
@@ -222,5 +222,29 @@ describe.skipIf(!url)("business registration", () => {
     expect(periods).toEqual(["2027-01-01", "2027-04-01"]);
     expect((await db.query(`select status, end_date::text from public.engagements where client_id = $1`, [client])).rows).toEqual([{ status: "ended", end_date: "2027-05-31" }]);
     await expect(openClientCase(OWNER, client, "renewal", { period_year: 2028 }, stepsPayload(renewalStepsFor("corporation", { lguServed: true, dtiDue: false })))).rejects.toThrow(/no longer active/);
+  });
+  it("files a BIR update; a tax type change needs the new tax setup on the client before completing", async () => {
+    const client = await activeClient("Going VAT Corp");
+    const steps = stepsPayload(updateStepsFor("corporation", ["tax_types"], { lguServed: true, employer: false }));
+    await expect(openClientCase(OWNER, client, "bir_update", { effective_date: "2027-07-01", changes: [] }, steps)).rejects.toThrow(/Choose what changes/);
+    await expect(openClientCase(OWNER, client, "bir_update", { changes: ["tax_types"] }, steps)).rejects.toThrow(/date of the change/);
+    const k = await openClientCase(OWNER, client, "bir_update", { effective_date: "2027-07-01", changes: ["tax_types"] }, steps);
+    expect((await db.query(`select details from public.registration_cases where id = $1`, [k.id])).rows[0].details).toEqual({ changes: ["tax_types"] });
+    await finishAll(k.id, "111-222-333-00000");
+    await expect(as(OWNER, `select public.complete_registration_case($1)`, [k.id])).rejects.toThrow(/new tax types on the client/);
+    await as(OWNER, `insert into public.client_registrations (client_id, registration_date, tax_types) values ($1, '2027-07-01', '["income_tax", "vat"]')`, [client]);
+    expect((await as(OWNER, `select * from public.complete_registration_case($1)`, [k.id])).rows[0].status).toBe("completed");
+    expect((await db.query(`select status from public.clients where id = $1`, [client])).rows[0].status).toBe("active");
+  });
+
+  it("opens several branches at once, each needing a name", async () => {
+    const client = await activeClient("Many Branches Corp");
+    const steps = stepsPayload(branchStepsFor("corporation", { lguServed: true }));
+    await expect(openClientCase(OWNER, client, "branch", { branch_name: " " }, steps)).rejects.toThrow(/branch name/);
+    const a = await openClientCase(OWNER, client, "branch", { branch_name: "Jaro branch" }, steps);
+    const b = await openClientCase(OWNER, client, "branch", { branch_name: "Mandurriao branch" }, steps);
+    expect(a.id).not.toBe(b.id);
+    await finishAll(a.id, "111-222-333-00001");
+    expect((await as(OWNER, `select * from public.complete_registration_case($1)`, [a.id])).rows[0].status).toBe("completed");
   });
 });

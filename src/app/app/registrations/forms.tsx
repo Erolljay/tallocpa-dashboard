@@ -5,9 +5,9 @@ import { Badge, Button, Card, Field, Input, Notice, Select, Textarea } from "@/c
 import type { Branch } from "@/lib/branches";
 import { months, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAXPAYER_TYPES, type TaxpayerType } from "@/lib/clients/obligations";
-import { AGENCIES, closureStepsFor, renewalStepsFor, STEP_STATUSES, stepsFor, type PlannedStep, type StepStatus } from "@/lib/registration/steps";
+import { AGENCIES, branchStepsFor, closureStepsFor, renewalStepsFor, STEP_STATUSES, stepsFor, UPDATE_CHANGES, updateStepsFor, type PlannedStep, type StepStatus, type UpdateChange } from "@/lib/registration/steps";
 import { StaffOptions } from "../clients/client-form";
-import { cancelRegistrationAction, completeRegistrationAction, openClientCaseAction, openRegistrationAction, openYearRenewalsAction, updateStepAction, type FormState } from "./actions";
+import { cancelRegistrationAction, completeRegistrationAction, openClientCaseAction, openRegistrationAction, openYearRenewalsAction, updateStepAction, type ClientCaseKind, type FormState } from "./actions";
 
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
@@ -232,22 +232,42 @@ function Check({ name, checked, onChange, label, hint }: { name: string; checked
   );
 }
 
-/** Annual renewal or closure for an existing client. */
-export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: { clientId: string; taxpayerType: TaxpayerType; kind: "renewal" | "closure"; year: number; dtiDue: boolean }) {
+const caseTitle: Record<ClientCaseKind, string> = {
+  renewal: "Renewal",
+  bir_update: "What changes",
+  branch: "The branch",
+  closure: "Closing the business",
+};
+const caseNote: Record<ClientCaseKind, string> = {
+  renewal: "Completing the renewal only closes this case.",
+  bir_update: "When tax types change, enter the new tax setup on the client (Edit, with the date of the change) before completing; that starts and ends the filing obligations.",
+  branch: "Completing the branch registration only closes this case.",
+  closure: "Completing the closure ends the client's filing obligations after the closing date, ends its engagements and makes it inactive.",
+};
+const submitLabel: Record<ClientCaseKind, string> = { renewal: "Open renewal", bir_update: "Open BIR update", branch: "Open branch registration", closure: "Open closure" };
+
+/** Renewal, BIR update, branch or closure for an existing client. */
+export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: { clientId: string; taxpayerType: TaxpayerType; kind: ClientCaseKind; year: number; dtiDue: boolean }) {
   const [state, action, pending] = useActionState(openClientCaseAction.bind(null, clientId, kind), {} as FormState);
   const [lguServed, setLguServed] = useState(true);
   const [employer, setEmployer] = useState(false);
   const [dti, setDti] = useState(dtiDue);
+  const [changes, setChanges] = useState<UpdateChange[]>([]);
   const e = state.fieldErrors ?? {};
-  const preview = kind === "renewal" ? renewalStepsFor(taxpayerType, { lguServed, dtiDue: dti }) : closureStepsFor(taxpayerType, { lguServed, employer });
+  const preview =
+    kind === "renewal" ? renewalStepsFor(taxpayerType, { lguServed, dtiDue: dti })
+    : kind === "bir_update" ? updateStepsFor(taxpayerType, changes, { lguServed, employer })
+    : kind === "branch" ? branchStepsFor(taxpayerType, { lguServed })
+    : closureStepsFor(taxpayerType, { lguServed, employer });
+  const toggle = (c: UpdateChange) => setChanges((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
 
   return (
     <form action={action} className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="space-y-6">
         {state.error && !state.fieldErrors && <Notice tone="blocked">{state.error}</Notice>}
-        <Card title={kind === "renewal" ? "Renewal" : "Closing the business"}>
+        <Card title={caseTitle[kind]}>
           <div className="grid gap-4 sm:grid-cols-2">
-            {kind === "renewal" ? (
+            {kind === "renewal" && (
               <>
                 <Field label="Permits for the year" htmlFor="period_year" error={e.period_year}>
                   <Input id="period_year" name="period_year" type="number" min={2000} max={2100} required defaultValue={year} className="tabular-nums" />
@@ -256,23 +276,65 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
                   <Input id="target_date" name="target_date" type="date" defaultValue={`${year}-01-20`} />
                 </Field>
               </>
-            ) : (
+            )}
+            {kind === "bir_update" && (
               <>
-                <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
+                <fieldset className="grid gap-2 sm:col-span-2">
+                  <legend className="mb-1 text-body-medium text-text-primary">Changes filed on Form 1905</legend>
+                  {(Object.keys(UPDATE_CHANGES) as UpdateChange[]).map((c) => (
+                    <label key={c} className="flex items-center gap-3 text-body-regular text-text-primary">
+                      <input type="checkbox" name="changes" value={c} checked={changes.includes(c)} onChange={() => toggle(c)} className="size-4 shrink-0" />
+                      {UPDATE_CHANGES[c]}
+                    </label>
+                  ))}
+                  {e.changes && <p className="text-caption-1-medium text-text-error-primary">{e.changes}</p>}
+                </fieldset>
+                <Field label="Date of the change" htmlFor="effective_date" error={e.effective_date} hint="For a tax type change, the date it takes effect.">
                   <Input id="effective_date" name="effective_date" type="date" required />
                 </Field>
-                <Field label="Target date" htmlFor="target_date" error={e.target_date}>
-                  <Input id="target_date" name="target_date" type="date" />
+                <Field label="New city / municipality" htmlFor="lgu" error={e.lgu} hint="For an address change or transfer.">
+                  <Input id="lgu" name="lgu" />
                 </Field>
               </>
             )}
+            {kind === "branch" && (
+              <>
+                <div className="sm:col-span-2">
+                  <Field label="Branch name and address" htmlFor="branch_name" error={e.branch_name}>
+                    <Input id="branch_name" name="branch_name" required placeholder="Jaro branch, E. Lopez St., Jaro" />
+                  </Field>
+                </div>
+                <Field label="City / municipality" htmlFor="lgu" error={e.lgu}>
+                  <Input id="lgu" name="lgu" />
+                </Field>
+              </>
+            )}
+            {kind === "closure" && (
+              <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
+                <Input id="effective_date" name="effective_date" type="date" required />
+              </Field>
+            )}
+            {kind !== "renewal" && (
+              <Field label="Target date" htmlFor="target_date" error={e.target_date}>
+                <Input id="target_date" name="target_date" type="date" />
+              </Field>
+            )}
             <div className="grid gap-3 sm:col-span-2">
-              <Check name="lgu_served" checked={lguServed} onChange={setLguServed} label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : "Barangay and City Hall closure"} hint="Leave unticked when the client handles these themselves." />
+              <Check
+                name="lgu_served"
+                checked={lguServed}
+                onChange={setLguServed}
+                label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : kind === "closure" ? "Barangay and City Hall closure" : "Barangay and City Hall"}
+                hint="Leave unticked when the client handles these themselves."
+              />
               {kind === "renewal" && taxpayerType === "individual" && (
                 <Check name="dti_due" checked={dti} onChange={setDti} label="DTI business name is due for renewal" hint="Every 5 years from registration." />
               )}
               {kind === "closure" && (
                 <Check name="employer" checked={employer} onChange={setEmployer} label="Close the SSS, PhilHealth and Pag-IBIG employer numbers" hint="Tick when the business had employees." />
+              )}
+              {kind === "bir_update" && (
+                <Check name="employer" checked={employer} onChange={setEmployer} label="Update the SSS, PhilHealth and Pag-IBIG employer records" hint="For a new name or address, when the business has employees." />
               )}
             </div>
             <div className="sm:col-span-2">
@@ -283,13 +345,10 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
           </div>
         </Card>
         <div className="flex justify-end">
-          <Button type="submit" disabled={pending}>{pending ? "Opening…" : kind === "renewal" ? "Open renewal" : "Open closure"}</Button>
+          <Button type="submit" disabled={pending}>{pending ? "Opening…" : submitLabel[kind]}</Button>
         </div>
       </div>
-      <ChecklistPreview
-        steps={preview}
-        note={kind === "renewal" ? "Completing the renewal only closes this case." : "Completing the closure ends the client's filing obligations after the closing date, ends its engagements and makes it inactive."}
-      />
+      <ChecklistPreview steps={preview} note={caseNote[kind]} />
     </form>
   );
 }

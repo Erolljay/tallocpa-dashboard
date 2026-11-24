@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birForm, closureStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
+import { birForm, branchStepsFor, closureStepsFor, updateStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
 
 const codes = (...args: Parameters<typeof stepsFor>) => stepsFor(...args).map((s) => s.code);
 const all = { lguServed: true, employer: true };
@@ -137,6 +137,46 @@ describe("closureStepsFor", () => {
     expect(steps.map((s) => s.code)).toContain("dti_cancellation");
     expect(steps.filter((s) => s.status === "not_applicable").map((s) => s.code)).toEqual([
       "barangay_closure", "mayors_retirement", "sss_employer_closure", "philhealth_employer_closure", "pagibig_employer_closure",
+    ]);
+  });
+});
+
+describe("updateStepsFor", () => {
+  const codes = (...a: Parameters<typeof updateStepsFor>) => updateStepsFor(...a).map((s) => s.code);
+  const all = { lguServed: true, employer: true };
+
+  it("registers VAT with Form 1905, an updated COR, new invoices and books", () => {
+    expect(codes("corporation", ["tax_types"], all)).toEqual(["bir_1905", "bir_cor", "bir_invoices", "bir_books", "bir_display"]);
+  });
+  it("moves a corporation to another city: SEC, barangay, both City Halls, BIR transfer, employer records", () => {
+    expect(codes("corporation", ["rdo_transfer"], all)).toEqual([
+      "sec_amendment", "barangay_clearance", "mayors_permit_new", "mayors_retirement_old",
+      "bir_1905", "bir_rdo_transfer", "bir_cor", "bir_invoices", "bir_books", "bir_display",
+      "sss_employer_update", "philhealth_employer_update", "pagibig_employer_update",
+    ]);
+  });
+  it("changes a sole proprietor's address in the same city through DTI and an amended permit", () => {
+    expect(codes("individual", ["address"], all)).toEqual([
+      "dti_amendment", "barangay_clearance", "mayors_permit_amendment", "bir_1905", "bir_cor", "bir_invoices", "bir_display",
+      "sss_employer_update", "philhealth_employer_update", "pagibig_employer_update",
+    ]);
+  });
+  it("lists each step once when changes are combined, and marks what the firm does not handle", () => {
+    const steps = updateStepsFor("individual", ["name", "address", "tax_types"], { lguServed: false, employer: false });
+    expect(new Set(steps.map((s) => s.code)).size).toBe(steps.length);
+    expect(steps.find((s) => s.code === "mayors_permit_amendment")?.status).toBe("not_applicable");
+    expect(steps.find((s) => s.code === "sss_employer_update")?.notes).toBe("No employer numbers.");
+    expect(codes("individual", ["line_of_business"], all)).toEqual(["mayors_permit_amendment", "bir_1905", "bir_cor", "bir_display"]);
+  });
+});
+
+describe("branchStepsFor", () => {
+  it("registers a branch with its own permits, branch code, COR, books and invoices", () => {
+    expect(branchStepsFor("corporation", { lguServed: true }).map((s) => s.code)).toEqual([
+      "barangay_clearance", "mayors_permit", "bir_registration", "bir_cor", "bir_books", "bir_invoices", "bir_display",
+    ]);
+    expect(branchStepsFor("individual", { lguServed: false }).map((s) => [s.code, s.status]).slice(0, 3)).toEqual([
+      ["dti_scope", "pending"], ["barangay_clearance", "not_applicable"], ["mayors_permit", "not_applicable"],
     ]);
   });
 });

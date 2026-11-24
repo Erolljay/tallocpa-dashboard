@@ -21,6 +21,7 @@ interface Row {
   id: string;
   kind: keyof typeof CASE_KINDS;
   period_year: number | null;
+  details: { branch_name?: string };
   status: "open" | "completed" | "cancelled";
   opened_at: string;
   closed_at: string | null;
@@ -38,7 +39,7 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
   const supabase = await supabaseServer();
   const query = supabase
     .from("registration_cases")
-    .select("id, kind, period_year, status, opened_at, closed_at, target_date, clients(name, code), registration_steps(code, agency, label, status, sort_order, done_on)")
+    .select("id, kind, period_year, details, status, opened_at, closed_at, target_date, clients(name, code), registration_steps(code, agency, label, status, sort_order, done_on)")
     .order("opened_at", { ascending: false });
   const filtered = kindFilter ? query.eq("kind", kindFilter) : query;
   const { data, error } = await (closed ? filtered.neq("status", "open") : filtered.eq("status", "open"));
@@ -112,7 +113,7 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
                   <td className="px-4 py-3">
                     <Link href={`/app/registrations/${r.id}`} className="font-medium text-text-primary hover:underline">{r.clients?.name}</Link>
                     <p className="text-caption-1-regular tabular-nums text-text-tertiary">
-                      {CASE_KINDS[r.kind]}{r.period_year ? ` ${r.period_year}` : ""} · {r.clients?.code}{r.target_date ? ` · target ${r.target_date}` : ""}
+                      {CASE_KINDS[r.kind]}{r.period_year ? ` ${r.period_year}` : ""}{r.details.branch_name ? ` (${r.details.branch_name})` : ""} · {r.clients?.code}{r.target_date ? ` · target ${r.target_date}` : ""}
                     </p>
                   </td>
                   <td className="px-4 py-3">

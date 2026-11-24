@@ -20,6 +20,14 @@
 -- mayor's permits, SEC GIS or DTI renewal, books for the new year. Completing
 -- it only closes the case.
 --
+-- BIR update (an existing client, Form 1905, with the date of the change):
+-- the changes filed (address, RDO transfer, tax types, name, line of business)
+-- decide the steps. When tax types change, completing needs the client's tax
+-- setup entered on the client after the case was opened.
+--
+-- New branch (an existing client): the branch's permits and BIR registration
+-- (branch code, COR, books, invoices). Several branches can be open at once.
+--
 -- Closing the business (an existing client, with the closing date): barangay
 -- and City Hall retirement, BIR Form 1905, final returns, invoices surrendered,
 -- verification and cancellation, DTI cancellation or SEC dissolution, employer
@@ -37,10 +45,12 @@ where code not in ('tax_compliance', 'bookkeeping', 'business_registration', 'bi
 create table public.registration_cases (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients (id) on delete cascade,
-  kind text not null default 'new_business' check (kind in ('new_business', 'renewal', 'closure')),
+  kind text not null default 'new_business' check (kind in ('new_business', 'renewal', 'bir_update', 'branch', 'closure')),
+  -- BIR update: {"changes": [...]}; branch: {"branch_name": ...}.
+  details jsonb not null default '{}'::jsonb check (jsonb_typeof(details) = 'object'),
   -- Renewal: the year the permits are for.
   period_year smallint check (period_year between 2000 and 2100),
-  -- Closure: the day the business stopped operating; obligations end on it.
+  -- Closure: the day the business stopped operating (obligations end on it). BIR update: the date of the change.
   effective_date date,
   -- The firm handles the barangay clearance and mayor's permit.
   lgu_served boolean not null,
@@ -60,10 +70,12 @@ create table public.registration_cases (
   check ((status = 'open') = (closed_at is null)),
   check (status <> 'cancelled' or cancel_reason is not null),
   check ((kind = 'renewal') = (period_year is not null)),
-  check ((kind = 'closure') = (effective_date is not null))
+  check ((kind in ('closure', 'bir_update')) = (effective_date is not null)),
+  check (kind <> 'bir_update' or jsonb_array_length(coalesce(details -> 'changes', '[]'::jsonb)) > 0),
+  check (kind <> 'branch' or coalesce(btrim(details ->> 'branch_name'), '') <> '')
 );
--- One open case of each kind per client, and one renewal per client and year.
-create unique index registration_cases_open_idx on public.registration_cases (client_id, kind) where status = 'open';
+-- One open case of each kind per client (branches excepted), and one renewal per client and year.
+create unique index registration_cases_open_idx on public.registration_cases (client_id, kind) where status = 'open' and kind <> 'branch';
 create unique index registration_cases_renewal_idx on public.registration_cases (client_id, period_year) where kind = 'renewal' and status <> 'cancelled';
 create index registration_cases_client_idx on public.registration_cases (client_id, opened_at desc);
 
@@ -201,6 +213,7 @@ $$;
 -- The Owner completes a case once every step is done (or not needed).
 -- New business: the COR must be entered on the client; the client becomes active.
 -- Closure: obligations end on the closing date, engagements end, the client becomes inactive.
+-- BIR update with tax types: the new tax setup must be entered on the client first.
 create or replace function public.complete_registration_case(p_case uuid) returns public.registration_cases
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -217,7 +230,13 @@ begin
   end if;
   select * into c from public.clients where id = k.client_id;
 
-  if k.kind = 'renewal' then
+  if k.kind = 'bir_update' and (k.details -> 'changes') ? 'tax_types' and not exists (
+    select 1 from public.client_registrations where client_id = c.id and created_at >= k.opened_at
+  ) then
+    raise exception 'Enter the new tax types on the client first (Edit, effective %)', k.effective_date using errcode = '22023';
+  end if;
+
+  if k.kind in ('renewal', 'bir_update', 'branch') then
     update public.registration_cases set status = 'completed', closed_by = auth.uid(), closed_at = now()
     where id = p_case returning * into k;
     return k;
@@ -260,7 +279,7 @@ begin
 end;
 $$;
 
--- The Owner opens a renewal or a closure for an existing client.
+-- The Owner opens a renewal, BIR update, branch or closure for an existing client.
 create or replace function public.open_client_case(p_client uuid, p_kind text, p_case jsonb, p_steps jsonb)
 returns public.registration_cases
 language plpgsql security definer set search_path = '' as $$
@@ -268,14 +287,23 @@ declare
   c public.clients;
   r public.registration_cases;
 begin
-  if not private.is_owner() then raise exception 'Only the Owner opens renewals and closures' using errcode = '42501'; end if;
+  if not private.is_owner() then raise exception 'Only the Owner opens renewals, updates, branches and closures' using errcode = '42501'; end if;
   select * into c from public.clients where id = p_client;
   if c.id is null then raise exception 'Client not found' using errcode = 'P0002'; end if;
-  if p_kind not in ('renewal', 'closure') then raise exception 'Choose a renewal or a closure' using errcode = '22023'; end if;
+  if p_kind not in ('renewal', 'bir_update', 'branch', 'closure') then raise exception 'Choose the kind of case' using errcode = '22023'; end if;
   if c.status in ('inactive', 'archived') then raise exception 'This client is no longer active' using errcode = '22023'; end if;
   if p_kind = 'renewal' and nullif(p_case ->> 'period_year', '') is null then raise exception 'Choose the year' using errcode = '22023'; end if;
   if p_kind = 'closure' and nullif(p_case ->> 'effective_date', '') is null then
     raise exception 'Enter the day the business stopped operating' using errcode = '22023';
+  end if;
+  if p_kind = 'bir_update' and nullif(p_case ->> 'effective_date', '') is null then
+    raise exception 'Enter the date of the change' using errcode = '22023';
+  end if;
+  if p_kind = 'bir_update' and jsonb_array_length(coalesce(p_case -> 'changes', '[]'::jsonb)) = 0 then
+    raise exception 'Choose what changes' using errcode = '22023';
+  end if;
+  if p_kind = 'branch' and coalesce(btrim(p_case ->> 'branch_name'), '') = '' then
+    raise exception 'Enter the branch name or address' using errcode = '22023';
   end if;
   if p_steps is null or jsonb_typeof(p_steps) <> 'array' or jsonb_array_length(p_steps) = 0 then
     raise exception 'The steps are missing' using errcode = '22023';
@@ -284,11 +312,16 @@ begin
     raise exception 'New steps start as pending or not needed' using errcode = '22023';
   end if;
 
-  insert into public.registration_cases (client_id, kind, period_year, effective_date, lgu_served, employer, lgu, target_date, notes, opened_by)
+  insert into public.registration_cases (client_id, kind, details, period_year, effective_date, lgu_served, employer, lgu, target_date, notes, opened_by)
   values (
     c.id, p_kind,
+    case p_kind
+      when 'bir_update' then jsonb_build_object('changes', p_case -> 'changes')
+      when 'branch' then jsonb_build_object('branch_name', btrim(p_case ->> 'branch_name'))
+      else '{}'::jsonb
+    end,
     case when p_kind = 'renewal' then (p_case ->> 'period_year')::smallint end,
-    case when p_kind = 'closure' then (p_case ->> 'effective_date')::date end,
+    case when p_kind in ('closure', 'bir_update') then (p_case ->> 'effective_date')::date end,
     coalesce((p_case ->> 'lgu_served')::boolean, true),
     coalesce((p_case ->> 'employer')::boolean, false),
     nullif(btrim(p_case ->> 'lgu'), ''),

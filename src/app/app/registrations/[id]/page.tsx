@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { taxpayerTypeLabel } from "@/lib/clients/labels";
-import { AGENCIES, CASE_KINDS, daysBetween, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
+import { AGENCIES, CASE_KINDS, UPDATE_CHANGES, daysBetween, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { CancelForm, CompleteButton, StepBadge, StepForm, type StepRow } from "../forms";
@@ -57,7 +57,7 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
     <>
       <PageHeader
         title={client.name}
-        description={<span className="tabular-nums">{CASE_KINDS[k.kind as keyof typeof CASE_KINDS]}{k.period_year ? ` ${k.period_year}` : ""}{k.effective_date ? ` · closed ${fmt(k.effective_date)}` : ""} · {client.code} · {taxpayerTypeLabel[client.taxpayer_type]}{k.lgu ? ` · ${k.lgu}` : ""}</span>}
+        description={<span className="tabular-nums">{CASE_KINDS[k.kind as keyof typeof CASE_KINDS]}{k.period_year ? ` ${k.period_year}` : ""}{k.kind === "closure" ? ` · closed ${fmt(k.effective_date)}` : k.kind === "bir_update" ? ` · effective ${fmt(k.effective_date)}` : ""}{k.kind === "branch" ? ` · ${(k.details as { branch_name?: string }).branch_name}` : ""} · {client.code} · {taxpayerTypeLabel[client.taxpayer_type]}{k.lgu ? ` · ${k.lgu}` : ""}</span>}
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone}>{statusLabel}</Badge>
@@ -69,6 +69,11 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
         <div className="mb-6"><Notice tone="blocked">The registration was opened, but the preparer could not be assigned. Assign them on the client page.</Notice></div>
       )}
 
+      {k.kind === "bir_update" && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {((k.details as { changes?: string[] }).changes ?? []).map((c) => <Badge key={c}>{UPDATE_CHANGES[c as keyof typeof UPDATE_CHANGES] ?? c}</Badge>)}
+        </div>
+      )}
       {/* The slip's header: where the file is now and for how long. */}
       <section className="mb-6 grid gap-4 rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-xs sm:grid-cols-4">
         <div className="sm:col-span-2">
@@ -162,6 +167,18 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
               <p className="text-body-regular text-text-secondary">This can be completed once every step is done or not needed.</p>
             ) : k.kind === "renewal" ? (
               <p className="text-body-regular text-text-secondary">Completing closes this year&rsquo;s renewal.</p>
+            ) : k.kind === "branch" ? (
+              <p className="text-body-regular text-text-secondary">Completing closes the branch registration.</p>
+            ) : k.kind === "bir_update" ? (
+              ((k.details as { changes?: string[] }).changes ?? []).includes("tax_types") ? (
+                <Notice>
+                  <Link href={`/app/clients/${client.id}/edit`} className="font-medium underline">Enter the new tax types on the client</Link> with {fmt(k.effective_date)} as the effective date, so the filing obligations start and end on that date; then complete. Update the RDO and address there too if they changed.
+                </Notice>
+              ) : (
+                <Notice>
+                  If the address, RDO or name changed, <Link href={`/app/clients/${client.id}/edit`} className="font-medium underline">update the client</Link>; then complete.
+                </Notice>
+              )
             ) : k.kind === "closure" ? (
               <Notice>Completing ends {client.name}&rsquo;s filing obligations after {fmt(k.effective_date)}, removes filings for later periods that were not started, ends its engagements and makes it inactive.</Notice>
             ) : !client.tin ? (

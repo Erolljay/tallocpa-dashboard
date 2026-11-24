@@ -6,10 +6,18 @@ import type { Branch } from "@/lib/branches";
 import type { TaxpayerType } from "@/lib/clients/obligations";
 import { dtiRenewalDue } from "@/lib/registration/steps";
 import { supabaseServer } from "@/lib/supabase/server";
+import type { ClientCaseKind } from "../actions";
 import { ClientCaseForm, NewRegistrationForm } from "../forms";
 import { manilaDate } from "../slip";
 
-/** /app/registrations/new — a new business; ?client=…&kind=renewal|closure — a renewal or closure for a client. */
+const clientCase: Record<ClientCaseKind, { title: string; description: string }> = {
+  renewal: { title: "Annual renewal", description: "barangay, fire, sanitary and mayor's permits, and the year's SEC or DTI filings." },
+  bir_update: { title: "BIR update (Form 1905)", description: "change of address or RDO, tax types, name or line of business, with the DTI/SEC and City Hall changes that go with it." },
+  branch: { title: "New branch", description: "the branch's barangay clearance and mayor's permit, and BIR registration with a branch code, COR, books and invoices." },
+  closure: { title: "Close the business", description: "barangay and City Hall retirement, BIR cancellation, DTI or SEC, and the employer numbers." },
+};
+
+/** /app/registrations/new — a new business; ?client=…&kind=renewal|bir_update|branch|closure — a case for an existing client. */
 export default function NewRegistrationPage(props: PageProps<"/app/registrations/new">) {
   return (
     <Suspense fallback={<><PageHeader title="New registration" /><Skeleton rows={8} /></>}>
@@ -23,7 +31,8 @@ async function OwnerOnly({ searchParams }: Pick<PageProps<"/app/registrations/ne
   const { client: clientId, kind } = await searchParams;
   const supabase = await supabaseServer();
 
-  if (typeof clientId === "string" && (kind === "renewal" || kind === "closure")) {
+  if (typeof clientId === "string" && typeof kind === "string" && kind in clientCase) {
+    const k = kind as ClientCaseKind;
     const { data: client } = await supabase.from("clients").select("id, name, taxpayer_type").eq("id", clientId).maybeSingle();
     if (!client) notFound();
     const today = manilaDate(new Date());
@@ -39,11 +48,8 @@ async function OwnerOnly({ searchParams }: Pick<PageProps<"/app/registrations/ne
       .maybeSingle();
     return (
       <>
-        <PageHeader
-          title={kind === "renewal" ? "Annual renewal" : "Close the business"}
-          description={kind === "renewal" ? `${client.name}: barangay, fire, sanitary and mayor's permits, and the year's SEC or DTI filings.` : `${client.name}: barangay and City Hall retirement, BIR cancellation, DTI or SEC, and the employer numbers.`}
-        />
-        <ClientCaseForm clientId={client.id} taxpayerType={client.taxpayer_type as TaxpayerType} kind={kind} year={year} dtiDue={dtiRenewalDue(dti?.done_on ?? null, year)} />
+        <PageHeader title={clientCase[k].title} description={`${client.name}: ${clientCase[k].description}`} />
+        <ClientCaseForm clientId={client.id} taxpayerType={client.taxpayer_type as TaxpayerType} kind={k} year={year} dtiDue={dtiRenewalDue(dti?.done_on ?? null, year)} />
       </>
     );
   }

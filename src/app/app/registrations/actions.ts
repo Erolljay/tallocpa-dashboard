@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireStaff } from "@/lib/auth";
 import { formToObject } from "@/lib/clients/schema";
-import { closureSchema, newRegistrationSchema, renewalSchema, stepUpdateSchema } from "@/lib/registration/schema";
-import { closureStepsFor, dtiRenewalDue, renewalStepsFor, stepsFor, stepsPayload } from "@/lib/registration/steps";
+import { branchSchema, closureSchema, newRegistrationSchema, renewalSchema, stepUpdateSchema, updateSchema } from "@/lib/registration/schema";
+import { branchStepsFor, closureStepsFor, dtiRenewalDue, renewalStepsFor, stepsFor, stepsPayload, updateStepsFor, type CaseKind } from "@/lib/registration/steps";
 import type { TaxpayerType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -95,8 +95,10 @@ export async function cancelRegistrationAction(caseId: string, _: FormState, for
   return { ok: true };
 }
 
-/** The Owner opens a renewal or a closure for an existing client. */
-export async function openClientCaseAction(clientId: string, kind: "renewal" | "closure", _: FormState, form: FormData): Promise<FormState> {
+export type ClientCaseKind = Exclude<CaseKind, "new_business">;
+
+/** The Owner opens a renewal, BIR update, branch or closure for an existing client. */
+export async function openClientCaseAction(clientId: string, kind: ClientCaseKind, _: FormState, form: FormData): Promise<FormState> {
   await requireOwner();
   const supabase = await supabaseServer();
   const { data: client } = await supabase.from("clients").select("taxpayer_type").eq("id", clientId).maybeSingle();
@@ -111,6 +113,18 @@ export async function openClientCaseAction(clientId: string, kind: "renewal" | "
     const v = parsed.data;
     caseData = { period_year: v.period_year, lgu_served: v.lgu_served, target_date: v.target_date ?? "", notes: v.notes ?? "" };
     steps = renewalStepsFor(type, { lguServed: v.lgu_served, dtiDue: v.dti_due });
+  } else if (kind === "bir_update") {
+    const parsed = updateSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { effective_date: v.effective_date, changes: v.changes, lgu_served: v.lgu_served, employer: v.employer, lgu: v.lgu ?? "", target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = updateStepsFor(type, v.changes, { lguServed: v.lgu_served, employer: v.employer });
+  } else if (kind === "branch") {
+    const parsed = branchSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { branch_name: v.branch_name, lgu: v.lgu ?? "", lgu_served: v.lgu_served, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = branchStepsFor(type, { lguServed: v.lgu_served });
   } else {
     const parsed = closureSchema.safeParse(formToObject(form));
     if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
@@ -121,7 +135,7 @@ export async function openClientCaseAction(clientId: string, kind: "renewal" | "
   const { data, error } = await supabase.rpc("open_client_case", { p_client: clientId, p_kind: kind, p_case: caseData, p_steps: stepsPayload(steps) });
   if (error) {
     if (error.message.includes("registration_cases_renewal_idx")) return { error: "This client already has a renewal for that year." };
-    if (error.message.includes("registration_cases_open_idx")) return { error: `This client already has an open ${kind === "renewal" ? "renewal" : "closure"}.` };
+    if (error.message.includes("registration_cases_open_idx")) return { error: "This client already has an open case of this kind." };
     return { error: error.message };
   }
   revalidatePath("/app/registrations");

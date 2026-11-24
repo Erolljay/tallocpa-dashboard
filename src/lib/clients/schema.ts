@@ -52,7 +52,7 @@ export type NewClient = z.infer<typeof newClientSchema>;
 export function formToObject(form: FormData) {
   const obj: Record<string, unknown> = {};
   for (const key of new Set(form.keys())) {
-    obj[key] = key === "tax_types" ? form.getAll(key) : form.get(key);
+    obj[key] = key === "tax_types" || key === "changes" ? form.getAll(key) : form.get(key);
   }
   return obj;
 }

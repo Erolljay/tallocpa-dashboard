@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/page.tsx": {
-    "mtime": 1795522293.716549,
-    "seen": 1795522388.0326204,
-    "ast_hash": "3032292265861bcac94ca980e21045c9",
+    "mtime": 1795522599.7715776,
+    "seen": 1795522682.6330297,
+    "ast_hash": "7bcec3c8a0483543c436a1ed5a4493ac",
     "semantic_hash": ""
   },
   "src/app/app/clients/actions.ts": {
@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "src/lib/clients/schema.ts": {
-    "mtime": 1795521403.1903443,
-    "seen": 1795521979.8261936,
-    "ast_hash": "4c58704dececaece6f7d9df29b44544b",
+    "mtime": 1795522557.4024863,
+    "seen": 1795522682.6378324,
+    "ast_hash": "9c8299e24805e0707e766b756b173008",
     "semantic_hash": ""
   },
   "src/lib/deadlines/dates.ts": {
@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795522384.551696,
-    "seen": 1795522388.0427008,
-    "ast_hash": "64c01d261f276a92771b4ed349b8553e",
+    "mtime": 1795522678.3049054,
+    "seen": 1795522682.6422915,
+    "ast_hash": "1fa0e63d953a235036d6864cfc9971f7",
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795522384.5510235,
-    "seen": 1795522388.0427392,
-    "ast_hash": "10755910c6644c32ecce2c8da1b09b51",
+    "mtime": 1795522678.3044715,
+    "seen": 1795522682.642337,
+    "ast_hash": "991d88a04ad8dbb586c8e39b87d84ef9",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/edit/page.tsx": {
@@ -2376,33 +2376,33 @@
     "semantic_hash": ""
   },
   "src/app/app/registrations/[id]/page.tsx": {
-    "mtime": 1795522293.7157376,
-    "seen": 1795522388.0342648,
-    "ast_hash": "9a681ad19f871eed187ad67a301c6d25",
+    "mtime": 1795522599.7713223,
+    "seen": 1795522682.634519,
+    "ast_hash": "54d6d855193b575966f832244b177bb9",
     "semantic_hash": ""
   },
   "src/app/app/registrations/actions.ts": {
-    "mtime": 1795522236.680031,
-    "seen": 1795522388.0342672,
-    "ast_hash": "c0b910a8eef5309ba8eb52045a042a56",
+    "mtime": 1795522557.4030447,
+    "seen": 1795522682.634521,
+    "ast_hash": "f459a4918851c528696bf8660a3562c4",
     "semantic_hash": ""
   },
   "src/app/app/registrations/forms.tsx": {
-    "mtime": 1795522256.572033,
-    "seen": 1795522388.034269,
-    "ast_hash": "6e2aefc564af090eb7214ce8ecfb8d3d",
+    "mtime": 1795522579.3869774,
+    "seen": 1795522682.634523,
+    "ast_hash": "9d3b009fb69dac31b74ab44a460444f0",
     "semantic_hash": ""
   },
   "src/app/app/registrations/new/page.tsx": {
-    "mtime": 1795522266.3981798,
-    "seen": 1795522388.0342712,
-    "ast_hash": "f22bda60f3ecaebe9d35db7b791568a7",
+    "mtime": 1795522634.1426957,
+    "seen": 1795522682.6345248,
+    "ast_hash": "47a0032d6a94c79f860dcaf12c9ae55a",
     "semantic_hash": ""
   },
   "src/app/app/registrations/page.tsx": {
-    "mtime": 1795522280.9548032,
-    "seen": 1795522388.0342736,
-    "ast_hash": "8222543a75b406a3b7f3705ffff61918",
+    "mtime": 1795522599.7717545,
+    "seen": 1795522682.6345267,
+    "ast_hash": "04b89e2d0b841f6737a5a43434ed013c",
     "semantic_hash": ""
   },
   "src/app/app/registrations/slip.ts": {
@@ -2412,27 +2412,27 @@
     "semantic_hash": ""
   },
   "src/lib/registration/schema.ts": {
-    "mtime": 1795522232.7261777,
-    "seen": 1795522388.0409307,
-    "ast_hash": "c00b1638a595beb00511688ac8ce6eec",
+    "mtime": 1795522557.4019449,
+    "seen": 1795522682.6401398,
+    "ast_hash": "4f93c551cd3fcd075a28978371c90f41",
     "semantic_hash": ""
   },
   "src/lib/registration/steps.test.ts": {
-    "mtime": 1795522114.4709888,
-    "seen": 1795522388.0409331,
-    "ast_hash": "48383ca09879333dd4fe2fd366d9bc1c",
+    "mtime": 1795522507.9838333,
+    "seen": 1795522682.6401417,
+    "ast_hash": "86d5985d34d0c72c0dd290788c24eb04",
     "semantic_hash": ""
   },
   "src/lib/registration/steps.ts": {
-    "mtime": 1795522114.470558,
-    "seen": 1795522388.0409346,
-    "ast_hash": "14dc837649214aa019d144687dd5bbcb",
+    "mtime": 1795522507.9834535,
+    "seen": 1795522682.6401436,
+    "ast_hash": "91939fd1b4f10448e913f5e8f6abb47f",
     "semantic_hash": ""
   },
   "supabase/tests/registration.test.ts": {
-    "mtime": 1795522195.8788495,
-    "seen": 1795522388.0424109,
-    "ast_hash": "8986b9dd0b4954825f1741530e809ad4",
+    "mtime": 1795522533.7318602,
+    "seen": 1795522682.6419718,
+    "ast_hash": "59e723d4ed5ce1ef2e310a61600e9120",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

@@ -110,6 +110,8 @@ export function stepsFor(t: TaxpayerType, options: RegistrationOptions): Planned
 export const CASE_KINDS = {
   new_business: "New business",
   renewal: "Annual renewal",
+  bir_update: "BIR update (Form 1905)",
+  branch: "New branch",
   closure: "Closing the business",
 } as const;
 export type CaseKind = keyof typeof CASE_KINDS;
@@ -192,6 +194,99 @@ export function closureStepsFor(t: TaxpayerType, options: ClosureOptions): Plann
     let notes: string | null = null;
     if (lgu.has(s.code) && !options.lguServed) notes = "The client handles this.";
     if (employer.has(s.code) && !options.employer) notes = "No employer numbers.";
+    return { ...s, sortOrder: i + 1, status: notes ? "not_applicable" : "pending", notes };
+  });
+}
+
+/* ------------------------------------------------- BIR updates (1905) */
+
+/** The changes a BIR update covers; several can be filed together on one Form 1905. */
+export const UPDATE_CHANGES = {
+  address: "Change of address (same city / RDO)",
+  rdo_transfer: "Transfer to another city / RDO",
+  tax_types: "Add or remove tax types (e.g. VAT registration)",
+  name: "Change of business or trade name",
+  line_of_business: "Change of line of business",
+} as const;
+export type UpdateChange = keyof typeof UPDATE_CHANGES;
+
+export interface UpdateOptions {
+  lguServed: boolean;
+  /** The business has employer numbers whose records must follow a new name or address. */
+  employer: boolean;
+}
+
+/**
+ * The steps for a BIR update, from the changes filed. The DTI or SEC record and
+ * the City Hall permit change first (the RDO asks for them), then Form 1905,
+ * the transfer of records when the RDO changes, the updated COR, new invoices
+ * when the name, address or tax type printed on them changes, and the books.
+ */
+export function updateStepsFor(t: TaxpayerType, changes: readonly UpdateChange[], options: UpdateOptions): PlannedStep[] {
+  const c = new Set(changes);
+  const moves = c.has("address") || c.has("rdo_transfer");
+  const list: StepTemplate[] = [];
+  if (registersWithSec(t)) {
+    if (c.has("name") || c.has("rdo_transfer")) list.push({ code: "sec_amendment", agency: "sec", label: "Amended articles filed (name / principal office)", referenceLabel: "SEC reference" });
+  } else if (c.has("name") || moves) {
+    list.push({ code: "dti_amendment", agency: "dti", label: "Business name record amended (name / address)", referenceLabel: "Certificate no." });
+  }
+  if (moves) list.push({ code: "barangay_clearance", agency: "barangay", label: "Barangay clearance for the new address", referenceLabel: "Clearance no." });
+  if (c.has("rdo_transfer")) {
+    list.push({ code: "mayors_permit_new", agency: "lgu", label: "Mayor's permit in the new city / municipality", referenceLabel: "Permit no." });
+    list.push({ code: "mayors_retirement_old", agency: "lgu", label: "Business retirement in the old city / municipality", referenceLabel: "Retirement no." });
+  } else if (c.has("address") || c.has("name") || c.has("line_of_business")) {
+    list.push({ code: "mayors_permit_amendment", agency: "lgu", label: "Mayor's permit amended", referenceLabel: "Permit no." });
+  }
+  list.push({ code: "bir_1905", agency: "bir", label: "Form 1905 filed (ORUS or the RDO)", referenceLabel: "Reference no." });
+  if (c.has("rdo_transfer")) list.push({ code: "bir_rdo_transfer", agency: "bir", label: "Records transferred to the new RDO", referenceLabel: "New RDO" });
+  list.push({ code: "bir_cor", agency: "bir", label: "Updated Certificate of Registration (Form 2303)", referenceLabel: "TIN" });
+  if (c.has("name") || moves || c.has("tax_types")) {
+    list.push({ code: "bir_invoices", agency: "bir", label: "New ATP and invoices; old invoices surrendered", referenceLabel: "ATP no." });
+  }
+  if (c.has("name") || c.has("rdo_transfer") || c.has("tax_types")) {
+    list.push({ code: "bir_books", agency: "bir", label: "Books of accounts updated or registered", referenceLabel: "Reference no." });
+  }
+  list.push({ code: "bir_display", agency: "bir", label: "Updated COR displayed at the place of business", referenceLabel: "Reference" });
+  if (c.has("name") || moves) {
+    list.push({ code: "sss_employer_update", agency: "sss", label: "Employer record updated (name / address)", referenceLabel: "Reference no." });
+    list.push({ code: "philhealth_employer_update", agency: "philhealth", label: "Employer record updated (name / address)", referenceLabel: "Reference no." });
+    list.push({ code: "pagibig_employer_update", agency: "pagibig", label: "Employer record updated (name / address)", referenceLabel: "Reference no." });
+  }
+  return list.map((s, i) => {
+    let notes: string | null = null;
+    if ((s.agency === "lgu" || s.agency === "barangay") && !options.lguServed) notes = "The client handles this.";
+    if (["sss", "philhealth", "pagibig"].includes(s.agency) && !options.employer) notes = "No employer numbers.";
+    return { ...s, sortOrder: i + 1, status: notes ? "not_applicable" : "pending", notes };
+  });
+}
+
+/* ------------------------------------------------------------- Branches */
+
+export interface BranchOptions {
+  lguServed: boolean;
+}
+
+/**
+ * A new branch: its own barangay clearance and mayor's permit, and BIR
+ * registration with the RDO where the branch is (a branch code on the TIN, its
+ * own COR, books and invoices). A sole proprietor checks that the DTI business
+ * name's territorial scope covers the branch; a corporation's branch needs no
+ * SEC filing.
+ */
+export function branchStepsFor(t: TaxpayerType, options: BranchOptions): PlannedStep[] {
+  const list: StepTemplate[] = [
+    ...(registersWithSec(t) ? [] : [{ code: "dti_scope", agency: "dti" as const, label: "Business name scope covers the branch location", referenceLabel: "Certificate no." }]),
+    { code: "barangay_clearance", agency: "barangay", label: "Barangay clearance for the branch", referenceLabel: "Clearance no." },
+    { code: "mayors_permit", agency: "lgu", label: "Mayor's permit for the branch", referenceLabel: "Permit no." },
+    { code: "bir_registration", agency: "bir", label: "Branch registered with the branch's RDO (ORUS)", referenceLabel: "Branch code" },
+    { code: "bir_cor", agency: "bir", label: "Branch Certificate of Registration (Form 2303)", referenceLabel: "TIN with branch code" },
+    { code: "bir_books", agency: "bir", label: "Books of accounts for the branch", referenceLabel: "Reference no." },
+    { code: "bir_invoices", agency: "bir", label: "ATP and invoices for the branch", referenceLabel: "ATP no." },
+    { code: "bir_display", agency: "bir", label: "Branch COR and notice displayed", referenceLabel: "Reference" },
+  ];
+  return list.map((s, i) => {
+    const notes = (s.agency === "lgu" || s.agency === "barangay") && !options.lguServed ? "The client handles this." : null;
     return { ...s, sortOrder: i + 1, status: notes ? "not_applicable" : "pending", notes };
   });
 }

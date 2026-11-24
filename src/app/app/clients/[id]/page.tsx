@@ -43,7 +43,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
-    supabase.from("registration_cases").select("id, kind, period_year, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
+    supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
   ]);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
@@ -153,7 +153,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           {isOwner && <AssignForm clientId={id} staff={(staff.data ?? []) as { user_id: string; full_name: string; role: string; branch_id: string | null }[]} branches={branches} branch={client.branch_id} />}
         </Card>
 
-        <Card title="Registration, renewals & closure">
+        <Card title="Registration & changes">
           {cases.length === 0 ? (
             <p className="text-body-regular text-text-secondary">No registration cases.</p>
           ) : (
@@ -161,7 +161,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
               {cases.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-4 py-2">
                   <Link href={`/app/registrations/${c.id}`} className="font-medium text-text-primary hover:underline">
-                    {CASE_KINDS[c.kind as keyof typeof CASE_KINDS]}{c.period_year ? ` ${c.period_year}` : ""}
+                    {CASE_KINDS[c.kind as keyof typeof CASE_KINDS]}{c.period_year ? ` ${c.period_year}` : ""}{c.kind === "branch" ? ` · ${(c.details as { branch_name?: string }).branch_name}` : ""}
                   </Link>
                   <Badge tone={c.status === "open" ? "progress" : c.status === "completed" ? "done" : "neutral"}>{c.status === "open" ? "Open" : c.status === "completed" ? "Completed" : "Cancelled"}</Badge>
                 </li>
@@ -171,6 +171,8 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           {isOwner && (client.status === "active" || client.status === "onboarding") && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-separator-border pt-4">
               <LinkButton href={`/app/registrations/new?client=${id}&kind=renewal`} variant="secondary" size="sm">Annual renewal</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update (1905)</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=branch`} variant="secondary" size="sm">New branch</LinkButton>
               <LinkButton href={`/app/registrations/new?client=${id}&kind=closure`} variant="secondary" size="sm">Close the business</LinkButton>
             </div>
           )}

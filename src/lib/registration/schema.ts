@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TAXPAYER_TYPES } from "@/lib/clients/obligations";
-import { STEP_STATUSES, type StepStatus } from "./steps";
+import { STEP_STATUSES, UPDATE_CHANGES, type StepStatus, type UpdateChange } from "./steps";
 
 const optional = <T extends z.ZodType>(s: T) => z.preprocess((v) => (v === "" || v == null ? undefined : v), s.optional());
 const checkbox = z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean());
@@ -46,6 +46,26 @@ export const closureSchema = z.object({
   effective_date: z.iso.date("Enter the day the business stopped operating."),
   lgu_served: checkbox,
   employer: checkbox,
+  target_date: optional(z.iso.date("Enter a valid date.")),
+  notes: optional(z.string().trim().max(1000)),
+});
+
+/** BIR update (Form 1905) for an existing client. */
+export const updateSchema = z.object({
+  effective_date: z.iso.date("Enter the date of the change."),
+  changes: z.array(z.enum(Object.keys(UPDATE_CHANGES) as [UpdateChange, ...UpdateChange[]])).min(1, "Choose what changes."),
+  lgu_served: checkbox,
+  employer: checkbox,
+  lgu: optional(z.string().trim().max(120)),
+  target_date: optional(z.iso.date("Enter a valid date.")),
+  notes: optional(z.string().trim().max(1000)),
+});
+
+/** New branch of an existing client. */
+export const branchSchema = z.object({
+  branch_name: z.string().trim().min(2, "Enter the branch name or address.").max(200),
+  lgu: optional(z.string().trim().max(120)),
+  lgu_served: checkbox,
   target_date: optional(z.iso.date("Enter a valid date.")),
   notes: optional(z.string().trim().max(1000)),
 });
