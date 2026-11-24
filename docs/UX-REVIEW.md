@@ -49,6 +49,7 @@ Screens were read from the source. This review has not yet been tested with staf
     A 2307 received later moves the amount from "CWT – awaiting 2307" to "CWT – supported" with no cash entry; only supported CWT is claimed on the income tax return, and what is unsupported at year end goes to the Owner. EWT payable is booked at payment, so it ties to the 0619-E and 1601-EQ. Each line names its cash account (client default, changeable per line) so cash in bank reconciles to the bank statement. Charge sales keep Dr AR at the invoice total; the collection line of the AR/AP update then gets a CWT column (Dr Cash net, Dr CWT – awaiting 2307, Cr AR).
 
 11. **One register: bookkeeping and tax compliance as one.** See below.
+12. **Capital expenditure to a fixed asset register (H) with straight-line depreciation.** See below.
 
 ## Data flow: one register
 
@@ -71,6 +72,21 @@ What changes in the app:
 
 **Batch upload (later, at onboarding).** Excel template in the register layout. Every row is checked before posting, like the payroll register preview. Rows post as lines marked "Batch · no image"; images can be attached later.
 
+## Capital expenditure and depreciation
+
+The account title on a purchases register line routes it:
+
+| Account title on the line | Books | VAT | Income tax |
+|---|---|---|---|
+| Expense or purchases (e.g. Purchases, Rent, Office Supplies) | Operating expenses / cost of sales | Input VAT on the 2550Q | Deduction by its BIR line |
+| Asset (Furniture and Fixtures, Office / IT / Transportation Equipment, Building) | Property and equipment; also creates an asset in register **H** | Input VAT on the 2550Q **in full** in the quarter of purchase; SLP lists it as capital goods | Only through depreciation (BIR line "Depreciation") |
+
+Register H holds, per asset: number, date acquired, description, class, source line (supplier and invoice), cost (VAT-exclusive), input VAT claimed, residual value, useful life in months, start month, monthly depreciation, accumulated depreciation and net book value. The straight-line schedule — (cost − residual value) ÷ useful life in months, the last month taking the rounding — generates the monthly entry (Dr Depreciation Expense / Cr Accumulated Depreciation by class), posted with the month. Opening assets come in with the opening balances. Tie-outs: T-9 additions per register vs property and equipment accounts; T-10 depreciation per schedule vs Depreciation Expense.
+
+The chart of accounts already has the asset and accumulated depreciation pairs, and Depreciation Expense is mapped to the BIR "Depreciation" line; what is missing is the register, the schedule and the generated entry (today a manual journal entry).
+
+Notes: since 2022 (TRAIN law, RR 13-2018) input VAT on capital goods is claimed in full, not spread over 60 months; check the RR 12-2012 limits on vehicle depreciation for income tax.
+
 ## Deadline safeguards
 
 1. **Coverage.** A nightly check confirms that every COR tax type has an obligation, a client with payroll has a 1601-C obligation, a client with expanded withholding in the books has 0619-E and 1601-EQ, and every filing has a preparer and a reviewer. Gaps go to the Owner's dashboard.
@@ -88,6 +104,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 | R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before go-live if the January cycle allows; otherwise W1's tie-outs cover the gap |
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
+| A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |
 | E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
 | W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
 | W3 | Review notes, My work | After cycle 1 |
@@ -103,4 +120,5 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 - Must every schedule be reviewer-signed, or only B, C and T?
 - The account and BIR line for the SC/PWD discount, and what happens to CWT still without a 2307 at year end.
 - Should every client get account titles on every line (proposed), with the engagement deciding only which outputs are delivered?
+- Fixed assets: the capitalization threshold (the mock uses ₱10,000), default useful life per class, residual value, and whether depreciation starts in the month of purchase or the month after.
 - Step targets per form (the 1601-C example uses one working day between steps), and the hour of the morning email.
