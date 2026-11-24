@@ -148,7 +148,7 @@ Intake channel in v1: **portal upload only** (Q10). **Staff can also upload docu
 ### 3.7b Parties directory
 
 - One firm-wide directory of customers and suppliers by **TIN + branch code**: registered name (or last / first / middle for individuals), address, ZIP, VAT status. Filled automatically when a document with a TIN is approved; verified entries (Owner or reviewer) are never overwritten by OCR.
-- OCR review offers "Use directory details" and warns when the scanned name differs. Worksheets and their attachments use the directory's registered name, address and branch code.
+- It is a helper, not a menu item: **when OCR reads a document**, a TIN on file fills in the registered name, address and branch code automatically. If OCR read a clearly different name, nothing is replaced (the TIN may be misread) and the reviewer sees a warning with "Use directory details". Worksheets and their attachments use the directory's details. The list is reached from each client's page and from document review, for corrections and verifying.
 
 ### 3.8 Sign-off chain (Q21, Q25, Q32, Q57, Q58)
 
