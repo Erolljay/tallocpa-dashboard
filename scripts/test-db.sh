@@ -10,4 +10,4 @@ trap cleanup EXIT
 if [ "$(id -u)" = "0" ]; then RUN=(runuser -u postgres --); chown postgres "$DIR"; else RUN=(); fi
 "${RUN[@]}" "$PGBIN/initdb" -D "$DIR" -U postgres -A trust >/dev/null
 "${RUN[@]}" "$PGBIN/pg_ctl" -D "$DIR" -o "-p $PORT -k $DIR -c listen_addresses=''" -w start >/dev/null
-TEST_DATABASE_URL="postgresql://postgres@/postgres?host=$DIR&port=$PORT" pnpm vitest run supabase/tests "$@"
+TEST_DATABASE_URL="postgresql://postgres@/postgres?host=$DIR&port=$PORT" pnpm vitest run --no-file-parallelism supabase/tests "$@"

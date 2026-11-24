@@ -4,7 +4,7 @@ import { getIdentity } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { NavLinks, NavLinksFallback, type NavKey } from "./nav/app-nav";
 
-const nav = ["dashboard", "clients", "deadlines", "documents", "cycle"] as const satisfies readonly NavKey[];
+const nav = ["dashboard", "clients", "deadlines", "documents", "cycle", "parties"] as const satisfies readonly NavKey[];
 /** Shown to the Owner and to anyone who reviews a client's returns. */
 const reviewNav = ["review"] as const satisfies readonly NavKey[];
 /** Shown only to the Owner. */
@@ -36,7 +36,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
           </div>
         </div>
       </aside>
-      <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 py-8 sm:px-8 md:py-10">
+      <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 py-8 sm:px-8 md:py-10 print:max-w-none print:p-0">
         {children}
       </main>
     </div>

@@ -145,7 +145,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
           </Card>
         </div>
 
-        <Card title="Return">
+        <Card title="Return" actions={<Link href={`/app/filings/${f.id}/worksheet`} className="text-sm text-link hover:underline">Worksheet</Link>}>
           <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
             <dt className="text-ink-subtle">Period</dt><dd className="tabular-nums text-ink-heading">{showDate(f.period_start)} – {showDate(f.period_end)}</dd>
             <dt className="text-ink-subtle">Tax due</dt><dd className="amount tabular-nums text-ink-heading">{f.tax_due == null ? "—" : peso.format(Number(f.tax_due))}</dd>

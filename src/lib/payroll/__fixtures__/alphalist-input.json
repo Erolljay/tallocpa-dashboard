@@ -1,0 +1,14 @@
+{"year":2025,"setup":{"tin":"123-456-789","branchCode":"0000"},
+ "employees":[
+  {"tin":"111-222-333","lastName":"Dela Cruz","firstName":"Juan","middleName":"Santos","nationality":"","employmentStatus":"R","dateHired":"2020-03-15","dateSeparated":"","reasonSeparation":"","substitutedFiling":"Y","taxStatus":"NMWE",
+   "months":[
+    {"ph-bir-earn-01":40000,"ph-bir-ded-02":1350,"ph-bir-ded-03":1000,"ph-bir-ded-04":200,"ph-bir-ded-01":1500.25,"ph-bir-earn-07":2000},
+    {"ph-bir-earn-01":40000,"ph-bir-ded-02":1350,"ph-bir-ded-03":1000,"ph-bir-ded-04":200,"ph-bir-ded-01":1500.25,"ph-bir-earn-07":2000},
+    {"ph-bir-earn-01":40000,"ph-bir-earn-02":3500.5,"ph-bir-ded-02":1350,"ph-bir-ded-03":1000,"ph-bir-ded-04":200,"ph-bir-ded-01":2200.1},
+    {},{},{},{},{},{},{},{},
+    {"ph-bir-earn-01":40000,"ph-bir-earn-06":40000,"ph-bir-ded-02":1350,"ph-bir-ded-03":1000,"ph-bir-ded-04":200,"ph-bir-ded-01":1500}
+   ]},
+  {"tin":"444-555-666","lastName":"Bautista","firstName":"Maria","middleName":"","nationality":"Filipino","employmentStatus":"C","dateHired":"2025-02-01","dateSeparated":"2025-11-30","reasonSeparation":"T","substitutedFiling":"N","taxStatus":"MWE",
+   "months":[{},{"ph-bir-earn-01":15000,"ph-bir-earn-02":1200,"ph-bir-earn-03":800,"ph-bir-ded-02":675,"ph-bir-ded-03":375,"ph-bir-ded-04":200},
+    {"ph-bir-earn-01":15000,"ph-bir-earn-04":450.75,"ph-bir-earn-05":300,"ph-bir-earn-06":5000,"ph-bir-ded-02":675,"ph-bir-ded-03":375,"ph-bir-ded-04":200},{},{},{},{},{},{},{},{},{}]}
+ ]}

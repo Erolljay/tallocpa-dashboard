@@ -7,6 +7,9 @@ import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } fro
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
 import { manilaToday } from "@/lib/filings/run";
+import { lookupParties } from "@/lib/parties/lookup";
+import { resolveParty } from "@/lib/parties/resolve";
+import { partyKey } from "@/lib/parties/tin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ReviewForm } from "./review-form";
 
@@ -49,6 +52,11 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       .limit(1);
     duplicateOf = dup?.[0]?.document_id ?? null;
   }
+  // The parties directory: registered name and address for this TIN, and whether OCR disagrees.
+  const key = partyKey(fields.party_tin);
+  // A directory that cannot be read never blocks the review.
+  const entry = key ? (await lookupParties(supabase, [fields.party_tin]).catch(() => null))?.get(key) : undefined;
+  const resolved = entry ? resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry) : null;
   const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year });
   const client = doc.clients as unknown as { name: string } | null;
   const isPdf = doc.mime_type === "application/pdf";
@@ -89,6 +97,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
             canAct={canAct && ["received", "under_review"].includes(doc.status)}
             canRead={canAct && !ext?.approved_at}
             model={ext?.model ?? null}
+            directory={resolved && { partyId: resolved.party!.id, name: resolved.name, tin: resolved.tin, address: resolved.address, verified: Boolean(resolved.party!.verified_at), warning: resolved.warning }}
           />
         </div>
       </div>
