@@ -26,6 +26,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5;margin:0}
 .wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
 h1,h2,h3,h4{text-wrap:balance;margin:0;letter-spacing:-.01em}
@@ -136,6 +137,7 @@ td.r,th.r{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ph{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
 .ph .crumb{font-size:12.5px;color:var(--muted)}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:var(--surface);padding:6px 12px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
+a.btn{text-decoration:none}
 .btn:hover{background:var(--sunk)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.pri:hover{background:var(--accent-ink)}
@@ -189,6 +191,19 @@ textarea{resize:vertical;min-height:54px}
 .queue li{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .queue li:first-child{border-top:0}
 .queue ul{list-style:none;margin:0;padding:0}
+.checks{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.checks li{display:grid;grid-template-columns:20px 1fr;gap:6px;color:var(--muted)}
+.checks li::before{font-weight:700}
+.checks.ok li::before{content:"✓";color:var(--ok)}
+.checks.bad li::before{content:"✕";color:var(--bad)}
+.matrix td{vertical-align:middle}
+.cell{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-width:180px;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 8px;cursor:pointer}
+.cell small{font-size:11.5px;color:var(--muted);line-height:1.3}
+.cell:hover{background:var(--sunk)}
+.cell.st-crit,.cell.st-gap{border-color:var(--bad)}
+.cell.st-gap{border-style:dashed}
+.cell.st-risk{border-color:#d4a017}
+.cell[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;z-index:20}
 
 @media (max-width:900px){
@@ -218,9 +233,10 @@ textarea{resize:vertical;min-height:54px}
 
   <nav class="tabs" aria-label="Review sections" id="tabs">
     <a href="#journeys">1 · Journeys</a>
-    <a href="#findings">2 · Findings <span class="c">10</span></a>
-    <a href="#recommendations">3 · Recommendations <span class="c">7</span></a>
-    <a href="#mock">4 · Mock app</a>
+    <a href="#findings">2 · Findings <span class="c">12</span></a>
+    <a href="#recommendations">3 · Recommendations <span class="c">9</span></a>
+    <a href="#deadlines">4 · Deadlines</a>
+    <a href="#mock">5 · Mock app</a>
   </nav>
 
   <!-- ================= JOURNEYS ================= -->
@@ -251,7 +267,7 @@ textarea{resize:vertical;min-height:54px}
   <!-- ================= FINDINGS ================= -->
   <section id="v-findings" class="stack" hidden>
     <div class="card">
-      <div class="card-h"><h2>What the journeys show</h2><span class="muted">Ordered by impact on accuracy, then time saved</span></div>
+      <div class="card-h"><h2>What the journeys show</h2><span class="muted">F1–F10 by impact; F11–F12 added after your follow-up</span></div>
       <div id="findings-list"></div>
     </div>
   </section>
@@ -284,18 +300,40 @@ textarea{resize:vertical;min-height:54px}
       <div id="recs-list"></div>
     </div>
 
+    <div class="card">
+      <div class="card-h"><div><h2>Your worksheet columns, and where each comes from</h2><p class="muted">The registers in the workpapers follow the sales, purchases and payroll worksheets you use now.</p></div></div>
+      <div class="tscroll"><table>
+        <thead><tr><th>Worksheet</th><th>Column</th><th>In the app today</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="6"><b>Sales</b></td><td>Date, invoice no., customer, TIN</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
+          <tr><td>VATable, VAT-exempt, zero-rated, output VAT, invoice total</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
+          <tr><td>SC/PWD discount</td><td><span class="chip bad">Missing</span></td><td class="muted">New OCR field, with the kind (senior citizen, PWD, other). Checked: exempt sale = gross − 20%.</td></tr>
+          <tr><td>Gross sales</td><td><span class="chip warn">Worked out</span></td><td class="muted">VATable + exempt + discount.</td></tr>
+          <tr><td>CWT deducted (2307)</td><td><span class="chip warn">On the 2307 only</span></td><td class="muted">Per invoice from the collection receipt, or spread from the customer's 2307 by invoice. Register CWT vs 2307s received becomes tie-out T-3.</td></tr>
+          <tr><td>Net receipt</td><td><span class="chip bad">Missing</span></td><td class="muted">Worked out: invoice total − CWT.</td></tr>
+          <tr><td rowspan="4"><b>Purchases and expenses</b></td><td>Date, receipt no., supplier, TIN, account title</td><td><span class="chip ok">OCR + review</span></td><td class="muted">None</td></tr>
+          <tr><td>VATable, non-VAT, input VAT, gross</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
+          <tr><td>EWT withheld</td><td><span class="chip bad">Missing</span></td><td class="muted">Each supplier's ATC kept in the parties directory; EWT = base × the ATC rate. Ties to 0619-E, 1601-EQ and the QAP.</td></tr>
+          <tr><td>Net paid</td><td><span class="chip bad">Missing</span></td><td class="muted">Worked out: gross − EWT.</td></tr>
+          <tr><td rowspan="2"><b>Payroll</b></td><td>Basic, OT, holiday, de minimis, 13th month, contributions, taxable, tax withheld, net pay</td><td><span class="chip ok">Payroll register</span></td><td class="muted">None. The monthly register already has these as payslip items.</td></tr>
+          <tr><td>Quarter and year summary</td><td><span class="chip warn">Per month</span></td><td class="muted">Register F rolls the months up and ties tax withheld to the 1601-C (T-6) and gross pay to the books (T-7).</td></tr>
+        </tbody></table></div>
+      <p class="muted" style="margin-top:10px">Each register downloads to Excel in the same layout, so staff can keep working the way they do now while the figures stay tied to the documents.</p>
+    </div>
+
     <div class="grid2">
       <div class="card">
         <h3>Suggested build order</h3>
         <div class="tscroll" style="margin-top:10px"><table>
           <thead><tr><th>Slice</th><th>What</th><th>When</th></tr></thead>
           <tbody>
-            <tr><td><b>W1</b></td><td>Period file with lead schedules B–E read from approved documents and the ledger, plus the T tie-outs. Read-only; no new data entry.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
+            <tr><td><b>D1</b></td><td>Deadline safeguards: nightly coverage check, milestones per form, risk status, the Deadlines tracker, staff reminders and your Critical alerts.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
+            <tr><td><b>W1</b></td><td>Period file with registers B–F in your worksheet columns (adds the SC/PWD discount OCR field and each supplier's ATC), read from approved documents and the ledger, plus the T tie-outs.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>W2</b></td><td>Adjustments with reason and support replace “figures typed in”; per-schedule preparer and reviewer sign-off; “Mark prepared” gated.</td><td><span class="chip info">During the first live cycle</span></td></tr>
             <tr><td><b>W3</b></td><td>Review notes anchored to a schedule or row; open or cleared; replace the kick-back note. <b>My work</b> home for staff and reviewers.</td><td><span class="chip info">After cycle 1</span></td></tr>
             <tr><td><b>W4</b></td><td>Owner approval memo on the filing page; print the period file as a PDF binder; feed LOA ratios (Phase 4).</td><td><span class="chip neutral">After cycle 1</span></td></tr>
           </tbody></table></div>
-        <p class="muted" style="margin-top:10px">Why W1 first: the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
+        <p class="muted" style="margin-top:10px">Why D1 and W1 first: D1 adds checks on top of the deadline engine you already have, so it is small and protects the first live cycle. the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
       </div>
       <div class="card">
         <h3>New tables (for the developer)</h3>
@@ -315,6 +353,68 @@ textarea{resize:vertical;min-height:54px}
         </ul>
       </div>
     </div>
+  </section>
+
+  <!-- ================= DEADLINES ================= -->
+  <section id="v-deadlines" class="stack" hidden>
+    <div class="card">
+      <h2>Never missing a client's deadline</h2>
+      <p class="lede" style="margin-top:6px">Nobody forgets that the 1601-C is due on the 10th. A deadline is missed when the work behind it stalls and nobody notices: the payroll register never came in, the preparer was on leave, the client didn't approve, the funds weren't there. So the control watches each step, not only the BIR date.</p>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>What the app already does</h3><ul class="checks ok">
+        <li>Creates every filing 120 days ahead each night from the client's obligations.</li>
+        <li>Moves a due date that falls on a weekend or holiday to the next working day.</li>
+        <li>Lists overdue filings and the next 14 days on the dashboard, and 60 days on Deadlines.</li>
+        <li>Requests documents from clients on the 1st, reminds them, and flags missed cutoffs.</li>
+        <li>Locks the books and payroll month once the return is filed.</li>
+      </ul></div>
+      <div class="card"><h3>What's missing</h3><ul class="checks bad">
+        <li>No staff member is named on a filing. The Deadlines table shows due date, client, form, period and status only.</li>
+        <li>No internal target date ahead of the BIR date.</li>
+        <li>No steps with dates, so “Not started” three days out looks the same as a month out.</li>
+        <li>No reminders or escalation to staff, the reviewer or you. The nightly job reminds clients only.</li>
+        <li>Nothing checks that a client with payroll or withholding has the obligation, or that every filing has a preparer.</li>
+      </ul></div>
+    </div>
+    <div class="card"><div class="card-h"><h2>Five safeguards</h2><span class="muted">From setup to the day after the due date</span></div><div id="safeguards"></div></div>
+    <div class="card">
+      <div class="card-h"><div><h2>Worked example: 1601-C for March 2027</h2><p class="muted">Jaro Agri Supply. BIR due Monday, April 12 (April 10 is a Saturday).</p></div></div>
+      <div class="tscroll"><table>
+        <thead><tr><th>#</th><th>Step</th><th>Who</th><th>Target</th><th>If it slips</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Payroll register uploaded</td><td>Client (or staff for them)</td><td class="num">Mon Apr 5 · cutoff</td><td class="muted">At risk. The preparer reminds the client from the filing.</td></tr>
+          <tr><td>2</td><td>Register checked, 1601-C worksheet saved, marked prepared</td><td>Preparer</td><td class="num">Tue Apr 6</td><td class="muted">At risk; the reviewer sees it. Two steps late: Critical, and you are told.</td></tr>
+          <tr><td>3</td><td>Reviewed</td><td>Reviewer</td><td class="num">Wed Apr 7</td><td class="muted">You can reassign the review.</td></tr>
+          <tr><td>4</td><td>Client approved the tax due</td><td>Client (portal)</td><td class="num">Thu Apr 8</td><td class="muted">The preparer calls the client.</td></tr>
+          <tr><td>5</td><td>Owner approved; funds received or advance approved</td><td>Owner or acting approver</td><td class="num">Fri Apr 9</td><td class="muted">Critical.</td></tr>
+          <tr><td>6</td><td>Filed and paid in eFPS or eBIRForms</td><td>Preparer</td><td class="num">Fri Apr 9 · internal target</td><td class="muted">Critical.</td></tr>
+          <tr><td>7</td><td>Filing reference and proof recorded, sent to client</td><td>Preparer</td><td class="num">Mon Apr 12 · BIR due</td><td class="muted">Overdue at the end of the day.</td></tr>
+        </tbody></table></div>
+      <p class="muted" style="margin-top:10px">The 1601-C has only three working days between the client's cutoff on the 5th and the BIR date on the 10th, so its steps are one working day apart. Quarterly returns have two to three weeks. The targets are a starting suggestion for you to set per form.</p>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Who is told, and when</h3>
+        <div class="tscroll" style="margin-top:10px"><table>
+          <thead><tr><th>When</th><th>Who</th><th>How</th></tr></thead>
+          <tbody>
+            <tr><td>7 days before the BIR date</td><td>Preparer</td><td class="muted">In My work, ordered by the next step's date</td></tr>
+            <tr><td>A step's target passes</td><td>Preparer, reviewer</td><td class="muted">At risk in My work and the tracker; email that morning</td></tr>
+            <tr><td>Two steps late, or one working day left and not filed</td><td>+ Owner</td><td class="muted">Critical banner on your dashboard; morning email</td></tr>
+            <tr><td>BIR date passes, not filed</td><td>Everyone on the client</td><td class="muted">Overdue at the top of every list until filed</td></tr>
+            <tr><td>Coverage gap found</td><td>Owner</td><td class="muted">Dashboard list from the nightly check</td></tr>
+          </tbody></table></div>
+      </div>
+      <div class="card"><h3>Each person's routine</h3>
+        <div class="stack" style="gap:10px;margin-top:10px">
+          <p><b>Preparer.</b> <span class="muted">Opens My work: their filings by the next step's date, red first. When stuck, marks the filing “waiting on client” with a reason, which also sends the client a request.</span></p>
+          <p><b>Reviewer.</b> <span class="muted">Reviews At risk and Critical filings on their clients first.</span></p>
+          <p><b>Owner.</b> <span class="muted">Opens the Deadlines tracker: every client and form due this month in one grid. Assigns preparers to gaps, approves what waits on you, and calls clients who are Critical.</span></p>
+          <p class="muted" style="font-size:13px">Email goes through the nightly job and Resend that already exist (§3.13). This adds checks to the deadline engine, not a new system.</p>
+        </div>
+      </div>
+    </div>
+    <div><a class="btn pri" href="#mock" data-mockview="deadlines">Open the deadline tracker in the mock</a></div>
   </section>
 
   <!-- ================= MOCK APP ================= -->
@@ -338,7 +438,7 @@ textarea{resize:vertical;min-height:54px}
       </aside>
       <main class="main" id="mmain"></main>
     </div>
-    <p class="muted" style="margin-top:10px;font-size:13px">Try it: as <b>Preparer</b>, explain tie-out T-1 and clear D's note, add an adjustment on C, then sign. Switch to <b>Reviewer</b> to sign and clear notes, then <b>Owner</b> to see the approval memo. Nothing here is saved.</p>
+    <p class="muted" style="margin-top:10px;font-size:13px">Try it: open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers B, C and F use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -395,6 +495,8 @@ const F = [
  ["Low","neutral","Worksheet is hard to find","A small text link in the Return card of the filing page; nothing on the client page.","filings/[id]/page.tsx"],
  ["Low","neutral","Client page has no “this period” view","Ten cards of setup data. The thing staff open it for, where this client's month stands, isn't there.","clients/[id]/page.tsx"],
  ["Low","neutral","Overlapping lists in the sidebar","Deadlines, Monthly cycle, Documents and Review each show part of the same pipeline. Fine for now; worth merging once My work exists.","layout.tsx"],
+ ["High","bad","Nothing warns anyone before a filing is late","Filings are created 120 days ahead and listed by due date, but no staff member is named on a filing, there is no internal target before the BIR date, and the nightly job reminds clients only. A 1601-C still “Not started” on the 7th looks the same as one a month away. See the Deadlines tab.","api/cron/generate-filings, deadlines/filing-table.tsx"],
+ ["Medium","warn","Documents don't carry your worksheet columns","OCR reads VATable, exempt, zero-rated, VAT and total, and the 2307 separately. There is no SC/PWD discount, no CWT per invoice and no EWT per supplier, so no net receipt or net paid. Your sales and purchases worksheets are built around those columns.","lib/ocr/fields.ts"],
 ];
 document.getElementById("findings-list").innerHTML = F.map((f,i)=>`<div class="finding"><span class="fid">F${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${f[2]}</h3><span class="chip ${f[1]}">${f[0]}</span></div><p class="why">${f[3]}</p><p class="ev">Where: <code>${f[4]}</code></p></div></div>`).join("");
 
@@ -420,39 +522,77 @@ const R = [
  ["Period strip on the client page","Fixes F8, F9",
   ["Documents, Books, Workpapers, Returns, Filed for the current period, each linking to its screen."],
   "Puts the client's month at the top of the page staff actually open, and makes the worksheet and workpapers one click away."],
+ ["Deadline safeguards: coverage, milestones, risk, escalation, close-out","Fixes F11",
+  ["Coverage: a nightly check that every COR tax type, every payroll and every withholding in the books has an obligation, and that every filing has a preparer and a reviewer.","Steps back-scheduled from each due date in working days, set per form in Settings.","Each filing is On track, At risk, Critical, Overdue or Filed; risk goes to the reviewer, then to you.","A filing closes only with its filing reference and proof; a late one is tagged client-caused or staff-caused from the step that slipped."],
+  "The BIR date is never the surprise. What slips is a register that never came in or an approval nobody chased. Watching the steps gives three to five working days of warning instead of none."],
+ ["Registers in your worksheet format","Fixes F12",
+  ["Registers B, C and F show one line per invoice, receipt or employee with your columns, totalled by month.","Add an OCR field for the SC/PWD discount; take EWT from each supplier's ATC in the parties directory; take CWT from the collection receipt or the customer's 2307.","Each register downloads to Excel in the same layout."],
+  "Staff already think in these worksheets. If the app shows the same columns, there is nothing to re-learn and nothing to rebuild in Excel, and checks like CWT per register vs 2307s received come from the data you already have."],
 ];
 document.getElementById("recs-list").innerHTML = R.map((r,i)=>`<div class="rec"><span class="fid">R${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${r[0]}</h3><span class="chip info">${r[1]}</span></div><ul>${r[2].map(x=>`<li>${x}</li>`).join("")}</ul><p class="why-b"><b>Why:</b> ${r[3]}</p></div></div>`).join("");
+
+/* ---------------- deadline safeguards (report tab) ---------------- */
+const SG = [
+ ["Coverage: every filing exists and has a person",
+  "Each night, before anything else, the app checks that every tax type on the COR has an obligation, a client with payroll posted has a 1601-C obligation, a client whose books show expanded withholding has 0619-E and 1601-EQ, and every filing has a preparer and a reviewer from the client's team. Anything missing goes on your dashboard as a coverage gap.",
+  "The deadline engine creates filings only from obligations. A missing obligation means a missing filing, and a missing filing never turns red."],
+ ["Milestones back-scheduled from the due date",
+  "Each form has its steps, each with a target in working days before the BIR date, kept in Settings like the deadline rules. The last internal target is one working day before the BIR date.",
+  "If eFPS is down or a payment fails on the last day, there is still a day to recover."],
+ ["A risk status on every filing",
+  "On track, At risk (one milestone passed), Critical (two milestones passed, or one working day left and not filed), Overdue, Filed. Worked out every night and every time the filing moves.",
+  "“Not started” a month ahead and “Not started” three days ahead stop looking the same."],
+ ["Escalation by role",
+  "At risk goes to the preparer and the reviewer. Critical adds you: a banner on your dashboard and the morning email. Overdue stays at the top of everyone's list until it is filed.",
+  "Each person hears only about what they can act on, and you hear only about what needs you."],
+ ["Close-out",
+  "A filing is done only when its filing reference and proof are recorded. A month with no employees still files a zero 1601-C and records it. A late filing is tagged client-caused or staff-caused from the step that slipped.",
+  "The tag feeds the staff KPIs (Q40) and client compliance scores (Q41) without anyone arguing about whose fault it was."],
+];
+document.getElementById("safeguards").innerHTML = SG.map((s,i)=>`<div class="rec"><span class="fid">${i+1}</span><div><h3>${s[0]}</h3><p class="muted" style="margin-top:6px;max-width:78ch">${s[1]}</p><p class="why-b"><b>Why:</b> ${s[2]}</p></div></div>`).join("");
 
 /* ---------------- mock state ---------------- */
 const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"}};
 const S = {
-  role:"preparer", view:"file", sched:"T", approved:false, showAdj:false, showNote:null,
-  ticks:{}, requested:false,
-  sign:{A:{},B:{p:"RS · 2 Apr"},C:{p:"RS · 2 Apr",r:"MR · 3 Apr"},D:{p:"RS · 2 Apr"},E:{p:"RS · 1 Apr",r:"MR · 3 Apr"},F:{na:true},G:{},T:{}},
+  role:"preparer", view:"file", sched:"B", approved:false, showAdj:false, showNote:null,
+  ticks:{}, requested:false, onlyMine:true, dsel:"1|c",
+  sign:{A:{},B:{p:"RS · 2 Apr"},C:{p:"RS · 2 Apr",r:"MR · 3 Apr"},D:{p:"RS · 2 Apr"},E:{p:"RS · 1 Apr",r:"MR · 3 Apr"},F:{p:"RS · 6 Apr"},G:{},T:{}},
   adj:[{id:1,kind:"Disallowed input VAT",amt:-2184,reason:"OR 22817 (Mar 14, hardware) is issued to “Cash”, not to the client's name and TIN.",support:"Doc C-14 · image",by:"RS",ok:true}],
   tie:[
-    {id:"T-1",what:"Sales: 2550Q (approved documents) vs books (used by 1701Q)",a:3664500,b:3671300,status:"open",note:""},
-    {id:"T-2",what:"Output VAT: schedule B vs Output VAT account",a:439740,b:439740},
-    {id:"T-3",what:"Creditable tax withheld: 2307s received vs SAWT",a:8515.5,b:8515.5},
-    {id:"T-4",what:"EWT on rent: QAP vs rent expense × 5%",a:6750,b:6750},
-    {id:"T-5",what:"Input VAT: schedule C after adjustments vs Input VAT account",a:null,b:326862},
+    {id:"T-1",what:"VATable sales: 2550Q (approved documents) vs books (used by 1701Q)",a:3664500,b:3671300,status:"open",note:""},
+    {id:"T-2",what:"Output VAT: sales register vs Output VAT account",a:439740,b:439740},
+    {id:"T-3",what:"CWT: sales register (CWT column) vs 2307s received",a:10615.5,b:8515.5},
+    {id:"T-4",what:"EWT on rent: purchases register vs QAP",a:6750,b:6750},
+    {id:"T-5",what:"Input VAT: purchases register after adjustments vs Input VAT account",a:null,b:326862},
+    {id:"T-6",what:"Tax withheld on compensation: payroll register vs 1601-C (Jan, Feb filed + Mar)",a:483.9,b:483.9},
+    {id:"T-7",what:"Gross compensation: payroll register vs salaries, wages and benefits in books",a:236500,b:236500},
   ],
   notes:[
     {id:1,on:"B",row:"March",body:"March sales are 19% above February. Check that no April invoices were dated in March.",by:"MR",status:"cleared",reply:"Checked SI 0601–0631: all dated Apr 1 onward. March is the harvest-season peak, same as 2026.",rby:"RS"},
-    {id:2,on:"D",row:"Iloilo Grains Inc.",body:"Sales of ₱210,000 to Iloilo Grains, a top withholding agent, but no 2307 received. Request it or say why not.",by:"MR",status:"open",reply:"",rby:""},
+    {id:2,on:"D",row:"Iloilo Grains Inc.",body:"The sales register shows ₱2,100 CWT from Iloilo Grains but no 2307 received. Request it or say why not.",by:"MR",status:"open",reply:"",rby:""},
     {id:3,on:"C",row:"Petron OR 5512",body:"Two March fuel receipts look like duplicates.",by:"MR",status:"cleared",reply:"Different pumps and amounts (₱2,310 and ₱2,130). Both images checked.",rby:"RS"},
   ],
 };
-const B = [["January",212,1240500,148860],["February",188,1105800,132696],["March",231,1318200,158184]];
-const C = [["January",842100,101052,61500,7380],["February",790450,94854,58200,6984],["March",905300,108636,66300,7956]];
+/* Registers in the firm's worksheet columns. Monthly totals, then sample March lines. */
+const BM = [["January",212,1252500,2400,1240500,9600,148860,1398960,3450,1395510],["February",188,1114800,1800,1105800,7200,132696,1245696,3015.5,1242680.5],["March",231,1332200,2800,1318200,11200,158184,1487584,4150,1483434]];
+const BD = [["Mar 2","SI 0412","Bacolod Feeds Corp.",120000,0,120000,0,14400,134400,1200,133200,""],["Mar 4","SI 0415","Walk-in · senior citizen",2500,500,0,2000,0,2000,0,2000,""],["Mar 9","SI 0421","Panay Mills Inc.",51500,0,51500,0,6180,57680,515,57165,""],["Mar 15","SI 0433","Iloilo Grains Inc.",70000,0,70000,0,8400,78400,700,77700,"No 2307 yet"],["Mar 22","SI 0447","Walk-in · PWD",1250,250,0,1000,0,1000,0,1000,""],["Mar 30","SI 0457","Cash sale",6800,0,6800,0,816,7616,0,7616,"In books only · no image · not in totals"]];
+const CM = [["January",142,1030432,903600,18400,108432,2250,1028182],["February",131,966388,848650,15900,101838,2250,964138],["March",145,1109492,971600,21300,116592,2250,1107242]];
+const CD = [["Mar 1","OR 2201","Sta. Barbara Realty Corp.","Rent",50400,45000,0,5400,2250,48150,"EWT WC100 5%"],["Mar 3","SI 88123","Panay Feedmill Supply","Purchases",347200,310000,0,37200,0,347200,""],["Mar 14","OR 22817","Hardware store (issued to “Cash”)","Repairs",20384,18200,0,2184,0,20384,"Input VAT disallowed · C-1"],["Mar 18","OR 5512","Petron Jaro","Fuel and oil",2310,2062.5,0,247.5,0,2310,""],["Mar 20","—","Market vendor (non-VAT)","Supplies",4500,0,4500,0,0,4500,""]];
+const FM = [["January",4,72000,6000,78000,6200,65800,36.3,71763.7,"Filed Feb 10"],["February",4,72000,6000,78000,6200,65800,36.3,71763.7,"Filed Mar 10"],["March",4,74500,6000,80500,6325,68175,411.3,73763.7,"due"]];
 const D = [["Bacolod Feeds Corp.","WC158",412000,4120,true],["Western Visayas Coop","WC158",288050,2880.5,true],["Panay Mills Inc.","WC158",151500,1515,true],["Iloilo Grains Inc.","WC158",210000,null,false]];
 const E = [["January","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Feb 10"],["February","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Mar 10"],["March","Sta. Barbara Realty Corp.","WC100",45000,2250,"1601-EQ · to file"]];
+const col = (rows,i) => rows.reduce((a,r)=>a+(typeof r[i]==="number"?r[i]:0),0);
+const cellAmt = v => v ? amt(v) : "—";
 
-const outVAT = 439740, inGross = 304542+22320;
+const outVAT = 439740, inGross = 326862;
 const adjTotal = () => S.adj.reduce((a,x)=>a+x.amt,0);
 const inNet = () => inGross + adjTotal();
 const vatDue = () => outVAT - inNet();
-const tieRows = () => S.tie.map(t=> t.id==="T-5" ? {...t,a:inNet(),auto:true} : t);
+const tieRows = () => S.tie.map(t=>{
+  if (t.id==="T-5") return {...t,a:inNet(),auto:true};
+  if (t.id==="T-3") return {...t,status:S.requested?"explained":"open",note:S.requested?"Iloilo Grains Inc. has not sent its 2307 for ₱2,100.00 withheld. Requested in the portal; not claimed on the 1701Q until it arrives.":""};
+  return t;
+});
 function tieState(t){
   const d = Math.round(((t.a??0)-(t.b??0))*100)/100;
   if (d===0) return {k:"ok",l:"Agrees",d};
@@ -460,18 +600,20 @@ function tieState(t){
   if (t.status==="explained") return {k:"info",l:"Explained",d};
   return {k:"bad",l:"Unexplained",d};
 }
+const VAT_TIES = ["T-1","T-2","T-5"];
 const openTies = () => tieRows().filter(t=>tieState(t).k==="bad");
+const vatTies = () => openTies().filter(t=>VAT_TIES.includes(t.id));
 const openNotes = on => S.notes.filter(n=>n.status==="open" && (!on || n.on===on));
 
 const SCHED = [
-  ["A","Lead: returns of the period","2550Q · 1601-EQ · 1701Q"],
-  ["B","Sales & output VAT","631 sales invoices"],
-  ["C","Purchases & input VAT","goods · services · adjustments"],
+  ["A","Lead: returns of the period","2550Q · 1601-EQ · 1601-C · 1701Q"],
+  ["B","Sales register","631 invoices · CWT · net receipt"],
+  ["C","Purchases & expenses register","418 receipts · EWT · net paid"],
   ["D","Creditable withholding received","2307s → SAWT"],
   ["E","Withholding on payments","0619-E · 1601-EQ · QAP"],
-  ["F","Compensation","no employees"],
+  ["F","Payroll register","4 employees · 1601-C"],
   ["G","Income tax (1701Q)","from the books"],
-  ["T","Tie-outs","across returns and books"],
+  ["T","Tie-outs","across registers, returns and books"],
   ["N","Review notes","raised and cleared"],
 ];
 function schedState(r){
@@ -485,42 +627,115 @@ function schedState(r){
 }
 const stateTxt = {ok:"Reviewed",info:"Prepared",warn:"Open note",bad:"Blocked",none:"Not started",na:"N/A"};
 
-function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._);toast._=setTimeout(()=>t.hidden=true,2200)}
-const today = () => (S.role==="reviewer"?"MR":"RS")+" · 4 Apr";
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._);toast._=setTimeout(()=>t.hidden=true,2400)}
+const today = () => (S.role==="reviewer"?"MR":"RS")+" · 7 Apr";
+
+/* ---------------- deadline tracker data ---------------- */
+const DL = {
+  today:7,
+  forms:[
+    {k:"c",name:"1601-C",per:"March",due:"Mon Apr 12",note:"Apr 10 is a Saturday",steps:[["Payroll register in","Client",5],["Prepared","Preparer",6],["Reviewed","Reviewer",7],["Client approved","Client",8],["Owner approved, funds in","Owner",9],["Filed and paid","Preparer",9],["Proof recorded, sent to client","Preparer",12]]},
+    {k:"v",name:"2550Q / 2551Q",per:"Q1",due:"Mon Apr 26",note:"Apr 25 is a Sunday",steps:[["Documents in (cutoff)","Client",5],["Workpapers and return prepared","Preparer",16],["Reviewed","Reviewer",19],["Client approved","Client",21],["Owner approved, funds in","Owner",22],["Filed and paid","Preparer",23],["Proof recorded, sent to client","Preparer",26]]},
+    {k:"e",name:"1601-EQ",per:"Q1",due:"Fri Apr 30",note:"",steps:[["Documents in (cutoff)","Client",5],["Prepared with QAP","Preparer",22],["Reviewed","Reviewer",23],["Client approved","Client",26],["Owner approved, funds in","Owner",27],["Filed and paid","Preparer",28],["Proof recorded, sent to client","Preparer",30]]},
+  ],
+  rows:[
+    {c:"Jaro Agri Supply",prep:"Rhea S.",mine:true,cells:{c:{done:2},v:{done:1,form:"2550Q"},e:{done:1}}},
+    {c:"Molo Bakeshop",prep:"Rhea S.",mine:true,cells:{c:{done:0},v:{done:1,form:"2551Q"},e:null}},
+    {c:"Arevalo Dental Clinic",prep:null,cells:{c:{done:1,gap:"No preparer assigned"},v:{done:1,form:"2551Q"},e:null}},
+    {c:"Mandurriao Print Shop",prep:"Joy L.",cells:{c:{done:7},v:{done:1,form:"2551Q"},e:null}},
+    {c:"Lapaz Hardware",prep:"Joy L.",cells:{c:{done:4},v:{done:0,form:"2550Q"},e:{gap:"COR lists expanded withholding; no 1601-EQ obligation",noFiling:true}}},
+    {c:"Oton Rice Mill",prep:"Joy L.",cells:{c:{gap:"March payroll posted; no 1601-C obligation",noFiling:true},v:{done:1,form:"2550Q"},e:{done:1}}},
+  ],
+};
+const formOf = k => DL.forms.find(f=>f.k===k);
+function cstat(cell,k){
+  if (!cell) return "na";
+  if (cell.gap) return "gap";
+  const f=formOf(k), d=cell.done??0;
+  if (d>=f.steps.length) return "done";
+  const late=f.steps.filter((s,i)=>i>=d && s[2]<DL.today).length;
+  return late>=2?"crit":late===1?"risk":"track";
+}
+const DST = {done:["ok","Filed"],track:["info","On track"],risk:["warn","At risk"],crit:["bad","Critical"],gap:["bad","Coverage gap"],na:["neutral","—"]};
+function nextTxt(cell,k){
+  if (!cell) return "Not a filer";
+  if (cell.gap) return cell.gap;
+  const f=formOf(k), d=cell.done??0;
+  if (d>=f.steps.length) return "Filed Apr 6 · proof sent";
+  const s=f.steps[d];
+  return `${s[0]} · ${s[2]<DL.today?"was due":"by"} Apr ${s[2]}`;
+}
 
 /* ---------------- views ---------------- */
 function nav(){
-  const r=S.role;
-  const items = [
-    ["mywork","My work",r==="owner"?null:"new"],
-    ["dash","Dashboard"],["clients","Clients"],["docs","Documents"],["cycle","Monthly cycle"],["requests","Requests"],
-  ];
-  let h = items.map(([k,l,n])=> k==="mywork"||k==="clients" ? `<button data-go="${k==="clients"?"file":k}" aria-current="${(S.view===k||(k==="clients"&&S.view==="file"))?"page":"false"}">${l}${n?`<span class="new">NEW</span>`:""}</button>` : `<span>${l}</span>`).join("");
-  if (r!=="preparer") h += `<div class="grp">Firm</div><button data-go="approval" aria-current="${S.view==="approval"?"page":"false"}">Review${r==="owner"?'<span class="cnt">1</span>':""}</button>`;
+  const r=S.role, cur=k=>S.view===k?"page":"false";
+  let h = `<button data-go="mywork" aria-current="${cur("mywork")}">My work${r==="owner"?"":'<span class="new">NEW</span>'}</button>`
+    + `<span>Dashboard</span>`
+    + `<button data-go="file" aria-current="${cur("file")}">Clients</button>`
+    + `<button data-go="deadlines" aria-current="${cur("deadlines")}">Deadlines<span class="new">NEW</span></button>`
+    + ["Documents","Monthly cycle","Requests"].map(x=>`<span>${x}</span>`).join("");
+  if (r!=="preparer") h += `<div class="grp">Firm</div><button data-go="approval" aria-current="${cur("approval")}">Review${r==="owner"?'<span class="cnt">1</span>':""}</button>`;
   if (r==="owner") h += ["Collections","Scores","Staff","Settings"].map(x=>`<span>${x}</span>`).join("");
   $("#mnav").innerHTML=h;
   const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
 }
 
 function viewMyWork(){
-  const r=S.role, nb=openNotes().length, t=openTies().length;
+  const r=S.role, nb=openNotes().length, vt=vatTies().length;
+  const molo=DL.rows[1].cells.c, moloSt=cstat(molo,"c");
   const prepItems = [
-    ["Jaro Agri Supply · Q1 2027", t?`${t} tie-out difference to explain before 2550Q can be prepared`:"Tie-outs clean · ready to mark 2550Q prepared", t?"bad":"ok", "Open workpapers","T"],
-    ["Jaro Agri Supply · Q1 2027", nb?`${nb} review note${nb>1?"s":""} from Marco to answer`:"No open review notes", nb?"warn":"ok","Open notes","N"],
-    ["Molo Bakeshop · March 2027","14 documents to review (3 with low-confidence fields)","warn","Open documents",null],
-    ["Arevalo Dental Clinic · March 2027","Suggested entries to confirm: 22","info","Open books",null],
-    ["Mandurriao Print Shop · Q1 2027","Workpapers not started · 2551Q due Apr 25","none","Start workpapers",null],
+    ["Molo Bakeshop · 1601-C March", `${DST[moloSt][1]}: payroll register not in (was due Apr 5). BIR due Apr 12.${molo.reminded?" Client reminded today.":""}`, moloSt==="crit"?"bad":"warn", "Open filing", 'data-go="deadlines" data-dsel="1|c"'],
+    ["Jaro Agri Supply · 1601-C March", "Prepared · Marco reviews today (target Apr 7)", "info", "Open filing", 'data-go="deadlines" data-dsel="0|c"'],
+    ["Jaro Agri Supply · Q1 2027 workpapers", vt?`${vt} tie-out difference to explain before the 2550Q can be prepared`:"Tie-outs clean · ready to mark the 2550Q prepared", vt?"bad":"ok", "Open workpapers", 'data-open="T"'],
+    ["Jaro Agri Supply · Q1 2027 workpapers", nb?`${nb} review note${nb>1?"s":""} from Marco to answer`:"No open review notes", nb?"warn":"ok", "Open notes", 'data-open="N"'],
+    ["Mandurriao Print Shop · Q1 2027", "Workpapers not started · 2551Q prepared target Apr 16", "none", "Start workpapers", ""],
   ];
   const revItems = [
-    ["Jaro Agri Supply · Q1 2027", "Schedules B and D prepared, waiting for your review","info","Review schedules","B"],
-    ["Jaro Agri Supply · Q1 2027", nb?`${nb} open note${nb>1?"s":""} you raised`:"All your notes are cleared","warn","See notes","N"],
-    ["Lapaz Hardware · Q1 2027","2550Q prepared by Joy · ready for review","info","Open return",null],
+    ["Jaro Agri Supply · 1601-C March", "Prepared by Rhea · review today (target Apr 7)", "info", "Open filing", 'data-go="deadlines" data-dsel="0|c"'],
+    ["Lapaz Hardware · 2550Q Q1", "At risk: March purchases not in by the Apr 5 cutoff", "warn", "Open filing", 'data-go="deadlines" data-dsel="4|v"'],
+    ["Jaro Agri Supply · Q1 2027 workpapers", "Registers B and D prepared, waiting for your review", "info", "Review registers", 'data-open="B"'],
+    ["Jaro Agri Supply · Q1 2027 workpapers", nb?`${nb} open note${nb>1?"s":""} you raised`:"All your notes are cleared", nb?"warn":"ok", "See notes", 'data-open="N"'],
   ];
   const items = r==="reviewer"?revItems:prepItems;
-  const head = r==="reviewer"?"Marco's next actions":"Rhea's next actions";
-  return `<div class="ph"><div><p class="crumb">My work</p><h2>${head}</h2><p class="muted">One line per client and period, with the next thing to do. Replaces hunting across Documents, Books, Deadlines and Review.</p></div></div>
-  <div class="strip">${[["Documents to review","17"],["Schedules to prepare","6"],["Notes to clear",String(nb)],["Returns due ≤ 7 days","4"],["Client questions","1"]].map(([k,v])=>`<div><p class="k">${k}</p><p class="v">${v}</p></div>`).join("")}</div>
-  <div class="card queue"><ul>${items.map(i=>`<li><div style="min-width:0"><p style="font-weight:500">${i[0]}</p><p class="muted" style="font-size:13px"><span class="dot ${i[2]==="none"?"":i[2]}" style="display:inline-block;margin-right:6px"></span>${i[1]}</p></div>${i[4]?`<button class="btn sm" data-open="${i[4]}">${i[3]}</button>`:`<button class="btn sm" disabled title="Outside this mock">${i[3]}</button>`}</li>`).join("")}</ul></div>`;
+  return `<div class="ph"><div><p class="crumb">My work · Wed, Apr 7, 2027</p><h2>${r==="reviewer"?"Marco's":"Rhea's"} next actions</h2><p class="muted">One line per client and filing or period, ordered by how close the next step is. Red first.</p></div></div>
+  <div class="strip">${[["Critical filings","1"],["At risk","1"],["Documents to review","17"],["Notes to clear",String(nb)],["Client questions","1"]].map(([k,v])=>`<div><p class="k">${k}</p><p class="v">${v}</p></div>`).join("")}</div>
+  <div class="card queue"><ul>${items.map(i=>`<li><div style="min-width:0"><p style="font-weight:500">${i[0]}</p><p class="muted" style="font-size:13px"><span class="dot ${i[2]==="none"?"":i[2]}" style="display:inline-block;margin-right:6px"></span>${i[1]}</p></div>${i[4]?`<button class="btn sm" ${i[4]}>${i[3]}</button>`:`<button class="btn sm" disabled title="Outside this mock">${i[3]}</button>`}</li>`).join("")}</ul></div>`;
+}
+
+function viewDeadlines(){
+  const r=S.role;
+  const rows=DL.rows.map((x,i)=>[x,i]).filter(([x])=>!(r==="preparer"&&S.onlyMine)||x.mine);
+  const all=[]; DL.rows.forEach(x=>DL.forms.forEach(f=>{const c=x.cells[f.k]; if(c) all.push(cstat(c,f.k));}));
+  const cnt=k=>all.filter(s=>s===k).length;
+  const [ri,k]=S.dsel.split("|"); const row=DL.rows[+ri], f=formOf(k), cell=row.cells[k], st=cstat(cell,k);
+  const d=cell?.done??0;
+  const firstLate=f.steps.findIndex((s,i)=>i>=d && s[2]<DL.today);
+  const told={track:"Nobody yet. It sits in the preparer's My work, ordered by date.",risk:"The preparer and reviewer: At risk in My work, and an email the morning the step was missed.",crit:"The preparer, the reviewer and you: Critical banner on your dashboard and in the morning email.",gap:"You: coverage list on your dashboard from last night's check.",done:"The client: filed return and proof in the portal.",na:""}[st];
+  let actions="";
+  if ((st==="risk"||st==="crit") && f.steps[d][1]==="Client" && r!=="owner") actions += cell.reminded?`<span class="chip info">Client reminded today</span>`:`<button class="btn sm pri" data-remind>Remind client (portal + email)</button>`;
+  if ((st==="risk"||st==="crit") && f.steps[d][1]==="Client" && r==="owner") actions += `<span class="muted" style="font-size:13px">Waiting on the client. Call them if it is still open tomorrow.</span>`;
+  if (st==="gap" && !cell.noFiling) actions += r==="owner"?`<label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center">Preparer <select id="assignSel" style="width:auto"><option>Rhea S.</option><option>Joy L.</option></select></label><button class="btn sm pri" data-assign>Assign</button>`:`<span class="muted" style="font-size:13px">Waiting for the Owner to assign a preparer.</span>`;
+  if (st==="gap" && cell.noFiling) actions += r==="owner"?`<button class="btn sm pri" data-addob>Add the obligation and create the filing</button>`:`<span class="muted" style="font-size:13px">The Owner adds the obligation.</span>`;
+  if (st==="track" && f.steps[d][1]==="Owner" && r==="owner") actions += `<button class="btn sm pri" disabled title="Outside this mock">Open the final approval</button>`;
+
+  return `<div class="ph"><div><p class="crumb">Deadlines · as of Wed, Apr 7, 2027</p><h2>April 2027 filings</h2><p class="muted">Every client and form due this month, each with a person, its steps and a status.</p></div>
+    ${r==="preparer"?`<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="onlyMine" ${S.onlyMine?"checked":""} style="width:auto"> Only my clients</label>`:""}</div>
+  <div class="strip">${[["Critical",cnt("crit"),"bad"],["At risk",cnt("risk"),"warn"],["Coverage gaps",cnt("gap"),"bad"],["On track",cnt("track"),""],["Filed",cnt("done"),"ok"]].map(([l,v,c])=>`<div><p class="k">${l}</p><p class="v" style="${c&&v?`color:var(--${c==="ok"?"ok":c==="warn"?"warn":"bad"})`:""}">${v}</p></div>`).join("")}</div>
+  <div class="card" style="padding:12px"><div class="tscroll"><table class="matrix"><thead><tr><th>Client</th><th>Preparer</th>${DL.forms.map(x=>`<th>${x.name}<br><span class="faint" style="font-weight:400">${x.per} · due ${x.due}</span></th>`).join("")}</tr></thead><tbody>
+    ${rows.map(([x,i])=>`<tr><td><b style="font-weight:500">${x.c}</b></td><td style="white-space:nowrap">${x.prep??'<span class="chip bad">None</span>'}</td>${DL.forms.map(fm=>{const c=x.cells[fm.k], s=cstat(c,fm.k); if(!c) return `<td><span class="faint">—</span></td>`; return `<td><button class="cell st-${s}" data-cell="${i}|${fm.k}" aria-pressed="${S.dsel===i+"|"+fm.k}"><span class="chip ${DST[s][0]}">${DST[s][1]}</span>${c.form?`<span class="faint" style="font-size:11.5px"> ${c.form}</span>`:""}<small>${esc(nextTxt(c,fm.k))}</small></button></td>`}).join("")}</tr>`).join("")}
+  </tbody></table></div></div>
+  <div class="card">
+    <div class="card-h"><div><h3>${cell?.form??f.name} · ${f.per} 2027 · ${row.c}</h3><p class="muted" style="font-size:13px">BIR due ${f.due}${f.note?` (${f.note})`:""} · preparer ${row.prep??"none"}</p></div><span class="chip ${DST[st][0]}">${DST[st][1]}</span></div>
+    ${cell?.noFiling?`<p class="muted">No filing exists, so nothing would ever show as late. ${esc(cell.gap)}. The nightly coverage check found it.</p>`:`
+    <div class="tscroll"><table><thead><tr><th>#</th><th>Step</th><th>Who</th><th>Target</th><th>State</th></tr></thead><tbody>
+      ${f.steps.map((s,i)=>{const done=i<d, late=!done&&s[2]<DL.today, now=!done&&s[2]===DL.today; return `<tr class="${late?"hl":""}"><td class="num">${i+1}</td><td>${s[0]}</td><td>${s[1]}</td><td class="num">Apr ${s[2]}${i===f.steps.length-1?" · BIR due":i===5?" · internal target":""}</td><td><span class="chip ${done?"ok":late?"bad":now?"info":"neutral"}">${done?"Done":late?"Late":now?"Today":"Upcoming"}</span></td></tr>`}).join("")}
+    </tbody></table></div>`}
+    <div class="stack" style="gap:8px;margin-top:12px">
+      <p><b style="font-weight:500">Who has been told:</b> <span class="muted">${told}</span></p>
+      ${(st==="risk"||st==="crit")&&firstLate>=0?`<p><b style="font-weight:500">If it is filed late:</b> <span class="muted">counts as ${f.steps[firstLate][1]==="Client"?"client-caused (the client's step slipped first)":"staff-caused"}.</span></p>`:""}
+      ${actions?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${actions}</div>`:""}
+    </div>
+  </div>`;
 }
 
 function signBlock(r){
@@ -546,12 +761,13 @@ function noteHTML(n){
     ${canClear?`<div><button class="btn sm" data-clear="${n.id}">Clear note</button></div>`:""}
   </div>`;
 }
-function addNoteBtn(r,row){ return S.role!=="preparer" ? `<button class="btn sm ghost" data-addnote="${r}|${row}">+ Review note</button>` : ""; }
+function addNoteBtn(r,row){ return S.role!=="preparer" ? `<button class="btn sm ghost" data-addnote="${r}|${row}">+ Note</button>` : ""; }
 function noteForm(){
   if(!S.showNote) return "";
   const [r,row]=S.showNote.split("|");
   return `<form class="inline-form" id="noteForm"><label style="grid-column:1/-1">Review note on ${r} · ${esc(row)}<textarea id="noteBody" required placeholder="What should the preparer check?"></textarea></label><div style="display:flex;gap:8px"><button class="btn sm pri" type="submit">Add note</button><button class="btn sm" type="button" data-cancelnote>Cancel</button></div></form>`;
 }
+const hdr = cols => `<thead><tr>${cols.map(c=>c.startsWith(">")?`<th class="r">${c.slice(1)}</th>`:`<th>${c}</th>`).join("")}</tr></thead>`;
 
 function schedBody(r){
   if (r==="A"){
@@ -559,6 +775,8 @@ function schedBody(r){
     return `<p class="muted">Every return of the period, where its figures come from, and whether it can move on.</p>
     <div class="tscroll"><table><thead><tr><th>Return</th><th>From</th><th class="r">Amount</th><th>State</th></tr></thead><tbody>
       <tr><td>0619-E Jan, Feb</td><td>E</td><td class="r">${amt(4500)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
+      <tr><td>1601-C Jan, Feb</td><td>F</td><td class="r">${amt(72.6)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
+      <tr><td>1601-C Mar 2027</td><td>F, T-6</td><td class="r">${amt(411.3)}</td><td><button class="btn sm" data-go="deadlines" data-dsel="0|c">Prepared · due Apr 12</button></td></tr>
       <tr><td><b>2550Q Q1 2027</b></td><td>B, C, T-1, T-2, T-5</td><td class="r">${amt(vatDue())}</td><td>${ready.ok?'<span class="chip info">Ready to prepare</span>':'<span class="chip bad">Blocked</span>'}</td></tr>
       <tr><td>1601-EQ Q1 2027 + QAP</td><td>E, T-4</td><td class="r">${amt(2250)}</td><td><span class="chip info">Ready to prepare</span></td></tr>
       <tr><td>1701Q Q1 2027 + SAWT</td><td>G, D, T-1, T-3</td><td class="r">—</td><td>${openTies().some(t=>t.id==="T-1")?'<span class="chip bad">Waits for T-1</span>':'<span class="chip neutral">Not started</span>'}</td></tr>
@@ -566,19 +784,28 @@ function schedBody(r){
     ${gateHTML(ready)}`;
   }
   if (r==="B"){
-    const tot=B.reduce((a,x)=>[a[0]+x[1],a[1]+x[2],a[2]+x[3]],[0,0,0]);
-    return `${feeds(["2550Q · VATable sales","2550Q · Output tax","T-1","T-2"])}
-    <div class="tscroll"><table><thead><tr><th>Month</th><th class="r">Invoices</th><th class="r">VATable sales</th><th class="r">Output VAT</th><th>Ticks</th><th></th></tr></thead><tbody>
-    ${B.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td><td class="r">${amt(x[2])}</td><td class="r">${amt(x[3])}</td><td style="white-space:nowrap">${tick("B"+x[0]+"a","Agreed to documents")} ${tick("B"+x[0]+"b","Traced to ledger")}</td><td>${addNoteBtn("B",x[0])}</td></tr>`).join("")}
-    </tbody><tfoot><tr><td>Total</td><td class="r">${tot[0]}</td><td class="r">${amt(tot[1])}</td><td class="r">${amt(tot[2])}</td><td colspan="2"></td></tr></tfoot></table></div>
-    <p class="muted" style="font-size:12.5px">✓ agreed to approved documents · ◊ traced to the ledger. Output VAT checks to 12% of VATable sales within rounding.</p>`;
+    return `${feeds(["2550Q · VATable and exempt sales","2550Q · Output tax","T-1","T-2","T-3"])}
+    <p class="muted" style="font-size:13px">Your sales worksheet: one line per invoice, totalled by month.</p>
+    <div class="tscroll"><table>${hdr(["Month",">Invoices",">Gross sales",">SC/PWD discount",">VATable",">VAT-exempt",">Output VAT",">Invoice total",">CWT (2307)",">Net receipt","Ticks",""])}<tbody>
+    ${BM.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td>${[2,3,4,5,6,7,8,9].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td style="white-space:nowrap">${tick("B"+x[0]+"a","Agreed to documents")} ${tick("B"+x[0]+"b","Traced to ledger")}</td><td>${addNoteBtn("B",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Quarter</td><td class="r">${col(BM,1)}</td>${[2,3,4,5,6,7,8,9].map(i=>`<td class="r">${amt(col(BM,i))}</td>`).join("")}<td colspan="2"></td></tr></tfoot></table></div>
+    <h4>March, by invoice <span class="faint" style="font-weight:400">· 6 of 232 lines</span></h4>
+    <div class="tscroll"><table>${hdr(["Date","No.","Customer",">Gross",">SC/PWD",">VATable",">Exempt",">VAT",">Total",">CWT",">Net receipt",""])}<tbody>
+    ${BD.map(x=>`<tr class="${x[11].startsWith("In books")?"hl":""}"><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td>${[3,4,5,6,7,8,9,10].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td>${x[11]?`<span class="chip ${x[11].startsWith("In books")?"bad":"warn"}">${x[11]}</span>`:""}</td></tr>`).join("")}
+    <tr><td colspan="12" class="faint">… 226 more March invoices</td></tr></tbody></table></div>
+    <p class="muted" style="font-size:12.5px">✓ agreed to approved documents · ◊ traced to the ledger. SC/PWD sales are VAT-exempt after the 20% discount. CWT comes from the collection receipt or the customer's 2307; net receipt = invoice total − CWT. The discount needs a new OCR field (today OCR reads VATable, exempt, VAT and total only).</p>`;
   }
   if (r==="C"){
-    const t=C.reduce((a,x)=>[a[0]+x[1],a[1]+x[2],a[2]+x[3],a[3]+x[4]],[0,0,0,0]);
-    return `${feeds(["2550Q · Input tax","T-5"])}
-    <div class="tscroll"><table><thead><tr><th>Month</th><th class="r">Goods</th><th class="r">Input VAT</th><th class="r">Services</th><th class="r">Input VAT</th><th></th></tr></thead><tbody>
-    ${C.map(x=>`<tr><td>${x[0]}</td><td class="r">${amt(x[1])}</td><td class="r">${amt(x[2])}</td><td class="r">${amt(x[3])}</td><td class="r">${amt(x[4])}</td><td>${addNoteBtn("C",x[0])}</td></tr>`).join("")}
-    </tbody><tfoot><tr><td>Total</td><td class="r">${amt(t[0])}</td><td class="r">${amt(t[1])}</td><td class="r">${amt(t[2])}</td><td class="r">${amt(t[3])}</td><td></td></tr></tfoot></table></div>
+    return `${feeds(["2550Q · Input tax","1601-EQ / QAP","T-4","T-5"])}
+    <p class="muted" style="font-size:13px">Your purchases and expenses worksheet: one line per receipt, totalled by month.</p>
+    <div class="tscroll"><table>${hdr(["Month",">Receipts",">Gross amount",">VATable",">Non-VAT",">Input VAT",">EWT withheld",">Net paid",""])}<tbody>
+    ${CM.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td>${[2,3,4,5,6,7].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td>${addNoteBtn("C",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Quarter</td><td class="r">${col(CM,1)}</td>${[2,3,4,5,6,7].map(i=>`<td class="r">${amt(col(CM,i))}</td>`).join("")}<td></td></tr></tfoot></table></div>
+    <h4>March, by receipt <span class="faint" style="font-weight:400">· 5 of 145 lines</span></h4>
+    <div class="tscroll"><table>${hdr(["Date","No.","Supplier","Account",">Gross",">VATable",">Non-VAT",">Input VAT",">EWT",">Net paid",""])}<tbody>
+    ${CD.map(x=>`<tr><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td>${[4,5,6,7,8,9].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td>${x[10]?`<span class="chip ${x[10].startsWith("Input")?"warn":"neutral"}">${x[10]}</span>`:""}</td></tr>`).join("")}
+    <tr><td colspan="11" class="faint">… 140 more March receipts</td></tr></tbody></table></div>
+    <p class="muted" style="font-size:12.5px">EWT is worked out from each supplier's ATC kept in the parties directory (a new field); net paid = gross − EWT. The account title is the one chosen on document review.</p>
     <div class="card flat" style="padding:14px">
       <div class="card-h" style="margin-bottom:8px"><h4>Adjustments</h4>${S.role==="preparer"?`<button class="btn sm" data-toggleadj>${S.showAdj?"Close":"+ Add adjustment"}</button>`:""}</div>
       ${S.showAdj?`<form class="inline-form" id="adjForm" style="margin-bottom:10px">
@@ -590,16 +817,16 @@ function schedBody(r){
       <div class="tscroll"><table><thead><tr><th>#</th><th>Kind and reason</th><th>Support</th><th class="r">Input VAT</th><th>Reviewer</th></tr></thead><tbody>
       ${S.adj.map(a=>`<tr><td class="num" style="white-space:nowrap">C-${a.id}</td><td><b style="font-weight:500">${esc(a.kind)}</b><p class="muted" style="font-size:12.5px">${esc(a.reason)}</p></td><td style="font-size:12.5px">${esc(a.support)}</td><td class="r">${amt(a.amt)}</td><td>${a.ok?'<span class="chip ok">Ticked</span>':(S.role!=="preparer"?`<button class="btn sm" data-okadj="${a.id}">Tick</button>`:'<span class="chip neutral">Waiting</span>')}</td></tr>`).join("")}
       </tbody></table></div>
-      <div class="memo" style="margin-top:10px"><dl><dt>Input VAT per documents</dt><dd>${peso(inGross)}</dd><dt>Adjustments</dt><dd>${peso(adjTotal())}</dd><dt><b>Allowable input VAT</b></dt><dd><b>${peso(inNet())}</b></dd></dl></div>
+      <div class="memo" style="margin-top:10px"><dl><dt>Input VAT per register</dt><dd>${peso(inGross)}</dd><dt>Adjustments</dt><dd>${peso(adjTotal())}</dd><dt><b>Allowable input VAT</b></dt><dd><b>${peso(inNet())}</b></dd></dl></div>
       <p class="muted" style="font-size:12.5px;margin-top:6px">These replace “figures typed in”: each peso has a reason and a support, and the reviewer ticks it.</p>
     </div>`;
   }
   if (r==="D"){
     return `${feeds(["1701Q · Creditable tax withheld","SAWT","T-3"])}
-    <div class="tscroll"><table><thead><tr><th>Customer (payor)</th><th>ATC</th><th class="r">Sales per B</th><th class="r">Tax withheld (2307)</th><th></th></tr></thead><tbody>
-    ${D.map(x=>`<tr class="${x[4]?"":"hl"}"><td>${x[0]}</td><td>${x[1]}</td><td class="r">${amt(x[2])}</td><td class="r">${x[3]==null?`<span class="chip warn">No 2307</span>`:amt(x[3])}</td><td>${x[4]?"":(S.requested?'<span class="chip info">Requested in portal</span>':(S.role==="preparer"?'<button class="btn sm" data-request>Ask client for 2307</button>':""))} ${addNoteBtn("D",x[0])}</td></tr>`).join("")}
-    </tbody><tfoot><tr><td>Total received</td><td></td><td class="r">${amt(851550)}</td><td class="r">${amt(8515.5)}</td><td></td></tr></tfoot></table></div>
-    <p class="muted" style="font-size:12.5px">The 1% on ₱210,000 (₱2,100) is not claimed until the 2307 arrives. The request goes to the client's portal under Requests.</p>`;
+    <div class="tscroll"><table><thead><tr><th>Customer (payor)</th><th>ATC</th><th class="r">Sales per register</th><th class="r">CWT per register</th><th class="r">2307 received</th><th></th></tr></thead><tbody>
+    ${D.map(x=>`<tr class="${x[4]?"":"hl"}"><td>${x[0]}</td><td>${x[1]}</td><td class="r">${amt(x[2])}</td><td class="r">${amt(x[2]/100)}</td><td class="r">${x[3]==null?`<span class="chip warn">Not received</span>`:amt(x[3])}</td><td>${x[4]?"":(S.requested?'<span class="chip info">Requested in portal</span>':(S.role==="preparer"?'<button class="btn sm" data-request>Ask client for 2307</button>':""))} ${addNoteBtn("D",x[0])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Total</td><td></td><td class="r">${amt(1061550)}</td><td class="r">${amt(10615.5)}</td><td class="r">${amt(8515.5)}</td><td></td></tr></tfoot></table></div>
+    <p class="muted" style="font-size:12.5px">The ₱2,100 withheld by Iloilo Grains is not claimed until its 2307 arrives. The request goes to the client's portal under Requests.</p>`;
   }
   if (r==="E"){
     return `${feeds(["1601-EQ · Tax withheld","QAP","T-4"])}
@@ -607,24 +834,34 @@ function schedBody(r){
     ${E.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td class="r">${amt(x[3])}</td><td class="r">${amt(x[4])}</td><td style="font-size:12.5px">${x[5]}</td></tr>`).join("")}
     </tbody><tfoot><tr><td>Quarter</td><td></td><td></td><td class="r">${amt(135000)}</td><td class="r">${amt(6750)}</td><td style="font-size:12.5px">Due on 1601-EQ: ${amt(2250)}</td></tr></tfoot></table></div>`;
   }
-  if (r==="F") return `<p class="muted">No employees on the payroll this quarter. Marked not applicable; the schedule appears once a 1601-C obligation exists.</p>`;
+  if (r==="F"){
+    return `${feeds(["1601-C","1604-C · alphalist","T-6","T-7"])}
+    <p class="muted" style="font-size:13px">Your payroll worksheet: the monthly register already uploaded for the 1601-C, summarised for the quarter. Figures are illustrative.</p>
+    <div class="tscroll"><table>${hdr(["Month",">Employees",">Basic + OT",">De minimis",">Gross compensation",">SSS, PhilHealth, Pag-IBIG (EE)",">Taxable compensation",">Tax withheld",">Net pay","1601-C"])}<tbody>
+    ${FM.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td>${[2,3,4,5,6,7,8].map(i=>`<td class="r">${amt(x[i])}</td>`).join("")}<td>${x[9]==="due"?`<button class="btn sm" data-go="deadlines" data-dsel="0|c">Due Apr 12</button>`:`<span class="chip ok">${x[9]}</span>`}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Quarter</td><td></td>${[2,3,4,5,6,7,8].map(i=>`<td class="r">${amt(col(FM,i))}</td>`).join("")}<td></td></tr></tfoot></table></div>
+    <p class="muted" style="font-size:12.5px">Each month opens to the employee lines of the register (payslip items mapped to BIR categories, as built today). Employer shares are on the register's second tab.</p>`;
+  }
   if (r==="G"){
     const blocked = openTies().some(t=>t.id==="T-1");
-    return `${feeds(["1701Q"])}${blocked?`<div class="gate" style="border-color:var(--bad);background:var(--bad-bg)"><b style="color:var(--bad)">Waiting for T-1</b><p class="muted">Sales in the books differ from sales on the 2550Q by ${peso(6800)}. Explain it in T before income tax is prepared from the books.</p></div>`:""}
+    return `${feeds(["1701Q"])}${blocked?`<div class="gate" style="border-color:var(--bad);background:var(--bad-bg)"><b style="color:var(--bad)">Waiting for T-1</b><p class="muted">VATable sales in the books differ from the 2550Q by ${peso(6800)}. Explain it in T before income tax is prepared from the books.</p></div>`:""}
     <div class="tscroll"><table><thead><tr><th>From the books, Jan–Mar 2027</th><th class="r">Amount</th></tr></thead><tbody>
-      <tr><td>Sales, net of returns and discounts</td><td class="r">${amt(3671300)}</td></tr>
+      <tr><td>Sales, net of returns and discounts</td><td class="r">${amt(3699300)}</td></tr>
       <tr><td>Cost of sales</td><td class="r">(${amt(2537850)})</td></tr>
-      <tr><td>Gross income</td><td class="r">${amt(1133450)}</td></tr>
-      <tr><td>Itemized deductions by BIR line</td><td class="r">(${amt(486920)})</td></tr>
+      <tr><td>Gross income</td><td class="r">${amt(1161450)}</td></tr>
+      <tr><td>Itemized deductions by BIR line</td><td class="r">(${amt(514920)})</td></tr>
       <tr><td><b>Taxable income, quarter</b></td><td class="r"><b>${amt(646530)}</b></td></tr>
-      <tr><td>Creditable tax withheld (from D)</td><td class="r">${amt(8515.5)}</td></tr>
+      <tr><td>Creditable tax withheld (2307s received, from D)</td><td class="r">${amt(8515.5)}</td></tr>
     </tbody></table></div>
-    <p class="muted" style="font-size:12.5px">Gross profit rate ${(1133450/3671300*100).toFixed(1)}%. In Phase 4 this is compared with the industry benchmark you set.</p>`;
+    <p class="muted" style="font-size:12.5px">Gross profit rate ${(1161450/3699300*100).toFixed(1)}%. In Phase 4 this is compared with the industry benchmark you set.</p>`;
   }
   if (r==="T"){
     return `<p class="muted">The same figure, read from two places. A difference must be explained before the return that uses it can be marked prepared.</p>
     <div class="tscroll"><table><thead><tr><th>#</th><th>Check</th><th class="r">Source 1</th><th class="r">Source 2</th><th class="r">Difference</th><th>State</th></tr></thead><tbody>
-    ${tieRows().map(t=>{const s=tieState(t);return `<tr class="${s.k==="bad"?"hl":""}"><td class="num">${t.id}</td><td>${t.what}${t.note?`<p class="muted" style="font-size:12.5px">${esc(t.note)}</p>`:""}${s.k==="bad"&&S.role==="preparer"?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><input id="ex-${t.id}" style="flex:1;min-width:160px" aria-label="Explanation for ${t.id}" value="SI 0457 (Mar 30, ₱6,800 cash sale) posted by JE 03-118; the client hasn't uploaded the invoice. Requested in the portal."><button class="btn sm pri" data-explain="${t.id}">Explain</button></div>`:""}</td><td class="r">${amt(t.a)}</td><td class="r">${amt(t.b)}</td><td class="r">${s.d?amt(s.d):"—"}</td><td><span class="chip ${s.k}">${s.l}</span></td></tr>`}).join("")}
+    ${tieRows().map(t=>{const s=tieState(t);
+      let act="";
+      if (s.k==="bad" && S.role==="preparer") act = t.id==="T-3" ? `<div style="margin-top:6px"><button class="btn sm pri" data-request>Ask client for the missing 2307</button></div>` : `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><input id="ex-${t.id}" style="flex:1;min-width:160px" aria-label="Explanation for ${t.id}" value="SI 0457 (Mar 30, ₱6,800 cash sale) posted by JE 03-118; the client hasn't uploaded the invoice. Requested in the portal."><button class="btn sm pri" data-explain="${t.id}">Explain</button></div>`;
+      return `<tr class="${s.k==="bad"?"hl":""}"><td class="num">${t.id}</td><td>${t.what}${t.note?`<p class="muted" style="font-size:12.5px">${esc(t.note)}</p>`:""}${act}</td><td class="r">${amt(t.a)}</td><td class="r">${amt(t.b)}</td><td class="r">${s.d?amt(s.d):"—"}</td><td><span class="chip ${s.k}">${s.l}</span></td></tr>`}).join("")}
     </tbody></table></div>`;
   }
   if (r==="N"){
@@ -635,9 +872,10 @@ function schedBody(r){
 
 function gate(){
   const why=[];
-  if (openTies().length) why.push(`${openTies().length} tie-out difference not explained (${openTies().map(t=>t.id).join(", ")})`);
-  for (const r of ["B","C"]) { if(!S.sign[r].p) why.push(`Schedule ${r} not signed by the preparer`); }
-  for (const r of ["B","C"]) { const n=openNotes(r).length; if(n) why.push(`Schedule ${r} has ${n} open review note${n>1?"s":""}`); }
+  const vt=vatTies();
+  if (vt.length) why.push(`${vt.length} tie-out difference not explained (${vt.map(t=>t.id).join(", ")})`);
+  for (const r of ["B","C"]) { if(!S.sign[r].p) why.push(`Register ${r} not signed by the preparer`); }
+  for (const r of ["B","C"]) { const n=openNotes(r).length; if(n) why.push(`Register ${r} has ${n} open review note${n>1?"s":""}`); }
   return {ok:!why.length,why};
 }
 function gateHTML(g){
@@ -647,16 +885,17 @@ function gateHTML(g){
 }
 
 function viewFile(){
-  const done = ["A","B","C","D","E","G","T"].filter(r=>["ok","info"].includes(schedState(r))).length;
+  const list=["A","B","C","D","E","F","G","T"];
+  const done = list.filter(r=>["ok","info"].includes(schedState(r))).length;
   const cur = SCHED.find(s=>s[0]===S.sched);
   return `<div class="ph"><div><p class="crumb">Clients › Jaro Agri Supply › Workpapers</p><h2>Q1 2027 · January – March</h2><p class="muted">Sole proprietor · VAT · Bookkeeping + Tax · Preparer Rhea S. · Reviewer Marco R.</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" disabled title="Outside this mock">Print binder (PDF)</button>${S.role!=="preparer"?`<button class="btn sm pri" data-go="approval">Open 2550Q</button>`:""}</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" disabled title="Outside this mock">Download registers (Excel)</button><button class="btn sm" disabled title="Outside this mock">Print binder (PDF)</button>${S.role!=="preparer"?`<button class="btn sm pri" data-go="approval">Open 2550Q</button>`:""}</div></div>
   <div class="strip">
     <div><p class="k">Documents</p><p class="v done">631 + 418 approved</p></div>
     <div><p class="k">Books</p><p class="v done">Posted to Mar 31</p></div>
-    <div class="cur"><p class="k">Workpapers</p><p class="v">${done} of 7 prepared</p></div>
-    <div><p class="k">Returns</p><p class="v">0 of 3 prepared</p></div>
-    <div><p class="k">Filed</p><p class="v">0619-E × 2</p></div>
+    <div class="cur"><p class="k">Workpapers</p><p class="v">${done} of ${list.length} prepared</p></div>
+    <div><p class="k">Returns</p><p class="v">1 of 4 prepared</p></div>
+    <div><p class="k">Filed</p><p class="v">0619-E × 2 · 1601-C × 2</p></div>
   </div>
   <div class="wp">
     <div class="index" role="list">${SCHED.map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${s[0]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
@@ -671,18 +910,18 @@ function viewFile(){
 
 function viewApproval(){
   const prior=98410, due=vatDue(), ch=(due-prior)/prior*100;
-  const ties=tieRows().map(t=>[t,tieState(t)]);
-  const r=S.role;
-  return `<div class="ph"><div><p class="crumb">Review › Jaro Agri Supply</p><h2>2550Q · Q1 2027</h2><p class="muted">Due Apr 26, 2027 (Apr 25 is a Sunday) · client approved Apr 6</p></div><span class="chip ${S.approved?"ok":"info"}">${S.approved?"Owner approved":"Client approved"}</span></div>
+  const ties=tieRows().filter(t=>VAT_TIES.includes(t.id)).map(t=>[t,tieState(t)]);
+  const r=S.role, blocked=vatTies().length||openNotes("B").length||openNotes("C").length;
+  return `<div class="ph"><div><p class="crumb">Review › Jaro Agri Supply</p><h2>2550Q · Q1 2027</h2><p class="muted">Due Apr 26, 2027 (Apr 25 is a Sunday) · client approved Apr 21</p></div><span class="chip ${S.approved?"ok":"info"}">${S.approved?"Owner approved":"Client approved"}</span></div>
   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">
     <div class="card memo"><div class="card-h"><h3>Approval memo</h3><span class="chip neutral">New</span></div>
       <dl>
         <dt>VAT payable</dt><dd><b>${peso(due)}</b></dd>
         <dt>Q4 2026</dt><dd>${peso(prior)} <span class="chip ${Math.abs(ch)>25?"warn":"neutral"}">${ch>=0?"+":""}${ch.toFixed(1)}%</span></dd>
-        <dt>Sales vs Q4 2026</dt><dd>${peso(3664500)} <span class="chip neutral">+8.2%</span></dd>
+        <dt>VATable sales vs Q4 2026</dt><dd>${peso(3664500)} <span class="chip neutral">+8.2%</span></dd>
         <dt>VAT payable ÷ sales</dt><dd>${(due/3664500*100).toFixed(2)}%</dd>
         <dt>Adjustments</dt><dd>${S.adj.length} · ${peso(adjTotal())} input VAT${S.adj.every(a=>a.ok)?' <span class="chip ok">all ticked</span>':' <span class="chip warn">not all ticked</span>'}</dd>
-        <dt>Tie-outs</dt><dd>${ties.filter(([,s])=>s.k==="ok").length} agree · ${ties.filter(([,s])=>s.k==="info").length} explained · ${ties.filter(([,s])=>s.k==="bad").length} open</dd>
+        <dt>Tie-outs used</dt><dd>${ties.filter(([,s])=>s.k==="ok").length} agree · ${ties.filter(([,s])=>s.k==="info").length} explained · ${ties.filter(([,s])=>s.k==="bad").length} open</dd>
         <dt>Review notes</dt><dd>${S.notes.length} raised · ${S.notes.length-openNotes().length} cleared</dd>
         <dt>Prepared / reviewed</dt><dd>Rhea S. · Marco R.</dd>
       </dl>
@@ -692,9 +931,9 @@ function viewApproval(){
       <dl><dt>Tax on this return</dt><dd><span class="chip warn">Unpaid</span> · firm remits</dd><dt>Retainer balance</dt><dd><span class="chip ok">Paid</span></dd></dl>
       <p class="muted" style="margin-top:10px;font-size:13px">Approving while unpaid records ${peso(due)} as Advances to clients – taxes (Q32).</p>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        ${S.approved?'<span class="stamp">APPROVED</span>':(r==="owner"?`<button class="btn pri" data-approve ${openTies().length||openNotes().length?"disabled":""}>Approve</button><button class="btn">Send back</button>`:`<span class="muted" style="font-size:13px">Final approval is the Owner's. Switch to Owner to see it.</span>`)}
+        ${S.approved?'<span class="stamp">APPROVED</span>':(r==="owner"?`<button class="btn pri" data-approve ${blocked?"disabled":""}>Approve</button><button class="btn">Send back</button>`:`<span class="muted" style="font-size:13px">Final approval is the Owner's. Switch to Owner to see it.</span>`)}
       </div>
-      ${r==="owner"&&!S.approved&&(openTies().length||openNotes().length)?`<p style="margin-top:8px;font-size:12.5px;color:var(--bad)">Disabled while a tie-out or review note is open. In the mock, resolve them as Preparer and Reviewer first.</p>`:""}
+      ${r==="owner"&&!S.approved&&blocked?`<p style="margin-top:8px;font-size:12.5px;color:var(--bad)">Disabled while a 2550Q tie-out or a note on B or C is open. In the mock, resolve them as Preparer and Reviewer first.</p>`:""}
     </div>
   </div>
   <p class="muted" style="font-size:12.5px">Workpapers: <button class="btn sm ghost" data-go="file">open the Q1 2027 file</button></p>`;
@@ -702,30 +941,45 @@ function viewApproval(){
 
 function render(){
   nav();
-  $("#mmain").innerHTML = S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():viewFile();
+  $("#mmain").innerHTML = S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():S.view==="deadlines"?viewDeadlines():viewFile();
 }
 
 /* ---------------- events ---------------- */
+function setRole(role){
+  S.role=role; S.showAdj=false; S.showNote=null;
+  document.querySelectorAll("#roleSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.role===role));
+}
 $("#roleSeg").addEventListener("click",e=>{
   const b=e.target.closest("button[data-role]"); if(!b) return;
-  S.role=b.dataset.role; S.showAdj=false; S.showNote=null;
-  document.querySelectorAll("#roleSeg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  if (S.role==="owner") S.view="approval"; else if (S.view==="approval") S.view="file";
+  setRole(b.dataset.role);
+  if (S.role==="owner") S.view="deadlines"; else if (S.view==="approval") S.view="file";
   render();
+});
+document.addEventListener("click",e=>{
+  const a=e.target.closest("[data-mockview]"); if(!a) return;
+  setRole("owner"); S.view=a.dataset.mockview; render();
+});
+document.getElementById("v-mock").addEventListener("change",e=>{
+  if (e.target.id==="onlyMine"){ S.onlyMine=e.target.checked; render(); }
 });
 document.getElementById("v-mock").addEventListener("click",e=>{
   const t=e.target.closest("button"); if(!t) return;
   const d=t.dataset;
-  if (d.go){ S.view=d.go; }
+  const [ri,k]=S.dsel.split("|"), dcell=DL.rows[+ri].cells[k];
+  if (d.go){ S.view=d.go; if(d.dsel) S.dsel=d.dsel; }
   else if (d.open){ S.view="file"; S.sched=d.open; }
+  else if (d.cell){ S.dsel=d.cell; }
+  else if ("remind" in d){ dcell.reminded=true; toast(`Reminder sent to ${DL.rows[+ri].c} (portal and email)`); }
+  else if ("assign" in d){ const row=DL.rows[+ri]; row.prep=$("#assignSel").value; row.mine=row.prep==="Rhea S."; delete dcell.gap; toast(`${row.prep} assigned to ${row.c}`); }
+  else if ("addob" in d){ delete dcell.gap; delete dcell.noFiling; dcell.done=1; toast("Obligation added · filing created from last night's rules"); }
   else if (d.sched){ S.sched=d.sched; S.showAdj=false; S.showNote=null; }
   else if (d.sign){ S.sign[S.sched][d.sign]=today(); toast(`${S.sched} signed as ${d.sign==="p"?"preparer":"reviewer"}`); }
   else if (d.tick){ S.ticks[d.tick]=!S.ticks[d.tick]; }
-  else if (d.explain!=null && d.explain!==undefined && d.explain!==""){ const i=$("#ex-"+d.explain); const v=(i&&i.value.trim())||""; if(!v){toast("Write the reason first");return;} const x=S.tie.find(z=>z.id===d.explain); x.status="explained"; x.note=v; toast(`${x.id} explained`); }
+  else if (d.explain){ const i=$("#ex-"+d.explain); const v=(i&&i.value.trim())||""; if(!v){toast("Write the reason first");return;} const x=S.tie.find(z=>z.id===d.explain); x.status="explained"; x.note=v; toast(`${x.id} explained`); }
   else if ("toggleadj" in d){ S.showAdj=!S.showAdj; }
   else if (d.okadj){ S.adj.find(a=>a.id==d.okadj).ok=true; toast("Adjustment ticked"); }
-  else if ("request" in d){ S.requested=true; toast("Request sent to the client's portal"); }
-  else if (d.reply){ const v=($("#reply-"+d.reply)?.value||"").trim(); if(!v){toast("Write an answer first");return;} const n=S.notes.find(z=>z.id==d.reply); n.reply=v; n.rby="RS"; if(n.on==="D"&&!S.requested){S.requested=true;} toast("Answer sent to Marco"); }
+  else if ("request" in d){ S.requested=true; toast("2307 request sent to the client's portal"); }
+  else if (d.reply){ const v=($("#reply-"+d.reply)?.value||"").trim(); if(!v){toast("Write an answer first");return;} const n=S.notes.find(z=>z.id==d.reply); n.reply=v; n.rby="RS"; if(n.on==="D") S.requested=true; toast("Answer sent to Marco"); }
   else if (d.clear){ S.notes.find(z=>z.id==d.clear).status="cleared"; toast("Note cleared"); }
   else if (d.addnote){ S.showNote=d.addnote; }
   else if ("cancelnote" in d){ S.showNote=null; }
@@ -739,7 +993,8 @@ document.getElementById("v-mock").addEventListener("submit",e=>{
   if (e.target.id==="adjForm"){
     const amtv=parseFloat($("#adjAmt").value); if(isNaN(amtv)){toast("Enter an amount");return;}
     S.adj.push({id:S.adj.length+1,kind:$("#adjKind").value,amt:amtv,reason:$("#adjReason").value,support:$("#adjSupport").value||"—",by:"RS",ok:false});
-    const hadRev=!!S.sign.C.r; delete S.sign.C.r; S.showAdj=false; toast("Adjustment added · VAT payable now "+peso(vatDue())+(hadRev?" · C needs review again":""));
+    const hadRev=!!S.sign.C.r; delete S.sign.C.r;
+    S.showAdj=false; toast("Adjustment added · VAT payable now "+peso(vatDue())+(hadRev?" · C needs review again":""));
   } else if (e.target.id==="noteForm"){
     const body=$("#noteBody").value.trim(); if(!body) return;
     const [on,row]=S.showNote.split("|");
@@ -750,13 +1005,15 @@ document.getElementById("v-mock").addEventListener("submit",e=>{
 });
 
 /* ---------------- routing ---------------- */
-const views=["journeys","findings","recommendations","mock"];
+const views=["journeys","findings","recommendations","deadlines","mock"];
 function route(){
   const h=(location.hash||"#journeys").slice(1); const v=views.includes(h)?h:"journeys";
   views.forEach(x=>document.getElementById("v-"+x).hidden = x!==v);
+  if (route._ && route._!==v) window.scrollTo(0,0); route._=v;
   document.querySelectorAll("#tabs a").forEach(a=>a.setAttribute("aria-current", a.getAttribute("href")==="#"+v?"page":"false"));
 }
 window.addEventListener("hashchange",route);
 route(); render();
 })();
+
 </script>
