@@ -20,7 +20,7 @@ TalloCPA OS is the firm's own operating system. It **replaces Moxie (CRM, projec
 2. Lets clients send their documents themselves, read by OCR, so the firm can price low and scale (Q1, Q8, Q54).
 3. Keeps each client's books as true double-entry and computes returns from them, so the books and the returns can't disagree (Q18, Q22).
 4. Gives the Owner control over approvals, money and staff capacity (Q21, Q25, Q36, Q39–Q41).
-5. Is built from day one to add more service lines and a second brand (Q17, Q60).
+5. Covers exactly four service lines — Tax Compliance, Bookkeeping, Business Registration and BIR LOA Services — and is built to take a second brand (Q17, Q60, Q66).
 
 ### 1.1 Who uses it (Q2, Q21)
 
@@ -39,7 +39,8 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 - Website, lead capture, proposals, e-sign (Phase 2, Q17, Q43)
 - Full billing, issuing BIR invoices, automatic bank matching (Phase 3; BIR invoices stay manual, Q27)
 - Time tracking: **not planned at all**, the firm charges fixed retainers (Q37)
-- Audit, AUP, Business Processing, Systems Implementation, AI & Business Automation, Receivership & Liquidation (later; the data model allows them, Q4, Q17)
+- Business Registration and BIR LOA Services (after Phase 1B, see §2)
+- **Not in the OS at all (Q66):** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation, Business Processing, Systems Implementation, AI & Business Automation. These run on another platform.
 - Viber, SMS, Messenger channels (later, through n8n, Q10, Q38)
 - Registering clients' books as a computerized accounting system (CAS) with BIR (Q18)
 - The nationwide brand (later, Q56, Q60)
@@ -52,9 +53,11 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 |---|---|---|
 | **1A — Compliance core** | Brand/entity settings, clients & engagements, filing obligations, deadline engine, client portal + OCR intake + review queue, sign-off chain, Collections & SOA, owner dashboard & scores | **Live for the January 2027 cycle** (December 2026 returns stay in the current tools) |
 | **1B — Bookkeeping** | Per-client ledger, chart-of-accounts templates, posting from reviewed documents, BIR loose-leaf books, returns computed from the ledger, period lock, client reports | A few weeks after 1A; **posts back to 1 January 2027** from opening trial balances as of 31 December 2026 |
+| **1C — Business Registration** | New-business registration as a service: DTI / SEC, barangay and mayor's permit (where served), BIR registration (ORUS, COR / Form 2303, books, invoices), SSS / PhilHealth / Pag-IBIG employer registration; checklist and status per step; the finished COR feeds client onboarding (§4.1) | Right after 1B (Q66) |
+| **1D — BIR LOA Services** | Support when a client receives a BIR Letter of Authority: LOA and notices received, BIR deadlines on each notice (e.g. document submission, PAN / FAN replies), documents requested and submitted, assessments and how they were settled | After 1C (Q66) |
 | **2 — Growth** | Public website (tallocpa.com) → lead → auto-quote from COR + fee schedule → proposal → e-signed engagement → client set up automatically | After Phase 1 runs one clean cycle |
 | **3 — Money** | Full billing, retainers, collections, reference-based automatic payment matching | After Phase 2 |
-| **Later** | Other service lines, Receivership & Liquidation module, nationwide brand, Viber/SMS | — |
+| **Later** | Nationwide brand, Viber/SMS. **No other service lines** are planned (Q66) | — |
 
 **Cutover rule (Q7, Q33):** clients are entered in the OS from their COR (there is no Moxie import, §8); Moxie stays read-only for reference until the OS completes one full monthly cycle, then it is cancelled. Manager.io stays for 2026 books and is retired after the 2026 annual filings.
 
@@ -72,7 +75,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 
 - **Client:** taxpayer type (individual / OPC / partnership / corporation / non-stock), TIN, RDO, registered address, COR data (from the COR reader), filing channel (eFPS group or eBIRForms), fiscal year end, book type (manual / loose-leaf), payment mode (firm-remits or client-pays-direct, Q23), assigned Staff and Reviewer, submission cutoff day (default 5th, Q28).
 - **Engagement:** client, brand, **service line**, services subscribed (from the fee schedule), monthly retainer, start date, status. Phase 1 is a minimal record; the full proposal → engagement flow comes in Phase 2.
-- **Service lines** (configured, Phase 1 uses the first two): Tax Compliance, Bookkeeping, Business Processing, FS Audit, Agreed-Upon Procedures, AI & Business Automation, Systems Implementation, Receivership & Liquidation.
+- **Service lines** (final list, Q66): Tax Compliance, Bookkeeping, Business Registration, BIR LOA Services. Phase 1 uses the first two. Audit, AUP, Receivership & Liquidation and the firm's other services are handled on another platform, not in the OS.
 - **Contacts / client users:** several per client, each with a portal login.
 
 ### 3.3 Filing obligations & deadline engine (Q6, Q20)

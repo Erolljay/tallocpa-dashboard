@@ -7,7 +7,7 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q1 | Core job | BIR compliance engine + staff work management; the client-facing core is **document intake with OCR** |
 | Q2 | Users | Owner, staff **and clients** (client portal in v1) |
 | Q3 | Systems | The OS **replaces Moxie and Manager.io**; **n8n** added as the automation layer |
-| Q4 | Receivership & liquidation | Later, after tax compliance and bookkeeping |
+| Q4 | Receivership & liquidation | ~~Later, after tax compliance and bookkeeping~~ **Superseded by Q66:** handled on another platform, not in the OS |
 | Q5 | Build approach | Custom build (Next.js + Supabase + Vercel) |
 | Q6 | Deadline tracking | Settled by Q3: deadlines live in the OS, generated from rules, not Moxie recurring tasks |
 | Q7 | Phasing | Moxie not used at all; the OS will cover website → lead → CRM → proposal → engagement, but **tax compliance + bookkeeping + firm processes first**, with room for BPO, FS Audit, AUP, AI & Business Automation, Systems Implementation, Receivership & Liquidation |
@@ -69,3 +69,4 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q63 | Payments received | Mostly fund transfer and checks, seldom cash; **cash is deposited to the bank by staff**. Each payment records its method (and who deposited cash). (Owner, during Phase 1A build) |
 | Q64 | Pay now on the SOA | The SOA shows the firm's payment channels; the client chooses a bank or e-wallet and sees its **QR code, account name and account number**. (Owner, during Phase 1A build) |
 | Q65 | Logo files | Owner supplied the mark and horizontal lockup (JPEG); the mark is redrawn as SVG from them, rectangle by rectangle, for the app and favicon. (Owner, during Phase 1A build) |
+| Q66 | Service lines in the OS | **Final list: Tax Compliance, Bookkeeping, Business Registration, BIR LOA Services.** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation and the other services (Business Processing, Systems Implementation, AI & Business Automation) stay on another platform. Order: 1B Bookkeeping → 1C Business Registration → 1D BIR LOA Services → Phase 2 Growth → Phase 3 Money. Supersedes Q4 and the service-line part of Q7. (Owner, 24 Nov 2026) |
