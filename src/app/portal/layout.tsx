@@ -38,15 +38,18 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
   );
 }
 
-/** The tabs, with Payroll only for businesses whose payroll is set up (they have payslip items), and Reports once one is released. */
+/** The tabs: Payroll only for businesses whose payroll is set up, Reports once one is released, Registration when we have registration work for them, and a count on Requests for what waits on them. */
 async function Nav({ variant }: { variant: "top" | "bottom" }) {
   const { supabase, clients } = await portalContext();
   const ids = clients.map((c) => c.id);
-  const [{ count }, { count: reports }] = ids.length
+  const [{ count }, { count: reports }, { count: cases }, { count: pending }] = ids.length
     ? await Promise.all([
         supabase.from("payroll_items").select("id", { count: "exact", head: true }).in("client_id", ids).eq("active", true),
         supabase.from("client_reports").select("id", { count: "exact", head: true }).in("client_id", ids),
+        supabase.from("registration_cases").select("id", { count: "exact", head: true }).in("client_id", ids).neq("status", "cancelled"),
+        // Requests from us still waiting on the client.
+        supabase.from("client_requests").select("id", { count: "exact", head: true }).in("client_id", ids).eq("direction", "to_client").eq("status", "open"),
       ])
-    : [{ count: 0 }, { count: 0 }];
-  return <PortalNav variant={variant} payroll={(count ?? 0) > 0} reports={(reports ?? 0) > 0} />;
+    : [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }];
+  return <PortalNav variant={variant} payroll={(count ?? 0) > 0} reports={(reports ?? 0) > 0} registration={(cases ?? 0) > 0} pending={pending ?? 0} />;
 }

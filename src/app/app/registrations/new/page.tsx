@@ -8,7 +8,7 @@ import { dtiRenewalDue } from "@/lib/registration/steps";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { ClientCaseKind } from "../actions";
 import { ClientCaseForm, NewRegistrationForm } from "../forms";
-import { manilaDate } from "../slip";
+import { manilaDate } from "@/lib/registration/slip";
 
 const clientCase: Record<ClientCaseKind, { title: string; description: string }> = {
   renewal: { title: "Annual renewal", description: "barangay, fire, sanitary and mayor's permits, and the year's SEC or DTI filings." },

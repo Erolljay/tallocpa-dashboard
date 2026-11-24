@@ -7,7 +7,7 @@ import { AGENCIES, CASE_KINDS, daysOpen, progress, routingSlip, STEP_STATUSES, w
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { YearRenewalsForm } from "./forms";
-import { daysTone, manilaDate } from "./slip";
+import { daysTone, manilaDate } from "@/lib/registration/slip";
 
 export default function RegistrationsPage(props: PageProps<"/app/registrations">) {
   return (

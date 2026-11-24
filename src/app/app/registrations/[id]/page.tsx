@@ -8,7 +8,9 @@ import { AGENCIES, CASE_KINDS, UPDATE_CHANGES, daysBetween, daysOpen, progress, 
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { CancelForm, CompleteButton, StepBadge, StepForm, type StepRow } from "../forms";
-import { daysTone, manilaDate } from "../slip";
+import { daysTone, manilaDate } from "@/lib/registration/slip";
+import { NewRequestForm } from "../../requests/new-request-form";
+import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
 
 export default function RegistrationPage(props: PageProps<"/app/registrations/[id]">) {
   return (
@@ -41,6 +43,14 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
     .eq("case_id", id)
     .order("sort_order");
   const steps = ((stepRows ?? []) as (StepRow & { sort_order: number; status_changed_at: string })[]).map((s) => ({ ...s, sortOrder: s.sort_order, doneOn: s.done_on }));
+
+  const { data: requestRows } = steps.length
+    ? await supabase.from("client_requests").select("id, subject, status, direction, registration_step_id").in("registration_step_id", steps.map((s) => s.id)).order("created_at")
+    : { data: [] };
+  const requestsByStep = new Map<string, { id: string; subject: string; status: RequestStatus; direction: Direction }[]>();
+  for (const r of (requestRows ?? []) as { id: string; subject: string; status: RequestStatus; direction: Direction; registration_step_id: string }[]) {
+    requestsByStep.set(r.registration_step_id, [...(requestsByStep.get(r.registration_step_id) ?? []), r]);
+  }
 
   const today = manilaDate(new Date());
   const openedOn = manilaDate(new Date(k.opened_at));
@@ -137,6 +147,14 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
                         {step.notes}
                       </p>
                     )}
+                    {(requestsByStep.get(step.id) ?? []).map((r) => {
+                      const v = statusFor("firm", r.direction, r.status);
+                      return (
+                        <Link key={r.id} href={`/app/requests/${r.id}`} className="mt-1 flex flex-wrap items-center gap-2 text-caption-1-regular text-button-ghost-foreground hover:underline">
+                          Asked: {r.subject} <Badge tone={v.tone}>{v.label}</Badge>
+                        </Link>
+                      );
+                    })}
                   </div>
                   <SlipCell label="Received" value={fmt(receivedOn)} />
                   <SlipCell label="Released" value={fmt(releasedOn)} />
@@ -152,6 +170,12 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
                       <span className="group-open:hidden">Update</span><span className="hidden group-open:inline">Close</span>
                     </summary>
                     <StepForm caseId={id} step={step} editable />
+                    {step.status !== "done" && step.status !== "not_applicable" && (
+                      <div className="mt-2 border-t border-separator-border pt-4">
+                        <p className="mb-3 text-body-medium text-text-primary">Ask the client for documents</p>
+                        <NewRequestForm clientId={client.id} stepId={step.id} defaultSubject={`Documents for: ${step.label}`} compact />
+                      </div>
+                    )}
                   </details>
                 )}
               </li>
