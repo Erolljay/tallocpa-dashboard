@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { datAddress, datNameCols, displayName, listNameCols, type Party } from "./format";
-import { resolveParty, sameName } from "./resolve";
+import { fillFromDirectory, resolveParty, sameName } from "./resolve";
 import { branch4, normalizeBranch, parseTin, partyKey, tin9 } from "./tin";
 
 vi.mock("server-only", () => ({}));
@@ -137,5 +137,28 @@ describe("partySchema", () => {
     const bad = partySchema.safeParse({ tin: "123", branch_code: "12", kind: "non_individual", vat_status: "vat", zip_code: "50" });
     expect(bad.success).toBe(false);
     expect(bad.error?.issues.map((i) => i.path[0]).sort()).toEqual(["branch_code", "registered_name", "tin", "zip_code"]);
+  });
+});
+
+describe("fillFromDirectory (when OCR reads a document)", () => {
+  it("replaces a blank or matching name with the registered name, address and TIN with branch", () => {
+    for (const name of [null, "ACME TRADING CORP."]) {
+      const r = fillFromDirectory({ party_name: name, party_tin: "123456789", party_address: null, total: "100.00" }, { party_name: 0.4 }, party());
+      expect(r.filled).toBe(true);
+      expect(r.fields).toMatchObject({ party_name: "Acme Trading Corporation", party_tin: "123-456-789-00000", total: "100.00" });
+      expect(r.fields.party_address).toContain("Iloilo City");
+      expect(r.confidence).toMatchObject({ party_name: 1, party_tin: 1, party_address: 1 });
+    }
+  });
+
+  it("leaves a different name alone: the TIN may be misread", () => {
+    const fields = { party_name: "Beta Supplies", party_tin: "123456789", party_address: null };
+    const r = fillFromDirectory(fields, {}, party());
+    expect(r.filled).toBe(false);
+    expect(r.fields).toBe(fields);
+  });
+
+  it("does nothing when the TIN is not on file", () => {
+    expect(fillFromDirectory({ party_name: "X", party_tin: "999999999" }, {}, undefined).filled).toBe(false);
   });
 });

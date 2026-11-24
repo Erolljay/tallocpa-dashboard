@@ -80,3 +80,25 @@ export function resolveParty(
     warning: warnings.join(" ") || null,
   };
 }
+
+/**
+ * Fills a freshly read document's party from the directory (used when OCR runs):
+ * when the TIN is on file and OCR's name is blank, the same, or the trade name,
+ * the registered name, address and TIN with branch replace what OCR read, and
+ * are marked fully confident. When OCR read a different name, the TIN itself may
+ * be misread, so nothing is replaced; the reviewer sees the warning instead.
+ */
+export function fillFromDirectory<F extends { party_name?: string | null; party_tin?: string | null; party_address?: string | null }>(
+  fields: F,
+  confidence: Record<string, number>,
+  entry: Party | null | undefined,
+): { fields: F; confidence: Record<string, number>; filled: boolean } {
+  if (!entry) return { fields, confidence, filled: false };
+  const r = resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry);
+  if (r.nameDiffers) return { fields, confidence, filled: false };
+  return {
+    fields: { ...fields, party_name: r.name, party_tin: r.tin, party_address: r.address },
+    confidence: { ...confidence, party_name: 1, party_tin: 1, ...(r.address ? { party_address: 1 } : {}) },
+    filled: true,
+  };
+}

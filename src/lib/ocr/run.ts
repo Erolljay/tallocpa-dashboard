@@ -3,6 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ocrProviderFromEnv } from "./gemini";
 import type { OcrProvider } from "./provider";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
+import { lookupParties } from "@/lib/parties/lookup";
+import { fillFromDirectory } from "@/lib/parties/resolve";
+import { partyKey } from "@/lib/parties/tin";
 
 /** Files staff attach to filings are not read by OCR. */
 const SKIP: DocType[] = ["filed_return", "payment_proof"];
@@ -33,7 +36,11 @@ export async function runOcr(admin: SupabaseClient, documentId: string, provider
       mimeType: doc.mime_type,
       docTypeHint: DOC_TYPES[doc.doc_type as DocType] ?? doc.doc_type,
     });
-    await admin.from("extractions").update({ status: "done", model: out.model ?? provider.model, fields: out.fields, confidence: out.confidence, finished_at: new Date().toISOString() }).eq("document_id", documentId);
+    // The parties directory: a TIN on file brings its registered name and address.
+    const key = partyKey(out.fields.party_tin);
+    const entry = key ? (await lookupParties(admin, [out.fields.party_tin]).catch(() => null))?.get(key) : undefined;
+    const { fields, confidence } = fillFromDirectory(out.fields, out.confidence as Record<string, number>, entry);
+    await admin.from("extractions").update({ status: "done", model: out.model ?? provider.model, fields, confidence, finished_at: new Date().toISOString() }).eq("document_id", documentId);
     if (doc.status === "received") await admin.from("documents").update({ status: "under_review" }).eq("id", documentId).eq("status", "received");
     return { ok: true as const };
   } catch (e) {
