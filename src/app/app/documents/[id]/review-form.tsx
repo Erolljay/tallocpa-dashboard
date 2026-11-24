@@ -27,8 +27,8 @@ export interface DirectoryParty {
 }
 
 /** The figures beside the image: low-confidence fields highlighted, check warnings inline. */
-export function ReviewForm(props: { documentId: string; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null }) {
-  const [state, approve, pending] = useActionState(approveDocumentAction.bind(null, props.documentId), {} as DocActionState);
+export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null }) {
+  const [state, approve, pending] = useActionState(approveDocumentAction.bind(null, props.documentId, props.mode), {} as DocActionState);
   const [retState, ret, retPending] = useActionState(reviewDocumentAction.bind(null, props.documentId, "return"), {} as DocActionState);
   const [readState, read, readPending] = useActionState(async () => runOcrAction(props.documentId), {} as DocActionState);
   const [returning, setReturning] = useState(false);
@@ -104,13 +104,13 @@ export function ReviewForm(props: { documentId: string; fields: OcrFields; confi
         )}
         {props.canAct && (
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={pending}>{pending ? "Approving…" : "Approve figures"}</Button>
+            <Button type="submit" disabled={pending}>{props.mode === "edit" ? (pending ? "Saving…" : "Save changes") : pending ? "Approving…" : "Approve figures"}</Button>
             {state.error && <Notice tone="blocked">{state.error}</Notice>}
           </div>
         )}
       </form>
 
-      {props.canAct && (
+      {props.canAct && props.mode === "approve" && (
         <div className="flex flex-wrap items-start gap-3">
           {returning ? (
             <form action={ret} className="flex flex-1 flex-wrap items-center gap-2">

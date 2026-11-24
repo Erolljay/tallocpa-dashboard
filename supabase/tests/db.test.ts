@@ -679,6 +679,46 @@ describe.skipIf(!url)("database", () => {
         await db.query("rollback");
       }
     });
+
+    it("lets staff correct an approved document until a return covering its month is filed", async () => {
+      await db.query("begin");
+      try {
+        const doc = (
+          await db.query(
+            `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status)
+             values ($1, $2, 'portal', 'purchase_receipt', '2027-02-01', '2027-02-01', 'r.jpg', 'image/jpeg', 10, $3, 'under_review') returning id`,
+            [clientA, CLIENT_USER, `${clientA}/edit-test/r.jpg`],
+          )
+        ).rows[0].id;
+        await db.query(`insert into public.extractions (document_id, status, fields, confidence) values ($1, 'done', $2, '{}')`, [doc, JSON.stringify({ date: "2027-02-10", number: "7", total: "500.00" })]);
+        const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '2550Q', 'quarterly', '2027-01-01') returning id`, [clientA])).rows[0].id;
+        const filing = (
+          await db.query(
+            `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date)
+             values ($1, $2, '2550Q', 'FY2027-Q1', '2027-01-01', '2027-03-31', '2550Q', '2027-04-25', '2027-04-26') returning id`,
+            [ob, clientA],
+          )
+        ).rows[0].id;
+        await db.query("set local role authenticated");
+        await db.query("select set_config('request.jwt.claim.sub', $1, true)", [STAFF]);
+        await db.query(`select public.approve_document($1, $2::jsonb)`, [doc, JSON.stringify({ date: "2027-02-10", number: "7", total: "500.00" })]);
+
+        // Still open: the correction is saved and not counted as an OCR correction.
+        await db.query(`select public.approve_document($1, $2::jsonb)`, [doc, JSON.stringify({ date: "2027-02-10", number: "7", total: "550.00" })]);
+        expect((await db.query(`select approved_fields ->> 'total' t from public.extractions where document_id = $1`, [doc])).rows[0].t).toBe("550.00");
+        expect((await db.query(`select count(*)::int n from public.extraction_corrections where document_id = $1`, [doc])).rows[0].n).toBe(0);
+
+        // The Q1 return is filed: February is locked.
+        await db.query("reset role");
+        await db.query(`update public.filing_instances set status = 'filed' where id = $1`, [filing]);
+        await db.query("set local role authenticated");
+        await db.query("savepoint s");
+        await expect(db.query(`select public.approve_document($1, $2::jsonb)`, [doc, JSON.stringify({ date: "2027-02-10", total: "600.00" })])).rejects.toThrow(/locked: the 2550Q return/);
+        await db.query("rollback to savepoint s");
+      } finally {
+        await db.query("rollback");
+      }
+    });
   });
 
   describe("monthly cycle", () => {

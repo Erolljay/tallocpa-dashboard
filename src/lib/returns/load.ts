@@ -62,7 +62,7 @@ export interface LoadedWorksheet {
 const PAYROLL_FORM_CODES = new Set(["1601-C", "1604-C"]);
 
 /** Statuses from which the worksheet is locked (database trigger return_worksheet_guard). */
-export const LOCKED_STATUSES = ["filed", "paid", "proof_uploaded"];
+export { LOCKED_STATUSES } from "@/lib/documents/lock";
 
 /**
  * One approved document row → SourceDocument. The single place where rows
