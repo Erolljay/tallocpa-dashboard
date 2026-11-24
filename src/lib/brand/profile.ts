@@ -21,7 +21,7 @@ export function formatTin(tin: string | null | undefined, branch: string | null 
 
 export const BRANCH_CODE = /^\d{3,5}$/;
 const RDO = /^\d{2,3}[A-Z]?$/;
-const PHONE = /^[0-9+()\-.\s]{7,30}$/;
+const PHONE = /^[0-9+()\-./\s]{7,40}$/;
 const FACEBOOK = /^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.com|fb\.me)\/\S+$/i;
 
 export type ExpiryTone = "expired" | "soon" | "ok";
@@ -97,7 +97,7 @@ export const birSchema = z
 
 export const contactSchema = z.object({
   business_address: text(300, "the address"),
-  phone: optional(z.string().regex(PHONE, "Enter a phone number, e.g. 0917 123 4567 or (033) 123 4567.")),
+  phone: optional(z.string().regex(PHONE, "Enter a phone number, e.g. 0917 123 4567, or two numbers as 0917 123 4567 / 0938 777 7795.")),
   reply_to_email: optional(z.email("Enter a valid email address.").max(120)),
   website: z.preprocess(withScheme, z.url({ protocol: /^https?$/, message: "Enter a web address, e.g. tallocpa.com." }).max(200).nullable()),
   facebook_url: z.preprocess(withScheme, z.string().regex(FACEBOOK, "Enter the Facebook page link, e.g. facebook.com/tallocpa.").max(200).nullable()),

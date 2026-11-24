@@ -40,7 +40,7 @@ async function Overview() {
   await requireOwner();
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const [dues, credits, clients, taxPaid, notReady, soas] = await Promise.all([
+  const [dues, credits, clients, taxPaid, notReady, soas, proofs] = await Promise.all([
     supabase.from("due_balances").select("client_id, due_on, open_amount, kind, soa_id").gt("open_amount", 0),
     supabase.from("deposit_balances").select("client_id, unallocated").gt("unallocated", 0),
     supabase.from("clients").select("id, name, code, billing_days, payment_mode, status").in("status", ["onboarding", "active"]).order("name"),
@@ -54,7 +54,23 @@ async function Overview() {
       .lte("due_date", addDays(today, 20))
       .order("due_date"),
     supabase.from("soas").select("id, reference, billing_date, due_on, client_id, clients(name)").order("billing_date", { ascending: false }).order("reference").limit(15),
+    supabase
+      .from("payment_proofs")
+      .select("id, soa_id, amount, paid_on, method, submitted_at, soas(reference), clients(name), brand_payment_accounts(institution)")
+      .eq("status", "for_verification")
+      .order("submitted_at"),
   ]);
+  const toVerify = (proofs.data ?? []) as unknown as {
+    id: string;
+    soa_id: string;
+    amount: string;
+    paid_on: string;
+    method: "transfer" | "check" | "deposit";
+    soas: { reference: string } | null;
+    clients: { name: string } | null;
+    brand_payment_accounts: { institution: string } | null;
+  }[];
+  const verifying = new Set(toVerify.map((p) => p.soa_id));
 
   const open = (dues.data ?? []) as OpenDue[];
   const all = ageOpenItems(open, today);
@@ -102,6 +118,31 @@ async function Overview() {
         <Stat label="Client credits" value={totalCredit} note="Overpayments, used on the next statement." />
         <Stat label="Client tax money held" value={held} note="Received for taxes, not yet remitted to BIR." />
       </div>
+
+      {toVerify.length > 0 && (
+        <Card title="Payments to verify" actions={<span className="text-caption-1-regular text-text-tertiary">Proofs of payment uploaded by clients</span>}>
+          <ul className="divide-y divide-separator-border text-body-regular">
+            {toVerify.map((p) => (
+              <li key={p.id}>
+                <Link href={`/app/collections/statements/${p.soa_id}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 hover:bg-background-secondary-hover pointer-coarse:min-h-11">
+                  <span className="min-w-0">
+                    <span className="font-medium text-text-primary">{p.clients?.name}</span>{" "}
+                    <span className="tabular-nums text-text-secondary">{p.soas?.reference}</span>
+                    <span className="block text-caption-1-regular text-text-tertiary">
+                      {p.method === "check" ? "Check" : p.method === "deposit" ? "Bank deposit" : "Transfer"}
+                      {p.brand_payment_accounts ? ` to ${p.brand_payment_accounts.institution}` : ""} · paid {showDate(p.paid_on)}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="amount font-medium text-text-primary">{peso.format(Number(p.amount))}</span>
+                    <Badge tone="waiting">For verification</Badge>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <section className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <Card title="Next billing">
@@ -216,7 +257,7 @@ async function Overview() {
                       <td className="px-4 py-3 tabular-nums text-text-secondary">{showDate(s.billing_date)}</td>
                       <td className="amount px-4 py-3 text-text-primary">{peso.format(t.total)}</td>
                       <td className="px-4 py-3">
-                        {t.open <= 0 ? <Badge tone="done">Paid</Badge> : t.open < t.total ? <Badge tone="waiting">Partly paid</Badge> : s.due_on < today ? <Badge tone="blocked">Overdue</Badge> : <Badge tone="neutral">Due {showDate(s.due_on)}</Badge>}
+                        {t.open <= 0 ? <Badge tone="done">Paid</Badge> : verifying.has(s.id) ? <Badge tone="waiting">For verification</Badge> : t.open < t.total ? <Badge tone="waiting">Partly paid</Badge> : s.due_on < today ? <Badge tone="blocked">Overdue</Badge> : <Badge tone="neutral">Due {showDate(s.due_on)}</Badge>}
                       </td>
                     </tr>
                   );

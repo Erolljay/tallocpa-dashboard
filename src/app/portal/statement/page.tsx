@@ -36,7 +36,11 @@ async function Latest() {
   }
 
   const ids = rows.map((r) => r.id);
-  const { data: dues } = await supabase.from("due_balances").select("soa_id, open_amount").in("soa_id", ids);
+  const [{ data: dues }, { data: pending }] = await Promise.all([
+    supabase.from("due_balances").select("soa_id, open_amount").in("soa_id", ids),
+    supabase.from("payment_proofs").select("soa_id").in("soa_id", ids).eq("status", "for_verification"),
+  ]);
+  const verifying = new Set((pending ?? []).map((p) => p.soa_id as string));
   const openBySoa = new Map<string, number>();
   for (const d of dues ?? []) openBySoa.set(d.soa_id, (openBySoa.get(d.soa_id) ?? 0) + Number(d.open_amount));
   const several = clients.length > 1;
@@ -72,7 +76,7 @@ async function Latest() {
                     <span className="block font-medium tabular-nums text-text-primary">{r.reference}</span>
                     <span className="block text-caption-1-regular text-text-secondary">{several ? `${nameOf.get(r.client_id)} · ` : ""}{showDate(r.billing_date)}</span>
                   </span>
-                  {open <= 0 ? <Badge tone="done">Paid</Badge> : r.due_on < today ? <Badge tone="blocked">{peso.format(open)} overdue</Badge> : <Badge tone="neutral">{peso.format(open)} due {showDate(r.due_on)}</Badge>}
+                  {open <= 0 ? <Badge tone="done">Paid</Badge> : verifying.has(r.id) ? <Badge tone="waiting">For verification</Badge> : r.due_on < today ? <Badge tone="blocked">{peso.format(open)} overdue</Badge> : <Badge tone="neutral">{peso.format(open)} due {showDate(r.due_on)}</Badge>}
                 </Link>
               </li>
             );

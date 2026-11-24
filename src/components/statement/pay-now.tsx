@@ -3,19 +3,26 @@
 import { RiBuilding2Line, RiCheckLine, RiFileCopyLine, RiWallet3Line } from "@remixicon/react";
 import { useState } from "react";
 import type { PayAccount } from "@/lib/collections/statement";
+import { ProofUpload } from "./proof-upload";
 
 /**
  * "Pay now": the client chooses a bank or e-wallet and sees its QR code, account
  * name and number. Tax money goes to the client-tax-funds account when there is
  * one (Q26); fees go to the firm's own accounts.
  */
-export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]; reference: string; hasTax: boolean }) {
+export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTax: boolean; soaId: string; amountDue: number; today: string }) {
+  const { accounts, reference, hasTax } = props;
   const [chosen, setChosen] = useState(accounts[0]?.id ?? null);
   const account = accounts.find((a) => a.id === chosen) ?? null;
   const hasTaxAccount = accounts.some((a) => a.purpose === "client_tax_funds");
 
   if (accounts.length === 0) {
-    return <p className="text-body-regular text-text-secondary">Payment details will appear here once the firm adds them. Please contact us for how to pay.</p>;
+    return (
+      <div className="space-y-4">
+        <p className="text-body-regular text-text-secondary">Payment details will appear here once the firm adds them. Please contact us for how to pay.</p>
+        <ProofUpload soaId={props.soaId} accounts={accounts} account={null} amountDue={props.amountDue} today={props.today} />
+      </div>
+    );
   }
 
   return (
@@ -66,6 +73,7 @@ export function PayNow({ accounts, reference, hasTax }: { accounts: PayAccount[]
         Put the payment reference in the transfer note so we can match your payment.
         {hasTax && hasTaxAccount ? " Please send tax amounts to the account marked for tax payments, and our fees to an account for our fees." : ""}
       </p>
+      <ProofUpload soaId={props.soaId} accounts={accounts} account={account} amountDue={props.amountDue} today={props.today} />
     </div>
   );
 }
