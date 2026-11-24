@@ -2,10 +2,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { COA_TEMPLATES } from "@/lib/ledger/coa";
-import { booksAccess, loadAccounts, loadEntries, loadOpening, loadTrialBalance } from "@/lib/ledger/data";
+import { AGING, aging } from "@/lib/ledger/arap";
+import { booksAccess, loadAccounts, loadEntries, loadOpenItems, loadOpening, loadTrialBalance } from "@/lib/ledger/data";
 import { BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount } from "@/lib/returns/money";
-import { OpeningUpload, ReverseForm, SetupForm } from "./forms";
+import { ArapDecision, ArapUpload, ConfirmAllButton, ConfirmButton, OpeningUpload, ReverseForm, SetupForm } from "./forms";
 
 export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
   return (
@@ -50,12 +51,29 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const toMonth = asOfParam ?? (today < books.booksStart.slice(0, 7) ? books.booksStart.slice(0, 7) : today);
   const to = monthEnd(toMonth);
   const from = `${toMonth.slice(0, 4)}-01-01` < books.booksStart ? dayBefore(books.booksStart) : `${toMonth.slice(0, 4)}-01-01`;
-  const [accounts, opening, tb, entries] = await Promise.all([
+  const [accounts, opening, tb, entries, suggested, openItems, { data: pendingUpdates }] = await Promise.all([
     loadAccounts(supabase, id),
     loadOpening(supabase, id),
     loadTrialBalance(supabase, id, from, to),
     loadEntries(supabase, id),
+    loadEntries(supabase, id, 200, true),
+    loadOpenItems(supabase, id),
+    supabase.from("arap_updates").select("id, month, rows, submitted_at").eq("client_id", id).eq("status", "submitted").order("submitted_at"),
   ]);
+  // The AR and AP control accounts against the open items (all dates: open items are as of now).
+  const { data: allTb } = await supabase.rpc("trial_balance", { p_client: id, p_from: "1900-01-01", p_to: "9999-12-31" });
+  const closingOf = (control: "ar" | "ap") => {
+    const a = accounts.find((x) => x.control === control);
+    const r = ((allTb ?? []) as { account_id: string; closing: string }[]).find((x) => x.account_id === a?.id);
+    return Math.round(Number(r?.closing ?? 0) * 100);
+  };
+  const sumOpen = (kind: "receivable" | "payable") => openItems.filter((i) => i.kind === kind).reduce((s, i) => s + i.balance, 0);
+  const tieOut = [
+    { label: "Accounts Receivable", ledger: closingOf("ar"), open: sumOpen("receivable") },
+    { label: "Accounts Payable", ledger: -closingOf("ap"), open: sumOpen("payable") },
+  ];
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const lastMonth = (() => { const d = new Date(`${todayIso.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); })();
   const accountName = new Map(accounts.map((a) => [a.id, `${a.code} · ${a.name}`]));
   const shown = tb.filter((r) => r.closing !== 0 || r.debit !== 0 || r.credit !== 0);
   const totalDr = shown.reduce((s, r) => s + Math.max(r.closing, 0), 0);
@@ -76,6 +94,99 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
         }
       />
       <div className="space-y-6">
+        {suggested.length > 0 && (
+          <Card title="Suggested entries to confirm" actions={<ConfirmAllButton clientId={id} count={suggested.length} />}>
+            <p className="mb-3 text-body-regular text-text-secondary">From approved documents. Check the account titles; to change one, open the document and pick another title.</p>
+            <ul className="divide-y divide-separator-border">
+              {suggested.map((e) => (
+                <li key={e.id} className="py-3 first:pt-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="tabular-nums text-text-secondary">{fmtDate(e.date)}</span>
+                    <span className="min-w-0 flex-1 text-text-primary">{e.memo}</span>
+                    <span className="text-caption-1-regular text-text-tertiary">{BOOKS[e.book]}</span>
+                    <ConfirmButton clientId={id} entryId={e.id} />
+                  </div>
+                  <table className="mt-1 w-full text-body-regular">
+                    <tbody>
+                      {e.lines.map((l) => (
+                        <tr key={l.lineNo}>
+                          <td className={l.credit > 0 ? "py-0.5 ps-8 text-text-secondary" : "py-0.5 text-text-primary"}>{accountName.get(l.accountId)}</td>
+                          <td className="w-32 py-0.5 text-end tabular-nums">{l.debit ? formatAmount(l.debit) : ""}</td>
+                          <td className="w-32 py-0.5 text-end tabular-nums">{l.credit ? formatAmount(l.credit) : ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        <Card title="Receivables and payables">
+          <div className="space-y-6">
+            {tieOut.some((t) => t.ledger !== t.open) && (
+              <Notice tone="blocked">
+                {tieOut.filter((t) => t.ledger !== t.open).map((t) => `${t.label} in the ledger (${formatAmount(t.ledger)}) differs from the open invoices (${formatAmount(t.open)}). `)}
+                Post entries that touch AR or AP from documents or the AR/AP update, not by hand.
+              </Notice>
+            )}
+            {(["receivable", "payable"] as const).map((kind) => {
+              const rows = aging(openItems, kind, todayIso);
+              const total = rows.reduce((s, r) => s + r.total, 0);
+              return (
+                <div key={kind}>
+                  <h3 className="mb-2 text-headline-medium text-text-primary">{kind === "receivable" ? "Receivables" : "Payables"} · {formatAmount(total)}</h3>
+                  {rows.length === 0 ? (
+                    <p className="text-body-regular text-text-secondary">None open.</p>
+                  ) : (
+                    <div className="-mx-2 overflow-x-auto">
+                      <table className="w-full min-w-[40rem] text-body-regular">
+                        <thead className="text-body-medium text-text-tertiary">
+                          <tr>
+                            <th scope="col" className="px-2 py-1.5 text-start">{kind === "receivable" ? "Customer" : "Supplier"}</th>
+                            {AGING.map((h) => <th key={h} scope="col" className="px-2 py-1.5 text-end">{h}</th>)}
+                            <th scope="col" className="px-2 py-1.5 text-end">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((r) => (
+                            <tr key={r.partyName} className="border-t border-separator-border">
+                              <td className="px-2 py-1.5 text-text-primary">{r.partyName}</td>
+                              {r.buckets.map((b, i) => <td key={i} className="px-2 py-1.5 text-end tabular-nums text-text-secondary">{b ? formatAmount(b) : ""}</td>)}
+                              <td className="px-2 py-1.5 text-end tabular-nums text-text-primary">{formatAmount(r.total)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div className="space-y-3 border-t border-separator-border pt-4">
+              <h3 className="text-headline-medium text-text-primary">Monthly AR/AP update</h3>
+              <p className="text-body-regular text-text-secondary">
+                Download the workbook for the month: every open invoice is listed. Fill in what was collected and paid (amount, date, cash or bank account, reference), then upload it. Collections post to the Cash Receipts Book, payments to the Cash Disbursements Book.
+              </p>
+              <ArapUpload clientId={id} defaultMonth={lastMonth < books.booksStart.slice(0, 7) ? books.booksStart.slice(0, 7) : lastMonth} />
+              {(pendingUpdates ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-body-medium text-text-primary">Sent by the client, waiting for you</h4>
+                  <ul className="divide-y divide-separator-border">
+                    {pendingUpdates!.map((u) => (
+                      <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
+                        <span className="text-body-regular text-text-secondary">{u.month.slice(0, 7)} · {(u.rows as unknown[]).length} row(s) · sent {fmtDate(u.submitted_at.slice(0, 10))}</span>
+                        <ArapDecision clientId={id} updateId={u.id} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
         <Card
           title={`Opening balances as of ${fmtDate(openingAsOf)}`}
           actions={opening.entry ? <Badge tone="done">Entered</Badge> : <Badge tone="waiting">Not entered</Badge>}

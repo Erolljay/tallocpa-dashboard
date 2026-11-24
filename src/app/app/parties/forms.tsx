@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { PARTY_KINDS, VAT_STATUSES, type Party, type PartyKind } from "@/lib/parties/format";
-import { mergePartyAction, savePartyAction, setPartyVerifiedAction, type PartyFormState } from "./actions";
+import { PRESET_ACCOUNTS } from "@/lib/ledger/coa";
+import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { mergePartyAction, savePartyAction, setPartyVerifiedAction, setPresetAccountAction, type PartyFormState } from "./actions";
 
 /** New or edit. Names go in the registered-name box for companies, or last / first / middle for individuals, as on the COR. */
 export function PartyForm({ party, disabled }: { party?: Party; disabled?: boolean }) {
@@ -89,6 +91,31 @@ export function MergeForm({ partyId }: { partyId: string }) {
           </Field>
         </div>
         <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Merging…" : "Merge into this party"}</Button>
+      </div>
+      {state.error && <Notice tone="blocked">{state.error}</Notice>}
+    </form>
+  );
+}
+
+/** The account title this party's documents are booked to by default, in every client's books. */
+export function PresetAccountForm({ partyId, value }: { partyId: string; value: string | null }) {
+  const [state, action, pending] = useActionState(setPresetAccountAction.bind(null, partyId), {} as PartyFormState);
+  const groups = [...new Set(PRESET_ACCOUNTS.map((a) => a.type))];
+  return (
+    <form action={action} className="space-y-3">
+      <Field label="Account title" htmlFor="preset_account_key" hint="Used when a client has not booked this party before; each client's own choice then takes over.">
+        <Select id="preset_account_key" name="preset_account_key" defaultValue={value ?? ""}>
+          <option value="">No preset</option>
+          {groups.map((g) => (
+            <optgroup key={g} label={ACCOUNT_TYPES[g]}>
+              {PRESET_ACCOUNTS.filter((a) => a.type === g).map((a) => <option key={a.key} value={a.key}>{a.name}</option>)}
+            </optgroup>
+          ))}
+        </Select>
+      </Field>
+      <div className="flex items-center gap-3">
+        <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save preset"}</Button>
+        {state.ok && <span className="text-body-regular text-text-secondary">{state.ok}</span>}
       </div>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
     </form>

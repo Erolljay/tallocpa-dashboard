@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireStaff } from "@/lib/auth";
 import { toCentavos } from "@/lib/returns/money";
 import { supabaseServer } from "@/lib/supabase/server";
+import type { OpenItem } from "./arap";
 import type { OpeningItem } from "./opening";
 import type { AccountType, Book, Centavos, Control, EntrySource, LedgerAccount, NormalSide, TemplateCode } from "./types";
 
@@ -130,14 +131,16 @@ export interface EntryOut {
   lines: EntryLineOut[];
 }
 
-/** The latest entries (newest first), with their lines. */
-export async function loadEntries(supabase: SupabaseClient, clientId: string, limit = 50): Promise<EntryOut[]> {
-  const { data, error } = await supabase
+/** Entries (newest first, or oldest first for suggestions), with their lines. `suggested`: only the suggestions waiting to be confirmed; otherwise the rest. */
+export async function loadEntries(supabase: SupabaseClient, clientId: string, limit = 50, suggested = false): Promise<EntryOut[]> {
+  let q = supabase
     .from("journal_entries")
     .select("id, entry_date, book, source, status, reference, memo, reverses, created_at, journal_lines(line_no, account_id, description, debit, credit)")
-    .eq("client_id", clientId)
-    .order("entry_date", { ascending: false })
-    .order("created_at", { ascending: false })
+    .eq("client_id", clientId);
+  q = suggested ? q.eq("status", "suggested") : q.neq("status", "suggested");
+  const { data, error } = await q
+    .order("entry_date", { ascending: !suggested ? false : true })
+    .order("created_at", { ascending: !suggested ? false : true })
     .limit(limit);
   if (error) throw new Error(`Could not load journal entries: ${error.message}`);
   return (data ?? []).map((e) => ({
@@ -152,5 +155,20 @@ export async function loadEntries(supabase: SupabaseClient, clientId: string, li
     lines: ((e.journal_lines ?? []) as Record<string, unknown>[])
       .map((l) => ({ lineNo: l.line_no as number, accountId: l.account_id as string, description: (l.description as string | null) ?? null, debit: cents(l.debit), credit: cents(l.credit) }))
       .sort((a, b) => a.lineNo - b.lineNo),
+  }));
+}
+
+/** Open receivables and payables (balance not zero), credits included. */
+export async function loadOpenItems(supabase: SupabaseClient, clientId: string): Promise<OpenItem[]> {
+  const { data, error } = await supabase
+    .from("open_items")
+    .select("id, kind, party_name, party_tin, doc_number, doc_date, due_date, amount, balance")
+    .eq("client_id", clientId)
+    .neq("balance", 0)
+    .order("doc_date");
+  if (error) throw new Error(`Could not load receivables and payables: ${error.message}`);
+  return (data ?? []).map((i) => ({
+    id: i.id, kind: i.kind, partyName: i.party_name, partyTin: i.party_tin, docNumber: i.doc_number,
+    docDate: i.doc_date, dueDate: i.due_date, amount: cents(i.amount), balance: cents(i.balance),
   }));
 }

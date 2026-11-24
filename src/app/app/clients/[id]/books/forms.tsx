@@ -7,6 +7,13 @@ import { FS_LINES } from "@/lib/ledger/fs-lines";
 import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type LedgerAccount, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import {
+  confirmAllAction,
+  confirmEntryAction,
+  postArapAction,
+  previewArapAction,
+  returnArapAction,
+  saveArapAction,
+  type ArapState,
   deleteAccountAction,
   postEntryAction,
   previewOpeningAction,
@@ -228,5 +235,96 @@ export function ReverseForm({ clientId, entryId, minDate }: { clientId: string; 
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "…" : "Reverse"}</Button>
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Suggested entries from documents.
+// ---------------------------------------------------------------------------
+export function ConfirmButton({ clientId, entryId }: { clientId: string; entryId: string }) {
+  const [state, action, pending] = useActionState(async () => confirmEntryAction(clientId, entryId), {} as FormState);
+  if (state.ok) return <span className="text-caption-1-regular text-text-secondary">Posted</span>;
+  return (
+    <form action={action} className="flex items-center gap-2">
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Posting…" : "Confirm"}</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+export function ConfirmAllButton({ clientId, count }: { clientId: string; count: number }) {
+  const [state, action, pending] = useActionState(async () => confirmAllAction(clientId), {} as FormState);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <Button type="submit" size="sm" disabled={pending || count === 0}>{pending ? "Posting…" : `Confirm all ${count}`}</Button>
+      {state.ok && <span className="text-body-regular text-text-secondary">{state.ok}</span>}
+      {state.error && <span className="text-body-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The monthly AR/AP update (staff upload, posted at once).
+// ---------------------------------------------------------------------------
+export function ArapUpload({ clientId, defaultMonth }: { clientId: string; defaultMonth: string }) {
+  const [month, setMonth] = useState(defaultMonth);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, previewAction, previewing] = useActionState(previewArapAction.bind(null, clientId), {} as ArapState);
+  const [saved, saveAction, saving] = useActionState(saveArapAction.bind(null, clientId), {} as ArapState);
+  const c = saved.checked ?? preview.checked;
+  return (
+    <div className="space-y-4">
+      <form action={previewAction} className="flex flex-wrap items-end gap-3">
+        <Field label="Month" htmlFor="arap_month">
+          <Input id="arap_month" name="month" type="month" value={month} onChange={(e) => setMonth(e.target.value)} required className="w-40" />
+        </Field>
+        <a href={`/app/clients/${clientId}/books/export?kind=arap&month=${month}`} className="pb-2 text-body-medium text-text-primary hover:underline">Download workbook</a>
+        <Field label="Filled-in workbook (.xlsx)" htmlFor="arap_file">
+          <Input id="arap_file" name="file" type="file" accept=".xlsx" required onChange={(x) => setFile(x.target.files?.[0] ?? null)} className="py-1.5" />
+        </Field>
+        <Button type="submit" variant="secondary" disabled={previewing || !file}>{previewing ? "Reading…" : "Preview"}</Button>
+      </form>
+      {preview.error && <Notice tone="blocked">{preview.error}</Notice>}
+      {c && !saved.ok && (
+        <div className="space-y-2 text-body-regular">
+          {c.errors.length > 0 && <Notice tone="blocked"><ul className="list-disc space-y-0.5 ps-5">{c.errors.map((x, i) => <li key={i}>{x}</li>)}</ul></Notice>}
+          {c.rows.length > 0 && (
+            <ul className="divide-y divide-separator-border">
+              {c.rows.map((r, i) => (
+                <li key={i} className="flex flex-wrap justify-between gap-3 py-1.5">
+                  <span className="text-text-primary">{r.kind === "receivable" ? "Collected from" : "Paid to"} {r.partyName}{r.docNumber ? ` · ${r.docNumber}` : ""}</span>
+                  <span className="tabular-nums text-text-secondary">{r.date} · {formatAmount(r.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="tabular-nums text-text-secondary">Collected {formatAmount(c.collected)} · Paid {formatAmount(c.paid)}</p>
+        </div>
+      )}
+      {preview.checked && preview.checked.errors.length === 0 && file && !saved.ok && (
+        <form action={(fd) => { fd.set("file", file); fd.set("month", month); return saveAction(fd); }}>
+          <Button type="submit" disabled={saving}>{saving ? "Posting…" : "Post to the books"}</Button>
+        </form>
+      )}
+      {saved.error && <Notice tone="blocked">{saved.error}</Notice>}
+      {saved.ok && <Notice tone="done">{saved.ok}</Notice>}
+    </div>
+  );
+}
+
+/** A client's AR/AP update waiting for staff: post it, or return it with a reason. */
+export function ArapDecision({ clientId, updateId }: { clientId: string; updateId: string }) {
+  const [posted, post, posting] = useActionState(async () => postArapAction(clientId, updateId), {} as FormState);
+  const [ret, retAction, returning] = useActionState(returnArapAction.bind(null, clientId, updateId), {} as FormState);
+  if (posted.ok || ret.ok) return <span className="text-caption-1-regular text-text-secondary">{posted.ok ?? ret.ok}</span>;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <form action={post}><Button type="submit" size="sm" disabled={posting}>{posting ? "Posting…" : "Post"}</Button></form>
+      <form action={retAction} className="flex items-center gap-2">
+        <Input name="reason" required placeholder="Reason to return" aria-label="Reason to return" className="w-48" />
+        <Button type="submit" size="sm" variant="secondary" disabled={returning}>Return</Button>
+      </form>
+      {(posted.error || ret.error) && <span className="text-caption-1-regular text-text-error-primary">{posted.error ?? ret.error}</span>}
+    </div>
   );
 }

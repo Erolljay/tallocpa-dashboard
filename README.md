@@ -28,6 +28,7 @@ Phase 1A in progress. Built so far:
 - Branches (Iloilo now): clients and staff belong to a branch; staff are listed by branch when assigning a client
 - Acting approver: a Reviewer named by the Owner gives the final approval within a peso limit (fully paid returns only, never their own work), with a daily digest to the Owner
 - Bookkeeping (Phase 1B, slice 1): books per bookkeeping client from a chart-of-accounts template (sole proprietorship, partnership, stock corporation, OPC, non-stock) mapped to FS and BIR income tax lines; opening balances workbook with AR/AP detail; manual journal entries, reversals and the trial balance; balanced, unchangeable posted entries enforced by the database
+- Bookkeeping slice 2: approved documents become suggested entries booked to an account title (client history → supplier preset in the parties directory → default); cash or charge read by OCR; receivables and payables by customer and supplier with aging; 2307s and the monthly AR/AP update workbook settle them
 
 Connecting Supabase, Google sign-in and Vercel: [`docs/SETUP.md`](docs/SETUP.md).
 

@@ -6,7 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import { datNameCols, PARTY_COLUMNS, PARTY_KINDS, PARTY_ROLES, PARTY_SOURCES, partyTinLabel, type Party, type PartyRole } from "@/lib/parties/format";
 import { branch4, tin9 } from "@/lib/parties/tin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { MergeForm, PartyForm, VerifyButton } from "../forms";
+import { MergeForm, PartyForm, PresetAccountForm, VerifyButton } from "../forms";
 
 export default function PartyPage(props: PageProps<"/app/parties/[id]">) {
   return (
@@ -27,9 +27,10 @@ async function PartyDetail({ params }: { params: PageProps<"/app/parties/[id]">[
   const { data } = await supabase.from("parties").select(PARTY_COLUMNS).eq("id", id).maybeSingle();
   if (!data) notFound();
   const party = data as unknown as Party;
-  const [{ data: links }, { data: verifier }] = await Promise.all([
+  const [{ data: links }, { data: verifier }, { data: preset }] = await Promise.all([
     supabase.from("client_parties").select("client_id, role, first_seen, last_seen, clients(name, code)").eq("party_id", id).order("last_seen", { ascending: false }),
     party.verified_by ? supabase.from("staff_profiles").select("full_name").eq("user_id", party.verified_by).maybeSingle() : Promise.resolve({ data: null }),
+    supabase.from("parties").select("preset_account_key").eq("id", id).maybeSingle(),
   ]);
   const verified = Boolean(party.verified_at);
   const locked = verified && !isOwner;
@@ -81,6 +82,10 @@ async function PartyDetail({ params }: { params: PageProps<"/app/parties/[id]">[
                 })}
               </ul>
             )}
+          </Card>
+
+          <Card title="Preset account title (books)">
+            <PresetAccountForm partyId={party.id} value={preset?.preset_account_key ?? null} />
           </Card>
 
           <Card title="On BIR attachments">
