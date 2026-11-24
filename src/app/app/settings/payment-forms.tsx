@@ -15,7 +15,7 @@ export function AddPaymentAccountForm() {
   return (
     <details>
       <summary className="cursor-pointer list-none text-body-medium text-button-ghost-foreground hover:underline">Add a bank or e-wallet account</summary>
-      <form action={run} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-primary-default-muted p-4 sm:grid-cols-2">
+      <form action={run} className="mt-3 grid gap-3 rounded-3xl border border-border-button-default bg-background-secondary-default p-4 sm:grid-cols-2">
         <Field label="Type" htmlFor="pa-kind">
           <Select id="pa-kind" name="kind" defaultValue="bank">
             <option value="bank">Bank</option>

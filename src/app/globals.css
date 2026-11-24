@@ -51,6 +51,15 @@ input[type="radio"] {
   accent-color: var(--color-accent-500);
 }
 
+/*
+ * Horizontal scroll boxes (wide tables) are positioned, so the absolutely
+ * positioned screen-reader labels inside them are clipped with the table
+ * instead of widening the whole page on phones.
+ */
+:where(.overflow-x-auto) {
+  position: relative;
+}
+
 /* Peso amounts: right-aligned, tabular digits. */
 .amount {
   font-variant-numeric: tabular-nums;

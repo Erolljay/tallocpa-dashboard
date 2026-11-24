@@ -1,17 +1,17 @@
 # Graph Report - tallocpa-dashboard  (2026-11-24)
 
 ## Corpus Check
-- 346 files · ~235,066 words
+- 346 files · ~235,151 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 13 file(s) not represented in the graph (top: .css 5, (none) 4, .mdc 1)
 
 ## Summary
-- 2368 nodes · 7325 edges · 105 communities (89 shown, 16 thin omitted)
+- 2368 nodes · 7329 edges · 103 communities (87 shown, 16 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 83 edges (avg confidence: 0.85)
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e6db1152`
+- Built from commit: `108a4394`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -72,7 +72,7 @@
 - cx
 - dropdown.tsx
 - returns/types.ts
-- FormModule
+- income.ts
 - fees/[id]/page.tsx
 - testing.ts
 - payroll/types.ts
@@ -80,11 +80,10 @@
 - payroll/data.ts
 - react
 - parties/[id]/page.tsx
-- settings/page.tsx
+- payment-actions.ts
 - stat-cards.tsx
 - gap.ts
 - theme-toggle.tsx
-- Badge
 - vat.ts
 - form-2316.tsx
 - clients/[id]/page.tsx
@@ -92,7 +91,6 @@
 - Pro components
 - notification.tsx
 - cx.ts
-- Badge
 - settings/actions.ts
 - input.tsx
 - document-scanner.tsx
@@ -113,7 +111,7 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `supabaseServer()` - 150 edges
-2. `cx` - 114 edges
+2. `cx` - 116 edges
 3. `react` - 107 edges
 4. `Notice()` - 96 edges
 5. `Skeleton()` - 85 edges
@@ -143,11 +141,11 @@
 - **Return lifecycle: intake to filed return** — docs_spec_ocr_intake_review_queue, docs_spec_bookkeeping, docs_spec_tax_computation_returns, docs_spec_sign_off_chain, docs_spec_period_lock [EXTRACTED 1.00]
 - **Deadline generation flow** — docs_spec_deadline_rules_as_data, docs_spec_holiday_rollforward, docs_spec_calendar_year_withholding, docs_spec_filing_instance_generation, readme_bir_deadline_engine, docs_setup_generate_filings_cron [INFERRED 0.85]
 
-## Communities (105 total, 16 thin omitted)
+## Communities (103 total, 16 thin omitted)
 
 ### Community 0 - "filings/[id]/page.tsx"
-Cohesion: 0.11
-Nodes (23): advanceFilingAction(), amount, SignOffState, stepData(), text(), Event, eventText, Filing() (+15 more)
+Cohesion: 0.15
+Nodes (17): Event, eventText, Filing(), FilingPage(), paymentText, when(), ACTION_LABEL, availableActions() (+9 more)
 
 ### Community 1 - "Deadline Engine & Dates"
 Cohesion: 0.06
@@ -155,15 +153,15 @@ Nodes (67): RemoveHolidayButton(), appliesTo(), DeadlineSettings(), fmtDate(), k
 
 ### Community 2 - "supabaseServer"
 Cohesion: 0.09
-Nodes (37): nextConfig, next, addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), removeAssignmentAction(), setClientStatusAction() (+29 more)
+Nodes (39): nextConfig, next, Deadlines(), DeadlinesPage(), DocumentReviewPage(), Review(), advanceFilingAction(), amount (+31 more)
 
 ### Community 3 - "income.ts"
-Cohesion: 0.14
-Nodes (40): comparisonSchedule(), compute1701Q(), compute1702Q(), costsOf(), cwt(), incomeAttachments(), inputs1701Q(), inputs1702Q() (+32 more)
+Cohesion: 0.16
+Nodes (28): comparisonSchedule(), compute1701Q(), compute1702Q(), costsOf(), cwt(), inputs1701Q(), inputs1702Q(), priorDiffWarning() (+20 more)
 
 ### Community 4 - "Skeleton"
-Cohesion: 0.13
-Nodes (30): Certificates(), Form2316Page(), ClientList(), ClientsPage(), FilingTable(), Deadlines(), DeadlinesPage(), DocumentReviewPage() (+22 more)
+Cohesion: 0.10
+Nodes (46): Certificates(), Form2316Page(), ClientList(), ClientsPage(), DashboardPage(), OwnerView(), Summary(), NewParty() (+38 more)
 
 ### Community 5 - "package.json"
 Cohesion: 0.10
@@ -198,8 +196,8 @@ Cohesion: 0.20
 Nodes (9): First Owner Bootstrap (staff_profiles insert), Google OAuth Sign-In, Magic Link Email with 6-digit Code, Resend Custom SMTP, Setup Guide, Vercel Deployment (app.tallocpa.com), ocr-provider Interface (Gemini paid tier), Technology Stack (+1 more)
 
 ### Community 13 - "supabaseServer"
-Cohesion: 0.08
-Nodes (32): birSchema, blank(), BRANCH_CODE, contactSchema, credentialsSchema, date(), daysBetween(), Expiry (+24 more)
+Cohesion: 0.06
+Nodes (43): BrandSettingsState, FieldDef, FIELDS, pesoInput(), SUBMIT, BRAND_FILES, BrandFileKind, birSchema (+35 more)
 
 ### Community 14 - "Sign-off, Ledger & Payments"
 Cohesion: 0.25
@@ -250,8 +248,8 @@ Cohesion: 0.10
 Nodes (38): OcrRate, OwnerSections(), Queue, QueueCell(), waited(), ClientRow, order, PartCell() (+30 more)
 
 ### Community 42 - "scores/page.tsx"
-Cohesion: 0.17
-Nodes (37): AssignForm(), ClientUserForm(), EngagementForm(), EmployeeUpload(), ItemForm(), PayrollSettingsForm(), PreviewTable(), PriorEmployerForm() (+29 more)
+Cohesion: 0.14
+Nodes (45): react, DocReviewActions(), AssignForm(), ClientUserForm(), EngagementForm(), EmployeeUpload(), ItemForm(), PayrollSettingsForm() (+37 more)
 
 ### Community 43 - "[clientId]/page.tsx"
 Cohesion: 0.11
@@ -270,8 +268,8 @@ Cohesion: 0.12
 Nodes (36): ClientCollectionsPage(), Deposit, Detail(), Due, maskNumber(), AddChargeForm(), ApplyCreditButton(), BillingDaysForm() (+28 more)
 
 ### Community 47 - "react"
-Cohesion: 0.14
-Nodes (27): ATC_MASTER, AtcInfo, normalizeAtc(), FilingRow, ListedDocument, loadWorksheet(), PAYROLL_FORM_CODES, SavedWorksheet (+19 more)
+Cohesion: 0.11
+Nodes (28): ATC_MASTER, AtcInfo, normalizeAtc(), EwtLine, FilingRow, ListedDocument, loadWorksheet(), PAYROLL_FORM_CODES (+20 more)
 
 ### Community 48 - "Centavos"
 Cohesion: 0.13
@@ -291,7 +289,7 @@ Nodes (24): PriceRow, buildQuote(), cents(), CustomQuoteItem, EWT_NOTE, inRange(
 
 ### Community 52 - "rows.ts"
 Cohesion: 0.10
-Nodes (37): Client, CollectionsPage(), OpenDue, Overview(), RunBilling(), Stat(), Detail(), StatementPage() (+29 more)
+Nodes (39): Client, CollectionsPage(), OpenDue, Overview(), RunBilling(), Stat(), Detail(), StatementPage() (+31 more)
 
 ### Community 53 - "eslint.config.mjs"
 Cohesion: 0.11
@@ -326,16 +324,16 @@ Cohesion: 0.15
 Nodes (20): RegisterPreview, BirCategory, Category, DEDUCTION_FIELDS, DEFAULT_ITEMS, EARNING_FIELDS, KIND_ORDER, PayrollItem (+12 more)
 
 ### Community 61 - "returns/types.ts"
-Cohesion: 0.08
-Nodes (51): lookupAtc(), AtcInfo, Split, agentBackground(), agentErrors(), tinDashed(), atcSchedule(), AtcTotal (+43 more)
+Cohesion: 0.07
+Nodes (56): lookupAtc(), BUSINESS_TAX_FORMS, form1701Q, form1702Q, form2551Q, form2550Q, VatData, agentBackground() (+48 more)
 
 ### Community 62 - "quote.ts"
 Cohesion: 0.23
 Nodes (14): zod, runOcr(), SKIP, lookupParties(), blank(), optionalText(), PartyInput, partySchema (+6 more)
 
 ### Community 63 - "sign-off-actions.tsx"
-Cohesion: 0.22
-Nodes (12): checkTone, checkWord, needsNote(), noteLabel(), noteRequired(), PaymentCheck, PaymentCheckView(), StepForm() (+4 more)
+Cohesion: 0.29
+Nodes (10): checkTone, checkWord, needsNote(), noteLabel(), noteRequired(), PaymentCheck, PaymentCheckView(), SignOffActions() (+2 more)
 
 ### Community 64 - "cx"
 Cohesion: 0.06
@@ -349,41 +347,41 @@ Nodes (35): react-aria-components, Dropdown(), DropdownContext, DropdownContextV
 Cohesion: 0.09
 Nodes (21): 10. Gesture design details (the "feel" checklist), 11. Frame-level smoothness, 12. Materials & depth — translucency conveys hierarchy, 13. Multimodal feedback — motion + sound + haptics, 14. Reduced motion & accessibility, 15. Typography — optical sizing, tracking, leading, 16. Design foundations — the eight principles, 17. Process (+13 more)
 
-### Community 67 - "FormModule"
-Cohesion: 0.16
-Nodes (9): BUSINESS_TAX_FORMS, form1701Q, form1702Q, form2551Q, form2550Q, WITHHOLDING_FORMS, LoadedWorksheet, modules (+1 more)
+### Community 67 - "income.ts"
+Cohesion: 0.31
+Nodes (14): incomeAttachments(), Periods, periods(), REGIMES, sawtAttachments(), SawtResult, addMonths(), docsWithin() (+6 more)
 
 ### Community 68 - "fees/[id]/page.tsx"
 Cohesion: 0.21
 Nodes (16): individual, individual, amounts(), cert2307(), ctxFor(), doc(), DocInput, lineNo() (+8 more)
 
 ### Community 69 - "testing.ts"
-Cohesion: 0.19
-Nodes (17): FormState, ClientForm(), ClientValues, frequencyLabel, Props, EditClient(), EditClientPage(), NewClientPage() (+9 more)
+Cohesion: 0.11
+Nodes (30): addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), FormState, updateClientAction(), ClientForm(), ClientValues (+22 more)
 
 ### Community 70 - "payroll/types.ts"
-Cohesion: 0.23
-Nodes (13): RemoveAssignmentButton(), RemoveClientUserButton(), StatusButton(), ClientDetail(), ClientPage(), fmtDate(), frequencyLabel, Row (+5 more)
+Cohesion: 0.21
+Nodes (14): removeAssignmentAction(), RemoveAssignmentButton(), RemoveClientUserButton(), StatusButton(), ClientDetail(), ClientPage(), fmtDate(), frequencyLabel (+6 more)
 
 ### Community 71 - "qap.ts"
 Cohesion: 0.12
-Nodes (33): addChargeAction(), applyCreditAction(), date, depositSchema, MoneyState, peso, recordDepositAction(), refresh() (+25 more)
+Nodes (36): setClientStatusAction(), addChargeAction(), applyCreditAction(), date, depositSchema, MoneyState, peso, recordDepositAction() (+28 more)
 
 ### Community 72 - "payroll/data.ts"
 Cohesion: 0.13
 Nodes (19): count(), first(), pick(), profileFromQuery(), QuerySource, items, DOCUMENT_BANDS, EMPLOYEE_BANDS (+11 more)
 
 ### Community 73 - "react"
-Cohesion: 0.19
-Nodes (11): react, DocReviewActions(), NewEmployee(), NewEmployeePage(), EmployeeForm(), buttonClass(), ButtonStyle, control (+3 more)
+Cohesion: 0.22
+Nodes (9): NewEmployee(), NewEmployeePage(), EmployeeForm(), buttonClass(), ButtonStyle, control, noticeTones, tones (+1 more)
 
 ### Community 74 - "parties/[id]/page.tsx"
 Cohesion: 0.11
 Nodes (17): Animation Performance, Hard Rules, Initial Response, Operating Posture, Phase 1: Find what animates, Phase 2: Diagnose, Phase 3: Report, React: Don't Animate Through State (+9 more)
 
-### Community 75 - "settings/page.tsx"
-Cohesion: 0.17
-Nodes (14): BrandSettingsState, FieldDef, FIELDS, pesoInput(), Result(), SectionForm(), SUBMIT, TaxForm() (+6 more)
+### Community 75 - "payment-actions.ts"
+Cohesion: 0.33
+Nodes (10): accountSchema, addPaymentAccountAction(), QR_TYPES, refresh(), replaceQrAction(), setAccountActiveAction(), setPaymentDaysAction(), text() (+2 more)
 
 ### Community 76 - "stat-cards.tsx"
 Cohesion: 0.07
@@ -397,13 +395,9 @@ Nodes (19): EngagementRow, TaxpayerType, EstimatedProfile, estimateProfile(), Ex
 Cohesion: 0.08
 Nodes (34): @remixicon/react@^4.9.0, @remixicon/react, Nav(), PortalLayout(), baseTabs, payrollTab, PortalNav(), applyTheme() (+26 more)
 
-### Community 79 - "Badge"
-Cohesion: 0.21
-Nodes (17): loadSchedules(), loadTaxOnFee(), longDate(), nextEffectiveDate(), FeeGapPage(), Gap(), FeeSchedulePage(), Schedules() (+9 more)
-
 ### Community 80 - "vat.ts"
 Cohesion: 0.15
-Nodes (36): atcInfo(), AtcKind, atcKind(), BUSINESS_TAX_ATCS, normalizeAtc(), buildSawt(), incomePayment(), sawtAttachments() (+28 more)
+Nodes (37): AtcInfo, atcInfo(), AtcKind, atcKind(), BUSINESS_TAX_ATCS, normalizeAtc(), buildSawt(), incomePayment() (+29 more)
 
 ### Community 81 - "form-2316.tsx"
 Cohesion: 0.11
@@ -428,10 +422,6 @@ Nodes (27): UserMenu(), Avatar(), AvatarColor, AvatarProps, AvatarSize, styles, 
 ### Community 86 - "cx.ts"
 Cohesion: 0.08
 Nodes (22): CHIP_COLORS, ChipColor, ChipProps, ChipVariant, styles, Counter(), CounterColor, CounterProps (+14 more)
-
-### Community 87 - "Badge"
-Cohesion: 0.14
-Nodes (25): Lines(), lineStyle, Problems(), sameFigures(), Schedule(), when(), Worksheet(), WorksheetPage() (+17 more)
 
 ### Community 88 - "settings/actions.ts"
 Cohesion: 0.29
@@ -502,24 +492,24 @@ Cohesion: 0.40
 Nodes (4): DO_NOT_TRACK, NODE_USE_ENV_PROXY, npx, boardui
 
 ## Knowledge Gaps
-- **18 isolated node(s):** `npx`, `NODE_USE_ENV_PROXY`, `DO_NOT_TRACK`, `Server-Only Keys (SUPABASE_SECRET_KEY, CRON_SECRET)`, `Withholding Returns Follow Calendar Year (calendar_year flag)` (+13 more)
+- **18 isolated node(s):** `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx`, `Server-Only Keys (SUPABASE_SECRET_KEY, CRON_SECRET)`, `Withholding Returns Follow Calendar Year (calendar_year flag)` (+13 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 726 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `filings/[id]/page.tsx`, `Deadline Engine & Dates`, `Skeleton`, `package.json`, `review-form.tsx`, `app/documents/page.tsx`, `dependencies`, `sign-in-form.tsx`, `payroll/data.ts`, `ui.tsx`, `scores/page.tsx`, `[clientId]/page.tsx`, `notification.tsx`, `Centavos`, `rows.ts`, `eslint.config.mjs`, `next`, `money.ts`, `sign-off-actions.tsx`, `cx`, `dropdown.tsx`, `testing.ts`, `payroll/types.ts`, `settings/page.tsx`, `stat-cards.tsx`, `theme-toggle.tsx`, `Badge`, `form-2316.tsx`, `clients/[id]/page.tsx`, `button.tsx`, `notification.tsx`, `cx.ts`, `Badge`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `social-button.tsx`, `file-upload.tsx`, `breadcrumb.tsx`, `checkbox.tsx`?**
-  _High betweenness centrality (0.209) - this node is a cross-community bridge._
-- **What connects `npx`, `NODE_USE_ENV_PROXY`, `DO_NOT_TRACK` to the rest of the system?**
+- **Why does `react` connect `scores/page.tsx` to `filings/[id]/page.tsx`, `Deadline Engine & Dates`, `supabaseServer`, `Skeleton`, `package.json`, `review-form.tsx`, `app/documents/page.tsx`, `supabaseServer`, `dependencies`, `sign-in-form.tsx`, `payroll/data.ts`, `ui.tsx`, `[clientId]/page.tsx`, `notification.tsx`, `Centavos`, `rows.ts`, `eslint.config.mjs`, `next`, `money.ts`, `sign-off-actions.tsx`, `cx`, `dropdown.tsx`, `testing.ts`, `payroll/types.ts`, `react`, `stat-cards.tsx`, `theme-toggle.tsx`, `form-2316.tsx`, `clients/[id]/page.tsx`, `button.tsx`, `notification.tsx`, `cx.ts`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `social-button.tsx`, `file-upload.tsx`, `breadcrumb.tsx`, `checkbox.tsx`?**
+  _High betweenness centrality (0.181) - this node is a cross-community bridge._
+- **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _18 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `filings/[id]/page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
-- **Why does `next` connect `supabaseServer` to `filings/[id]/page.tsx`, `Deadline Engine & Dates`, `Skeleton`, `package.json`, `review-form.tsx`, `app/documents/page.tsx`, `dependencies`, `sign-in-form.tsx`, `payroll/data.ts`, `ui.tsx`, `[clientId]/page.tsx`, `notification.tsx`, `Centavos`, `rows.ts`, `eslint.config.mjs`, `input.tsx`, `src/app/layout.tsx`, `next`, `money.ts`, `sign-off-actions.tsx`, `testing.ts`, `payroll/types.ts`, `qap.ts`, `react`, `settings/page.tsx`, `theme-toggle.tsx`, `Badge`, `form-2316.tsx`, `clients/[id]/page.tsx`, `Badge`, `app/app/layout.tsx`, `breadcrumb.tsx`, `proxy.ts`?**
-  _High betweenness centrality (0.149) - this node is a cross-community bridge._
+  _Cohesion score 0.14761904761904762 - nodes in this community are weakly interconnected._
+- **Why does `next` connect `supabaseServer` to `filings/[id]/page.tsx`, `Deadline Engine & Dates`, `Skeleton`, `package.json`, `review-form.tsx`, `app/documents/page.tsx`, `supabaseServer`, `dependencies`, `sign-in-form.tsx`, `payroll/data.ts`, `ui.tsx`, `scores/page.tsx`, `[clientId]/page.tsx`, `notification.tsx`, `Centavos`, `rows.ts`, `eslint.config.mjs`, `input.tsx`, `src/app/layout.tsx`, `next`, `money.ts`, `sign-off-actions.tsx`, `testing.ts`, `payroll/types.ts`, `qap.ts`, `react`, `payment-actions.ts`, `theme-toggle.tsx`, `form-2316.tsx`, `clients/[id]/page.tsx`, `app/app/layout.tsx`, `breadcrumb.tsx`, `proxy.ts`?**
+  _High betweenness centrality (0.146) - this node is a cross-community bridge._
 - **Should `Deadline Engine & Dates` be split into smaller, more focused modules?**
   _Cohesion score 0.056022408963585436 - nodes in this community are weakly interconnected._
 - **Should `supabaseServer` be split into smaller, more focused modules?**
-  _Cohesion score 0.08925979680696662 - nodes in this community are weakly interconnected._
-- **Should `income.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.1374113475177305 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08831168831168831 - nodes in this community are weakly interconnected._
+- **Should `Skeleton` be split into smaller, more focused modules?**
+  _Cohesion score 0.09764309764309764 - nodes in this community are weakly interconnected._

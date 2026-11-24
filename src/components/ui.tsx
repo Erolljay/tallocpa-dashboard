@@ -70,9 +70,9 @@ export function PageHeader({ title, description, actions }: { title: string; des
 /** BoardUI panel: rounded-3xl, button-default border, primary surface. Never nested. */
 export function Card({ title, children, className, actions }: { title?: string; children: ReactNode; className?: string; actions?: ReactNode }) {
   return (
-    <section className={cx("rounded-3xl border border-border-button-default bg-background-primary-default p-5 sm:p-6", className)}>
+    <section className={cx("min-w-0 rounded-3xl border border-border-button-default bg-background-primary-default p-5 sm:p-6", className)}>
       {(title || actions) && (
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           {title && <h2 className="text-title-3-semibold text-text-primary">{title}</h2>}
           {actions}
         </div>

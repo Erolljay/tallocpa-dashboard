@@ -69,15 +69,15 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Registration">
           <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-body-regular">
-            <dt className="text-text-tertiary">RDO</dt><dd className="text-text-primary">{client.rdo_code ?? "—"}</dd>
-            <dt className="text-text-tertiary">Address</dt><dd className="text-text-primary">{client.registered_address ?? "—"}</dd>
-            <dt className="text-text-tertiary">Registered</dt><dd className="text-text-primary">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
-            <dt className="text-text-tertiary">Tax types</dt><dd className="text-text-primary">{taxTypes.join(", ") || "—"}</dd>
-            <dt className="text-text-tertiary">Taxable year</dt><dd className="text-text-primary">Ends {months[client.fiscal_year_end_month - 1]}</dd>
-            <dt className="text-text-tertiary">Filing</dt><dd className="text-text-primary">{client.filing_channel === "efps" ? `eFPS, Group ${client.efps_group}` : "eBIRForms"}</dd>
-            <dt className="text-text-tertiary">Books</dt><dd className="text-text-primary">{client.book_type === "loose_leaf" ? "Loose-leaf" : "Manual"}</dd>
-            <dt className="text-text-tertiary">BIR payment</dt><dd className="text-text-primary">{client.payment_mode === "firm_remits" ? "We remit for the client" : "Client pays directly"}</dd>
-            <dt className="text-text-tertiary">Document cutoff</dt><dd className="text-text-primary">Day {client.submission_cutoff_day} of the following month</dd>
+            <dt className="text-text-tertiary">RDO</dt><dd className="min-w-0 break-words text-text-primary">{client.rdo_code ?? "—"}</dd>
+            <dt className="text-text-tertiary">Address</dt><dd className="min-w-0 break-words text-text-primary">{client.registered_address ?? "—"}</dd>
+            <dt className="text-text-tertiary">Registered</dt><dd className="min-w-0 break-words text-text-primary">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
+            <dt className="text-text-tertiary">Tax types</dt><dd className="min-w-0 break-words text-text-primary">{taxTypes.join(", ") || "—"}</dd>
+            <dt className="text-text-tertiary">Taxable year</dt><dd className="min-w-0 break-words text-text-primary">Ends {months[client.fiscal_year_end_month - 1]}</dd>
+            <dt className="text-text-tertiary">Filing</dt><dd className="min-w-0 break-words text-text-primary">{client.filing_channel === "efps" ? `eFPS, Group ${client.efps_group}` : "eBIRForms"}</dd>
+            <dt className="text-text-tertiary">Books</dt><dd className="min-w-0 break-words text-text-primary">{client.book_type === "loose_leaf" ? "Loose-leaf" : "Manual"}</dd>
+            <dt className="text-text-tertiary">BIR payment</dt><dd className="min-w-0 break-words text-text-primary">{client.payment_mode === "firm_remits" ? "We remit for the client" : "Client pays directly"}</dd>
+            <dt className="text-text-tertiary">Document cutoff</dt><dd className="min-w-0 break-words text-text-primary">Day {client.submission_cutoff_day} of the following month</dd>
           </dl>
         </Card>
 

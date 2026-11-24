@@ -176,7 +176,7 @@ async function PaymentSettings() {
               ) : (
                 <div className="grid size-16 place-items-center rounded-lg border border-dashed border-border-button-default text-center text-caption-2-regular text-text-tertiary">No QR</div>
               )}
-              <div className="min-w-0 flex-1 text-body-regular">
+              <div className="min-w-0 flex-1 basis-48 text-body-regular">
                 <p className="font-medium text-text-primary">
                   {a.institution} <span className="font-normal text-text-tertiary">· {a.kind === "bank" ? "Bank" : "E-wallet"}</span>
                 </p>

@@ -93,9 +93,9 @@ export function DocumentUpload(props: {
   const closeScanner = useCallback(() => setScanning(false), []);
 
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
       {scanning && <DocumentScanner onScan={(f) => send([f])} onClose={closeScanner} onUnavailable={cameraFallback} />}
-      <div className={`grid gap-3 ${fieldCount >= 3 && !props.compact ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+      <div className={`grid gap-3 ${fieldCount >= 3 && !props.compact ? "@lg:grid-cols-3" : "@sm:grid-cols-2"}`}>
         {props.clients.length > 1 && (
           <Field label="Business" htmlFor="up_client">
             <Select id="up_client" value={clientId} onChange={(e) => setClientId(e.target.value)}>
@@ -119,7 +119,7 @@ export function DocumentUpload(props: {
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 @sm:grid-cols-2">
         <button
           type="button"
           disabled={busy || !clientId}
