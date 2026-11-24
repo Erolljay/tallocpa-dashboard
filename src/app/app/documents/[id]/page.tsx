@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
 import { manilaToday } from "@/lib/filings/run";
@@ -27,15 +28,21 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const supabase = await supabaseServer();
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, late, prior_year, file_name, mime_type, status, source, return_reason, client_reply, created_at, clients(name)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, return_reason, client_reply, created_at, clients(name)")
     .eq("id", id)
     .maybeSingle();
   if (!doc) notFound();
-  const [{ data: ext }, { data: team }] = await Promise.all([
+  const posted = doc.status === "posted";
+  const [{ data: ext }, { data: team }, { data: filed }] = await Promise.all([
     supabase.from("extractions").select("status, model, fields, confidence, error, approved_fields, approved_at").eq("document_id", id).maybeSingle(),
     supabase.from("staff_assignments").select("user_id").eq("client_id", doc.client_id).eq("user_id", me.userId),
+    posted
+      ? supabase.from("filing_instances").select("id, client_id, form, period_label, period_start, period_end, status").eq("client_id", doc.client_id).in("status", LOCKED_STATUSES)
+      : Promise.resolve({ data: [] as LockFiling[] }),
   ]);
   const canAct = me.staff.role === "owner" || (team ?? []).length > 0;
+  // An approved document stays editable until a return covering its month is filed.
+  const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[]) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
   const confidence = (ext?.approved_fields ? {} : ext?.confidence ?? {}) as OcrConfidence;
 
@@ -88,13 +95,19 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
           {!ext && <Notice>OCR has not read this document yet{process.env.GEMINI_API_KEY ? "." : " (no GEMINI_API_KEY is set). You can type the figures yourself."}</Notice>}
           {ext?.status === "pending" && <Notice>OCR is reading this document. Refresh in a moment.</Notice>}
           {ext?.status === "failed" && <Notice tone="blocked">OCR could not read it: {ext.error}. Read it again, or type the figures.</Notice>}
-          {ext?.approved_at && <Notice tone="done">Approved. These are the approved figures.</Notice>}
+          {ext?.approved_at && lock && (
+            <Notice tone="done">Approved and locked: the {lock.form} return for {lock.period_label} has been filed, so these figures can no longer change.</Notice>
+          )}
+          {ext?.approved_at && !lock && (
+            <Notice tone="done">Approved. {posted && canAct ? "You can still correct these figures until the return for this month is filed." : "These are the approved figures."}</Notice>
+          )}
           <ReviewForm
             documentId={doc.id}
             fields={fields}
             confidence={confidence}
             issues={issues}
-            canAct={canAct && ["received", "under_review"].includes(doc.status)}
+            canAct={canAct && (["received", "under_review"].includes(doc.status) || (posted && !lock))}
+            mode={posted ? "edit" : "approve"}
             canRead={canAct && !ext?.approved_at}
             model={ext?.model ?? null}
             directory={resolved && { partyId: resolved.party!.id, name: resolved.name, tin: resolved.tin, address: resolved.address, verified: Boolean(resolved.party!.verified_at), warning: resolved.warning }}
