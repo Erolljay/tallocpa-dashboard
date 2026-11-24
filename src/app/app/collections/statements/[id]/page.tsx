@@ -24,7 +24,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/statements/[i
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link href={`/app/collections/${s.client.id}`} className="text-body-regular text-button-ghost-foreground hover:underline print:hidden">← {s.client.name}</Link>
-      <StatementView s={s} today={manilaToday()} />
+      <StatementView s={s} today={manilaToday()} owner />
     </div>
   );
 }

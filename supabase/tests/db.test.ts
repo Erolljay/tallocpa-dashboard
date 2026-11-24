@@ -467,6 +467,52 @@ describe.skipIf(!url)("database", () => {
       });
     });
 
+    it("takes proof of payment from the client, For verification until the Owner verifies it into a deposit", async () => {
+      await money(async ({ as }) => {
+        await as(OWNER, `select public.run_billing('2027-02-10')`);
+        const [{ id: soa }] = await as<{ id: string }>(OWNER, `select id from public.soas where client_id = $1`, [clientA]);
+        const dir = `${clientA}/${soa}`;
+        const submit = (path: string, amount: number, paidOn = "2026-11-20") =>
+          as<{ id: string }>(CLIENT_USER, `select public.submit_payment_proof($1, $2, 'gcash.jpg', 'image/jpeg', $3, $4, null, 'GC-123') as id`, [soa, path, amount, paidOn]);
+
+        // The client uploads the file under their own client's folder; staff and other clients cannot.
+        await as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${dir}/a.jpg`]);
+        await expect(as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${clientB}/${soa}/x.jpg`])).rejects.toThrow(/row-level security/);
+        await expect(as(STAFF, `insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${dir}/s.jpg`])).rejects.toThrow(/row-level security/);
+
+        await expect(submit(`${dir}/missing.jpg`, 8000)).rejects.toThrow(/not received/);
+        await expect(submit(`${clientB}/${soa}/a.jpg`, 8000)).rejects.toThrow(/for this statement/);
+        await expect(submit(`${dir}/a.jpg`, 8000, "2999-01-01")).rejects.toThrow(/future/);
+        const [{ id: proof }] = await submit(`${dir}/a.jpg`, 8000);
+        expect(await as(CLIENT_USER, `select status from public.payment_proofs`)).toEqual([{ status: "for_verification" }]);
+        expect(await as(STAFF, `select count(*)::int as n from public.payment_proofs`)).toEqual([{ n: 0 }]);
+
+        // Only the Owner verifies; the payment is matched to the open items and the statement is settled.
+        await expect(as(CLIENT_USER, `select public.verify_payment_proof($1, null, null, null)`, [proof])).rejects.toThrow(/Only the Owner/);
+        await as(OWNER, `select public.verify_payment_proof($1, null, null, '0101')`, [proof]);
+        expect(await as(OWNER, `select status, (deposit_id is not null) as has_deposit from public.payment_proofs where id = $1`, [proof])).toEqual([{ status: "verified", has_deposit: true }]);
+        expect((await as(OWNER, open, [clientA])).map((r) => r.open_amount)).toEqual(["0.00", "0.00"]);
+        expect(await as(OWNER, `select reference, bir_invoice_number, amount::text from public.client_deposits where client_id = $1`, [clientA])).toEqual([{ reference: "GC-123", bir_invoice_number: "0101", amount: "8000.00" }]);
+        await expect(as(OWNER, `select public.verify_payment_proof($1, null, null, null)`, [proof])).rejects.toThrow(/already reviewed/);
+
+        // A proof that does not match the bank is rejected with a reason.
+        await as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${dir}/b.jpg`]);
+        const [{ id: wrong }] = await submit(`${dir}/b.jpg`, 500);
+        await expect(as(OWNER, `select public.reject_payment_proof($1, '')`, [wrong])).rejects.toThrow(/why the proof is rejected/);
+        await as(OWNER, `select public.reject_payment_proof($1, 'Not found in GCash')`, [wrong]);
+        expect(await as(CLIENT_USER, `select status, reject_reason from public.payment_proofs where id = $1`, [wrong])).toEqual([{ status: "rejected", reject_reason: "Not found in GCash" }]);
+
+        // A check: the validated deposit slip, with the check number; it is recorded as a check.
+        await as(CLIENT_USER, `insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${dir}/slip.jpg`]);
+        const check = (ref: string) =>
+          as<{ id: string }>(CLIENT_USER, `select public.submit_payment_proof($1, $2, 'slip.jpg', 'image/jpeg', 1000, '2026-11-20', null, $3, 'check') as id`, [soa, `${dir}/slip.jpg`, ref]);
+        await expect(check("")).rejects.toThrow(/check number/);
+        const [{ id: slip }] = await check("CHK-555");
+        const [{ d }] = await as<{ d: string }>(OWNER, `select public.verify_payment_proof($1, null, null, null) as d`, [slip]);
+        expect(await as(OWNER, `select method, reference from public.client_deposits where id = $1`, [d])).toEqual([{ method: "check", reference: "CHK-555" }]);
+      });
+    });
+
     it("totals the brand's receipts by month and kind for the gross receipts watch, Owner only", async () => {
       await money(async ({ as }) => {
         const brand = (await as<{ id: string }>(OWNER, `select id from public.brands where code = 'TC'`))[0].id;
