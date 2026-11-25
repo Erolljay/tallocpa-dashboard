@@ -13,6 +13,8 @@ import { resolveParty } from "@/lib/parties/resolve";
 import { partyKey } from "@/lib/parties/tin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { pendingDocumentTaxCodes } from "@/lib/books/actions";
+import { loadTaxCodes } from "@/lib/books/data";
 import { PayrollIntake } from "./payroll-intake";
 import { ReviewForm, type Booking } from "./review-form";
 
@@ -178,7 +180,7 @@ function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string
 /** The books side of the review: only for clients whose books are set up, and document types that are booked. */
 async function loadBooking(
   supabase: Awaited<ReturnType<typeof supabaseServer>>,
-  doc: { id: string; client_id: string; doc_type: string; ledger_account_id: string | null },
+  doc: { id: string; client_id: string; doc_type: string; ledger_account_id: string | null; status: string },
   partyId: string | null,
 ): Promise<Booking | null> {
   if (!BOOKED_TYPES.includes(doc.doc_type)) return null;
@@ -192,6 +194,15 @@ async function loadBooking(
     partyId ? supabase.from("parties").select("preset_account_key").eq("id", partyId).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const accountId = (def as string | null) ?? null;
+  // The Books (rework): suggested tax codes while waiting; the invoice once posted.
+  const invoiceKind = doc.doc_type === "sales_invoice" ? "sales" : doc.doc_type === "purchase_receipt" ? "purchase" : null;
+  const [codes, taxCodes, { data: posted }] = await Promise.all([
+    invoiceKind && ["received", "under_review"].includes(doc.status)
+      ? pendingDocumentTaxCodes(doc.client_id, supabase).then((all) => all.find((x) => x.document_id === doc.id) ?? null).catch(() => null)
+      : Promise.resolve(null),
+    invoiceKind ? loadTaxCodes(supabase) : Promise.resolve([]),
+    supabase.from("book_invoices").select("id, kind").eq("document_id", doc.id).is("voided_at", null).maybeSingle(),
+  ]);
   const source = doc.ledger_account_id
     ? "Chosen for this document."
     : (history.data ?? []).length
@@ -209,5 +220,9 @@ async function loadBooking(
     entry: entries?.[0] ? { status: entries[0].status as "suggested" | "posted" | "reversed" } : null,
     terms: doc.doc_type === "sales_invoice" || doc.doc_type === "purchase_receipt",
     booksHref: `/app/clients/${doc.client_id}/books`,
+    invoiceKind,
+    codes,
+    taxCodes,
+    inBooks: posted ? `/app/clients/${doc.client_id}/books/${posted.kind === "sales" ? "sales-invoices" : "purchase-invoices"}/${posted.id}` : null,
   };
 }

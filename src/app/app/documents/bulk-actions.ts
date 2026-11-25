@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { postDocumentToBooks, type DocumentCodes } from "@/lib/books/actions";
 import { bulkReadiness } from "@/lib/documents/bulk";
 import { manilaToday } from "@/lib/filings/run";
 import { normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
@@ -9,15 +10,30 @@ import { supabaseServer } from "@/lib/supabase/server";
 export type BulkState = { ok?: string; error?: string };
 
 const BOOKED = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
+/** Sales and purchases become Book invoices (and a receipt or payment when cash). */
+const INVOICED = ["sales_invoice", "purchase_receipt"];
+
+export interface ApproveItem {
+  documentId: string;
+  accountId: string | null;
+  /** Sales / purchases: cash (invoice + receipt or payment) or charge (invoice on account). */
+  terms?: "cash" | "charge" | null;
+  /** Cash only: the cash or bank account it went to or came from. */
+  cashAccountId?: string | null;
+  /** The tax codes confirmed on the row. */
+  codes?: DocumentCodes | null;
+}
 
 /**
  * "Approve selected" in a client's pending list (P1): approves each document's figures
- * as OCR read them and books it to the account title chosen in the list. Each one is
- * checked again here (read cleanly, no warning, not a duplicate); one that fails is
- * skipped and named, the rest go through. The title chosen for a supplier or customer
- * is saved for this client only (book_document → client_party_accounts).
+ * as OCR read them (with cash or charge as chosen on the row), then posts it to the
+ * Books (postDocumentToBooks): a sale as a Sales Invoice, and its Receipt when cash; a
+ * purchase as a Purchase Invoice, and its Payment when cash; a 2307 received marks the
+ * CWT it supports. Each one is checked again here (read cleanly, no warning, not a
+ * duplicate); one that fails is skipped and named, the rest go through. The title and
+ * tax codes chosen for a supplier or customer are saved for this client only.
  */
-export async function approveSelectedAction(clientId: string, items: { documentId: string; accountId: string | null }[]): Promise<BulkState> {
+export async function approveSelectedAction(clientId: string, items: ApproveItem[]): Promise<BulkState> {
   if (items.length === 0) return { error: "Select the documents to approve." };
   const supabase = await supabaseServer();
   const ids = items.map((i) => i.documentId);
@@ -62,16 +78,24 @@ export async function approveSelectedAction(clientId: string, items: { documentI
       skipped.push(`${d.file_name} (choose the account title)`);
       continue;
     }
-    const a = await supabase.rpc("approve_document", { p_document: d.id, p_fields: fields });
+    const invoiced = booked && INVOICED.includes(d.doc_type);
+    if (invoiced && item.terms === "cash" && !item.cashAccountId) {
+      skipped.push(`${d.file_name} (choose the cash or bank account)`);
+      continue;
+    }
+    // "Goes to the Books as" sets cash or charge on the approved figures (the register follows them).
+    const approvedFields = invoiced && (item.terms === "cash" || item.terms === "charge") ? { ...fields, payment_terms: item.terms, payment_account: item.terms === "cash" ? item.cashAccountId ?? fields.payment_account ?? null : fields.payment_account ?? null } : fields;
+    const a = await supabase.rpc("approve_document", { p_document: d.id, p_fields: approvedFields });
     if (a.error) {
       skipped.push(`${d.file_name} (${a.error.message})`);
       continue;
     }
     if (k) seen.add(k);
     if (booked) {
-      const b = await supabase.rpc("book_document", { p_document: d.id, p_account: item.accountId });
-      if (b.error) {
-        skipped.push(`${d.file_name} (approved, not booked: ${b.error.message})`);
+      try {
+        await postDocumentToBooks(d.id, { accountId: item.accountId, cashAccountId: invoiced && item.terms === "cash" ? item.cashAccountId ?? null : null, codes: invoiced ? item.codes ?? null : null }, supabase);
+      } catch (err) {
+        skipped.push(`${d.file_name} (approved, not posted to the Books: ${(err as Error).message})`);
         done += 1;
         continue;
       }

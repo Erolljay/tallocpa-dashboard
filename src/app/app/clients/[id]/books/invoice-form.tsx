@@ -53,7 +53,8 @@ export function InvoiceForm({
   taxCodes: TaxCode[];
   minDate: string;
 }) {
-  const [v, setV] = useState(value);
+  const [v, setV] = useState<InvoiceFormValue>(() => ({ ...value, partyId: value.partyId ?? (value.partyName || parties.length === 0 ? OTHER : null) }));
+  const typed = v.partyId === OTHER;
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const set = <K extends keyof InvoiceFormValue>(k: K, x: InvoiceFormValue[K]) => setV((s) => ({ ...s, [k]: x }));
@@ -78,9 +79,9 @@ export function InvoiceForm({
     const input: InvoiceInput = {
       id: v.id,
       kind,
-      party_id: v.partyId,
-      party_name: v.partyId ? null : v.partyName.trim() || null,
-      party_tin: v.partyId ? null : v.partyTin.trim() || null,
+      party_id: typed ? null : v.partyId,
+      party_name: typed ? v.partyName.trim() || null : null,
+      party_tin: typed ? v.partyTin.trim() || null : null,
       reference: v.reference.trim() || null,
       issue_date: v.issueDate,
       due_date: v.dueDate || null,
@@ -109,11 +110,11 @@ export function InvoiceForm({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Pick
           label={who}
-          value={v.partyId ?? (v.partyName || !parties.length ? OTHER : null)}
-          onChange={(x) => setV((s) => ({ ...s, partyId: x === OTHER ? null : x }))}
+          value={v.partyId}
+          onChange={(x) => set("partyId", x)}
           options={[...parties.map((p) => ({ id: p.id, label: p.tin ? `${p.name} · ${p.tin}` : p.name })), { id: OTHER, label: `Another ${who.toLowerCase()} (type the name)` }]}
         />
-        {!v.partyId && (
+        {typed && (
           <>
             <Field label={`${who} name`} htmlFor="party_name"><Input id="party_name" value={v.partyName} onChange={(e) => set("partyName", e.target.value)} required /></Field>
             <Field label="TIN" htmlFor="party_tin" hint="000-000-000-000, if known"><Input id="party_tin" value={v.partyTin} onChange={(e) => set("partyTin", e.target.value)} className="tabular-nums" /></Field>
