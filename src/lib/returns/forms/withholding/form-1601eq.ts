@@ -4,9 +4,12 @@
  * reports/1601eq-report.js (`render1601EQ`): Part I items 6–9, Part II items
  * 13–18 one per ATC (Schedule of alphalist by ATC), 19–31.
  *
- * Items 20 and 21 (remittances for months 1 and 2) come from this client's
- * 0619-E worksheets for those months (item 14, the amount remitted), unless
- * staff type the amount actually remitted. taxify left them at zero.
+ * The quarter's QAP is the EWT on the Purchase Invoices in the Books (or, for a
+ * client without Books, the 2307s it issued). Items 20 and 21 (remittances for
+ * months 1 and 2) come from this client's 0619-E returns for those months once
+ * filed and paid (item 14 of their worksheets; `ctx.ewtRemittances`, database
+ * function ewt_remittances), unless staff type the amount actually remitted.
+ * taxify left them at zero.
  */
 import { backgroundLines, penaltyLines, PENALTY_INPUTS, readNonNegative } from "../../inputs";
 import { formatAmount } from "../../money";
@@ -49,6 +52,22 @@ export const form1601EQ: FormModule = {
       const prior = ctx.priorFigures[priorKey("0619-E", month)]?.amount_of_remittance;
       const withheldThisMonth = lines.filter((l) => l.month.slice(0, 10) === month).reduce((a, l) => a + l.withheld, 0);
       if (typed != null) return { amount: typed, basis: `Typed in for ${monthName(month)}` };
+      const filed = ctx.ewtRemittances?.find((r) => r.month.slice(0, 10) === month);
+      if (ctx.ewtRemittances) {
+        // Decision 11: months 1 and 2 come off once their 0619-E is filed and paid.
+        if (!filed?.periodLabel) {
+          if (withheldThisMonth > 0) warnings.push(`${monthName(month)} has EWT of ${formatAmount(withheldThisMonth)} but no 0619-E; nothing is deducted for it.`);
+          return { amount: 0, basis: `No 0619-E for ${monthName(month)}` };
+        }
+        if (!filed.settled) {
+          warnings.push(`The 0619-E for ${monthName(month)} is not filed and paid yet, so it is not deducted (item ${20 + i}). File and pay it first, or enter what was remitted.`);
+          return { amount: 0, basis: `0619-E for ${monthName(month)} not yet filed and paid` };
+        }
+        if (filed.remitted !== withheldThisMonth) {
+          warnings.push(`${monthName(month)}: the 0619-E remitted ${formatAmount(filed.remitted)} but the EWT for that month now totals ${formatAmount(withheldThisMonth)}. The difference is due on this 1601-EQ.`);
+        }
+        return { amount: filed.remitted, basis: `0619-E for ${monthName(month)}, filed and paid (item 14)` };
+      }
       if (prior != null) {
         if (prior !== withheldThisMonth) {
           warnings.push(`${monthName(month)}: the 0619-E remitted ${formatAmount(prior)} but the approved 2307s for that month total ${formatAmount(withheldThisMonth)}. Check for 2307s approved after the 0619-E.`);
@@ -68,7 +87,8 @@ export const form1601EQ: FormModule = {
     const penalties = penaltyLines(ctx, errors, ["27", "28", "29", "30"], "(Sum of Items 27 to 29)");
 
     if (totals.length > ATC_SLOTS) warnings.push(`${totals.length} ATCs this quarter: the form has room for ${ATC_SLOTS} (items 13–18); list the rest on an attachment.`);
-    if (lines.length === 0 && errors.length === 0) warnings.push("No approved 2307s issued this quarter.");
+    if (lines.length === 0 && errors.length === 0)
+      warnings.push(ctx.source === "books" ? "No Purchase Invoice of this quarter carries tax withheld (EWT)." : "No approved 2307s issued this quarter.");
 
     const atcLines: WorksheetLine[] = totals.map((t, i) => ({
       key: `atc_${t.atc}`,
@@ -118,11 +138,11 @@ export const form1601EQ: FormModule = {
           ],
           rows: rows.map((r) => ({ tin: r.tin, name: r.name, atc: r.atc, rate: `${r.rate}%`, m1: r.months[0].withheld, m2: r.months[1].withheld, m3: r.months[2].withheld, base: r.base, withheld: r.withheld })),
         },
-        detailSchedule("2307s issued in the quarter", lines),
+        detailSchedule(ctx.source === "books" ? "Purchase Invoices with EWT in the quarter" : "2307s issued in the quarter", lines),
       ],
       errors,
       warnings,
-      documentIds: lines.map((l) => l.documentId),
+      documentIds: [...new Set(lines.map((l) => l.documentId))],
     };
   },
 

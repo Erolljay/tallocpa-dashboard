@@ -9,7 +9,7 @@ import { NavLinks, NavLinksFallback, type NavKey } from "./nav/app-nav";
 import { SidebarToggle } from "./nav/sidebar-toggle";
 
 const nav = ["home", "clients", "inbox", "filings"] as const satisfies readonly NavKey[];
-/** Leads, collections, scores, staff and settings: the Owner's. */
+/** Leads, collections, scores, staff and settings: the Owner's; reviewers see Firm for their leads. */
 const ownerNav = ["firm"] as const satisfies readonly NavKey[];
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
@@ -68,7 +68,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
 
 async function OwnerNavLinks() {
   const id = await getIdentity();
-  return id.staff?.role === "owner" ? <NavLinks keys={ownerNav} /> : null;
+  return id.staff?.role === "owner" || id.staff?.role === "reviewer" ? <NavLinks keys={ownerNav} /> : null;
 }
 
 async function UserMenu() {

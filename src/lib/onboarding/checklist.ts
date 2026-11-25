@@ -51,6 +51,13 @@ export const ONBOARDING_GROUPS = ["Engagement", "Registration", "Client access",
 /** Keys of the items staff tick; set_onboarding_item accepts these. */
 export const MANUAL_ITEMS = ["bir_access", "prior_returns", "kickoff"] as const;
 
+/** Labels of the items staff tick; their ticks and notes also show in the client's Notes. */
+export const MANUAL_ITEM_LABELS: Record<(typeof MANUAL_ITEMS)[number], string> = {
+  bir_access: "BIR eFiling access arranged",
+  prior_returns: "Returns already filed this year",
+  kickoff: "Kickoff meeting held",
+};
+
 export function onboardingChecklist(f: OnboardingFacts): OnboardingItem[] {
   const c = `/app/clients/${f.clientId}`;
   const auto = (key: string, group: string, label: string, done: boolean, hint: string, href: string | null, na = false): OnboardingItem => ({
@@ -75,13 +82,13 @@ export function onboardingChecklist(f: OnboardingFacts): OnboardingItem[] {
     auto("team", "Registration", "Preparer and reviewer assigned", f.preparer && f.reviewer, f.preparer && f.reviewer ? "Both assigned." : `Assign the ${[!f.preparer && "preparer", !f.reviewer && "reviewer"].filter(Boolean).join(" and ")} under Team.`, c),
     auto("portal", "Client access", "Portal user invited", f.portalUsers > 0, f.portalUsers ? `${f.portalUsers} portal user${f.portalUsers === 1 ? "" : "s"}.` : "Invite the client's contact person to the portal.", c),
     auto("portal_login", "Client access", "Client signed in to the portal", f.portalSignedIn, f.portalSignedIn ? "Signed in at least once." : "Walk the client through the first sign-in.", null, f.portalUsers === 0),
-    manual("bir_access", "Client access", "BIR eFiling access arranged", "eBIRForms or eFPS: how returns will be filed and paid. Do not store passwords here.", null),
+    manual("bir_access", "Client access", MANUAL_ITEM_LABELS.bir_access,"eBIRForms or eFPS: how returns will be filed and paid. Do not store passwords here.", null),
     auto("chart", "Books", "Chart of accounts and books start", f.booksStart != null, f.booksStart ? `Books start ${f.booksStart}.` : "Set up the chart of accounts and the books start.", `${c}/books`),
     auto("opening", "Books", "Opening balances", f.openingPosted, f.openingPosted ? "Entered; see the checklist on the Books page." : "Enter the opening balances as of the day before the books start (checklist on the Books page).", `${c}/books/tools#opening`, f.booksStart == null),
-    manual("prior_returns", "Books", "Returns already filed this year", midYear ? "Books start mid-year: collect this year's filed returns and 2307s for the first returns after the cut-off." : "Not needed when the books start with the taxable year.", null, !midYear),
+    manual("prior_returns", "Books", MANUAL_ITEM_LABELS.prior_returns,midYear ? "Books start mid-year: collect this year's filed returns and 2307s for the first returns after the cut-off." : "Not needed when the books start with the taxable year.", null, !midYear),
     auto("history", "Books", "Sales and purchases loaded", f.batchUploads > 0, f.batchUploads ? `${f.batchUploads} batch upload${f.batchUploads === 1 ? "" : "s"}.` : "Load the backlog by batch upload, or have the client send the documents.", `${c}/batch`, f.booksStart == null),
     auto("employees", "Payroll", "Employees set up", f.employees > 0, f.employees ? `${f.employees} employee${f.employees === 1 ? "" : "s"}, each with an account title.` : "Add the employees, each with the account title for their pay.", `${c}/payroll`, !f.hasPayrollObligation),
-    manual("kickoff", "Kickoff", "Kickoff meeting held", "Document cutoff (the 5th), how to send documents, the portal, who approves returns.", null),
+    manual("kickoff", "Kickoff", MANUAL_ITEM_LABELS.kickoff,"Document cutoff (the 5th), how to send documents, the portal, who approves returns.", null),
   ];
 }
 

@@ -22,7 +22,7 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a date.");
 const amount = z.coerce.number("Enter an amount.").positive("Enter an amount above zero.").multipleOf(0.01, "Use at most two decimals.");
 
 function refresh(soaId: string) {
-  revalidatePath("/portal/statement", "layout");
+  revalidatePath("/portal/billing", "layout");
   revalidatePath("/app/collections", "layout");
   revalidatePath(`/app/collections/statements/${soaId}`);
 }
@@ -102,8 +102,11 @@ export async function verifyProofAction(soaId: string, proofId: string, _: Proof
 
 export async function rejectProofAction(soaId: string, proofId: string, _: ProofState, form: FormData): Promise<ProofState> {
   await requireOwner();
+  const reason = text(form.get("reason"));
+  if (!reason) return { error: "Say why the proof is rejected. The client sees the reason." };
+  if (reason.length > 500) return { error: "Keep the reason under 500 characters." };
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("reject_payment_proof", { p_proof: proofId, p_reason: text(form.get("reason")) });
+  const { error } = await supabase.rpc("reject_payment_proof", { p_proof: proofId, p_reason: reason });
   if (error) return { error: error.message };
   refresh(soaId);
   return { ok: "Rejected. The client sees the reason." };

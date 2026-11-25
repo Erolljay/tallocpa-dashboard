@@ -30,6 +30,8 @@ export interface SawtRow {
 
 export interface SawtResult {
   rows: SawtRow[];
+  /** CWT claimed from Sales Invoices whose customer's 2307 is not in yet (decision 12: claimed and followed up). */
+  missing2307: SourceDocument[];
   total: Centavos;
   errors: string[];
   warnings: string[];
@@ -45,17 +47,26 @@ function incomePayment(d: SourceDocument, rate: number): Centavos {
   return rate > 0 ? grossUp(d.withholding, rate) : 0;
 }
 
+const invoiceLabel = (d: SourceDocument) => `Sales Invoice ${d.number ?? "(no number)"}${d.partyName ? ` — ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
+
 /** SAWT rows from the 2307s received in `docs` whose ATC is of one of `kinds`. */
 export function buildSawt(docs: SourceDocument[], kinds: AtcKind[]): SawtResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const groups = new Map<string, SawtRow>();
+  const missing2307: SourceDocument[] = [];
   for (const d of docs) {
     if (d.docType !== "bir_2307_received") continue;
+    // A withholding code with nothing withheld on the Sales Invoice: nothing to claim.
+    if (d.fromBooks && d.withholding <= 0) continue;
     const atc = normalizeAtc(d.atc);
     if (!atc) {
       // Only blocking for the forms it could belong to: an unknown ATC could be any of them.
-      errors.push(`${docLabel(d)} has no ATC, so it cannot be placed on the SAWT. Add the ATC in review.`);
+      errors.push(
+        d.fromBooks
+          ? `${invoiceLabel(d)} has tax withheld but no withholding code, so it cannot be placed on the SAWT. Give it its WC / WI or WV code in the Books.`
+          : `${docLabel(d)} has no ATC, so it cannot be placed on the SAWT. Add the ATC in review.`,
+      );
       continue;
     }
     if (!kinds.includes(atcKind(atc))) continue;
@@ -68,6 +79,14 @@ export function buildSawt(docs: SourceDocument[], kinds: AtcKind[]): SawtResult 
     if (d.withholding <= 0) warnings.push(`${docLabel(d)} shows no tax withheld.`);
     if (tinDigits(d.partyTin).length < 9) warnings.push(`${docLabel(d)}: the withholding agent has no valid TIN; the SAWT will carry 000000000, which the BIR Validation Module rejects.`);
     if (d.total <= 0 && d.withholding > 0) warnings.push(`${docLabel(d)}: no income payment read; grossed up from the tax withheld at ${rate}%.`);
+    if (d.fromBooks && d.cwtSupported === false && d.withholding > 0) {
+      missing2307.push(d);
+      warnings.push(
+        d.cwtFollowedUpAt
+          ? `${invoiceLabel(d)}: the customer's 2307 (${atc}) is not in yet. The tax withheld is claimed; followed up on ${d.cwtFollowedUpAt.slice(0, 10)}.`
+          : `${invoiceLabel(d)}: the customer's 2307 (${atc}) is not in yet. The tax withheld is claimed; ask the customer for it and mark it followed up.`,
+      );
+    }
     const base = incomePayment(d, rate);
     const key = `${tinDigits(d.partyTin).substring(0, 9) || "n:" + (d.partyName ?? "").trim().toUpperCase()}|${atc}`;
     let g = groups.get(key);
@@ -84,7 +103,7 @@ export function buildSawt(docs: SourceDocument[], kinds: AtcKind[]): SawtResult 
     g.documentIds.push(d.id);
   }
   const rows = [...groups.values()].sort((a, b) => a.partyName.localeCompare(b.partyName) || a.atc.localeCompare(b.atc));
-  return { rows, total: rows.reduce((s, r) => s + r.withheld, 0), errors, warnings, documentIds: rows.flatMap((r) => r.documentIds) };
+  return { rows, missing2307, total: rows.reduce((s, r) => s + r.withheld, 0), errors, warnings, documentIds: [...new Set(rows.flatMap((r) => r.documentIds))] };
 }
 
 export function sawtSchedule(title: string, rows: SawtRow[]): WorksheetSchedule {

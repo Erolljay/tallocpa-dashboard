@@ -76,8 +76,8 @@ describe.skipIf(!url)("funnel: quote request to client, not live", () => {
     expect((await as(STAFF, `select public.funnel_open('TC') as o`)).rows[0].o).toBe(true);
     await expect(submit(null)).rejects.toThrow(/Not found/);
     lead = (await submit(STAFF)).rows[0].id;
-    const l = (await db.query(`select email, services, test, status, source from public.leads where id = $1`, [lead])).rows[0];
-    expect(l).toEqual({ email: "ana@example.com", services: ["tax_compliance", "bookkeeping"], test: true, status: "new", source: "website" });
+    const l = (await db.query(`select email, services, test, stage, source from public.leads where id = $1`, [lead])).rows[0];
+    expect(l).toEqual({ email: "ana@example.com", services: ["tax_compliance", "bookkeeping"], test: true, stage: "lead", source: "website" });
   });
 
   it("lets only the Owner read leads and send a proposal", async () => {
@@ -88,7 +88,7 @@ describe.skipIf(!url)("funnel: quote request to client, not live", () => {
     token = second.token;
     expect(token).toMatch(/^[0-9a-f]{64}$/);
     expect((await db.query(`select status from public.proposals where id = $1`, [first.id])).rows[0].status).toBe("withdrawn");
-    expect((await db.query(`select status from public.leads where id = $1`, [lead])).rows[0].status).toBe("proposal_sent");
+    expect((await db.query(`select stage from public.leads where id = $1`, [lead])).rows[0].stage).toBe("prospect");
   });
 
   it("shows the proposal at its link, to the public only once the funnel is open", async () => {
@@ -124,14 +124,14 @@ describe.skipIf(!url)("funnel: quote request to client, not live", () => {
       { service_line: "tax_compliance", monthly_retainer: "5000.00" },
       { service_line: "bookkeeping", monthly_retainer: "0.00" },
     ]);
-    expect((await db.query(`select status, client_id from public.leads where id = $1`, [lead])).rows[0]).toEqual({ status: "converted", client_id: c });
+    expect((await db.query(`select stage, client_id from public.leads where id = $1`, [lead])).rows[0]).toEqual({ stage: "onboarding", client_id: c });
     await expect(as(OWNER, `select public.convert_lead($1, '2027-01-01')`, [lead])).rejects.toThrow(/already a client/);
   });
 
   it("marks a lead lost, and lets the Owner open or close the funnel", async () => {
     const other = (await submit(null)).rows[0].id;
-    await as(OWNER, `select public.set_lead_status($1, 'lost', 'Went with another firm')`, [other]);
-    expect((await db.query(`select status, lost_reason from public.leads where id = $1`, [other])).rows[0]).toEqual({ status: "lost", lost_reason: "Went with another firm" });
+    await as(OWNER, `select public.mark_lead_lost($1, 'Went with another firm')`, [other]);
+    expect((await db.query(`select stage, lost_reason from public.leads where id = $1`, [other])).rows[0]).toEqual({ stage: "lost", lost_reason: "Went with another firm" });
     await as(OWNER, `select public.set_funnel_open(false)`);
     expect((await as(null, `select public.funnel_open('TC') as o`)).rows[0].o).toBe(false);
     await expect(as(STAFF, `select public.set_funnel_open(true)`)).rejects.toThrow(/Only the Owner/);

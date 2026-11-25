@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { RiCalendarScheduleLine } from "@remixicon/react";
 import { ProposalView, type ProposalData } from "@/components/funnel/proposal-view";
+import { NotesTimeline } from "@/components/leads/notes-timeline";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
-import { requireOwner } from "@/lib/auth";
+import { requireOwnerOrReviewer } from "@/lib/auth";
+import { taxpayerTypeLabel } from "@/lib/clients/labels";
 import { addDays } from "@/lib/deadlines/dates";
-import type { ClientProfile } from "@/lib/fees/types";
 import { manilaToday } from "@/lib/filings/run";
-import { LEAD_STATUS, type LeadStatus } from "@/lib/funnel/labels";
+import { LEAD_STAGES, isOpenStage, type LeadStage } from "@/lib/funnel/labels";
 import { defaultTerms, SERVICE_LABELS } from "@/lib/funnel/terms";
+import { notesTimeline, type NoteRow } from "@/lib/leads/notes";
+import { manilaNowLocal } from "@/lib/leads/time";
 import { supabaseServer } from "@/lib/supabase/server";
-import { ConvertForm, LostForm, ProposalForm } from "../forms";
+import { ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
 
 export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
   return (
@@ -20,22 +24,34 @@ export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
   );
 }
 
-const TYPE_LABEL: Record<string, string> = { individual: "Sole proprietor or professional", opc: "One Person Corporation", partnership: "Partnership", corporation: "Corporation", non_stock: "Non-stock, non-profit" };
+type Person = { user_id: string; full_name: string; role: string; active: boolean };
 
 async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const { id } = await params;
-  await requireOwner();
+  const me = await requireOwnerOrReviewer();
+  const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
   const { data: lead } = await supabase.from("leads").select("*, brands(display_name, legal_name, tin)").eq("id", id).maybeSingle();
   if (!lead) notFound();
-  const { data: proposals } = await supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false });
+  const [{ data: proposals }, { data: notes }, { data: staffRows }] = await Promise.all([
+    supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+    supabase.from("lead_notes").select("source, source_id, at, author, body, details").eq("lead_id", id),
+    supabase.from("staff_profiles").select("user_id, full_name, role, active").order("full_name"),
+  ]);
+  const staff = (staffRows ?? []) as Person[];
+  const nameOf = new Map(staff.map((s) => [s.user_id, s.full_name]));
+  const active = staff.filter((s) => s.active);
+  const reviewers = active.filter((s) => s.role === "owner" || s.role === "reviewer");
+
   const brand = lead.brands as { display_name: string; legal_name: string; tin: string | null };
-  const status = lead.status as LeadStatus;
-  const [label, tone] = LEAD_STATUS[status];
-  const profile = lead.profile as Partial<ClientProfile>;
+  const stage = lead.stage as LeadStage;
+  const { label, tone } = LEAD_STAGES[stage];
+  const canWork = isOwner || lead.reviewer_id === me.userId;
   const latest = (proposals ?? []).find((p) => p.status !== "withdrawn") ?? null;
   const view = (p: Record<string, unknown>): ProposalData => ({ ...(p as unknown as ProposalData), lead: { business_name: lead.business_name, contact_name: lead.contact_name, email: lead.email, services: lead.services, taxpayer_type: lead.taxpayer_type }, brand });
   const nextMonth = `${addDays(`${manilaToday().slice(0, 7)}-28`, 7).slice(0, 7)}-01`;
+  const timeline = notesTimeline((notes ?? []) as NoteRow[]);
+  const calls = timeline.filter((n) => n.source === "discovery_call").length;
 
   return (
     <>
@@ -51,16 +67,19 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
               <dt className="text-text-tertiary">Name</dt><dd>{lead.contact_name}</dd>
               <dt className="text-text-tertiary">Email</dt><dd className="break-all"><bdi dir="ltr"><a href={`mailto:${lead.email}`} className="underline">{lead.email}</a></bdi></dd>
               <dt className="text-text-tertiary">Mobile</dt><dd><bdi dir="ltr">{lead.mobile ?? "—"}</bdi></dd>
-              <dt className="text-text-tertiary">Type</dt><dd>{TYPE_LABEL[lead.taxpayer_type] ?? lead.taxpayer_type}</dd>
+              <dt className="text-text-tertiary">Type</dt><dd>{taxpayerTypeLabel[lead.taxpayer_type] ?? lead.taxpayer_type}</dd>
               <dt className="text-text-tertiary">Services</dt><dd>{(lead.services as string[]).map((s) => SERVICE_LABELS[s] ?? s).join(", ") || "—"}</dd>
-              <dt className="text-text-tertiary">Profile</dt>
-              <dd className="text-text-secondary">
-                {profile.vatRegistered ? "VAT" : "Non-VAT"} · {profile.documentsPerMonth ?? 0} documents a month · {profile.employees ?? 0} employees · {profile.branches ?? 0} branches · bookkeeping {profile.bookkeeping ?? "none"}
-              </dd>
               {lead.quote && <><dt className="text-text-tertiary">Website quote</dt><dd className="tabular-nums">{peso.format((lead.quote as { monthlyRetainer: number }).monthlyRetainer)} / month</dd></>}
-              {lead.message && <><dt className="text-text-tertiary">Message</dt><dd className="whitespace-pre-line">{lead.message}</dd></>}
-              {lead.lost_reason && <><dt className="text-text-tertiary">Lost</dt><dd>{lead.lost_reason}</dd></>}
+              {stage === "lost" && <><dt className="text-text-tertiary">Lost</dt><dd>{lead.lost_reason}</dd></>}
             </dl>
+          </Card>
+
+          <Card title="Reviewer">
+            {isOwner && stage !== "onboarding" ? (
+              <ReviewerForm leadId={id} current={lead.reviewer_id} reviewers={reviewers} />
+            ) : (
+              <p className="text-body-regular text-text-primary">{lead.reviewer_id ? nameOf.get(lead.reviewer_id) ?? "—" : "Not assigned"}</p>
+            )}
           </Card>
 
           {(proposals ?? []).length > 0 && (
@@ -81,25 +100,44 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
             </Card>
           )}
 
-          {status === "accepted" && (
+          {stage === "won" && (
             <Card title="Make the client">
-              <div className="space-y-3">
-                <p className="text-body-regular text-text-secondary">Creates the client in Onboarding with the engagement and the retainer. The accepted proposal becomes its proposal and signed contract on the Onboarding tab.</p>
-                <ConvertForm leadId={id} defaultStart={nextMonth} />
-              </div>
+              {isOwner ? (
+                <div className="space-y-3">
+                  <p className="text-body-regular text-text-secondary">Creates the client in Onboarding with the engagement and the retainer, and its own preparer and reviewer. The accepted proposal becomes its proposal and signed contract on the Onboarding tab.</p>
+                  <ConvertForm leadId={id} defaultStart={nextMonth} staff={active} reviewers={reviewers} leadReviewer={lead.reviewer_id} />
+                </div>
+              ) : (
+                <p className="text-body-regular text-text-secondary">Won. The Owner makes the client and picks its preparer and reviewer.</p>
+              )}
             </Card>
           )}
-          {status === "converted" && lead.client_id && (
-            <Notice tone="done">This lead is a client. <Link href={`/app/clients/${lead.client_id}/onboarding`} className="underline">Open its onboarding</Link>.</Notice>
+          {stage === "onboarding" && lead.client_id && (
+            <Notice tone="done">This lead is a client. <Link href={`/app/clients/${lead.client_id}/onboarding`} className="underline">Open its onboarding</Link>; these notes are in its Notes on the Overview.</Notice>
           )}
-          {(status === "new" || status === "proposal_sent" || status === "lost") && (
-            <Card title={status === "lost" ? "Lost" : "Not going ahead?"}><LostForm leadId={id} lost={status === "lost"} /></Card>
-          )}
+          {canWork && isOpenStage(stage) && <Card title="Not going ahead?"><LostForm leadId={id} /></Card>}
+          {canWork && stage === "lost" && <Card title="Lost"><div className="space-y-3"><p className="text-body-regular text-text-secondary">{lead.lost_reason}</p><ReopenForm leadId={id} /></div></Card>}
         </div>
 
         <div className="space-y-6">
-          {(status === "new" || status === "proposal_sent") && (
-            <Card title={status === "new" ? "Send a proposal" : "Send a new proposal"}>
+          {canWork && isOpenStage(stage) && (
+            <Card title={calls ? "Record another discovery call" : "Discovery call"}>
+              <div className="space-y-4">
+                <div className="flex items-start gap-2.5 rounded-2xl bg-background-secondary-default p-3 text-body-regular text-text-secondary">
+                  <RiCalendarScheduleLine aria-hidden className="mt-0.5 size-4 shrink-0 text-foreground-icon-tertiary" />
+                  <p>Arrange the call with the client for now. Booking it through Google Calendar, with a Meet link, comes in a later phase.</p>
+                </div>
+                <DiscoveryCallForm leadId={id} defaultAt={manilaNowLocal()} />
+              </div>
+            </Card>
+          )}
+
+          <Card title="Notes">
+            <NotesTimeline entries={timeline} nameOf={nameOf} empty="No notes yet." />
+          </Card>
+
+          {canWork && (stage === "lead" || stage === "prospect") && (
+            <Card title={latest ? "Send a new proposal" : "Send a proposal"}>
               <ProposalForm leadId={id} defaultTerms={defaultTerms(brand.legal_name, lead.services as string[])} />
             </Card>
           )}

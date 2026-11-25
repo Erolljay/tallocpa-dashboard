@@ -3,16 +3,18 @@
 import { RiBuilding2Line, RiCheckLine, RiFileCopyLine, RiWallet3Line } from "@remixicon/react";
 import { useState } from "react";
 import type { PayAccount } from "@/lib/collections/statement";
+import { cx } from "@/utils/cx";
 import { ProofUpload } from "./proof-upload";
 
 /**
- * "Pay now": the client chooses a bank or e-wallet and sees its QR code, account
- * name and number. Tax money goes to the client-tax-funds account when there is
- * one (Q26); fees go to the firm's own accounts.
+ * "Pay": the client chooses a bank or e-wallet and sees only that channel's QR
+ * code, account name and number. Tax money goes to the client-tax-funds account
+ * when there is one (Q26); fees go to the firm's own accounts. With a single
+ * channel it is chosen already.
  */
 export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTax: boolean; soaId: string; amountDue: number; today: string }) {
   const { accounts, reference, hasTax } = props;
-  const [chosen, setChosen] = useState(accounts[0]?.id ?? null);
+  const [chosen, setChosen] = useState<string | null>(accounts.length === 1 ? accounts[0].id : null);
   const account = accounts.find((a) => a.id === chosen) ?? null;
   const hasTaxAccount = accounts.some((a) => a.purpose === "client_tax_funds");
 
@@ -27,7 +29,11 @@ export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTa
 
   return (
     <div className="space-y-4">
-      <div role="radiogroup" aria-label="Pay through" className="grid gap-2 sm:grid-cols-2">
+      <div>
+        <p id="pay-through" className="text-headline-semibold text-text-primary">Choose a bank or e-wallet</p>
+        <p className="text-body-regular text-text-secondary">We show its QR code and account details.</p>
+      </div>
+      <div role="radiogroup" aria-labelledby="pay-through" className="grid gap-2 sm:grid-cols-2">
         {accounts.map((a) => {
           const on = a.id === chosen;
           const Icon = a.kind === "bank" ? RiBuilding2Line : RiWallet3Line;
@@ -38,14 +44,17 @@ export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTa
               role="radio"
               aria-checked={on}
               onClick={() => setChosen(a.id)}
-              className={`pressable flex min-h-14 items-center gap-3 rounded-xl border px-4 py-3 text-start ${
-                on ? "border-accent-500 bg-button-ghost-background shadow-xs" : "border-separator-border bg-background-primary-default hover:bg-background-secondary-hover"
-              }`}
+              className={cx(
+                "pressable flex min-h-14 items-center gap-3 rounded-xl border px-4 py-3 text-start outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+                on ? "border-accent-500 bg-button-ghost-background shadow-xs" : "border-separator-border bg-background-primary-default hover:bg-background-secondary-hover",
+              )}
             >
-              <Icon aria-hidden className={`size-5 shrink-0 ${on ? "text-button-ghost-foreground" : "text-button-ghost-foreground"}`} />
+              <Icon aria-hidden className="size-5 shrink-0 text-button-ghost-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="block text-body-medium text-text-primary">{a.institution}</span>
-                <span className="block text-caption-1-regular text-text-tertiary">{a.purpose === "client_tax_funds" ? "For tax payments" : "For our fees"}</span>
+                <span className="block text-caption-1-regular text-text-tertiary">
+                  {a.kind === "bank" ? "Bank" : "E-wallet"} · {a.purpose === "client_tax_funds" ? "For tax payments" : "For our fees"}
+                </span>
               </span>
               {on && <RiCheckLine aria-hidden className="size-4 shrink-0 text-button-ghost-foreground" />}
             </button>
@@ -54,16 +63,17 @@ export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTa
       </div>
 
       {account && (
-        <div className="grid gap-5 rounded-2xl bg-background-secondary-default p-5 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div aria-live="polite" className="grid gap-5 rounded-2xl bg-background-secondary-default p-5 sm:grid-cols-[auto_1fr] sm:items-center">
           {account.qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
-            <img src={account.qrUrl} alt={`QR code for ${account.institution}`} className="mx-auto size-48 rounded-xl border border-separator-border bg-white object-contain p-2 sm:mx-0" />
+            <img src={account.qrUrl} alt={`QR code for ${account.institution}`} className="mx-auto size-56 rounded-xl border border-separator-border bg-white object-contain p-2 sm:mx-0 sm:size-48" />
           ) : (
             <div className="grid place-items-center rounded-xl border border-dashed border-border-button-default px-3 py-2 text-center text-caption-1-regular text-text-secondary sm:size-48 sm:p-4 sm:text-body-regular">No QR code for this account</div>
           )}
           <dl className="space-y-3">
+            <Detail label={account.kind === "bank" ? "Bank" : "E-wallet"} value={account.institution} />
             <Detail label="Account name" value={account.account_name} />
-            <Detail label="Account number" value={account.account_number} copy mono />
+            <Detail label={account.kind === "bank" ? "Account number" : "Mobile or account number"} value={account.account_number} copy mono />
             <Detail label="Payment reference" value={reference} copy mono />
             {account.instructions && <p className="text-body-regular text-text-secondary">{account.instructions}</p>}
           </dl>
@@ -83,8 +93,8 @@ function Detail({ label, value, copy, mono }: { label: string; value: string; co
   return (
     <div>
       <dt className="text-caption-1-regular text-text-tertiary">{label}</dt>
-      <dd className="flex items-center gap-2">
-        <span className={`text-[17px] font-semibold text-text-primary ${mono ? "tabular-nums tracking-wide" : ""}`}>{value}</span>
+      <dd className="flex flex-wrap items-center gap-2">
+        <span className={cx("min-w-0 break-all text-headline-semibold text-text-primary", mono && "tabular-nums tracking-wide")}>{value}</span>
         {copy && (
           <button
             type="button"
@@ -94,10 +104,11 @@ function Detail({ label, value, copy, mono }: { label: string; value: string; co
                 setTimeout(() => setCopied(false), 1500);
               });
             }}
-            className="pressable inline-flex items-center gap-1 rounded-full px-2 py-1 text-caption-1-medium text-button-ghost-foreground hover:bg-background-tertiary-default pointer-coarse:min-h-9"
+            className="pressable inline-flex items-center gap-1 rounded-full px-2 py-1 text-caption-1-medium text-button-ghost-foreground outline-none hover:bg-background-tertiary-default focus-visible:ring-2 focus-visible:ring-border-focus-ring pointer-coarse:min-h-9"
           >
             {copied ? <RiCheckLine aria-hidden className="size-3.5" /> : <RiFileCopyLine aria-hidden className="size-3.5" />}
-            {copied ? "Copied" : "Copy"}
+            <span aria-hidden>{copied ? "Copied" : "Copy"}</span>
+            <span className="sr-only">{copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}</span>
           </button>
         )}
       </dd>

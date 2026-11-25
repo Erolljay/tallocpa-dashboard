@@ -1,13 +1,20 @@
 import "server-only";
 /**
- * Builds the WorksheetContext for one filing (spec §3.7) as the signed-in user,
- * so row-level security decides what they may see. Conversion of rows lives in
+ * Builds the WorksheetContext for one filing (spec §3.7; docs/REWORK.md decisions
+ * 10–12) as the signed-in user, so row-level security decides what they may see.
+ * For a client with Books, the invoices' figures come from the Books by tax code
+ * (database function books_return_sources), which refuses until every month of the
+ * period is locked; months before the books start, and clients without Books, read
+ * the approved documents' register lines as before. Conversion of rows lives in
  * source.ts (pure, tested); this file only queries.
  */
 import { moduleForForm } from "./registry";
-import { buildPriorFigures, fromRegisterLine, monthOf, taxableYearStart, withDirectoryParty, type RegisterSourceRow } from "./source";
-import type { Centavos, FormModule, LedgerContext, LedgerMovement, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
+import { buildPriorFigures, fromBooksRow, fromRegisterLine, monthOf, taxableYearStart, withDirectoryParty, type BooksSourceRow, type RegisterSourceRow } from "./source";
+import type {
+  Centavos, EwtRemittance, FormModule, IncomeTaxMethod, LedgerContext, LedgerMovement, PayslipRow, SourceDocument, TaxpayerType, VatCarryOver, WorksheetContext, WorksheetResult,
+} from "./types";
 import { toCentavos } from "./money";
+import { withNonDeductible, type NonDeductibleRow } from "./forms/business/book-income";
 import { buildStatements, type FinancialStatements } from "@/lib/ledger/statements";
 import { defaultCashFlow, type CashFlowClass } from "@/lib/ledger/cash-flow";
 import type { Control, NormalSide } from "@/lib/ledger/types";
@@ -38,6 +45,7 @@ interface FilingRow {
     registered_address: string | null;
     taxpayer_type: TaxpayerType;
     fiscal_year_end_month: number;
+    income_tax_method: IncomeTaxMethod | null;
   };
 }
 
@@ -48,20 +56,25 @@ export interface SavedWorksheet {
   computedBy: string | null;
 }
 
-/** An approved document of the period, for the list of sources on the worksheet page. */
+/** A source of the period's figures, for the list on the worksheet page: an approved document, or an invoice in the Books. */
 export interface ListedDocument {
   id: string;
   fileName: string;
   source: SourceDocument;
+  /** Set for a Book invoice: where it opens, and what it is called. */
+  href?: string;
+  label?: string;
 }
 
 export interface LoadedWorksheet {
   filing: { id: string; clientId: string; clientName: string; form: string; periodLabel: string; status: string };
   module: FormModule | null;
-  /** Null when there is no module for the form. */
+  /** Null when there is no module for the form, or when the Books are not locked (see notReady). */
   ctx: WorksheetContext | null;
   saved: SavedWorksheet | null;
   documents: ListedDocument[];
+  /** Set when the return cannot be worked out yet: the Books of its period are not locked. */
+  notReady?: string;
 }
 
 /** Forms computed from per-employee payroll rather than documents. */
@@ -70,6 +83,7 @@ const PAYROLL_FORM_CODES = new Set(["1601-C", "1604-C"]);
 /** Statuses from which the worksheet is locked (database trigger return_worksheet_guard). */
 export { LOCKED_STATUSES } from "@/lib/documents/lock";
 
+const num = (v: string | number | null | undefined): Centavos => toCentavos(v == null ? null : String(v)) ?? 0;
 
 /** The worksheet's context, module and saved state; null if the filing is not visible to the user. */
 export async function loadWorksheet(filingId: string, supabase?: Supabase): Promise<LoadedWorksheet | null> {
@@ -77,7 +91,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   const { data } = await db
     .from("filing_instances")
     .select(
-      "id, client_id, form, period_label, period_start, period_end, due_date, status, deadline_rules(calendar_year), clients(id, name, tin, rdo_code, registered_address, taxpayer_type, fiscal_year_end_month)",
+      "id, client_id, form, period_label, period_start, period_end, due_date, status, deadline_rules(calendar_year), clients(id, name, tin, rdo_code, registered_address, taxpayer_type, fiscal_year_end_month, income_tax_method)",
     )
     .eq("id", filingId)
     .maybeSingle();
@@ -107,7 +121,13 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   const yearStart = taxableYearStart(f.period_end, fyeMonth);
   const docsFrom = formModule.documentScope === "year_to_date" ? yearStart : monthOf(f.period_start);
 
-  const [{ data: vat }, { data: docRows }, { data: priorRows }] = await Promise.all([
+  const { data: books } = await db.from("client_books").select("books_start").eq("client_id", f.client_id).maybeSingle();
+  // Months from the books start come from the Books; earlier ones (and clients without Books) from the register.
+  const booksFrom = books ? monthOf(String(books.books_start)) : null;
+  // Information returns (1604-C) do not come from the Books and wait for no lock.
+  const useBooks = booksFrom != null && booksFrom <= monthOf(f.period_end) && f.form !== "1604-C";
+
+  const [{ data: vat }, { data: docRows }, { data: priorRows }, booksRes] = await Promise.all([
     // VAT-registered: an obligation to file 2550Q that is open during the period.
     db
       .from("obligations")
@@ -118,12 +138,14 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       .or(`end_date.is.null,end_date.gte.${f.period_start}`)
       .limit(1),
     // One register (slice 2): the approved documents' figures, as register lines.
-    db
-      .from("register_lines")
-      .select("document_id, kind, month, line_date, reference, party_name, party_tin, party_address, vatable, vat_exempt, zero_rated, vat, total, atc, withholding, slp_category, documents(file_name, created_at)")
-      .eq("client_id", f.client_id)
-      .gte("month", docsFrom)
-      .lte("month", monthOf(f.period_end)),
+    booksFrom != null && booksFrom <= docsFrom
+      ? Promise.resolve({ data: [] })
+      : db
+          .from("register_lines")
+          .select("document_id, kind, month, line_date, reference, party_name, party_tin, party_address, vatable, vat_exempt, zero_rated, vat, total, atc, withholding, slp_category, documents(file_name, created_at)")
+          .eq("client_id", f.client_id)
+          .gte("month", docsFrom)
+          .lte("month", booksFrom != null && monthOf(dayBefore(booksFrom)) < monthOf(f.period_end) ? monthOf(dayBefore(booksFrom)) : monthOf(f.period_end)),
     // Earlier worksheets of the same client in the same taxable year.
     db
       .from("return_worksheets")
@@ -132,7 +154,15 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       .neq("filing_instance_id", f.id)
       .gte("filing_instances.period_start", yearStart)
       .lt("filing_instances.period_end", formModule.priorWithinPeriod ? f.period_end : f.period_start),
+    // The Books by tax code, for locked months only (refused otherwise).
+    useBooks ? db.rpc("books_return_sources", { p_filing: f.id, p_from: docsFrom }) : Promise.resolve({ data: [], error: null }),
   ]);
+
+  if (booksRes.error) {
+    // 55000: a month of the period is not locked yet (decision 10).
+    if (booksRes.error.code === "55000") return { filing, module: formModule, ctx: null, saved, documents: [], notReady: booksRes.error.message };
+    throw new Error(`Could not read the Books: ${booksRes.error.message}`);
+  }
 
   type LineRow = RegisterSourceRow & { documents: { file_name: string; created_at: string } | { file_name: string; created_at: string }[] | null };
   const doc = (r: LineRow) => (Array.isArray(r.documents) ? r.documents[0] : r.documents);
@@ -140,9 +170,12 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   const lineRows = ((docRows ?? []) as unknown as LineRow[]).sort(
     (a, b) => String(a.month).localeCompare(String(b.month)) || (doc(a)?.created_at ?? "").localeCompare(doc(b)?.created_at ?? ""),
   );
-  const documents: ListedDocument[] = lineRows.map((r) => ({ id: r.document_id, fileName: doc(r)?.file_name ?? "", source: fromRegisterLine(r) }));
-  const directory = await lookupParties(db, documents.map((d) => d.source.partyTin)).catch(() => new Map<string, Party>());
-  for (const d of documents) d.source = withDirectoryParty(d.source, directory);
+  const registerDocs: ListedDocument[] = lineRows.map((r) => ({ id: r.document_id, fileName: doc(r)?.file_name ?? "", source: fromRegisterLine(r) }));
+  const bookSources = ((booksRes.data ?? []) as BooksSourceRow[]).map(fromBooksRow);
+  const directory = await lookupParties(db, [...registerDocs.map((d) => d.source.partyTin), ...bookSources.map((s) => s.partyTin)]).catch(() => new Map<string, Party>());
+  for (const d of registerDocs) d.source = withDirectoryParty(d.source, directory);
+  const sources = [...registerDocs.map((d) => d.source), ...bookSources.map((s) => withDirectoryParty(s, directory))];
+  const documents = [...registerDocs, ...listInvoices(f.client_id, bookSources)];
 
   const prior = ((priorRows ?? []) as unknown as { figures: Record<string, Centavos>; filing_instances: { form: string; period_start: string } | { form: string; period_start: string }[] }[]).map((r) => {
     const fi = Array.isArray(r.filing_instances) ? r.filing_instances[0] : r.filing_instances;
@@ -159,19 +192,87 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       taxpayerType: f.clients.taxpayer_type,
       fiscalYearEndMonth: f.clients.fiscal_year_end_month,
       vatRegistered: (vat ?? []).length > 0,
+      incomeTaxMethod: f.clients.income_tax_method ?? null,
     },
     filing: { id: f.id, form: f.form, periodLabel: f.period_label, periodStart: f.period_start, periodEnd: f.period_end, dueDate: f.due_date },
-    documents: documents.map((d) => d.source),
+    documents: sources,
     inputs: saved?.inputs ?? {},
     priorFigures: buildPriorFigures(prior),
+    source: useBooks ? "books" : "documents",
   };
+  if (f.form === "2550Q") ctx.vatCarryOver = await loadVatCarryOver(db, f.id);
+  if (f.form === "1601-EQ") ctx.ewtRemittances = await loadEwtRemittances(db, f.id);
   if (PAYROLL_FORM_CODES.has(f.form)) ctx.payroll = await loadPayrollContext(db, f.clients.id, f.form, f.period_start, f.period_end);
+  if (f.form === "1601-C") ctx.payslips = await loadPayslips(db, f.client_id, f.period_start);
   if (formModule.usesLedger) {
     const ledger = await loadLedger(db, f.client_id, yearStart, f.period_start, f.period_end);
     if (ledger && formModule.priorWithinPeriod) ledger.statements = await loadYearStatements(db, ctx, yearStart);
     if (ledger) ctx.ledger = ledger;
   }
   return { filing, module: formModule, ctx, saved, documents };
+}
+
+/** One entry per Book invoice the figures came from, linking to it in the Books. */
+function listInvoices(clientId: string, sources: SourceDocument[]): ListedDocument[] {
+  const out = new Map<string, ListedDocument>();
+  for (const s of sources) {
+    const sale = s.docType === "sales_invoice" || s.docType === "bir_2307_received";
+    const seen = out.get(s.id);
+    const amount = s.docType === "sales_invoice" || s.docType === "purchase_receipt" ? s.total : 0;
+    if (seen) {
+      if (s.docType === "purchase_receipt") seen.source = { ...seen.source, total: seen.source.total + amount };
+      continue;
+    }
+    out.set(s.id, {
+      id: s.id,
+      fileName: "",
+      source: { ...s, total: amount },
+      href: `/app/clients/${clientId}/books/${sale ? "sales-invoices" : "purchase-invoices"}/${s.id}`,
+      label: `${sale ? "Sales Invoice" : "Purchase Invoice"}${s.number ? ` ${s.number}` : ""}`,
+    });
+  }
+  return [...out.values()];
+}
+
+/** The previous 2550Q's excess input tax (database function vat_carry_over); null when there is none. */
+async function loadVatCarryOver(db: Supabase, filingId: string): Promise<VatCarryOver | null> {
+  const { data, error } = await db.rpc("vat_carry_over", { p_filing: filingId });
+  if (error) throw new Error(`Could not read the previous 2550Q: ${error.message}`);
+  const r = ((data ?? []) as { period_label: string; filed: boolean; computed: boolean; excess: string | number }[])[0];
+  return r ? { periodLabel: r.period_label, filed: r.filed, computed: r.computed, excess: Number(r.excess) } : null;
+}
+
+/** The 0619-E of months 1 and 2 of a 1601-EQ's quarter (database function ewt_remittances). */
+async function loadEwtRemittances(db: Supabase, filingId: string): Promise<EwtRemittance[]> {
+  const { data, error } = await db.rpc("ewt_remittances", { p_filing: filingId });
+  if (error) throw new Error(`Could not read the 0619-E returns: ${error.message}`);
+  return ((data ?? []) as { month: string; period_label: string | null; status: string | null; settled: boolean; computed: boolean; remitted: string | number }[]).map((r) => ({
+    month: String(r.month).slice(0, 10),
+    periodLabel: r.period_label,
+    status: r.status,
+    settled: r.settled,
+    computed: r.computed,
+    remitted: Number(r.remitted),
+  }));
+}
+
+/** The month's payslips in the Books (database function payslips): the 1601-C's supporting schedule. */
+async function loadPayslips(db: Supabase, clientId: string, month: string): Promise<PayslipRow[] | undefined> {
+  const { data, error } = await db.rpc("payslips", { p_client: clientId, p_month: monthOf(month) });
+  if (error) return undefined;
+  type Raw = { employee_no: string | null; employee_name: string; pay_period_end: string | null; gross: string; sss: string; philhealth: string; pagibig: string; tax: string; other_deductions: string; net: string };
+  return ((data ?? []) as Raw[]).map((r) => ({
+    employeeNo: r.employee_no,
+    employeeName: r.employee_name,
+    payPeriodEnd: r.pay_period_end ? String(r.pay_period_end).slice(0, 10) : null,
+    gross: num(r.gross),
+    sss: num(r.sss),
+    philhealth: num(r.philhealth),
+    pagibig: num(r.pagibig),
+    tax: num(r.tax),
+    otherDeductions: num(r.other_deductions),
+    net: num(r.net),
+  }));
 }
 
 const dayBefore = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
@@ -196,11 +297,24 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
       net: toCentavos(String(r.net)) ?? 0,
     }));
   };
-  const [period, earlier, { count }] = await Promise.all([
+  // Lines coded ND stay in the books but are added back for income tax (decision 7).
+  const nonDeductible = async (from: string, to: string): Promise<NonDeductibleRow[]> => {
+    if (to < from) return [];
+    const { data, error } = await db.rpc("books_non_deductible", { p_client: clientId, p_from: from, p_to: to });
+    if (error) throw new Error(`Could not read the books: ${error.message}`);
+    return ((data ?? []) as { code: string; amount: string | number }[]).map((r) => ({ code: r.code, amount: toCentavos(String(r.amount)) ?? 0 }));
+  };
+  const [rawPeriod, rawEarlier, ndPeriod, ndEarlier, { count }] = await Promise.all([
     movements(periodStart, periodEnd),
     movements(yearStart, dayBefore(periodStart)),
+    nonDeductible(periodStart, periodEnd),
+    nonDeductible(yearStart, dayBefore(periodStart)),
     db.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "suggested").gte("entry_date", yearStart).lte("entry_date", periodEnd),
   ]);
+  const p = withNonDeductible(rawPeriod, ndPeriod);
+  const e = withNonDeductible(rawEarlier, ndEarlier);
+  const period = p.rows;
+  const earlier = e.rows;
   // Decision 17: the income tax return uses the fixed asset register's tax column.
   const assets = await loadAssets(db, clientId);
   const depreciation = assets.length
@@ -213,7 +327,15 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
   // A mid-year cut-off: the opening (dated the day before the books start) carries the year to date.
   const booksStart = books.books_start as string;
   const openingYtd = booksStart > yearStart && (await movements(yearStart, dayBefore(booksStart))).some((m) => m.net !== 0);
-  return { booksStart, period, earlier, suggested: count ?? 0, ...(openingYtd ? { openingYtd } : {}), ...(depreciation ? { depreciation } : {}) };
+  return {
+    booksStart,
+    period,
+    earlier,
+    suggested: count ?? 0,
+    nonDeductible: { period: p.addedBack, earlier: e.addedBack },
+    ...(openingYtd ? { openingYtd } : {}),
+    ...(depreciation ? { depreciation } : {}),
+  };
 }
 
 /** The year's financial statements at the period end, for an annual return's balance sheet schedule. */

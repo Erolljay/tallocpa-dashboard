@@ -16,7 +16,7 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a date.");
 function refresh(clientId?: string) {
   revalidatePath("/app/collections");
   if (clientId) revalidatePath(`/app/collections/${clientId}`);
-  revalidatePath("/portal/statement");
+  revalidatePath("/portal/billing", "layout");
 }
 
 /** Runs billing for a date: every client scheduled that day, or one client. */

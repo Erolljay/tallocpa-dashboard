@@ -49,6 +49,57 @@ export interface SourceDocument {
   withholding: Centavos;
   /** SLP purchase category from the register line, when known (capital goods for property and equipment). */
   slpCategory?: "capital_goods" | "other_goods" | "services" | "zero_rated" | "exempt" | null;
+  /**
+   * Set when the figures come from the Books by tax code (books.ts): exact, so nothing is
+   * inferred from a bare total. The id is then the Book invoice's.
+   */
+  fromBooks?: boolean;
+  /** Non-VAT sales (NVS) or purchases (NVP): the 2551Q's gross sales; on no VAT return or list. */
+  nonVat?: Centavos;
+  /** Amount of Book invoice lines without a tax code (every line must carry one). */
+  uncoded?: Centavos;
+  /** The tax code on the invoice (withholding rows), e.g. "WC158". */
+  taxCode?: string | null;
+  /** CWT / VAT withheld on a Sales Invoice: whether the customer's 2307 is in, and when its absence was followed up. */
+  cwtSupported?: boolean;
+  cwtFollowedUpAt?: string | null;
+}
+
+/** OSD, itemized, or 8% (individuals only), set per client (clients.income_tax_method). */
+export type IncomeTaxMethod = "osd" | "itemized" | "eight_percent";
+
+/** The previous 2550Q, for the input tax carried over (database function vat_carry_over). */
+export interface VatCarryOver {
+  periodLabel: string;
+  filed: boolean;
+  computed: boolean;
+  excess: Centavos;
+}
+
+/** A 0619-E of month 1 or 2 of a 1601-EQ's quarter (database function ewt_remittances). */
+export interface EwtRemittance {
+  /** First day of the month. */
+  month: string;
+  periodLabel: string | null;
+  status: string | null;
+  /** Filed and paid: only then is it deducted on the 1601-EQ. */
+  settled: boolean;
+  computed: boolean;
+  remitted: Centavos;
+}
+
+/** One employee's payslip of the month (database function payslips), the 1601-C's supporting schedule. */
+export interface PayslipRow {
+  employeeNo: string | null;
+  employeeName: string;
+  payPeriodEnd: string | null;
+  gross: Centavos;
+  sss: Centavos;
+  philhealth: Centavos;
+  pagibig: Centavos;
+  tax: Centavos;
+  otherDeductions: Centavos;
+  net: Centavos;
 }
 
 export interface WorksheetContext {
@@ -62,7 +113,17 @@ export interface WorksheetContext {
     fiscalYearEndMonth: number;
     /** From the client's obligations: registered for VAT (files 2550Q). */
     vatRegistered: boolean;
+    /** The client's income tax method (client settings); null when not set yet. */
+    incomeTaxMethod?: IncomeTaxMethod | null;
   };
+  /** Where the invoices' figures come from: the Books by tax code, or approved documents (clients without Books). */
+  source?: "books" | "documents";
+  /** 2550Q: the previous 2550Q's excess input tax; null when there is none. */
+  vatCarryOver?: VatCarryOver | null;
+  /** 1601-EQ: the 0619-E of months 1 and 2. */
+  ewtRemittances?: EwtRemittance[];
+  /** 1601-C: the month's payslips (a supporting schedule, not sent to the BIR). */
+  payslips?: PayslipRow[];
   filing: { id: string; form: string; periodLabel: string; periodStart: string; periodEnd: string; dueDate: string };
   /** Approved documents whose month falls in the filing period (and, for quarterly/annual forms, the year to date where the form needs it). */
   documents: SourceDocument[];
@@ -114,6 +175,8 @@ export interface LedgerContext {
   depreciation?: { periodBook: Centavos; periodTax: Centavos; earlierBook: Centavos; earlierTax: Centavos };
   /** For annual forms: the financial statements at the period end (balance sheet schedule). */
   statements?: FinancialStatements;
+  /** Expenses coded ND (non-deductible), added back for income tax: already moved to the non-deductible line in `period` / `earlier`. */
+  nonDeductible?: { period: Centavos; earlier: Centavos };
 }
 
 /** A figure staff must or may type in (payroll totals, prior-year credits, tax regime choice…). */
