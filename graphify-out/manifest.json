@@ -510,9 +510,9 @@
     "semantic_hash": "d0c4a3f35e886d7dd71da3a434ce35ad"
   },
   "src/app/app/filings/[id]/page.tsx": {
-    "mtime": 1795556117.8985982,
-    "seen": 1795565923.226627,
-    "ast_hash": "d344135286fd64e6719636bd11978ae6",
+    "mtime": 1795575691.230105,
+    "seen": 1795575822.3268242,
+    "ast_hash": "b5932f9a3773828cf110cad4a2709d21",
     "semantic_hash": ""
   },
   "src/app/app/filings/actions.ts": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795575527.056049,
-    "seen": 1795575530.6853633,
-    "ast_hash": "af5e16b738a5f83a76237227f52726ae",
+    "mtime": 1795575818.7113988,
+    "seen": 1795575822.3362901,
+    "ast_hash": "8896755d884a3e4c4bee3aa2722116ad",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2748,9 +2748,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/page.tsx": {
-    "mtime": 1795574084.8814368,
-    "seen": 1795574180.2049887,
-    "ast_hash": "6aa4a49868eaa75b23f41a4cc1e8d099",
+    "mtime": 1795575737.8306112,
+    "seen": 1795575822.3260903,
+    "ast_hash": "033e75527f0ec91d69fc06d3de088362",
     "semantic_hash": ""
   },
   "src/lib/workpapers/load.ts": {
@@ -2949,6 +2949,30 @@
     "mtime": 1795575392.9322178,
     "seen": 1795575530.6843588,
     "ast_hash": "4176c4b88fbd36c8b55021d44f482501",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/workpapers/binder/page.tsx": {
+    "mtime": 1795575733.679181,
+    "seen": 1795575822.3260102,
+    "ast_hash": "f1333253105c9b239b7225c326c1e2c3",
+    "semantic_hash": ""
+  },
+  "src/app/app/filings/[id]/approval-memo.tsx": {
+    "mtime": 1795575691.2129977,
+    "seen": 1795575822.326821,
+    "ast_hash": "a90908151d9199b798db7789445199fc",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/memo.test.ts": {
+    "mtime": 1795575657.9110847,
+    "seen": 1795575822.33529,
+    "ast_hash": "d701f6e67c1384beeb9b076bd017676b",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/memo.ts": {
+    "mtime": 1795575648.043176,
+    "seen": 1795575822.3352919,
+    "ast_hash": "e29bd0476814b236349d842b95bab142",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
