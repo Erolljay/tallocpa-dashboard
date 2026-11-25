@@ -1,22 +1,18 @@
 /**
- * The sign-off chain (spec §3.8) as the screens see it: the steps in order and
- * which actions a person may take on a filing now. The database function
- * advance_filing() enforces the same rules; this only decides what to show.
+ * The sign-off chain (docs/REWORK.md, decision 13) as the screens see it: the five
+ * steps in order and which actions a person may take on a filing now. The database
+ * function advance_filing() enforces the same rules; this only decides what to show.
+ *
+ *   Prepared → Reviewed → Client approved → Owner approved → Filed & paid
+ *
+ * A nil return (tax due 0) skips the client's approval: reviewing it moves it on to
+ * the Owner. The Owner (or the acting approver) approves once the client's payment
+ * for the return's own statement item is verified (the database checks Collections).
  */
 
-export type FilingStatus = "not_started" | "prepared" | "reviewed" | "client_approved" | "owner_approved" | "filed" | "paid" | "proof_uploaded";
+export type FilingStatus = "not_started" | "prepared" | "reviewed" | "client_approved" | "owner_approved" | "filed";
 
-export type SignOffAction =
-  | "prepare"
-  | "review"
-  | "kick_back"
-  | "client_approve"
-  | "client_query"
-  | "answer_query"
-  | "owner_approve"
-  | "file"
-  | "pay"
-  | "send_proof";
+export type SignOffAction = "prepare" | "review" | "kick_back" | "client_approve" | "client_query" | "answer_query" | "owner_approve" | "file";
 
 /** The chain, in order. `by` is who normally takes the step. */
 export const SIGN_OFF_STEPS: { status: FilingStatus; label: string; by: string }[] = [
@@ -24,9 +20,7 @@ export const SIGN_OFF_STEPS: { status: FilingStatus; label: string; by: string }
   { status: "reviewed", label: "Reviewed", by: "Reviewer" },
   { status: "client_approved", label: "Client approved", by: "Client" },
   { status: "owner_approved", label: "Owner approved", by: "Owner" },
-  { status: "filed", label: "Filed", by: "Staff" },
-  { status: "paid", label: "Paid", by: "Staff" },
-  { status: "proof_uploaded", label: "Proof sent", by: "Staff" },
+  { status: "filed", label: "Filed & paid", by: "Staff" },
 ];
 
 export const ACTION_LABEL: Record<SignOffAction, string> = {
@@ -37,15 +31,16 @@ export const ACTION_LABEL: Record<SignOffAction, string> = {
   client_query: "Ask a question",
   answer_query: "Answer the client",
   owner_approve: "Give final approval",
-  file: "Record filing",
-  pay: "Record payment",
-  send_proof: "Mark proof sent",
+  file: "Record filed & paid",
 };
 
-/** How far along the chain a status is: 0 = not started, 7 = done. */
+/** How far along the chain a status is: 0 = not started, 5 = filed & paid. */
 export function stepIndex(status: FilingStatus): number {
   return status === "not_started" ? 0 : SIGN_OFF_STEPS.findIndex((s) => s.status === status) + 1;
 }
+
+/** A nil return: prepared with no tax due. It skips the client's approval. */
+export const isNilReturn = (taxDue: number | null | undefined) => taxDue != null && Number(taxDue) === 0;
 
 export interface Viewer {
   userId: string;
@@ -98,15 +93,10 @@ export function availableActions(f: FilingState, v: Viewer): SignOffAction[] {
       break;
     case "client_approved":
       if (owner || withinActingLimit(f, v)) out.push("owner_approve");
+      if (owner || reviewer) out.push("kick_back");
       break;
     case "owner_approved":
       if (owner || assigned) out.push("file");
-      break;
-    case "filed":
-      if (owner || assigned) out.push("pay");
-      break;
-    case "paid":
-      if (owner || assigned) out.push("send_proof");
       break;
   }
   return out;

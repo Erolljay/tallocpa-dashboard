@@ -81,10 +81,9 @@ describe("risk", () => {
     expect(risk("client_approved", true, "2027-04-13").state).toBe("overdue");
   });
 
-  it("counts a prepared filing's documents as in, and is filed only once the proof is recorded", () => {
+  it("counts a prepared filing's documents as in, and is filed once Filed & paid (with its scanned copy)", () => {
     expect(risk("prepared", false, "2027-04-06").done).toBe(2);
-    expect(risk("paid", true, "2027-04-12")).toMatchObject({ state: "on_track", next: expect.objectContaining({ key: "proof" }) });
-    expect(risk("paid", true, "2027-04-13")).toMatchObject({ state: "at_risk", cause: "staff" });
-    expect(risk("proof_uploaded", true, "2027-04-20").state).toBe("filed");
+    expect(risk("owner_approved", true, "2027-04-08")).toMatchObject({ next: expect.objectContaining({ key: "filed" }) });
+    expect(risk("filed", true, "2027-04-20")).toMatchObject({ state: "filed", done: 7, next: null });
   });
 });

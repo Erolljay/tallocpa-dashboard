@@ -135,8 +135,7 @@ describe.skipIf(!url)("ledger: period lock and amendments", () => {
         JSON.stringify([{ account_id: acct.cash_on_hand, debit: "1", credit: "0" }, { account_id: acct.share_capital, debit: "0", credit: "1" }]),
       ]),
     ).rejects.toThrow(/January 2027 is locked/);
-    // Paid and proof uploaded keep it locked.
-    await setStatus("2550Q", "proof_uploaded");
+    // Filed & paid is the last step (five-step sign-off): it keeps the month locked.
     await expect(post("2027-02-01")).rejects.toThrow(/February 2027 is locked/);
   });
 

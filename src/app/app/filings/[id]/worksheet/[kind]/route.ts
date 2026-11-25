@@ -14,6 +14,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/filings
   await requireStaff();
   const supabase = await supabaseServer();
   const loaded = await loadWorksheet(id, supabase);
+  if (loaded?.notReady) return new NextResponse(`${loaded.notReady}.`, { status: 409 });
   if (!loaded?.module || !loaded.ctx) return new NextResponse("Not found", { status: 404 });
 
   const locked = LOCKED_STATUSES.includes(loaded.filing.status);

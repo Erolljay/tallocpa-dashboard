@@ -3,10 +3,9 @@
  * date, each with the five sign-off steps, who it waits on and, when a step is late,
  * whether the client or the staff caused it. Pure.
  *
- * Nil returns (tax due 0) skip the client's approval: advance_filing() still moves a
- * return through client_approved, but for a nil return the Owner records that step
- * and gives the final approval in one go, so the step shows as not needed and the
- * return waits on the Owner.
+ * Nil returns (tax due 0) skip the client's approval: advance_filing() moves a nil
+ * return from review straight to client_approved, so the step shows as not needed and
+ * the return waits on the Owner.
  */
 import type { IsoDate } from "@/lib/deadlines/dates";
 import { addDays } from "@/lib/deadlines/dates";
@@ -17,7 +16,7 @@ export type DueGroup = "overdue" | "this_week" | "later";
 
 export const DUE_GROUP_LABELS: Record<DueGroup, string> = { overdue: "Overdue", this_week: "Due this week", later: "Later" };
 
-const FILED: readonly FilingStatus[] = ["filed", "paid", "proof_uploaded"];
+const FILED: readonly FilingStatus[] = ["filed"];
 
 /**
  * Overdue: the BIR date has passed and it is not filed. Due this week: due in the
@@ -50,7 +49,6 @@ export function fiveSteps(status: FilingStatus, taxDue: number | null): { label:
     : status === "reviewed" ? 2
     : status === "client_approved" ? 3
     : status === "owner_approved" ? 4
-    : status === "filed" ? (nil ? 5 : 4)
     : 5;
   // A nil return past review has its client approval skipped (the Owner records it).
   const current = nil && done === 2 ? 3 : done;

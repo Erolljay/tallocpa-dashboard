@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getIdentity } from "@/lib/auth";
 import type { SignOffAction } from "@/lib/filings/sign-off";
 import { showMonth } from "@/lib/documents/labels";
+import { datFiles } from "@/lib/esubmission/dat";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadPeriodFile } from "@/lib/workpapers/load";
 import { BOOKS_GO_LIVE } from "@/lib/ledger/types";
@@ -26,11 +27,17 @@ function stepData(action: SignOffAction, form: FormData): { data: Record<string,
     }
     case "owner_approve":
       // The payment check itself is worked out by the database from Collections.
-      return { data: { approve_unpaid: form.get("approve_unpaid") === "on" } };
+      return { data: {} };
     case "file":
-      return { data: { filing_reference: text(form.get("filing_reference")), filed_on: text(form.get("filed_on")) || null } };
-    case "pay":
-      return { data: { payment_reference: text(form.get("payment_reference")), paid_on: text(form.get("paid_on")) || null } };
+      // Filed & paid (decision 14): the filing and the payment in one step.
+      return {
+        data: {
+          filing_reference: text(form.get("filing_reference")),
+          filed_on: text(form.get("filed_on")) || null,
+          payment_reference: text(form.get("payment_reference")),
+          paid_on: text(form.get("paid_on")) || null,
+        },
+      };
     default:
       return { data: {} };
   }
@@ -49,6 +56,11 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   if (action === "review") {
     const held = await reviewHolding(supabase, filingId);
     if (held) return { error: held };
+  }
+  if (action === "owner_approve") {
+    // eSubmission (decision 15): whether the return has DAT attachments, from its worksheet.
+    const dat = await datFiles(filingId, supabase).catch(() => null);
+    if (dat) parsed.data.dat_files = dat.files.map((f) => f.fileName);
   }
   const { error } = await supabase.rpc("advance_filing", {
     p_filing: filingId,

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FirmBlock } from "@/lib/brand/profile";
+import { groupPaidItems, type AllocationRow, type PaidItem } from "./collections";
 
 export interface StatementLine {
   id: string;
@@ -30,6 +31,9 @@ export type ProofMethod = "transfer" | "check" | "deposit";
 
 export interface PaymentProof {
   id: string;
+  soa_id: string;
+  /** The statement the client paid against. */
+  soa_reference: string | null;
   status: ProofStatus;
   method: ProofMethod;
   amount: number;
@@ -40,9 +44,21 @@ export interface PaymentProof {
   file_name: string;
   mime_type: string;
   submitted_at: string;
+  reviewed_at: string | null;
   reject_reason: string | null;
   fileUrl: string | null;
+  /** Once verified: the items the payment was applied to (oldest first), from the allocation. */
+  paidItems: PaidItem[];
+  /** Verified, then the recorded deposit was voided by the Owner. */
+  reversed: boolean;
 }
+
+/** What the client and the Owner call each payment status. */
+export const PROOF_STATUS: Record<ProofStatus, { tone: "done" | "waiting" | "blocked"; label: string }> = {
+  for_verification: { tone: "waiting", label: "Pending verification" },
+  verified: { tone: "done", label: "Verified" },
+  rejected: { tone: "blocked", label: "Rejected" },
+};
 
 /** Where a statement stands: Paid once nothing is open, For verification while a proof waits for the Owner. */
 export type StatementStatus = "paid" | "for_verification" | "overdue" | "due";
@@ -82,18 +98,14 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
     supabase.from("deposit_balances").select("unallocated").eq("client_id", soa.client_id).gt("unallocated", 0),
   ]);
   if (!client) return null;
-  const [{ data: brand }, { data: accounts }, { data: proofRows }] = await Promise.all([
+  const [{ data: brand }, { data: accounts }, proofs] = await Promise.all([
     supabase
       .from("brands")
       .select("display_name, legal_name, tin, tin_branch_code, registered_address, business_address, phone, reply_to_email, tax_on_fee, logo_path, soa_payment_days")
       .eq("id", client.brand_id)
       .single(),
     supabase.from("brand_payment_accounts").select("id, kind, institution, account_name, account_number, purpose, instructions, qr_path, sort_order").eq("brand_id", client.brand_id).eq("active", true).order("sort_order").order("institution"),
-    supabase
-      .from("payment_proofs")
-      .select("id, status, method, amount, paid_on, reference, file_name, mime_type, storage_path, submitted_at, reject_reason, brand_payment_accounts(institution)")
-      .eq("soa_id", soa.id)
-      .order("submitted_at", { ascending: false }),
+    loadPayments(supabase, { soaId: soa.id }),
   ]);
 
   const all = dues ?? [];
@@ -108,19 +120,11 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
   const rows = accounts ?? [];
   const paths = rows.map((a) => a.qr_path).filter((p): p is string => Boolean(p));
   const signed = new Map<string, string>();
-  const proofs = (proofRows ?? []) as unknown as (Omit<PaymentProof, "fileUrl" | "institution" | "amount"> & {
-    amount: string;
-    storage_path: string;
-    brand_payment_accounts: { institution: string } | null;
-  })[];
-  const [qr, logo, proofFiles] = await Promise.all([
+  const [qr, logo] = await Promise.all([
     paths.length ? supabase.storage.from("payment-qr").createSignedUrls(paths, 3600) : null,
     brand?.logo_path ? supabase.storage.from("brand-files").createSignedUrl(brand.logo_path, 3600) : null,
-    proofs.length ? supabase.storage.from("payment-proofs").createSignedUrls(proofs.map((p) => p.storage_path), 3600) : null,
   ]);
   for (const s of qr?.data ?? []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl);
-  const proofUrl = new Map<string, string>();
-  for (const s of proofFiles?.data ?? []) if (s.path && s.signedUrl) proofUrl.set(s.path, s.signedUrl);
 
   return {
     soa: { id: soa.id, reference: soa.reference, billing_date: soa.billing_date, due_on: soa.due_on },
@@ -154,19 +158,80 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
       instructions: a.instructions,
       qrUrl: a.qr_path ? (signed.get(a.qr_path) ?? null) : null,
     })),
-    proofs: proofs.map((p) => ({
-      id: p.id,
-      status: p.status,
-      method: p.method,
-      amount: Number(p.amount),
-      paid_on: p.paid_on,
-      reference: p.reference,
-      institution: p.brand_payment_accounts?.institution ?? null,
-      file_name: p.file_name,
-      mime_type: p.mime_type,
-      submitted_at: p.submitted_at,
-      reject_reason: p.reject_reason,
-      fileUrl: proofUrl.get(p.storage_path) ?? null,
-    })),
+    proofs,
   };
+}
+
+type ProofRow = {
+  id: string;
+  soa_id: string;
+  status: ProofStatus;
+  method: ProofMethod;
+  amount: string;
+  paid_on: string;
+  reference: string | null;
+  file_name: string;
+  mime_type: string;
+  storage_path: string;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reject_reason: string | null;
+  deposit_id: string | null;
+  soas: { reference: string } | null;
+  brand_payment_accounts: { institution: string } | null;
+  client_deposits: { voided_at: string | null } | null;
+};
+
+/**
+ * Payments (proofs of payment) for one statement or for whole businesses,
+ * newest first, each with what a verified payment paid: the items the existing
+ * allocation applied it to. RLS limits a client user to their own businesses.
+ */
+export async function loadPayments(supabase: SupabaseClient, where: { soaId: string } | { clientIds: string[] }, limit = 100): Promise<PaymentProof[]> {
+  let query = supabase
+    .from("payment_proofs")
+    .select(
+      "id, soa_id, status, method, amount, paid_on, reference, file_name, mime_type, storage_path, submitted_at, reviewed_at, reject_reason, deposit_id, soas(reference), brand_payment_accounts(institution), client_deposits(voided_at)",
+    )
+    .order("submitted_at", { ascending: false })
+    .limit(limit);
+  if ("soaId" in where) query = query.eq("soa_id", where.soaId);
+  else {
+    if (where.clientIds.length === 0) return [];
+    query = query.in("client_id", where.clientIds);
+  }
+  const { data } = await query;
+  const rows = (data ?? []) as unknown as ProofRow[];
+  if (rows.length === 0) return [];
+
+  const deposits = rows.map((r) => r.deposit_id).filter((d): d is string => Boolean(d));
+  const [files, allocations] = await Promise.all([
+    supabase.storage.from("payment-proofs").createSignedUrls(rows.map((r) => r.storage_path), 3600),
+    deposits.length
+      ? supabase.from("payment_allocations").select("deposit_id, due_id, amount, client_dues(description)").in("deposit_id", deposits).order("id")
+      : null,
+  ]);
+  const fileUrl = new Map<string, string>();
+  for (const f of files.data ?? []) if (f.path && f.signedUrl) fileUrl.set(f.path, f.signedUrl);
+  const items = groupPaidItems((allocations?.data ?? []) as unknown as AllocationRow[]);
+
+  return rows.map((r) => ({
+    id: r.id,
+    soa_id: r.soa_id,
+    soa_reference: r.soas?.reference ?? null,
+    status: r.status,
+    method: r.method,
+    amount: Number(r.amount),
+    paid_on: r.paid_on,
+    reference: r.reference,
+    institution: r.brand_payment_accounts?.institution ?? null,
+    file_name: r.file_name,
+    mime_type: r.mime_type,
+    submitted_at: r.submitted_at,
+    reviewed_at: r.reviewed_at,
+    reject_reason: r.reject_reason,
+    fileUrl: fileUrl.get(r.storage_path) ?? null,
+    paidItems: r.deposit_id ? (items.get(r.deposit_id) ?? []) : [],
+    reversed: Boolean(r.client_deposits?.voided_at),
+  }));
 }

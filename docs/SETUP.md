@@ -72,6 +72,19 @@ Set these in Vercel (Settings → Environment Variables, Production) — never i
 - `CRON_SECRET` — any long random string. Vercel sends it to `/api/cron/generate-filings` (scheduled in `vercel.json` at 02:00 Manila time) so nobody else can trigger the job.
 - `RESEND_API_KEY` and `EMAIL_FROM` (optional) — send the monthly document request (the 1st) and reminder (day before the cutoff) by email through Resend. `EMAIL_FROM` must be on a domain verified in Resend, e.g. `Tallo CPA <documents@tallocpa.com>`. Without them the request shows in the client portal only.
 
+### eSubmission mailbox (optional, docs/REWORK.md decision 15)
+
+After the Owner approves a return with DAT attachments (SLS, SLP, SAWT, QAP, alphalist), the app emails the DAT files from **attachments@tallocpa.com** to **esubmission@bir.gov.ph** through the Gmail API and attaches the BIR's validation report from the reply in that mailbox. Until these are set, the return page says the mailbox is not set up: staff send the DAT files by hand, press **Mark sent**, and upload the validation report (or record the errors) themselves.
+
+1. In Google Cloud under the tallocpa.com organization: a project with an **Internal** OAuth consent screen and the **Gmail API** turned on. Create an **OAuth client ID** (Web application) with the redirect URI `https://developers.google.com/oauthplayground`.
+2. Get the mailbox's refresh token once: open the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground), tick *Use your own OAuth credentials* (gear icon) and paste the client ID and secret, authorize the scope `https://www.googleapis.com/auth/gmail.modify` **signed in as attachments@tallocpa.com**, then exchange the code and copy the refresh token.
+3. Set in Vercel (server only):
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — the OAuth client.
+   - `ESUBMISSION_GMAIL_REFRESH_TOKEN` — the refresh token from step 2.
+   - `ESUBMISSION_MAILBOX` (optional) — default `attachments@tallocpa.com`.
+   - `ESUBMISSION_TO` (optional) — default `esubmission@bir.gov.ph`; point it at an internal address to try the flow first.
+4. The reply check runs once a day (`/api/cron/esubmission` in `vercel.json`, 11:40 Manila, with `CRON_SECRET`); staff can also press **Check the mailbox for the reply** on the return. It reads the thread of each send still waiting: the BIR's attachment (or its message, as a text file) becomes the validation report, and the send is marked **Validated** or **Errors**. A reply the app cannot read is marked Errors with a note; staff open it and correct the result.
+
 ## 6. Vercel
 
 1. Import the GitHub repository into Vercel.

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOwner } from "@/lib/auth";
+import { requireOwner, requireStaff } from "@/lib/auth";
 import { obligationChanges, obligationsForTaxTypes, TaxTypeError } from "@/lib/clients/obligations";
 import { assignmentSchema, editClientSchema, engagementSchema, formToObject, newClientSchema } from "@/lib/clients/schema";
 import { taxableYearStart } from "@/lib/ledger/books";
@@ -161,6 +161,21 @@ export async function removeAssignmentAction(clientId: string, userId: string, r
   if (error) return { error: `Could not remove: ${error.message}` };
   revalidatePath(`/app/clients/${clientId}`);
   revalidatePath("/app/clients");
+  return { ok: true };
+}
+
+/**
+ * The client's income tax method (docs/REWORK.md decision 11): OSD, itemized, or 8%
+ * (individuals only), used by the 1701Q and 1702Q worksheets. The Owner or staff
+ * assigned to the client set it; the database checks.
+ */
+export async function setIncomeTaxMethodAction(clientId: string, _: FormState, form: FormData): Promise<FormState> {
+  await requireStaff();
+  const supabase = await supabaseServer();
+  const method = String(form.get("income_tax_method") ?? "").trim();
+  const { error } = await supabase.rpc("set_client_income_tax_method", { p_client: clientId, p_method: method || null });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/clients/${clientId}`);
   return { ok: true };
 }
 

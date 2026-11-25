@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import type { Branch } from "@/lib/branches";
 import { StaffOptions } from "../client-form";
-import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, type FormState } from "../actions";
+import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, setIncomeTaxMethodAction, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
 export function EngagementForm({ clientId, serviceLines }: { clientId: string; serviceLines: { code: string; name: string }[] }) {
@@ -58,6 +58,26 @@ export function RemoveAssignmentButton({ clientId, userId, role }: { clientId: s
     <form action={action}>
       <button type="submit" disabled={pending} className="text-caption-1-regular text-text-error-primary hover:underline">{pending ? "Removing…" : "Remove"}</button>
       {state.error && <span className="ml-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+/** The client's income tax method (OSD, itemized, or 8% for individuals), used by the 1701Q and 1702Q worksheets. */
+export function IncomeTaxMethodForm({ clientId, value, individual, canEdit }: { clientId: string; value: string | null; individual: boolean; canEdit: boolean }) {
+  const [state, action, pending] = useActionState(setIncomeTaxMethodAction.bind(null, clientId), {} as FormState);
+  return (
+    <form action={action} className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+      <Field label="Income tax method" htmlFor="income_tax_method" hint={individual ? "Used by the 1701Q (and the 2551Q: on 8% no percentage tax is due)." : "Used by the 1702Q."}>
+        <Select id="income_tax_method" name="income_tax_method" defaultValue={value ?? ""} disabled={!canEdit}>
+          <option value="">Not set</option>
+          <option value="osd">Optional standard deduction (OSD, 40%)</option>
+          <option value="itemized">Itemized deductions</option>
+          {individual && <option value="eight_percent">8% on gross sales or receipts</option>}
+        </Select>
+      </Field>
+      {canEdit && <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>}
+      {state.error && <div className="sm:col-span-2"><Notice tone="blocked">{state.error}</Notice></div>}
+      {state.ok && <div className="sm:col-span-2"><Notice tone="done">Saved.</Notice></div>}
     </form>
   );
 }

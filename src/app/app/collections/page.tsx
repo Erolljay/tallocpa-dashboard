@@ -79,7 +79,7 @@ async function Overview() {
   const totalCredit = [...creditByClient.values()].reduce((a, b) => a + b, 0);
   // Q26: tax money received from clients and not yet remitted to BIR is held for them, not earned.
   const held = ((taxPaid.data ?? []) as unknown as { paid: string; filing_instances: { status: string } | null }[])
-    .filter((r) => !["paid", "proof_uploaded"].includes(r.filing_instances?.status ?? ""))
+    .filter((r) => r.filing_instances?.status !== "filed")
     .reduce((s, r) => s + Number(r.paid), 0);
 
   const clientList = (clients.data ?? []) as Client[];
@@ -135,7 +135,7 @@ async function Overview() {
                   </span>
                   <span className="flex items-center gap-3">
                     <span className="amount font-medium text-text-primary">{peso.format(Number(p.amount))}</span>
-                    <Badge tone="waiting">For verification</Badge>
+                    <Badge tone="waiting">Pending verification</Badge>
                   </span>
                 </Link>
               </li>
@@ -257,7 +257,7 @@ async function Overview() {
                       <td className="px-4 py-3 tabular-nums text-text-secondary">{showDate(s.billing_date)}</td>
                       <td className="amount px-4 py-3 text-text-primary">{peso.format(t.total)}</td>
                       <td className="px-4 py-3">
-                        {t.open <= 0 ? <Badge tone="done">Paid</Badge> : verifying.has(s.id) ? <Badge tone="waiting">For verification</Badge> : t.open < t.total ? <Badge tone="waiting">Partly paid</Badge> : s.due_on < today ? <Badge tone="blocked">Overdue</Badge> : <Badge tone="neutral">Due {showDate(s.due_on)}</Badge>}
+                        {t.open <= 0 ? <Badge tone="done">Paid</Badge> : verifying.has(s.id) ? <Badge tone="waiting">Pending verification</Badge> : t.open < t.total ? <Badge tone="waiting">Partly paid</Badge> : s.due_on < today ? <Badge tone="blocked">Overdue</Badge> : <Badge tone="neutral">Due {showDate(s.due_on)}</Badge>}
                       </td>
                     </tr>
                   );

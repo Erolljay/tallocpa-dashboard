@@ -135,6 +135,8 @@ export const ENTRY_SOURCES = {
   closing: "Closing entry",
   invoice: "Sales or purchase invoice",
   settlement: "Receipt or payment",
+  vat_closing: "VAT closing (2550Q filed)",
+  dues_payment: "Payment of taxes or contributions",
 } as const;
 export type EntrySource = keyof typeof ENTRY_SOURCES;
 

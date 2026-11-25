@@ -52,7 +52,7 @@ async function holidaySet(db: SupabaseClient): Promise<Set<IsoDate>> {
 }
 
 /**
- * Filings not yet closed out (no proof recorded) that are overdue or due within
+ * Filings not yet Filed & paid that are overdue or due within
  * `days`, with their steps and status, worst first. `userId` narrows to the
  * filings of clients where that person is preparer or reviewer.
  */
@@ -62,7 +62,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
     db
       .from("filing_instances")
       .select("id, client_id, form, period_label, period_start, period_end, due_date, status, tax_due, clients(name, code, submission_cutoff_day)")
-      .neq("status", "proof_uploaded")
+      .neq("status", "filed")
       .lte("due_date", until)
       .gte("due_date", addDays(today, -120))
       .order("due_date")

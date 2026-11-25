@@ -110,3 +110,22 @@ function mapValues<K extends string, A, B>(o: Record<K, A>, f: (a: A) => B): Rec
 function iso(y: number, m: number, d: number): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
+
+export type AllocationRow = { deposit_id: string; due_id: string; amount: string | number; client_dues: { description: string } | null };
+export type PaidItem = { dueId: string; description: string; amount: number };
+
+/**
+ * The items each deposit paid, in the order the allocation applied it (oldest
+ * first), one line per item even when it was applied in several parts.
+ */
+export function groupPaidItems(rows: AllocationRow[]): Map<string, PaidItem[]> {
+  const out = new Map<string, PaidItem[]>();
+  for (const a of rows) {
+    const list = out.get(a.deposit_id) ?? [];
+    const same = list.find((x) => x.dueId === a.due_id);
+    if (same) same.amount = Math.round((same.amount + Number(a.amount)) * 100) / 100;
+    else list.push({ dueId: a.due_id, description: a.client_dues?.description ?? "Item", amount: Number(a.amount) });
+    out.set(a.deposit_id, list);
+  }
+  return out;
+}

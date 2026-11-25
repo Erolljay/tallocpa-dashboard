@@ -15,9 +15,9 @@ describe("groupByDue", () => {
   });
 
   it("does not call a filed return overdue", () => {
-    const g = groupByDue([row("a", "2026-11-20", "filed"), row("b", "2026-11-20", "paid")], "2026-11-25");
-    expect(g.overdue).toEqual([]);
-    expect(g.this_week.map((r) => r.id)).toEqual(["a", "b"]);
+    const g = groupByDue([row("a", "2026-11-20", "filed"), row("b", "2026-11-20", "owner_approved")], "2026-11-25");
+    expect(g.overdue.map((r) => r.id)).toEqual(["b"]);
+    expect(g.this_week.map((r) => r.id)).toEqual(["a"]);
   });
 });
 
@@ -27,9 +27,9 @@ describe("fiveSteps", () => {
     expect(fiveSteps("not_started", null).map((s) => s.state)).toEqual(["current", "todo", "todo", "todo", "todo"]);
   });
 
-  it("needs the payment before Filed & paid, unless nothing is payable", () => {
-    expect(fiveSteps("filed", 500).map((s) => s.state)).toEqual(["done", "done", "done", "done", "current"]);
-    expect(fiveSteps("paid", 500).every((s) => s.state === "done")).toBe(true);
+  it("is done once Filed & paid", () => {
+    expect(fiveSteps("owner_approved", 500).map((s) => s.state)).toEqual(["done", "done", "done", "done", "current"]);
+    expect(fiveSteps("filed", 500).every((s) => s.state === "done")).toBe(true);
     expect(stepsDone("filed", 0)).toBe(5);
   });
 

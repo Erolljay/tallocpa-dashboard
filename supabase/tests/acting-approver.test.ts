@@ -212,7 +212,7 @@ describe.skipIf(!url)("branches and the acting approver", () => {
         const own = await approvedReturn(direct, 1000, REVIEWER);
         await signIn(REVIEWER);
         await fails(`select public.advance_filing($1, 'owner_approve', null, '{}'::jsonb)`, [big], /above your approval limit of ₱50,000\.00/);
-        await fails(`select public.advance_filing($1, 'owner_approve', null, '{"approve_unpaid": true}'::jsonb)`, [unpaid], /only the Owner can approve it/);
+        await fails(`select public.advance_filing($1, 'owner_approve', null, '{"approve_unpaid": true}'::jsonb)`, [unpaid], /payment for this return is not verified yet/);
         await fails(`select public.advance_filing($1, 'owner_approve', null, '{}'::jsonb)`, [own], /You prepared this return/);
         // Other steps on clients they are not assigned to stay closed.
         await fails(`select public.advance_filing($1, 'file', null, '{"filing_reference":"x","filed_on":"2027-02-09"}'::jsonb)`, [big], /access|approved/);
@@ -237,16 +237,19 @@ describe.skipIf(!url)("branches and the acting approver", () => {
       }
     });
 
-    it("the Owner still approves anything, unpaid included when ticked", async () => {
+    it("the Owner, too, approves only once the return's own item is paid (decision 13)", async () => {
       await db.query("begin");
       try {
         await delegate(50000);
         const unpaid = await approvedReturn(remits, 90000);
         await signIn(OWNER);
-        await fails(`select public.advance_filing($1, 'owner_approve', null, '{}'::jsonb)`, [unpaid], /approve even though unpaid/);
-        const r = await db.query(`select (f).status from public.advance_filing($1, 'owner_approve', null, '{"approve_unpaid": true}'::jsonb) as f`, [unpaid]);
+        await fails(`select public.advance_filing($1, 'owner_approve', null, '{}'::jsonb)`, [unpaid], /not verified yet/);
+        await fails(`select public.advance_filing($1, 'owner_approve', null, '{"approve_unpaid": true}'::jsonb)`, [unpaid], /not verified yet/);
+        const free = await approvedReturn(direct, 90000);
+        await signIn(OWNER);
+        const r = await db.query(`select (f).status from public.advance_filing($1, 'owner_approve', null, '{}'::jsonb) as f`, [free]);
         expect(r.rows[0].status).toBe("owner_approved");
-        const step = (await db.query(`select data from public.filing_events where filing_instance_id = $1 and action = 'owner_approve'`, [unpaid])).rows[0].data;
+        const step = (await db.query(`select data from public.filing_events where filing_instance_id = $1 and action = 'owner_approve'`, [free])).rows[0].data;
         expect(step.acting_approver).toBeUndefined();
       } finally {
         await db.query("rollback");

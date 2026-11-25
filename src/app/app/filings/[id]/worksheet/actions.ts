@@ -19,6 +19,7 @@ export async function recomputeWorksheetAction(filingId: string, _: WorksheetSta
   const supabase = await supabaseServer();
   const loaded = await loadWorksheet(filingId, supabase);
   if (!loaded) return { error: "Filing not found." };
+  if (loaded.notReady) return { error: `${loaded.notReady}.` };
   if (!loaded.module || !loaded.ctx) return { error: "There is no worksheet for this form yet." };
   if (LOCKED_STATUSES.includes(loaded.filing.status)) return { error: "This return has been filed; its worksheet is locked." };
 
@@ -53,4 +54,18 @@ export async function recomputeWorksheetAction(filingId: string, _: WorksheetSta
     ok: result.errors.length ? `Saved with ${result.errors.length} problem${result.errors.length === 1 ? "" : "s"} to fix.` : "Recomputed and saved.",
     values: inputs,
   };
+}
+
+/**
+ * Missing 2307 (decision 12): the CWT on a Sales Invoice stays claimed; this records that
+ * the customer was asked for the 2307. The database checks who may do it.
+ */
+export async function markCwtFollowedUpAction(filingId: string, invoiceId: string, _: WorksheetState, form: FormData): Promise<WorksheetState> {
+  await requireStaff();
+  const supabase = await supabaseServer();
+  const note = String(form.get("note") ?? "").trim().slice(0, 500);
+  const { error } = await supabase.rpc("mark_cwt_followed_up", { p_invoice: invoiceId, p_note: note || null });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/filings/${filingId}/worksheet`);
+  return { ok: "Marked followed up." };
 }

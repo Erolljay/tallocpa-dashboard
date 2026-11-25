@@ -269,16 +269,20 @@ describe.skipIf(!url)("database", () => {
         expect(await step(CLIENT_USER, "client_approve")).toMatchObject({ status: "client_approved" });
         await expect(step(REVIEWER, "owner_approve")).rejects.toThrow(/Only the Owner/);
         // The firm remits this client's tax and nothing has been paid: the check says unpaid,
-        // whatever the form claims, and approving needs the deliberate tick.
-        await expect(step(OWNER, "owner_approve", null, { payment_status: "paid" })).rejects.toThrow(/approve even though unpaid/);
-        expect(await step(OWNER, "owner_approve", null, { approve_unpaid: true })).toMatchObject({ status: "owner_approved" });
+        // whatever the form claims, and even the Owner waits for the payment (decision 13).
+        await expect(step(OWNER, "owner_approve", null, { payment_status: "paid" })).rejects.toThrow(/not verified yet \(not on a statement yet\)/);
+        await expect(step(OWNER, "owner_approve", null, { approve_unpaid: true })).rejects.toThrow(/not verified yet/);
+        // A client who pays the BIR directly has no item to check.
+        await db.query("reset role");
+        await db.query(`update public.clients set payment_mode = 'client_pays_direct' where id = $1`, [clientA]);
+        await db.query("set local role authenticated");
+        expect(await step(OWNER, "owner_approve")).toMatchObject({ status: "owner_approved" });
         await expect(step(STAFF, "file", null, { filed_on: "2027-04-20" })).rejects.toThrow(/filing reference/);
-        expect(await step(STAFF, "file", null, { filing_reference: "EFPS-123456", filed_on: "2027-04-20" })).toMatchObject({ status: "filed", filing_reference: "EFPS-123456" });
-        await expect(step(STAFF, "pay")).rejects.toThrow(/payment reference/);
-        expect(await step(STAFF, "pay", null, { payment_reference: "LBP-998877", paid_on: "2027-04-21" })).toMatchObject({ status: "paid" });
-        expect(await step(STAFF, "send_proof")).toMatchObject({ status: "proof_uploaded" });
+        await expect(step(STAFF, "file", null, { filing_reference: "EFPS-123456", filed_on: "2027-04-20" })).rejects.toThrow(/payment reference/);
+        await expect(step(STAFF, "file", null, { filing_reference: "EFPS-123456", filed_on: "2027-04-20", payment_reference: "LBP-998877", paid_on: "2027-04-21" })).rejects.toThrow(/scanned copy/);
+        await expect(step(STAFF, "pay")).rejects.toThrow(/Unknown action/);
         const check = (await db.query(`select data -> 'payment_check' as c from public.filing_events where action = 'owner_approve' order by id desc limit 1`)).rows[0].c;
-        expect(check).toMatchObject({ status: "unpaid", tax_status: "unpaid", tax_due: 12500.5 });
+        expect(check).toMatchObject({ status: "not_applicable" });
       }, { firmRemits: true });
     });
 
@@ -293,7 +297,7 @@ describe.skipIf(!url)("database", () => {
 
     it("the Owner can record a client's approval on their behalf, with a note", async () => {
       await chain(async (step) => {
-        await step(OWNER, "prepare", null, { tax_due: 0 });
+        await step(OWNER, "prepare", null, { tax_due: 100 });
         await step(OWNER, "review");
         await expect(step(OWNER, "client_approve")).rejects.toThrow(/how the client approved/);
         expect(await step(OWNER, "client_approve", "Approved by email, 20 Apr")).toMatchObject({ status: "client_approved" });

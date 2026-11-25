@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 built and merged (PR #51). Phases 1–5 to build. |
+| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51) and Phases 1–2 (PR #53) merged. Phase 3 built (PR #54), with Portal Billing (Phase 4) and the Leads pipeline (Phase 5) built alongside it; eSubmission waits on the Google setup. |
 | **Screens** | Clickable mockup per user (Owner, Reviewer, Preparer, Client), shared as a claude.ai artifact |
 | **Target** | Monthly work and the client portal live before 31 December 2026; year-end and the annual returns ready before their January deadlines |
 
@@ -43,7 +43,7 @@ Lead → Prospect → Won → Onboarding → Client
     - **2550Q:** SLS, SLP, SAWT – VAT (WV010/WV020), carry-over from the previous return.
     - **0619-E:** the month's QAP.
     - **1601-EQ:** the quarter's QAP, less months 1 and 2 taken from the 0619-E returns once filed and paid.
-    - **1601-C:** the month's alphalist of employees.
+    - **1601-C:** the month's list of employees (from the payslips) as the worksheet's supporting schedule; no attachment goes to the BIR. The annual **alphalist DAT** (Schedules 1 and 2, ported from taxify) goes with the **1604-C** in Phase 5.
     - **1702Q:** income statement year to date, the client's income tax method (**OSD, itemized, or 8% for individuals on the 1701Q**, set per client), SAWT, prior payments and carry-over. RCIT vs MCIT.
 12. Missing 2307: the CWT is **claimed and followed up**; whether to keep claiming at year end is **the client's decision**, asked on the portal.
 13. Sign-off: **Prepared → Reviewed → Client approved → Owner approved → Filed & paid.** Nil returns skip client approval. The Owner approves once the client's payment **for that return's own item** is verified.
@@ -100,6 +100,19 @@ Existing data moves across in a migration: every approved document and register 
 | 3 · Returns | Dec 14 – Dec 20 | Worksheets (2550Q, 0619-E, 1601-EQ, 1601-C, 1702Q) from tax codes; SLS/SLP/SAWT/QAP DAT; income tax method per client; 5-step sign-off with per-item payment check; filed copy; eSubmission through the firm's Gmail with the validation report |
 | 4 · Collections and portal | Dec 21 – Dec 31 | Items ticked on verification, cash for remittance, payment statuses; portal Home, Upload, Reports (filed returns, 2307 and 2316 generators, loose-leaf books), Billing (channel QR, previous statements) |
 | 5 · Year-end, leads, calendar | Jan 2 – Jan 15 | Year-end page and closing entry, 1604-C/1604-E with eSubmission, 2316 final; Leads pipeline with discovery calls; inquiry, discovery-call and onboarding answers into client Notes; Google Calendar team calendar and booking page |
+
+### What depends on Phase 3
+
+| Part | Needs Phase 3 | Why |
+|---|---|---|
+| Collections: items ticked on verification, cash for remittance | Yes | Each return is its own statement item, with the tax due from its worksheet; the Owner's approval is step 4 of the sign-off |
+| Portal: filed returns | Yes | The link opens the filed copy attached in Phase 3 |
+| Portal Billing: channel QR, proof upload, payment statuses, previous statements | No | Billing only; built alongside Phase 3 |
+| Portal: 2307, 2316, loose-leaf books | No | From the Books (Phase 1) and payroll |
+| 1604-C / 1604-E | Yes | Reuse the Phase 3 eSubmission; the 1604-E is built from the year's QAP |
+| Year-end close, annual income tax | Yes | Need the income tax method per client |
+| Leads pipeline, discovery calls, client Notes | No | Built alongside Phase 3 |
+| Team calendar, booking page | No | Needs only the Google setup, the same one as eSubmission |
 
 Each phase ships as its own pull request, with database tests for every new rule (posting, lock, tax-code totals, sign-off, payment allocation) and a check against the old figures before the old screens are retired.
 

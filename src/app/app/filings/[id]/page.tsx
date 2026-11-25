@@ -5,16 +5,17 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
+import { esubmissionLabel, esubmissionTone, filingStatusLabel, filingStatusTone, showDate, type EsubmissionState } from "@/lib/filings/labels";
 import { activeFor, type Delegation } from "@/lib/acting/period";
-import { availableActions, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
+import { availableActions, isNilReturn, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
+import { esubmissionMailEnv } from "@/lib/env";
 import { supabaseServer } from "@/lib/supabase/server";
 import { filingsBooksReady, filingsNeedingAmendment } from "@/lib/books/actions";
-import { DocumentUpload } from "@/components/document-upload";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 import { AmendFilingForm } from "../amend-form";
 import { ApprovalMemo } from "./approval-memo";
+import { EsubmissionControls, ReturnFileUpload, RetryBookEntry } from "./return-files";
 
 export default function FilingPage(props: PageProps<"/app/filings/[id]">) {
   return (
@@ -44,11 +45,24 @@ const eventText: Record<string, string> = {
   client_query: "asked a question",
   answer_query: "answered the client",
   owner_approve: "gave the final approval",
-  file: "recorded the filing",
+  file: "recorded it filed & paid",
   pay: "recorded the payment",
   send_proof: "marked the proof sent",
   amend: "started this amended return",
+  skip_client_approval: "moved it past the client's approval (nil return)",
+  migrate: "moved it to the five-step sign-off",
+  restart: "sent it back to Not started",
 };
+const bookKind: Record<string, string> = { vat_closing: "VAT closing", dues_payment: "Payment of the dues" };
+const bookStatus: Record<string, { label: string; tone: "done" | "waiting" | "blocked" | "neutral" }> = {
+  posted: { label: "Posted", tone: "done" },
+  skipped: { label: "Not posted", tone: "neutral" },
+  failed: { label: "Could not post", tone: "blocked" },
+  reversed: { label: "Reversed", tone: "neutral" },
+};
+
+interface FilingFile { id: string; kind: string; file_name: string; source: string; created_at: string; replaced_at: string | null; esubmission_id: string | null }
+interface BookRow { id: string; kind: string; status: string; entry_date: string | null; amount: string | null; note: string | null; entry_id: string | null }
 const paymentText: Record<string, string> = { paid: "Paid", partial: "Partially paid", unpaid: "Unpaid", not_applicable: "Nothing to pay" };
 
 async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["params"] }) {
@@ -58,13 +72,13 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
 
   const { data: f } = await supabase
     .from("filing_instances")
-    .select("id, client_id, obligation_id, amendment_no, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, clients(id, name, code, payment_mode)")
+    .select("id, client_id, obligation_id, amendment_no, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, esubmission_required, esubmission_files, clients(id, name, code, payment_mode)")
     .eq("id", id)
     .maybeSingle();
   if (!f) notFound();
   const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
 
-  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }] = await Promise.all([
+  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }, { data: files }, { data: sends }, { data: bookRows }, { data: esubState }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
     supabase.from("staff_assignments").select("user_id, role").eq("client_id", f.client_id),
     supabase.from("staff_profiles").select("user_id, full_name"),
@@ -75,6 +89,10 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
       : Promise.resolve({ data: [] as Delegation[] }),
     // The original return of the period and its amended returns.
     supabase.from("filing_instances").select("id, period_label, status, amendment_no").eq("obligation_id", f.obligation_id).eq("period_end", f.period_end).order("amendment_no"),
+    supabase.from("filing_files").select("id, kind, file_name, source, created_at, replaced_at, esubmission_id").eq("filing_instance_id", id).order("created_at"),
+    supabase.from("esubmissions").select("id, method, files, status, sent_at, result_at, result_note").eq("filing_instance_id", id).is("superseded_at", null).maybeSingle(),
+    supabase.from("return_book_entries").select("id, kind, status, entry_date, amount, note, entry_id").eq("filing_instance_id", id).order("created_at"),
+    supabase.rpc("filing_esubmission_state", { p_filing: id }),
   ]);
   // Month lock (docs/REWORK.md, decisions 9 and 10): a filed return whose month was unlocked
   // needs an amended return; an unfiled one waits until the Books of its period are locked.
@@ -84,16 +102,24 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   ]);
   const later = (versions ?? []).some((v) => v.amendment_no > f.amendment_no);
   const canAmend =
-    ["filed", "paid", "proof_uploaded"].includes(f.status) && !later &&
+    f.status === "filed" && !later &&
     (me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId && t.role === "reviewer"));
   const acting = activeFor((delegations ?? []) as Delegation[], me.userId);
   const canAttach = me.staff.role === "owner" || (team ?? []).some((t) => t.user_id === me.userId);
-  const thisMonth = `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date()).slice(0, 7)}-01`;
+  const allFiles = (files ?? []) as FilingFile[];
+  const filedCopy = allFiles.find((x) => x.kind === "filed_copy" && !x.replaced_at) ?? null;
+  const reports = allFiles.filter((x) => x.kind === "validation_report");
+  const dats = allFiles.filter((x) => x.kind === "esubmission_dat");
+  const esub = (esubState ?? "not_required") as EsubmissionState;
+  const send = sends as { id: string; method: string; files: string[]; status: string; sent_at: string; result_at: string | null; result_note: string | null } | null;
+  const books = (bookRows ?? []) as BookRow[];
+  const nil = isNilReturn(f.tax_due == null ? null : Number(f.tax_due));
   const nameOf = new Map([...(staff ?? []), ...(clientUsers ?? [])].map((p) => [p.user_id, p.full_name]));
   const history = (events ?? []) as Event[];
   const preparedBy = [...history].reverse().find((e) => e.action === "prepare")?.actor ?? null;
   const status = f.status as FilingStatus;
   const done = stepIndex(status);
+  const complete = status === "filed" && (esub === "not_required" || esub === "validated");
 
   const actions = availableActions(
     { status, openQuery: f.open_query, preparedBy, taxDue: f.tax_due == null ? null : Number(f.tax_due) },
@@ -123,6 +149,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {amendment && <Badge tone="blocked">Needs amended return</Badge>}
+            {status === "filed" && esub !== "not_required" && esub !== "validated" && <Badge tone="waiting">Validation report missing</Badge>}
             <Badge tone={filingStatusTone[status]}>{filingStatusLabel[status]}</Badge>
           </div>
         }
@@ -134,7 +161,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
           </Notice>
         </div>
       )}
-      {!ready && !["filed", "paid", "proof_uploaded"].includes(status) && (
+      {!ready && status !== "filed" && (
         <div className="mb-6">
           <Notice tone="waiting">
             The Books for this return&rsquo;s period are still open. It shows in the Filings lists once the reviewer locks every month of the period.{" "}
@@ -146,7 +173,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-6">
           {/* W4: the approval memo, for the reviewer and the Owner once the return is reviewed. */}
-          {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "proof_uploaded" && (
+          {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "filed" && (
             <Suspense fallback={<Skeleton rows={3} />}>
               <ApprovalMemo
                 db={supabase}
@@ -161,7 +188,9 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             {/* One row of steps: scrolls sideways on phones, shares the width on wider screens. */}
             <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
               {SIGN_OFF_STEPS.map((s, i) => {
-                const state = i < done ? "done" : i === done ? "current" : "todo";
+                // A nil return skips the client's approval (decision 13).
+                const skipped = nil && s.status === "client_approved";
+                const state = skipped ? (done >= 2 ? "done" : "todo") : i < done ? "done" : i === done ? "current" : "todo";
                 return (
                   <li
                     key={s.status}
@@ -177,7 +206,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
                       {state === "done" && <RiCheckLine aria-hidden className="size-3.5 shrink-0" />}
                       {s.label}
                     </span>
-                    <span className="text-caption-2-regular text-text-tertiary">{s.by}</span>
+                    <span className="text-caption-2-regular text-text-tertiary">{skipped ? "Not needed: nil" : s.by}</span>
                   </li>
                 );
               })}
@@ -187,12 +216,69 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             )}
             <div className="mt-4">
               {actions.length > 0 ? (
-                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} />
+                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} amended={f.amendment_no > 0} hasFiledCopy={Boolean(filedCopy)} />
               ) : (
-                <p className="text-body-regular text-text-secondary">{status === "proof_uploaded" ? "This return is done." : "Nothing for you to do on this return right now."}</p>
+                <p className="text-body-regular text-text-secondary">
+                  {complete ? "This return is done." : status === "filed" ? "Filed & paid. It is complete once the BIR validates its DAT files (eSubmission below)." : "Nothing for you to do on this return right now."}
+                </p>
               )}
             </div>
           </Card>
+
+          {(f.esubmission_required || esub !== "not_required") && (status === "owner_approved" || status === "filed") && (
+            <Card title="eSubmission" actions={<Badge tone={esubmissionTone[esub]}>{esubmissionLabel[esub]}</Badge>}>
+              <div className="space-y-4">
+                <p className="text-body-regular text-text-secondary">
+                  The DAT files ({(send?.files.length ? send.files : (f.esubmission_files ?? [])).join(", ") || "from the worksheet"}) go from the firm&rsquo;s eSubmission mailbox to esubmission@bir.gov.ph. The return is complete once the BIR&rsquo;s validation report is attached.
+                </p>
+                {send && (
+                  <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-body-regular">
+                    <dt className="text-text-tertiary">Sent</dt>
+                    <dd className="text-text-primary">{when(send.sent_at)} · {send.method === "gmail" ? "by the app" : "by hand"}</dd>
+                    {send.result_at && (
+                      <>
+                        <dt className="text-text-tertiary">BIR&rsquo;s reply</dt>
+                        <dd className="text-text-primary">{when(send.result_at)}{send.result_note ? ` · ${send.result_note}` : ""}</dd>
+                      </>
+                    )}
+                  </dl>
+                )}
+                {(reports.length > 0 || dats.length > 0) && (
+                  <ul className="space-y-1 text-body-regular">
+                    {[...reports, ...dats].map((x) => (
+                      <li key={x.id}>
+                        <a href={`/filing-files/${x.id}`} target="_blank" rel="noopener" className="text-button-ghost-foreground hover:underline">{x.kind === "validation_report" ? "Validation report" : "DAT sent"}</a>
+                        <span className="text-caption-1-regular text-text-tertiary"> · {x.file_name} · {when(x.created_at)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {canAttach && esub !== "not_required" && <EsubmissionControls filingId={f.id} state={esub} configured={esubmissionMailEnv() !== null} />}
+              </div>
+            </Card>
+          )}
+
+          {books.length > 0 && (
+            <Card title="In the client's Books">
+              <ul className="space-y-3 text-body-regular">
+                {books.map((b) => (
+                  <li key={b.id} className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {b.entry_id ? (
+                        <Link href={`/app/clients/${client.id}/books/journal/${b.entry_id}`} className="text-button-ghost-foreground hover:underline">{bookKind[b.kind] ?? b.kind}</Link>
+                      ) : (
+                        <span className="text-text-primary">{bookKind[b.kind] ?? b.kind}</span>
+                      )}
+                      <Badge tone={bookStatus[b.status]?.tone ?? "neutral"}>{bookStatus[b.status]?.label ?? b.status}</Badge>
+                      <span className="tabular-nums text-text-secondary">{b.entry_date ? showDate(b.entry_date) : ""}{b.amount != null ? ` · ${peso.format(Number(b.amount))}` : ""}</span>
+                    </div>
+                    {b.note && <p className="text-caption-1-regular text-text-secondary">{b.note}</p>}
+                    {b.status === "failed" && canAttach && <RetryBookEntry filingId={f.id} rowId={b.id} />}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           {canAmend && (
             <Card title="Amend this return">
@@ -247,10 +333,25 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             </div>
           )}
           <div className="mt-4 space-y-3 border-t border-separator-border pt-4">
-            <p className="text-body-medium text-text-primary">Filed return and proof</p>
-            {(attachments ?? []).length === 0 ? (
-              <p className="text-caption-1-regular text-text-tertiary">Nothing attached yet. The client sees these under Returns.</p>
+            <p className="text-body-medium text-text-primary">Scanned copy</p>
+            {filedCopy ? (
+              <p className="text-body-regular">
+                <a href={`/filing-files/${filedCopy.id}`} target="_blank" rel="noopener" className="text-button-ghost-foreground hover:underline">{filedCopy.file_name}</a>
+                <span className="text-caption-1-regular text-text-tertiary"> · {when(filedCopy.created_at)}</span>
+              </p>
             ) : (
+              <p className="text-caption-1-regular text-text-tertiary">
+                {status === "owner_approved" || status === "filed" ? "Not attached yet. Needed for Filed & paid; the client sees it under Returns." : "Attached once the Owner approves the return."}
+              </p>
+            )}
+            {canAttach && (status === "owner_approved" || status === "filed") && (
+              <ReturnFileUpload filingId={f.id} kind="filed_copy" label={filedCopy ? "Replace the scanned copy" : "Attach the scanned copy"} />
+            )}
+          </div>
+          {(attachments ?? []).length > 0 && (
+          <div className="mt-4 space-y-3 border-t border-separator-border pt-4">
+            <p className="text-body-medium text-text-primary">Earlier attachments</p>
+            {(
               <ul className="space-y-1 text-body-regular">
                 {(attachments ?? []).map((a) => (
                   <li key={a.id}>
@@ -260,10 +361,8 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
                 ))}
               </ul>
             )}
-            {canAttach && (
-              <DocumentUpload clients={[{ id: f.client_id, name: client.name }]} docTypes={["filed_return", "payment_proof"]} months={[thisMonth]} defaultMonth={thisMonth} filingId={f.id} compact />
-            )}
           </div>
+          )}
         </Card>
       </div>
     </>

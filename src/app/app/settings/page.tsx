@@ -6,7 +6,7 @@ import { describeDue, FREQUENCY_SECTIONS, taxTypeOfForm } from "@/lib/deadlines/
 import type { DueRule, Frequency } from "@/lib/deadlines/engine";
 import { supabaseServer } from "@/lib/supabase/server";
 import { HolidayForm, RemoveHolidayButton, RuleEditor } from "./forms";
-import { AddPaymentAccountForm, PaymentDaysForm, ReplaceQrForm, ToggleAccountButton } from "./payment-forms";
+import { AddPaymentAccountForm, EditPaymentAccountForm, MoveAccountButtons, PaymentDaysForm, ReplaceQrForm, ToggleAccountButton } from "./payment-forms";
 
 export default function SettingsPage() {
   return (
@@ -158,7 +158,7 @@ async function PaymentSettings() {
   const owner = await requireOwner();
   const supabase = await supabaseServer();
   const [{ data: accounts }, { data: brand }] = await Promise.all([
-    supabase.from("brand_payment_accounts").select("id, kind, institution, account_name, account_number, purpose, instructions, qr_path, active").eq("brand_id", owner.staff.brandId).order("active", { ascending: false }).order("sort_order").order("institution"),
+    supabase.from("brand_payment_accounts").select("id, kind, institution, account_name, account_number, purpose, instructions, qr_path, active").eq("brand_id", owner.staff.brandId).order("sort_order").order("institution").order("id"),
     supabase.from("brands").select("soa_payment_days").eq("id", owner.staff.brandId).single(),
   ]);
   const rows = accounts ?? [];
@@ -169,13 +169,14 @@ async function PaymentSettings() {
     for (const s of data ?? []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl);
   }
   return (
-    <Card title="Where Clients Pay" actions={<span className="text-caption-1-regular text-text-tertiary">Shown on every statement under Pay Now</span>}>
+    <Card title="Where Clients Pay" actions={<span className="text-caption-1-regular text-text-tertiary">Clients choose one under Billing, in this order, and see only its QR</span>}>
       {rows.length === 0 ? (
-        <p className="mb-4 text-body-regular text-text-secondary">No accounts yet. Add the banks and e-wallets clients pay into, with their QR codes.</p>
+        <p className="mb-4 text-body-regular text-text-secondary">No payment channels yet. Add the banks and e-wallets clients pay into, with their QR codes.</p>
       ) : (
         <ul className="mb-4 divide-y divide-separator-border">
-          {rows.map((a) => (
-            <li key={a.id} className={`flex flex-wrap items-center gap-4 py-3 ${a.active ? "" : "opacity-60"}`}>
+          {rows.map((a, i) => (
+            <li key={a.id} className="flex flex-wrap items-center gap-4 py-3">
+              <MoveAccountButtons accountId={a.id} first={i === 0} last={i === rows.length - 1} label={a.institution} />
               {a.qr_path && signed.get(a.qr_path) ? (
                 // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from storage
                 <img src={signed.get(a.qr_path)} alt={`QR code for ${a.institution}`} className="size-16 rounded-lg border border-separator-border bg-white object-contain p-1" />
@@ -195,6 +196,7 @@ async function PaymentSettings() {
                 <ReplaceQrForm accountId={a.id} oldPath={a.qr_path} />
                 <ToggleAccountButton accountId={a.id} active={a.active} />
               </div>
+              <EditPaymentAccountForm accountId={a.id} values={{ kind: a.kind, institution: a.institution, account_name: a.account_name, account_number: a.account_number, purpose: a.purpose, instructions: a.instructions }} />
             </li>
           ))}
         </ul>

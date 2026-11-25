@@ -138,15 +138,14 @@ export function stepsFor(opts: { dueDate: IsoDate; periodEnd: IsoDate; periodSta
 }
 
 const DONE_FROM_STATUS: Record<FilingStatus, number> = {
-  // How many of steps 2–7 the filing status has completed.
+  // How many of steps 2–7 the filing status has completed. Filed & paid carries its
+  // scanned copy (decision 14), so it completes the proof step too.
   not_started: 0,
   prepared: 1,
   reviewed: 2,
   client_approved: 3,
   owner_approved: 4,
-  filed: 5,
-  paid: 5,
-  proof_uploaded: 6,
+  filed: 6,
 };
 
 export interface Risk {

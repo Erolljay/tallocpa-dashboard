@@ -12,6 +12,8 @@ export interface PaymentCheck {
   tax_status: "paid" | "partial" | "unpaid" | "not_applicable";
   tax_due: number;
   tax_paid: number;
+  /** The tax due is on a statement (it has an item in Collections). */
+  billed?: boolean;
   other_open: number;
 }
 
@@ -29,6 +31,10 @@ export function SignOffActions(props: {
   clientId?: string;
   /** Set when the viewer gives the final approval as acting approver (Q58): their limit. */
   actingLimit?: number | null;
+  /** An amended return (its tax due is what remains after the earlier return). */
+  amended?: boolean;
+  /** The scanned copy is attached (needed for Filed & paid). */
+  hasFiledCopy?: boolean;
 }) {
   if (props.actions.length === 0) return null;
   return (
@@ -40,7 +46,7 @@ export function SignOffActions(props: {
   );
 }
 
-function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null }) {
+function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit, amended = false, hasFiledCopy = true }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null; amended?: boolean; hasFiledCopy?: boolean }) {
   const [state, run, pending] = useActionState(advanceFilingAction.bind(null, filingId, action), {} as SignOffState);
   const id = (n: string) => `${action}-${n}`;
   const secondary = action === "kick_back" || action === "client_query";
@@ -48,7 +54,11 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
   return (
     <form action={run} className="space-y-3">
       {action === "prepare" && (
-        <Field label="Tax due on this return (₱)" htmlFor={id("tax_due")} hint="0 if nothing is payable.">
+        <Field
+          label={amended ? "Tax still due on this amended return (₱)" : "Tax due on this return (₱)"}
+          htmlFor={id("tax_due")}
+          hint={amended ? "After what the earlier return paid; 0 if nothing more is payable." : "0 for a nil return: it skips the client's approval."}
+        >
           <Input id={id("tax_due")} name="tax_due" type="number" min={0} step="0.01" required className="text-end tabular-nums" />
         </Field>
       )}
@@ -56,24 +66,22 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
       {action === "owner_approve" && <PaymentCheckView check={paymentCheck ?? null} taxDue={taxDue} paymentMode={paymentMode} clientId={actingLimit == null ? clientId : undefined} actingLimit={actingLimit ?? null} />}
 
       {action === "file" && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Filing reference" htmlFor={id("filing_reference")} hint="eFPS or eBIRForms reference number.">
-            <Input id={id("filing_reference")} name="filing_reference" required />
-          </Field>
-          <Field label="Filed on" htmlFor={id("filed_on")}>
-            <Input id={id("filed_on")} name="filed_on" type="date" required defaultValue={today()} />
-          </Field>
-        </div>
-      )}
-
-      {action === "pay" && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Payment reference" htmlFor={id("payment_reference")} hint={taxDue ? "Bank or eFPS confirmation number." : "Leave blank if nothing was payable."}>
-            <Input id={id("payment_reference")} name="payment_reference" required={Boolean(taxDue)} />
-          </Field>
-          <Field label="Paid on" htmlFor={id("paid_on")}>
-            <Input id={id("paid_on")} name="paid_on" type="date" required={Boolean(taxDue)} defaultValue={today()} />
-          </Field>
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Filing reference" htmlFor={id("filing_reference")} hint="eFPS or eBIRForms reference number.">
+              <Input id={id("filing_reference")} name="filing_reference" required />
+            </Field>
+            <Field label="Filed on" htmlFor={id("filed_on")}>
+              <Input id={id("filed_on")} name="filed_on" type="date" required defaultValue={today()} />
+            </Field>
+            <Field label="Payment reference" htmlFor={id("payment_reference")} hint={taxDue ? "Bank or eFPS confirmation number." : "Leave blank: nothing was payable."}>
+              <Input id={id("payment_reference")} name="payment_reference" required={Boolean(taxDue)} />
+            </Field>
+            <Field label="Paid on" htmlFor={id("paid_on")}>
+              <Input id={id("paid_on")} name="paid_on" type="date" required={Boolean(taxDue)} defaultValue={taxDue ? today() : undefined} />
+            </Field>
+          </div>
+          {!hasFiledCopy && <Notice tone="waiting">Attach the scanned copy (the return, the proof of payment and the attachments, in one file) under Return first.</Notice>}
         </div>
       )}
 
@@ -95,7 +103,7 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
 
 function needsNote(action: SignOffAction, audience: "staff" | "client") {
   if (action === "client_approve") return audience === "staff";
-  return ["kick_back", "client_query", "answer_query", "review", "prepare", "owner_approve", "send_proof"].includes(action);
+  return ["kick_back", "client_query", "answer_query", "review", "prepare", "owner_approve", "file"].includes(action);
 }
 
 function noteRequired(action: SignOffAction, audience: "staff" | "client") {
@@ -120,43 +128,48 @@ function noteLabel(action: SignOffAction, audience: "staff" | "client") {
 const checkTone = { paid: "done", partial: "waiting", unpaid: "blocked", not_applicable: "neutral" } as const;
 const checkWord = { paid: "Paid", partial: "Partly paid", unpaid: "Unpaid", not_applicable: "Nothing to pay" } as const;
 
-/** The payment check at the Owner's approval (Q21, Q25), with the tick to approve anyway. */
+/**
+ * The payment check at the final approval (decision 13): the client's payment for this
+ * return's own statement item. The approval waits until it is verified; other balances
+ * (the retainer) are shown, not checked.
+ */
 function PaymentCheckView({ check, taxDue, paymentMode, clientId, actingLimit }: { check: PaymentCheck | null; taxDue: number | null; paymentMode: string; clientId?: string; actingLimit: number | null }) {
   const short = check && (check.status === "partial" || check.status === "unpaid");
   const acting = actingLimit != null;
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-body-medium text-text-primary">Payment check</span>
+        <span className="text-body-medium text-text-primary">Payment for this return</span>
         {check && <Badge tone={checkTone[check.status]}>{checkWord[check.status]}</Badge>}
       </div>
       <dl className="grid gap-x-6 gap-y-1 text-body-regular sm:grid-cols-2">
-        <dt className="text-text-secondary">Tax on this return</dt>
+        <dt className="text-text-secondary">This return&rsquo;s item</dt>
         <dd className="tabular-nums text-text-primary">
           {paymentMode !== "firm_remits"
             ? `${taxDue ? peso.format(taxDue) : "—"} · client pays BIR directly`
             : check
-              ? `${peso.format(check.tax_paid)} paid of ${peso.format(check.tax_due)}`
+              ? check.tax_due > 0
+                ? check.billed === false
+                  ? `${peso.format(check.tax_due)} · not on a statement yet`
+                  : `${peso.format(check.tax_paid)} paid of ${peso.format(check.tax_due)}`
+                : "Nothing to pay"
               : "—"}
         </dd>
-        <dt className="text-text-secondary">Other balances due (retainer, charges)</dt>
-        <dd className="tabular-nums text-text-primary">{check ? (check.other_open > 0 ? `${peso.format(check.other_open)} unpaid` : "None") : "—"}</dd>
+        <dt className="text-text-secondary">Other balances (retainer, charges)</dt>
+        <dd className="tabular-nums text-text-primary">{check ? (check.other_open > 0 ? `${peso.format(check.other_open)} unpaid, not part of the check` : "None") : "—"}</dd>
       </dl>
       {clientId && (
         <Link href={`/app/collections/${clientId}`} className="text-body-regular text-button-ghost-foreground hover:underline">Open the client in Collections</Link>
       )}
-      {acting && (
-        <Notice tone={short ? "blocked" : "waiting"}>
-          {short
-            ? "Not fully paid. Only the Owner can approve this return; leave it for them."
-            : `You approve as acting approver (limit ${peso.format(actingLimit)} tax due). The Owner sees this in the daily digest.`}
+      {short && (
+        <Notice tone="blocked">
+          {check?.billed === false
+            ? "The tax due is not on the client's statement yet: run billing for the client in Collections. Approve once its payment is verified."
+            : "The client's payment for this return is not verified yet. Approve once its item in Collections is paid."}
         </Notice>
       )}
-      {short && !acting && (
-        <label className="flex items-center gap-2 text-body-regular text-text-primary">
-          <input type="checkbox" name="approve_unpaid" className="size-4" />
-          Approve even though unpaid (the balance stays a client receivable{paymentMode === "firm_remits" ? ": an advance to the client for taxes" : ""})
-        </label>
+      {acting && !short && (
+        <Notice tone="waiting">{`You approve as acting approver (limit ${peso.format(actingLimit)} tax due). The Owner sees this in the daily digest.`}</Notice>
       )}
     </div>
   );
