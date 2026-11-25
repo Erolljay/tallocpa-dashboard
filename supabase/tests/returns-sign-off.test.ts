@@ -251,7 +251,7 @@ describe.skipIf(!url)("returns: five-step sign-off, filed copy, Books entries, e
       const rows = (await db.query(
         `select r.status, r.entry_date::text, r.amount::text, r.entry_id, j.book, j.source from public.return_book_entries r join public.journal_entries j on j.id = r.entry_id
          where r.filing_instance_id = $1 and r.kind = 'dues_payment' order by r.entry_date`, [filing["2550Q"]])).rows;
-      expect(rows.map(({ entry_id: _, ...x }) => x)).toEqual([
+      expect(rows.map((x) => ({ status: x.status, entry_date: x.entry_date, amount: x.amount, book: x.book, source: x.source }))).toEqual([
         { status: "posted", entry_date: "2026-04-20", amount: "600.00", book: "cash_disbursements", source: "dues_payment" },
         { status: "posted", entry_date: "2026-04-21", amount: "400.00", book: "cash_disbursements", source: "dues_payment" },
       ]);

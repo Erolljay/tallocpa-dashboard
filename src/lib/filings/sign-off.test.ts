@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableActions, stepIndex, type FilingState, type Viewer } from "./sign-off";
+import { availableActions, isNilReturn, stepIndex, type FilingState, type Viewer } from "./sign-off";
 
 const owner: Viewer = { userId: "o", role: "owner", assignedAs: [] };
 const preparer: Viewer = { userId: "p", role: "staff", assignedAs: ["preparer"] };
@@ -25,28 +25,33 @@ describe("availableActions", () => {
     expect(availableActions(at("reviewed"), owner)).toEqual(["client_approve", "kick_back"]);
     expect(availableActions(at("reviewed", { openQuery: "Why?" }), preparer)).toEqual(["answer_query"]);
   });
-  it("keeps final approval with the Owner", () => {
-    expect(availableActions(at("client_approved"), owner)).toEqual(["owner_approve"]);
-    expect(availableActions(at("client_approved"), reviewer)).toEqual([]);
+  it("keeps final approval with the Owner; the reviewer can still send it back", () => {
+    expect(availableActions(at("client_approved"), owner)).toEqual(["owner_approve", "kick_back"]);
+    expect(availableActions(at("client_approved"), reviewer)).toEqual(["kick_back"]);
+    expect(availableActions(at("client_approved"), preparer)).toEqual([]);
   });
   it("lets the acting approver give it within the limit, not on their own work", () => {
     const acting: Viewer = { ...reviewer, actingLimit: 50000 };
-    expect(availableActions(at("client_approved", { taxDue: 50000 }), acting)).toEqual(["owner_approve"]);
-    expect(availableActions(at("client_approved", { taxDue: 50000.01 }), acting)).toEqual([]);
-    expect(availableActions(at("client_approved", { taxDue: 100, preparedBy: "r" }), acting)).toEqual([]);
+    expect(availableActions(at("client_approved", { taxDue: 50000 }), acting)).toEqual(["owner_approve", "kick_back"]);
+    expect(availableActions(at("client_approved", { taxDue: 50000.01 }), acting)).toEqual(["kick_back"]);
+    expect(availableActions(at("client_approved", { taxDue: 100, preparedBy: "r" }), acting)).toEqual(["kick_back"]);
   });
-  it("lets assigned staff record filing, payment and proof", () => {
+  it("lets assigned staff record Filed & paid, the last step", () => {
     expect(availableActions(at("owner_approved"), preparer)).toEqual(["file"]);
-    expect(availableActions(at("filed"), preparer)).toEqual(["pay"]);
-    expect(availableActions(at("paid"), reviewer)).toEqual(["send_proof"]);
-    expect(availableActions(at("proof_uploaded"), owner)).toEqual([]);
+    expect(availableActions(at("owner_approved"), stranger)).toEqual([]);
+    expect(availableActions(at("filed"), owner)).toEqual([]);
   });
 });
 
 describe("stepIndex", () => {
-  it("counts steps done", () => {
+  it("counts the five steps done", () => {
     expect(stepIndex("not_started")).toBe(0);
     expect(stepIndex("reviewed")).toBe(2);
-    expect(stepIndex("proof_uploaded")).toBe(7);
+    expect(stepIndex("filed")).toBe(5);
+  });
+  it("knows a nil return", () => {
+    expect(isNilReturn(0)).toBe(true);
+    expect(isNilReturn(null)).toBe(false);
+    expect(isNilReturn(10)).toBe(false);
   });
 });

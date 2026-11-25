@@ -79,7 +79,7 @@ async function Overview() {
   const totalCredit = [...creditByClient.values()].reduce((a, b) => a + b, 0);
   // Q26: tax money received from clients and not yet remitted to BIR is held for them, not earned.
   const held = ((taxPaid.data ?? []) as unknown as { paid: string; filing_instances: { status: string } | null }[])
-    .filter((r) => !["paid", "proof_uploaded"].includes(r.filing_instances?.status ?? ""))
+    .filter((r) => r.filing_instances?.status !== "filed")
     .reduce((s, r) => s + Number(r.paid), 0);
 
   const clientList = (clients.data ?? []) as Client[];

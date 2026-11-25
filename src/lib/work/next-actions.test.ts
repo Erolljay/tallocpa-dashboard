@@ -41,6 +41,6 @@ describe("my work", () => {
     expect(f("not_started", "2027-04-01")).toMatchObject({ role: "preparer", label: "Prepare 1601-C March 2027", period: "2027-03", due: "2027-04-06", href: "/app/filings/f1" });
     expect(f("prepared", "2027-04-07")).toMatchObject({ role: "reviewer", label: "Review 1601-C March 2027" });
     expect(f("client_approved", "2027-04-09")).toMatchObject({ role: "owner", label: "Approve 1601-C March 2027" });
-    expect(f("proof_uploaded", "2027-04-12")).toBeNull();
+    expect(f("filed", "2027-04-12")).toBeNull();
   });
 });
