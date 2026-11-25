@@ -2,24 +2,20 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { ageOpenItems, AGING_BUCKETS, agingLabel, describeBillingDays, nextBillingDate, totalHeld } from "@/lib/collections/collections";
+import { ageOpenItems, AGING_BUCKETS, agingLabel, groupReady, readyReasonLabel, totalHeld, type ReadyItem } from "@/lib/collections/collections";
 import { addDays } from "@/lib/deadlines/dates";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
-import { RunBillingForm } from "./forms";
+import { cx } from "@/utils/cx";
+import { RunReadyButton } from "./forms";
 
 export default function CollectionsPage() {
   return (
     <>
       <PageHeader
         title="Collections"
-        description="What each client owes, what they have paid, and the billing runs on the 10th and 20th."
-        actions={
-          <Suspense fallback={null}>
-            <RunBilling />
-          </Suspense>
-        }
+        description="What is ready to bill, what each client owes, and what they have paid."
       />
       <Suspense fallback={<Skeleton rows={8} />}>
         <Overview />
@@ -28,28 +24,26 @@ export default function CollectionsPage() {
   );
 }
 
-async function RunBilling() {
-  await requireOwner();
-  return <RunBillingForm clientId={null} today={manilaToday()} />;
-}
-
 interface OpenDue { client_id: string; due_on: string; open_amount: string; kind: string; soa_id: string | null }
-interface Client { id: string; name: string; code: string; billing_days: number[]; payment_mode: string; status: string }
+interface Client { id: string; name: string; code: string; payment_mode: string; status: string }
 
 async function Overview() {
   await requireOwner();
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const [dues, credits, clients, remittance, notReady, soas, proofs] = await Promise.all([
+  const [ready, dues, credits, clients, remittance, notReady, soas, proofs] = await Promise.all([
+    // Decision 16c: the Owner runs billing; this is what a run would bill today.
+    supabase.rpc("ready_to_bill", { p_date: today }),
     supabase.from("due_balances").select("client_id, due_on, open_amount, kind, soa_id").gt("open_amount", 0),
     supabase.from("deposit_balances").select("client_id, unallocated").gt("unallocated", 0),
-    supabase.from("clients").select("id, name, code, billing_days, payment_mode, status").in("status", ["onboarding", "active"]).order("name"),
+    supabase.from("clients").select("id, name, code, payment_mode, status").in("status", ["onboarding", "active"]).order("name"),
     supabase.rpc("cash_for_remittance"),
     supabase
       .from("filing_instances")
-      .select("id, form, period_label, due_date, status, clients!inner(id, name, payment_mode, billing_days)")
+      .select("id, form, period_label, due_date, status, clients!inner(id, name, payment_mode)")
       .eq("clients.payment_mode", "firm_remits")
-      .in("status", ["not_started", "prepared"])
+      .in("status", ["not_started", "prepared", "reviewed"])
+      .or("tax_due.is.null,tax_due.gt.0")
       .gte("due_date", today)
       .lte("due_date", addDays(today, 20))
       .order("due_date"),
@@ -89,12 +83,8 @@ async function Overview() {
     .filter((r) => r.aging.total > 0 || r.credit > 0)
     .sort((a, b) => b.aging.overdue - a.aging.overdue || b.aging.total - a.aging.total);
 
-  const nextRuns = new Map<string, number>();
-  for (const c of clientList) {
-    const d = nextBillingDate(c.billing_days, today);
-    if (d) nextRuns.set(d, (nextRuns.get(d) ?? 0) + 1);
-  }
-  const upcoming = [...nextRuns.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(0, 2);
+  const readyClients = groupReady((ready.data ?? []) as ReadyItem[]);
+  const readyTotal = readyClients.reduce((sum, c) => sum + Math.round(c.total * 100), 0) / 100;
 
   const soaRows = (soas.data ?? []) as unknown as { id: string; reference: string; billing_date: string; due_on: string; client_id: string; clients: { name: string } | null }[];
   const soaIds = soaRows.map((s) => s.id);
@@ -109,7 +99,11 @@ async function Overview() {
     soaTotals.set(d.soa_id, t);
   }
 
-  const notReadyRows = (notReady.data ?? []) as unknown as { id: string; form: string; period_label: string; due_date: string; status: keyof typeof filingStatusTone; clients: { id: string; name: string } }[];
+  // A reviewed return two days or less from its deadline is in Ready to bill instead.
+  const readySoon = addDays(today, 2);
+  const notReadyRows = ((notReady.data ?? []) as unknown as { id: string; form: string; period_label: string; due_date: string; status: keyof typeof filingStatusTone; clients: { id: string; name: string } }[]).filter(
+    (f) => !(f.status === "reviewed" && f.due_date <= readySoon),
+  );
 
   return (
     <div className="space-y-8">
@@ -119,6 +113,50 @@ async function Overview() {
         <Stat label="Client credits" value={totalCredit} note="Overpayments, used on the next statement." />
         <Stat label="Cash for remittance" value={held.total} note="Tax and contribution money received, not yet remitted." />
       </div>
+
+      <Card
+        title="Ready to bill"
+        actions={readyClients.length > 1 ? <RunReadyButton clientId={null} label="Run Billing for All Ready" variant="primary" /> : undefined}
+      >
+        {ready.error ? (
+          <p className="text-body-regular text-text-error-primary">Could not load Ready to bill: {ready.error.message}</p>
+        ) : readyClients.length === 0 ? (
+          <p className="text-body-regular text-text-secondary">Nothing to bill today. Returns appear here once the client approves them, or two days before the BIR deadline if still waiting; retainers from the 1st of the month.</p>
+        ) : (
+          <>
+            <p className="mb-3 text-body-regular text-text-secondary">
+              {readyClients.length} client{readyClients.length === 1 ? "" : "s"}, {peso.format(readyTotal)} in all. Nothing is billed until you run billing; each run issues one statement per client, with the month&apos;s retainer if not yet billed.
+            </p>
+            <ul className="divide-y divide-separator-border">
+              {readyClients.map((c) => (
+                <li key={c.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                      <Link href={`/app/collections/${c.id}`} className="text-body-medium text-text-primary hover:underline">{c.name}</Link>
+                      <span className="text-caption-1-regular text-text-tertiary">{c.code}</span>
+                    </p>
+                    <ul className="mt-1.5 space-y-1">
+                      {c.items.map((i) => (
+                        <li key={`${i.kind}-${i.filing_instance_id ?? i.due_id ?? i.description}`} className="flex items-center justify-between gap-3 text-body-regular">
+                          <span className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="text-text-secondary">{i.description}</span>
+                            {i.kind === "tax" && <Badge tone={i.reason === "client_approved" ? "done" : "waiting"}>{readyReasonLabel(i)}</Badge>}
+                          </span>
+                          <span className="amount shrink-0 text-text-primary">{peso.format(Number(i.amount))}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2 sm:w-44">
+                    <span className="amount text-body-medium text-text-primary">{peso.format(c.total)}</span>
+                    <RunReadyButton clientId={c.id} label="Run Billing" variant={readyClients.length === 1 ? "primary" : "secondary"} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Card>
 
       {toVerify.length > 0 && (
         <Card title="Payments to verify" actions={<span className="text-caption-1-regular text-text-tertiary">Proofs of payment uploaded by clients</span>}>
@@ -145,43 +183,24 @@ async function Overview() {
         </Card>
       )}
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <Card title="Next billing">
-          {upcoming.length === 0 ? (
-            <p className="text-body-regular text-text-secondary">No active clients.</p>
-          ) : (
-            <ul className="space-y-3">
-              {upcoming.map(([d, n]) => (
-                <li key={d} className="flex items-baseline justify-between gap-4">
-                  <span className="text-headline-medium text-text-primary">{showDate(d)}</span>
-                  <span className="text-body-regular text-text-secondary">{n} client{n === 1 ? "" : "s"} scheduled</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-4 text-body-regular text-text-secondary">
-            Billing runs by itself early each billing day. A statement is issued only when there is something new on it: the month&apos;s retainer, a reviewed return the firm remits, or a contribution or charge you added.
-          </p>
-        </Card>
-        <Card title="Returns not ready to bill" actions={<span className="text-caption-1-regular text-text-tertiary">Firm-remits clients, due in the next 20 days</span>}>
-          {notReadyRows.length === 0 ? (
-            <p className="text-body-regular text-text-secondary">Every return due soon is reviewed and ready to bill.</p>
-          ) : (
-            <ul className="divide-y divide-separator-border text-body-regular">
-              {notReadyRows.map((f) => (
-                <li key={f.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
-                  <span className="min-w-0">
-                    <Link href={`/app/filings/${f.id}`} className="font-medium text-button-ghost-foreground hover:underline">{f.form}</Link>{" "}
-                    <span className="text-text-primary">{f.clients.name}</span>
-                    <span className="block text-caption-1-regular text-text-tertiary">{f.period_label} · due {showDate(f.due_date)}</span>
-                  </span>
-                  <Badge tone={filingStatusTone[f.status]}>{filingStatusLabel[f.status]}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </section>
+      <Card title="Returns not ready to bill" actions={<span className="text-caption-1-regular text-text-tertiary">Firm-remits clients, due in the next 20 days</span>}>
+        {notReadyRows.length === 0 ? (
+          <p className="text-body-regular text-text-secondary">Every return due soon is approved by the client or ready to bill.</p>
+        ) : (
+          <ul className="divide-y divide-separator-border text-body-regular">
+            {notReadyRows.map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+                <span className="min-w-0">
+                  <Link href={`/app/filings/${f.id}`} className="font-medium text-button-ghost-foreground hover:underline">{f.form}</Link>{" "}
+                  <span className="text-text-primary">{f.clients.name}</span>
+                  <span className="block text-caption-1-regular text-text-tertiary">{f.period_label} · due {showDate(f.due_date)}</span>
+                </span>
+                <Badge tone={filingStatusTone[f.status]}>{f.status === "reviewed" ? "Waiting for the client" : filingStatusLabel[f.status]}</Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {held.total > 0 && (
         <Card title="Cash for remittance" actions={<span className="text-caption-1-regular text-text-tertiary">Held until the return is Filed &amp; paid or the contribution is remitted</span>}>
@@ -226,7 +245,7 @@ async function Overview() {
                   <tr key={client.id} className="border-t border-separator-border first:border-t-0 hover:bg-background-secondary-hover">
                     <td className="px-4 py-3">
                       <Link href={`/app/collections/${client.id}`} className="font-medium text-text-primary hover:underline">{client.name}</Link>
-                      <p className="text-caption-1-regular text-text-tertiary">{client.code} · billed {describeBillingDays(client.billing_days)}</p>
+                      <p className="text-caption-1-regular text-text-tertiary">{client.code}</p>
                     </td>
                     {AGING_BUCKETS.map((b) => (
                       <td key={b} className={`amount px-4 py-3 ${b !== "current" && aging.buckets[b] > 0 ? "font-medium text-text-error-primary" : "text-text-primary"}`}>
@@ -256,7 +275,7 @@ async function Overview() {
       <section>
         <h2 className="mb-3 text-title-3-semibold text-text-primary">Recent statements</h2>
         {soaRows.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">No statements yet. The first ones are issued on the next billing day.</p>
+          <p className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-8 text-center text-body-regular text-text-secondary">No statements yet. Run billing from Ready to bill to issue the first ones.</p>
         ) : (
           <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
             <table className="w-full min-w-[40rem] text-body-regular">
@@ -297,7 +316,7 @@ function Stat({ label, value, note, tone }: { label: string; value: number; note
   return (
     <Card>
       <p className="text-body-medium text-text-secondary">{label}</p>
-      <p className={`mt-2 text-title-1-semibold tabular-nums ${tone === "blocked" ? "text-text-error-primary" : "text-text-primary"}`}>{peso.format(value)}</p>
+      <p className={cx("mt-2 text-title-1-semibold tabular-nums", tone === "blocked" ? "text-text-error-primary" : "text-text-primary")}>{peso.format(value)}</p>
       <p className="mt-2 text-body-regular text-text-secondary">{note}</p>
     </Card>
   );

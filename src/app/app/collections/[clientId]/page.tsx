@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { ageOpenItems, describeBillingDays, dueKindLabel, methodLabel, nextBillingDate, totalHeld, type DepositMethod, type DueKind, type RemittanceItem } from "@/lib/collections/collections";
+import { ageOpenItems, dueKindLabel, methodLabel, readyReasonLabel, toCents, totalHeld, type DepositMethod, type DueKind, type ReadyItem, type RemittanceItem } from "@/lib/collections/collections";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
-import { AddChargeForm, ApplyCreditButton, BillingDaysForm, RecordDepositForm, RemittedForm, RunBillingForm, VoidDepositForm, WaiveDueForm } from "../forms";
+import { AddChargeForm, ApplyCreditButton, RecordDepositForm, RemittedForm, RunBillingForm, VoidDepositForm, WaiveDueForm } from "../forms";
 
 export default function ClientCollectionsPage(props: PageProps<"/app/collections/[clientId]">) {
   return (
@@ -51,10 +51,12 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
   await requireOwner();
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const { data: client } = await supabase.from("clients").select("id, name, code, billing_days, payment_mode, brand_id").eq("id", clientId).maybeSingle();
+  const { data: client } = await supabase.from("clients").select("id, name, code, payment_mode, brand_id").eq("id", clientId).maybeSingle();
   if (!client) notFound();
 
-  const [dues, deposits, soas, accounts, staff, remittance] = await Promise.all([
+  const [ready, dues, deposits, soas, accounts, staff, remittance] = await Promise.all([
+    // Decision 16c: what a billing run would bill for this client today.
+    supabase.rpc("ready_to_bill", { p_date: today }).eq("client_id", clientId),
     supabase.from("due_balances").select("id, soa_id, kind, description, due_on, amount, paid, open_amount, waived_at, waive_reason").eq("client_id", clientId).order("due_on").order("created_at"),
     supabase.from("deposit_balances").select("id, received_on, amount, allocated, unallocated, method, reference, bir_invoice_number, note, voided_at, void_reason, payment_account_id, deposited_by").eq("client_id", clientId).order("received_on", { ascending: false }),
     supabase.from("soas").select("id, reference, billing_date, due_on").eq("client_id", clientId).order("billing_date", { ascending: false }),
@@ -75,7 +77,8 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
   const credit = deps.reduce((s, d) => s + Number(d.unallocated), 0);
   const accountLabel = new Map((accounts.data ?? []).map((a) => [a.id, `${a.institution} ${maskNumber(a.account_number)}${a.purpose === "client_tax_funds" ? " (tax funds)" : ""}`]));
   const staffName = new Map((staff.data ?? []).map((s) => [s.user_id, s.full_name]));
-  const next = nextBillingDate(client.billing_days, today);
+  const readyItems = (ready.data ?? []) as ReadyItem[];
+  const readyTotal = readyItems.reduce((sum, i) => sum + toCents(i.amount), 0) / 100;
   // Decision 16: tax and contribution items with money received, newest first; held until remitted.
   const remitItems = ((remittance.data ?? []) as RemittanceItem[]).filter((r) => Number(r.received) > 0 || (r.kind === "contribution" && r.remitted));
   const held = totalHeld(remitItems.map((r) => ({ client_id: clientId, held: r.held }))).total;
@@ -86,7 +89,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         title={client.name}
         description={
           <>
-            {client.code} · {client.payment_mode === "firm_remits" ? "We remit this client's taxes, so reviewed returns are billed." : "The client pays BIR directly; we bill fees and charges only."}{" "}
+            {client.code} · {client.payment_mode === "firm_remits" ? "We remit this client's taxes, so returns are billed once the client approves them (or two days before the deadline)." : "The client pays BIR directly; we bill fees and charges only."}{" "}
             <Link href={`/app/clients/${client.id}`} className="text-button-ghost-foreground hover:underline">Client details</Link>
           </>
         }
@@ -110,9 +113,20 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
             <p className="mt-2 text-body-regular text-text-secondary">Tax and contribution money received, not yet remitted.</p>
           </Card>
           <Card>
-            <p className="text-body-medium text-text-secondary">Billed on the {describeBillingDays(client.billing_days)}</p>
-            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{next ? showDate(next) : "—"}</p>
-            <p className="mt-2 text-body-regular text-text-secondary">Next billing run.</p>
+            <p className="text-body-medium text-text-secondary">Ready to bill</p>
+            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(readyTotal)}</p>
+            {readyItems.length === 0 ? (
+              <p className="mt-2 text-body-regular text-text-secondary">Nothing to bill today.</p>
+            ) : (
+              <ul className="mt-2 space-y-0.5 text-body-regular text-text-secondary">
+                {readyItems.map((i) => (
+                  <li key={`${i.kind}-${i.filing_instance_id ?? i.due_id ?? i.description}`}>
+                    {i.description}
+                    {i.kind === "tax" ? ` · ${readyReasonLabel(i)}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
 
@@ -134,9 +148,6 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
                   Waiting for the next statement: {unbilled.map((d) => d.description).join("; ")}.
                 </p>
               )}
-            </Card>
-            <Card title="Billing Days">
-              <BillingDaysForm clientId={client.id} days={client.billing_days} />
             </Card>
           </div>
         </div>

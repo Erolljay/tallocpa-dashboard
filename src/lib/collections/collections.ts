@@ -61,38 +61,60 @@ export function ageOpenItems(items: { due_on: string; open_amount: number | stri
   return { buckets: mapValues(cents, fromCents), total: fromCents(total), overdue: fromCents(total - cents.current) };
 }
 
-/** The next billing date on or after `today` for a client billed on `days` of the month (1–28). */
-export function nextBillingDate(days: readonly number[], today: string): string | null {
-  const valid = [...new Set(days)].filter((d) => Number.isInteger(d) && d >= 1 && d <= 28).sort((a, b) => a - b);
-  if (valid.length === 0) return null;
-  const [y, m, d] = today.split("-").map(Number);
-  const sameMonth = valid.find((day) => day >= d);
-  if (sameMonth !== undefined) return iso(y, m, sameMonth);
-  return m === 12 ? iso(y + 1, 1, valid[0]) : iso(y, m + 1, valid[0]);
+/** Why an item is in Ready to bill (public.ready_to_bill, decision 16c). */
+export type ReadyReason = "retainer" | "client_approved" | "due_soon" | "charge";
+
+/** One item a billing run would put on the client's statement now. */
+export interface ReadyItem {
+  client_id: string;
+  client_code: string;
+  client_name: string;
+  kind: DueKind;
+  description: string;
+  amount: number | string;
+  reason: ReadyReason;
+  /** Days from the billing date to the return's BIR deadline (tax items only). */
+  days_to_due: number | null;
+  filing_instance_id: string | null;
+  due_id: string | null;
 }
 
-/** "10th and 20th", "10th" — how a client's billing days read in a sentence. */
-export function describeBillingDays(days: readonly number[]): string {
-  const sorted = [...new Set(days)].sort((a, b) => a - b).map(ordinal);
-  if (sorted.length <= 1) return sorted[0] ?? "—";
-  return `${sorted.slice(0, -1).join(", ")} and ${sorted.at(-1)}`;
+/** "Client approved", "Due in 2 days", "Due today", "Past due" — why a return is ready to bill. */
+export function readyReasonLabel(item: Pick<ReadyItem, "reason" | "days_to_due">): string {
+  switch (item.reason) {
+    case "client_approved":
+      return "Client approved";
+    case "due_soon": {
+      const d = item.days_to_due ?? 0;
+      if (d < 0) return "Past due";
+      if (d === 0) return "Due today";
+      return `Due in ${d} day${d === 1 ? "" : "s"}`;
+    }
+    case "retainer":
+      return "This month's retainer";
+    case "charge":
+      return "Not yet billed";
+  }
 }
 
-export function ordinal(n: number): string {
-  const tens = n % 100;
-  if (tens >= 11 && tens <= 13) return `${n}th`;
-  return `${n}${{ 1: "st", 2: "nd", 3: "rd" }[n % 10] ?? "th"}`;
+export interface ReadyClient {
+  id: string;
+  code: string;
+  name: string;
+  items: ReadyItem[];
+  total: number;
 }
 
-/** Parses "10, 20" or "10 20" into billing days, or an error sentence. */
-export function parseBillingDays(input: string): { days: number[] } | { error: string } {
-  const parts = input.split(/[\s,]+/).filter(Boolean);
-  if (parts.length === 0) return { error: "Enter at least one billing day." };
-  const days = parts.map(Number);
-  if (days.some((d) => !Number.isInteger(d) || d < 1 || d > 28)) return { error: "Billing days are whole numbers from 1 to 28." };
-  const unique = [...new Set(days)].sort((a, b) => a - b);
-  if (unique.length > 4) return { error: "Use at most four billing days." };
-  return { days: unique };
+/** Groups Ready to bill rows by client, keeping the database's order; totals in centavos. */
+export function groupReady(rows: ReadyItem[]): ReadyClient[] {
+  const out = new Map<string, { id: string; code: string; name: string; items: ReadyItem[]; cents: number }>();
+  for (const r of rows) {
+    const c = out.get(r.client_id) ?? { id: r.client_id, code: r.client_code, name: r.client_name, items: [], cents: 0 };
+    c.items.push(r);
+    c.cents += toCents(r.amount);
+    out.set(r.client_id, c);
+  }
+  return [...out.values()].map(({ cents, ...c }) => ({ ...c, total: fromCents(cents) }));
 }
 
 export function toCents(v: number | string): number {
@@ -105,10 +127,6 @@ function fromCents(c: number): number {
 
 function mapValues<K extends string, A, B>(o: Record<K, A>, f: (a: A) => B): Record<K, B> {
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v as A)])) as Record<K, B>;
-}
-
-function iso(y: number, m: number, d: number): string {
-  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
 export type AllocationRow = {
