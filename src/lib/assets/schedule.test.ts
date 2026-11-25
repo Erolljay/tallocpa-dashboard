@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accumulated, bookFor, depreciationFor, monthTotals, startMonth, taxFor, type Asset } from "./schedule";
+import { accumulated, bookFor, depreciationFor, monthTotals, rangeTotals, startMonth, taxFor, type Asset } from "./schedule";
 
 const asset = (over: Partial<Asset> = {}): Asset => ({
   id: "a", number: 3, source: "register", documentId: "d", description: "Office tables", assetAccount: "Furniture and Fixtures",
@@ -35,5 +35,11 @@ describe("straight-line depreciation", () => {
     expect(t.book).toBe(141665 * 2);
     expect(t.waiting.map((a) => a.number)).toEqual([4]);
     expect(monthTotals([asset()], "2027-03-01").additions).toBe(8500000);
+  });
+
+  it("sums a range of months, books and tax", () => {
+    const car = asset({ cost: 120000000, lifeMonths: 60, taxLifeMonths: 120, acquiredOn: "2026-12-10" });
+    expect(rangeTotals([car], "2027-01-01", "2027-03-31")).toEqual({ book: 1999998 * 3, tax: 999999 * 3 });
+    expect(rangeTotals([car], "2027-04-01", "2027-03-31")).toEqual({ book: 0, tax: 0 });
   });
 });

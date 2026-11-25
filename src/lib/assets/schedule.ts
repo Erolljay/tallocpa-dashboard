@@ -74,3 +74,27 @@ export function monthTotals(assets: Asset[], month: string) {
     waiting: assets.filter((a) => a.status === "setup"),
   };
 }
+
+/** Depreciation over a date range (each month whose first day falls in it), books and tax. */
+export function rangeTotals(assets: Asset[], from: string, to: string): { book: Centavos; tax: Centavos } {
+  let book = 0;
+  let tax = 0;
+  if (to < from) return { book, tax };
+  let y = Number(from.slice(0, 4));
+  let m = Number(from.slice(5, 7));
+  if (Number(from.slice(8, 10)) > 1) m += 1;
+  for (;;) {
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    const month = `${y}-${String(m).padStart(2, "0")}-01`;
+    if (month > to) break;
+    for (const a of assets) {
+      book += bookFor(a, month);
+      tax += taxFor(a, month);
+    }
+    m += 1;
+  }
+  return { book, tax };
+}

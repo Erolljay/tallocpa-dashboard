@@ -14,6 +14,8 @@ import type { Control, NormalSide } from "@/lib/ledger/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { lookupParties } from "@/lib/parties/lookup";
 import { loadPayrollContext } from "@/lib/payroll/load";
+import { loadAssets } from "@/lib/assets/load";
+import { rangeTotals } from "@/lib/assets/schedule";
 import type { Party } from "@/lib/parties/format";
 
 type Supabase = Awaited<ReturnType<typeof supabaseServer>>;
@@ -199,7 +201,16 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
     movements(yearStart, dayBefore(periodStart)),
     db.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("status", "suggested").gte("entry_date", yearStart).lte("entry_date", periodEnd),
   ]);
-  return { booksStart: books.books_start as string, period, earlier, suggested: count ?? 0 };
+  // Decision 17: the income tax return uses the fixed asset register's tax column.
+  const assets = await loadAssets(db, clientId);
+  const depreciation = assets.length
+    ? (() => {
+        const p = rangeTotals(assets, periodStart, periodEnd);
+        const e = rangeTotals(assets, yearStart, dayBefore(periodStart));
+        return { periodBook: p.book, periodTax: p.tax, earlierBook: e.book, earlierTax: e.tax };
+      })()
+    : undefined;
+  return { booksStart: books.books_start as string, period, earlier, suggested: count ?? 0, ...(depreciation ? { depreciation } : {}) };
 }
 
 /** The year's financial statements at the period end, for an annual return's balance sheet schedule. */
