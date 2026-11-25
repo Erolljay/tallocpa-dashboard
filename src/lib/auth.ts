@@ -46,6 +46,13 @@ export async function requireOwner() {
   return id;
 }
 
+/** The Owner or a reviewer: Firm → Leads (reviewers see the leads assigned to them). */
+export async function requireOwnerOrReviewer() {
+  const id = await requireStaff();
+  if (id.staff.role === "staff") redirect("/app?error=owner_only");
+  return id;
+}
+
 /** Where a person lands after signing in. */
 export function homeFor(id: Identity): string {
   if (id.staff) return "/app";
