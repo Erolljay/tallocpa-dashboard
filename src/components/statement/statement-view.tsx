@@ -2,35 +2,25 @@ import { Lockup } from "@/components/brand/lockup";
 import { Badge, Card, peso } from "@/components/ui";
 import { firmBlockLines } from "@/lib/brand/profile";
 import { showDate } from "@/lib/filings/labels";
-import { statementStatus, type PaymentProof, type Statement, type StatementStatus } from "@/lib/collections/statement";
+import { statementStatus, type Statement, type StatementStatus } from "@/lib/collections/statement";
 import { PayNow } from "./pay-now";
 import { PrintButton } from "./print-button";
-import { ProofReview } from "./proof-review";
+import { PaymentsList } from "./payments-list";
 
 const statusBadge: Record<StatementStatus, { tone: "done" | "waiting" | "blocked" | "neutral"; label: string }> = {
   paid: { tone: "done", label: "Paid" },
-  for_verification: { tone: "waiting", label: "For verification" },
+  for_verification: { tone: "waiting", label: "Pending verification" },
   overdue: { tone: "blocked", label: "Overdue" },
   due: { tone: "neutral", label: "Unpaid" },
 };
 
-const proofBadge: Record<PaymentProof["status"], { tone: "done" | "waiting" | "blocked"; label: string }> = {
-  for_verification: { tone: "waiting", label: "For verification" },
-  verified: { tone: "done", label: "Verified" },
-  rejected: { tone: "blocked", label: "Rejected" },
-};
-
-const proofMethod: Record<PaymentProof["method"], string> = {
-  transfer: "Online transfer",
-  check: "Check",
-  deposit: "Bank deposit",
-};
-
 /**
  * One Statement of Account, as the Owner and the client both see it (spec §3.9).
- * The client uploads proof of payment under Pay Now; the Owner verifies it here.
+ * The client uploads proof of payment under Pay; the Owner verifies it here.
+ * `payments={false}` leaves out this statement's payments (portal Billing lists
+ * all payments in one place).
  */
-export function StatementView({ s, today, owner = false }: { s: Statement; today: string; owner?: boolean }) {
+export function StatementView({ s, today, owner = false, payments = true }: { s: Statement; today: string; owner?: boolean; payments?: boolean }) {
   const settled = s.totalDue <= 0;
   const pending = s.proofs.filter((p) => p.status === "for_verification").length;
   const status = statusBadge[statementStatus(s.totalDue, pending, s.soa.due_on, today)];
@@ -160,49 +150,19 @@ export function StatementView({ s, today, owner = false }: { s: Statement; today
             the date of this statement or prior to the deadline for tax due. Please make all checks payable to{" "}
             <span className="font-semibold text-text-primary">&ldquo;{payee}&rdquo;</span>.
           </p>
-          <p>For check payments and direct bank deposits, please upload the bank-validated deposit slip as your proof of payment in your client portal, under Pay Now.</p>
+          <p>For check payments and direct bank deposits, please upload the bank-validated deposit slip as your proof of payment in your client portal, under Billing.</p>
           <p className="text-caption-1-regular">This statement is not an official receipt. We issue the BIR invoice once your payment is received.</p>
         </footer>
       </Card>
 
-      {s.proofs.length > 0 && (
-        <Card title="Payments sent" className="print:hidden">
-          <ul className="divide-y divide-separator-border">
-            {s.proofs.map((p) => (
-              <li key={p.id} className="space-y-3 py-3 first:pt-0 last:pb-0">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="text-body-medium tabular-nums text-text-primary">
-                      {peso.format(p.amount)} <span className="text-text-secondary">· paid {showDate(p.paid_on)}</span>
-                    </p>
-                    <p className="text-caption-1-regular text-text-tertiary">
-                      {proofMethod[p.method]}
-                      {p.institution ? ` to ${p.institution}` : ""}
-                      {p.reference ? ` · ${p.method === "check" ? "Check no." : "Ref."} ${p.reference}` : ""}
-                    </p>
-                    {p.fileUrl && (
-                      <a href={p.fileUrl} target="_blank" rel="noopener noreferrer" className="text-body-regular text-button-ghost-foreground hover:underline">
-                        View {p.method === "transfer" ? "proof of payment" : "deposit slip"}
-                      </a>
-                    )}
-                  </div>
-                  <Badge tone={proofBadge[p.status].tone}>{proofBadge[p.status].label}</Badge>
-                </div>
-                {p.status === "for_verification" && !owner && (
-                  <p className="text-body-regular text-text-secondary">We are checking this payment against our bank. Your statement will read Paid once verified.</p>
-                )}
-                {p.status === "rejected" && p.reject_reason && (
-                  <p className="text-body-regular text-text-error-primary">Not verified: {p.reject_reason}</p>
-                )}
-                {p.status === "for_verification" && owner && <ProofReview soaId={s.soa.id} proofId={p.id} amount={p.amount} paidOn={p.paid_on} />}
-              </li>
-            ))}
-          </ul>
+      {payments && s.proofs.length > 0 && (
+        <Card title="Payments" className="print:hidden">
+          <PaymentsList proofs={s.proofs} owner={owner} />
         </Card>
       )}
 
       {!settled && (
-        <Card title="Pay Now" className="print:hidden">
+        <Card title="Pay" className="print:hidden">
           <PayNow accounts={s.accounts} reference={s.soa.reference} hasTax={s.hasTax} soaId={s.soa.id} amountDue={s.totalDue} today={today} />
         </Card>
       )}

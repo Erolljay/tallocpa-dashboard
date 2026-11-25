@@ -36,7 +36,7 @@ export function ProofReview({ soaId, proofId, amount, paidOn }: { soaId: string;
       {mode === "reject" && (
         <form action={reject} className="space-y-3 rounded-xl border border-separator-border p-3">
           <Field label="Reason the client sees" htmlFor={`r_reason_${proofId}`}>
-            <Input id={`r_reason_${proofId}`} name="reason" placeholder="e.g. Not found in our BPI account; please check the amount" required />
+            <Input id={`r_reason_${proofId}`} name="reason" placeholder="e.g. Not found in our BPI account; please check the amount" maxLength={500} required />
           </Field>
           <Button type="submit" size="sm" variant="secondary" disabled={rejecting}>{rejecting ? "Saving…" : "Reject proof"}</Button>
         </form>

@@ -23,7 +23,7 @@ const accountSchema = z.object({
 
 function refresh() {
   revalidatePath("/app/settings");
-  revalidatePath("/portal/statement");
+  revalidatePath("/portal/billing", "layout");
 }
 
 /** Uploads a QR code image and returns its storage path, or an error sentence. */
@@ -51,9 +51,11 @@ export async function addPaymentAccountAction(_: PaymentSettingsState, form: For
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await supabaseServer();
+  // New channels go last in the order clients see.
+  const { data: last } = await supabase.from("brand_payment_accounts").select("sort_order").eq("brand_id", owner.staff.brandId).order("sort_order", { ascending: false }).limit(1).maybeSingle();
   const { data, error } = await supabase
     .from("brand_payment_accounts")
-    .insert({ ...parsed.data, instructions: parsed.data.instructions || null, brand_id: owner.staff.brandId })
+    .insert({ ...parsed.data, instructions: parsed.data.instructions || null, brand_id: owner.staff.brandId, sort_order: (last?.sort_order ?? 0) + 1 })
     .select("id")
     .single();
   if (error) return { error: error.message };
@@ -64,7 +66,48 @@ export async function addPaymentAccountAction(_: PaymentSettingsState, form: For
   }
   if (qr.path) await supabase.from("brand_payment_accounts").update({ qr_path: qr.path }).eq("id", data.id);
   refresh();
-  return { ok: "Account added. Clients see it on their statements." };
+  return { ok: "Channel added. Clients can choose it under Billing." };
+}
+
+/** Corrects a channel's details; clients see the change on their next visit. */
+export async function updatePaymentAccountAction(accountId: string, _: PaymentSettingsState, form: FormData): Promise<PaymentSettingsState> {
+  await requireOwner();
+  const parsed = accountSchema.safeParse({
+    kind: text(form.get("kind")),
+    institution: text(form.get("institution")),
+    account_name: text(form.get("account_name")),
+    account_number: text(form.get("account_number")),
+    purpose: text(form.get("purpose")) || "fees",
+    instructions: text(form.get("instructions")),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("brand_payment_accounts")
+    .update({ ...parsed.data, instructions: parsed.data.instructions || null })
+    .eq("id", accountId);
+  if (error) return { error: error.message };
+  refresh();
+  return { ok: "Saved." };
+}
+
+/** Moves a channel one place up or down in the order clients see. */
+export async function movePaymentAccountAction(accountId: string, direction: "up" | "down"): Promise<PaymentSettingsState> {
+  const owner = await requireOwner();
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.from("brand_payment_accounts").select("id, sort_order").eq("brand_id", owner.staff.brandId).order("sort_order").order("institution").order("id");
+  if (error) return { error: error.message };
+  const ids = (data ?? []).map((a) => a.id as string);
+  const at = ids.indexOf(accountId);
+  const to = direction === "up" ? at - 1 : at + 1;
+  if (at < 0 || to < 0 || to >= ids.length) return {};
+  [ids[at], ids[to]] = [ids[to], ids[at]];
+  // Renumber 1..n so ties from older rows cannot hide the move.
+  const results = await Promise.all(ids.map((id, i) => supabase.from("brand_payment_accounts").update({ sort_order: i + 1 }).eq("id", id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) return { error: failed.error.message };
+  refresh();
+  return {};
 }
 
 export async function replaceQrAction(accountId: string, oldPath: string | null, _: PaymentSettingsState, form: FormData): Promise<PaymentSettingsState> {
@@ -86,7 +129,7 @@ export async function setAccountActiveAction(accountId: string, active: boolean)
   const { error } = await supabase.from("brand_payment_accounts").update({ active }).eq("id", accountId);
   if (error) return { error: error.message };
   refresh();
-  return { ok: active ? "Shown on statements again." : "Hidden from statements." };
+  return { ok: active ? "Clients can choose it again." : "Hidden from clients." };
 }
 
 export async function setPaymentDaysAction(_: PaymentSettingsState, form: FormData): Promise<PaymentSettingsState> {

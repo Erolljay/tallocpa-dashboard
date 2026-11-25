@@ -40,6 +40,7 @@ export function ProofUpload({ soaId, accounts, account, amountDue, today }: { so
   async function send(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
+    if (accounts.length > 0 && !accountId) return setState({ error: "Choose the bank or e-wallet you paid to." });
     if (!file) return setState({ error: `Attach the ${m.file.toLowerCase()}.` });
     setBusy(true);
     setState({});
@@ -88,12 +89,14 @@ export function ProofUpload({ soaId, accounts, account, amountDue, today }: { so
             {METHODS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
           </Select>
         </Field>
-        <Field label="Paid to" htmlFor="proof_account">
-          <Select id="proof_account" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.institution} · {a.account_number}</option>)}
-            <option value="">Other / not sure</option>
-          </Select>
-        </Field>
+        {accounts.length > 0 && (
+          <Field label="Paid to" htmlFor="proof_account" hint={accountId ? undefined : "Choose a bank or e-wallet above, or here."}>
+            <Select id="proof_account" value={accountId} onChange={(e) => setAccountId(e.target.value)} required>
+              <option value="" disabled>Choose…</option>
+              {accounts.map((a) => <option key={a.id} value={a.id}>{a.institution} · {a.account_number}</option>)}
+            </Select>
+          </Field>
+        )}
         <Field label="Amount paid" htmlFor="proof_amount">
           <Input id="proof_amount" name="amount" type="number" inputMode="decimal" min="0.01" step="0.01" defaultValue={amountDue > 0 ? amountDue.toFixed(2) : ""} required />
         </Field>

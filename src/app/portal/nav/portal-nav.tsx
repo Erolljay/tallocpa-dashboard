@@ -1,6 +1,6 @@
 "use client";
 
-import { RiBarChartBoxLine, RiFileList3Line, RiFileTextLine, RiFileTransferLine, RiFolderOpenLine, RiGroupLine, RiQuestionAnswerLine, RiUploadCloud2Line } from "@remixicon/react";
+import { RiBankCardLine, RiBarChartBoxLine, RiFileTextLine, RiFileTransferLine, RiFolderOpenLine, RiGroupLine, RiQuestionAnswerLine, RiUploadCloud2Line } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/utils/cx";
@@ -9,7 +9,7 @@ const baseTabs = [
   { href: "/portal", label: "Upload", icon: RiUploadCloud2Line },
   { href: "/portal/documents", label: "Documents", icon: RiFolderOpenLine },
   { href: "/portal/returns", label: "Returns", icon: RiFileTextLine },
-  { href: "/portal/statement", label: "Statement", icon: RiFileList3Line },
+  { href: "/portal/billing", label: "Billing", icon: RiBankCardLine },
 ] as const;
 const payrollTab = { href: "/portal/payroll", label: "Payroll", icon: RiGroupLine } as const;
 const reportsTab = { href: "/portal/reports", label: "Reports", icon: RiBarChartBoxLine } as const;
