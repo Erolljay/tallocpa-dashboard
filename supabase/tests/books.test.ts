@@ -369,6 +369,19 @@ describe.skipIf(!url)("books transactions", () => {
       expect((await db.query(`select count(*)::int as n from public.journal_entries where client_id = $1`, [client])).rows[0].n).toBe(entries);
     });
 
+    it("marks the CWT of a Sales Invoice whose customer was typed in (no party), by its TIN (migration 20261211000002)", async () => {
+      // "Another customer (type the name)": the TIN is kept, the party is not chosen.
+      const id = await saveInvoice({
+        kind: "sales", party_name: "Bacolod Feeds", party_tin: `${CUSTOMER}-00000`, reference: "SI-0103", issue_date: "2026-03-12",
+        withholding_code_id: code.WC158, lines: [{ account_id: acct.sales, amount: "30000", tax_code_id: code.OVAT12 }],
+      });
+      expect(await invoice(id)).toMatchObject({ party_id: null, withholding: "300.00" });
+      // The 2307's TIN is in the parties directory; the invoice is still found by its TIN.
+      const cert = await approved("bir_2307_received", { date: "2026-04-06", party_tin: CUSTOMER, atc: "WC158", withholding: "300.00" });
+      expect(await toBooks(cert)).toEqual({ cwt_marked: 1 });
+      expect(await invoice(id)).toMatchObject({ cwt_document_id: cert });
+    });
+
     it("does not post payroll documents, and unposts a document so its figures can be corrected", async () => {
       const p = (await db.query(
         `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status)
