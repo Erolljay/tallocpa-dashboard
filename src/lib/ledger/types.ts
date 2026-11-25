@@ -79,6 +79,17 @@ export const TEMPLATE_FOR_TAXPAYER: Record<string, TemplateCode> = {
   non_stock: "non_stock",
 };
 
+/**
+ * The first month of a new chart's books (Owner's decision 2: every client keeps
+ * account titles): the start of the current calendar year, or the client's
+ * registration month when that is later, so this year's documents all post.
+ */
+export function chartStart(today: string, registrationDate?: string | null): string {
+  const yearStart = `${today.slice(0, 4)}-01-01`;
+  const reg = registrationDate && /^\d{4}-\d{2}-\d{2}/.test(registrationDate) ? `${registrationDate.slice(0, 7)}-01` : null;
+  return reg && reg > yearStart ? reg : yearStart;
+}
+
 /** One account of a template (and of a client's chart, plus its id). */
 export interface AccountDef {
   /** Stable template key, the same in every client's books (e.g. "representation"). */

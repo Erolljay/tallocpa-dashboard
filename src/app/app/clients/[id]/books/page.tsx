@@ -37,17 +37,13 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const back = <LinkButton href={`/app/clients/${id}`} variant="ghost">Back to client</LinkButton>;
 
   if (!books) {
-    const { data: eng } = await supabase.from("engagements").select("id").eq("client_id", id).eq("service_line", "bookkeeping").eq("status", "active").limit(1);
     const counts = Object.fromEntries((Object.keys(TEMPLATES) as TemplateCode[]).map((t) => [t, COA_TEMPLATES[t].length])) as Record<TemplateCode, number>;
     return (
       <>
         <PageHeader title="Books" description={<>{client.name}: set up the double-entry books from a chart-of-accounts template.</>} actions={back} />
         <Card title="Set up books">
-          {eng?.length ? (
-            <SetupForm clientId={id} defaultTemplate={TEMPLATE_FOR_TAXPAYER[client.taxpayer_type] ?? "stock_corporation"} counts={counts} />
-          ) : (
-            <Notice tone="waiting">Books are kept for clients with an active Bookkeeping engagement. Add one on the client page first.</Notice>
-          )}
+          {/* Every client keeps account titles, tax compliance only included (Owner's decision 2). */}
+          <SetupForm clientId={id} defaultTemplate={TEMPLATE_FOR_TAXPAYER[client.taxpayer_type] ?? "stock_corporation"} counts={counts} />
         </Card>
       </>
     );

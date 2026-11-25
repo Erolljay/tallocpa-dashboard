@@ -22,7 +22,7 @@ export default function RegisterPage(props: PageProps<"/app/clients/[id]/registe
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const amt = (c: number) => (c === 0 ? "—" : formatAmount(c));
 const SOURCE: Record<RegisterLine["source"], string> = { portal: "Portal", staff: "Staff", email: "Email", batch: "Batch" };
-const COLUMNS = "id, document_id, kind, source, month, line_date, reference, party_name, party_tin, terms, vatable, vat_exempt, zero_rated, vat, total, discount, vat_withheld, other_deduction, atc, withholding, net, slp_category, vat_registered, ledger_accounts(name, fs_line, bir_line)";
+const COLUMNS = "id, document_id, kind, source, month, line_date, reference, party_name, party_tin, terms, vatable, vat_exempt, zero_rated, vat, total, discount, vat_withheld, other_deduction, atc, withholding, net, slp_category, vat_registered, ledger_accounts!register_lines_client_id_account_id_fkey(name, fs_line, bir_line), payment:ledger_accounts!register_lines_payment_account_fkey(name), other:ledger_accounts!register_lines_other_account_fkey(name)";
 
 function shiftMonth(month: string, n: number) {
   const [y, m] = month.split("-").map(Number);

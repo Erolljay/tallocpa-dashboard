@@ -24,8 +24,22 @@ export const OCR_FIELDS = [
   { key: "total", label: "Total", kind: "amount" },
   { key: "atc", label: "ATC (2307)", kind: "text" },
   { key: "withholding", label: "Tax withheld (2307)", kind: "amount" },
+  // Slice 4: the rest of the worksheet columns (Owner's decisions 9 and 11).
+  { key: "discount", label: "SC/PWD discount", kind: "amount" },
+  { key: "vat_withheld", label: "VAT withheld (government customer)", kind: "amount" },
+  { key: "other_deduction", label: "Other deduction (bank or card charges)", kind: "amount" },
+  { key: "other_deduction_account", label: "Account for the other deduction", kind: "account", ocr: false },
+  { key: "slp_category", label: "Purchase category (SLP)", kind: "slp", ocr: false },
   { key: "payment_terms", label: "Cash or charge", kind: "terms" },
+  { key: "payment_account", label: "Paid from / deposited to", kind: "payment_account", ocr: false },
 ] as const;
+
+/** Fields OCR is asked to read; the rest are chosen on review. */
+export const OCR_READ_FIELDS = OCR_FIELDS.filter((f) => !("ocr" in f && f.ocr === false));
+
+/** The purchase categories of the Summary List of Purchases (src/lib/register/parts.ts). */
+export const SLP_CATEGORY_KEYS = ["capital_goods", "other_goods", "services", "zero_rated", "exempt"] as const;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Invoice terms: a cash sale/purchase, or a charge (on account) that opens a receivable or payable. */
 export const PAYMENT_TERMS = { cash: "Cash", charge: "Charge (on account)" } as const;
@@ -97,6 +111,8 @@ export function normalizeFields(f: OcrFields): OcrFields {
     if (def.kind === "date") out[def.key] = v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
     if (def.kind === "terms") out[def.key] = normalizeTerms(v);
     if (def.kind === "party_kind") out[def.key] = normalizePartyKind(v);
+    if (def.kind === "slp") out[def.key] = v && (SLP_CATEGORY_KEYS as readonly string[]).includes(v) ? v : null;
+    if (def.kind === "account" || def.kind === "payment_account") out[def.key] = v && UUID.test(v.trim()) ? v.trim().toLowerCase() : null;
     if (def.kind === "person") out[def.key] = v?.replace(/\s+/g, " ").trim() || null;
   }
   // An individual named in one line only: split it so the BIR lists get last, first and middle name.

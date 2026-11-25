@@ -121,3 +121,15 @@ describe("totals", () => {
     expect(t).toMatchObject({ count: 2, vatable: 10000, vatExempt: 5000, vat: 1200, total: 16200, net: 16200, discount: 1000 });
   });
 });
+
+describe("payment account and other deductions (slice 4)", () => {
+  it("uses the cash or bank account chosen and names the other deduction's account", () => {
+    const l = line({
+      vatable: "10000.00", vat: "1200.00", total: "11200.00", other_deduction: "280.00", net: "10920.00",
+      payment: { name: "Cash in Bank" }, other: [{ name: "Bank Charges" }],
+    });
+    expect(bookkeepingPart(l).map((x) => x.account)).toEqual(["Cash in Bank", "Bank Charges", "Sales", "Output VAT"]);
+    expect(isBalanced(bookkeepingPart(l))).toBe(true);
+    expect(line({}).paymentAccount).toBeNull();
+  });
+});

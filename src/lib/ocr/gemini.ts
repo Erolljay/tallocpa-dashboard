@@ -3,7 +3,7 @@
  * tier may use data for training). High media resolution for handwritten
  * receipts; the reply is constrained to a JSON schema and then validated.
  */
-import { OCR_DOC_TYPES, OCR_FIELDS, normalizeFields, ocrOutputSchema, type OcrOutput } from "./fields";
+import { OCR_DOC_TYPES, OCR_READ_FIELDS, normalizeFields, ocrOutputSchema, type OcrOutput } from "./fields";
 import type { OcrInput, OcrProvider } from "./provider";
 
 /** Default model; set GEMINI_MODEL to compare Flash and Pro (open item O4). */
@@ -20,6 +20,9 @@ Return every field you can read; use null for a field that is not on the documen
 - party_last_name, party_first_name, party_middle_name: for an individual only, the person's name split as the BIR lists want it. Keep a compound surname together ("Dela Cruz", "De los Santos"); put Jr./Sr./III with the first name; give the middle name or initial as printed, null if none. For a sole proprietor this is the owner's name, while party_name keeps what is printed as the business name. Null for a non-individual.
 - vatable, vat_exempt, zero_rated, vat, total: amounts in pesos as plain numbers, no currency sign or commas.
 - atc and withholding: the ATC code and tax withheld, on a 2307 only.
+- discount: on a sales invoice, the senior citizen or PWD discount deducted (the "Less: SC/PWD discount" line), as a plain number; null if none.
+- vat_withheld: on a sales invoice or OR, VAT withheld by a government customer (often "Less: withholding VAT" or 5% final VAT); null if none.
+- other_deduction: any other amount deducted from what was received or paid, such as bank or card charges; null if none.
 - payment_terms: on an invoice or receipt, "cash" if it is a cash sale / paid in cash (the "Cash" box is ticked or it is an official receipt for payment), "charge" if it is a charge / credit sale on account (the "Charge" box is ticked, or it shows terms such as "30 days"); null if the document does not say.
 For each field also give your confidence from 0 to 1 that you read it exactly right.`;
 
@@ -27,8 +30,8 @@ const nullableString = { type: "STRING", nullable: true };
 const responseSchema = {
   type: "OBJECT",
   properties: {
-    fields: { type: "OBJECT", properties: Object.fromEntries(OCR_FIELDS.map((f) => [f.key, nullableString])) },
-    confidence: { type: "OBJECT", properties: Object.fromEntries(OCR_FIELDS.map((f) => [f.key, { type: "NUMBER" }])) },
+    fields: { type: "OBJECT", properties: Object.fromEntries(OCR_READ_FIELDS.map((f) => [f.key, nullableString])) },
+    confidence: { type: "OBJECT", properties: Object.fromEntries(OCR_READ_FIELDS.map((f) => [f.key, { type: "NUMBER" }])) },
   },
   required: ["fields", "confidence"],
 };

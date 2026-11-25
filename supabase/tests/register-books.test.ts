@@ -164,4 +164,55 @@ describe.skipIf(!url)("register: the books post from the register line", () => {
     const posted = (await db.query(`select a.name, l.debit, l.credit from public.journal_lines l join public.ledger_accounts a on a.id = l.account_id where l.entry_id = $1 order by l.line_no`, [e])).rows.map((l) => [l.name, l.debit, l.credit]);
     expect(posted).toEqual(shown);
   });
+
+  // Slice 4 (migration 20261125000007_review_fields.sql): payment account and other deductions.
+  it("posts a cash sale to the bank account chosen and the card charges to their account", async () => {
+    const d = await approved("sales_invoice", {
+      date: "2027-02-10", number: "SI 0501", vatable: "10000.00", vat: "1200.00", total: "11200.00",
+      other_deduction: "280.00", other_deduction_account: await accountId("bank_charges"), payment_account: await accountId("cash_in_bank"),
+    });
+    expect(await lines((await book(d))!)).toEqual([
+      { acct: "cash_in_bank", debit: "10920.00", credit: "0.00" },
+      { acct: "bank_charges", debit: "280.00", credit: "0.00" },
+      { acct: "sales", debit: "0.00", credit: "10000.00" },
+      { acct: "output_vat", debit: "0.00", credit: "1200.00" },
+    ]);
+    const r = (await db.query(
+      `select r.*, json_build_object('name', a.name, 'fs_line', a.fs_line, 'bir_line', a.bir_line) as ledger_accounts,
+              json_build_object('name', p.name) as payment, json_build_object('name', o.name) as other
+       from public.register_lines r left join public.ledger_accounts a on a.id = r.account_id
+       left join public.ledger_accounts p on p.id = r.payment_account_id left join public.ledger_accounts o on o.id = r.other_account_id
+       where r.document_id = $1`, [d])).rows[0] as RegisterRow;
+    expect(bookkeepingPart(toRegisterLine(r)).map((l) => l.account)).toEqual(["Cash in Bank", "Bank Charges", "Sales", "Output VAT"]);
+  });
+
+  it("credits a deduction taken at payment on a cash purchase", async () => {
+    const d = await approved("purchase_receipt", {
+      date: "2027-02-11", number: "OR 3001", vatable: "1000.00", vat: "120.00", total: "1120.00",
+      other_deduction: "20.00", other_deduction_account: await accountId("other_income"),
+    });
+    expect(await lines((await book(d, "office_supplies"))!)).toEqual([
+      { acct: "office_supplies", debit: "1000.00", credit: "0.00" },
+      { acct: "input_vat", debit: "120.00", credit: "0.00" },
+      { acct: "cash_on_hand", debit: "0.00", credit: "1100.00" },
+      { acct: "other_income", debit: "0.00", credit: "20.00" },
+    ]);
+  });
+
+  it("refuses an other deduction without its account, or on a charge sale; ignores a payment account that is not cash", async () => {
+    const noAccount = await approved("sales_invoice", { date: "2027-02-12", number: "SI 0502", vatable: "100.00", vat: "12.00", total: "112.00", other_deduction: "5.00" });
+    await expect(book(noAccount)).rejects.toThrow(/account for the other deduction/);
+    const charge = await approved("sales_invoice", { date: "2027-02-12", number: "SI 0503", vatable: "100.00", vat: "12.00", total: "112.00", payment_terms: "charge", other_deduction: "5.00", other_deduction_account: await accountId("bank_charges") });
+    await expect(book(charge)).rejects.toThrow(/only on a cash sale or purchase/);
+    const notCash = await approved("sales_invoice", { date: "2027-02-12", number: "SI 0504", vatable: "100.00", vat: "12.00", total: "112.00", payment_account: await accountId("rent") });
+    expect((await lines((await book(notCash))!))[0]).toEqual({ acct: "cash_on_hand", debit: "112.00", credit: "0.00" });
+  });
+
+  it("sets up account titles for a client with no Bookkeeping engagement (decision 2)", async () => {
+    const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+    const taxOnly = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9702', 'Tax Only Store', 'individual') returning id`, [brand])).rows[0].id;
+    await db.query(`insert into public.staff_assignments (client_id, user_id, role) values ($1, $2, 'preparer')`, [taxOnly, STAFF]);
+    await as(`select public.setup_books($1, 'sole_proprietorship', '2027-01-01', $2)`, [taxOnly, JSON.stringify(templatePayload("sole_proprietorship"))]);
+    expect((await db.query(`select count(*)::int as n from public.ledger_accounts where client_id = $1`, [taxOnly])).rows[0].n).toBeGreaterThan(50);
+  });
 });

@@ -6,7 +6,8 @@
  *   - a tax type on the client's COR with no open obligation for its forms;
  *   - payroll posted for a recent month but no open 1601-C obligation;
  *   - EWT on a recent purchase but no open 0619-E or 1601-EQ obligation;
- *   - an active client with no preparer or no reviewer.
+ *   - an active client with no preparer or no reviewer;
+ *   - a client with no account titles (Owner's decision 2: every client keeps them).
  * Pure, so it can be tested; src/lib/deadlines/coverage-load.ts queries.
  */
 import { obligationsForTaxTypes, TAX_TYPES, type TaxpayerType, type TaxType } from "@/lib/clients/obligations";
@@ -25,9 +26,11 @@ export interface CoverageClient {
   recentPayroll: boolean;
   /** A purchase in the last months checked carried EWT. */
   recentEwt: boolean;
+  /** The client has a chart of accounts. Missing means not checked. */
+  hasChart?: boolean;
 }
 
-export type GapKind = "missing_obligation" | "payroll_without_1601c" | "ewt_without_obligation" | "no_preparer" | "no_reviewer";
+export type GapKind = "missing_obligation" | "payroll_without_1601c" | "ewt_without_obligation" | "no_preparer" | "no_reviewer" | "no_chart";
 
 export interface Gap {
   clientId: string;
@@ -58,6 +61,7 @@ export function coverageGaps(clients: CoverageClient[]): Gap[] {
       gap("ewt_without_obligation", "A purchase carried EWT, but there is no 0619-E or 1601-EQ obligation.");
     if (!c.hasPreparer) gap("no_preparer", "No preparer is assigned.");
     if (!c.hasReviewer) gap("no_reviewer", "No reviewer is assigned.");
+    if (c.hasChart === false) gap("no_chart", "No account titles yet: documents are not booked. Set up its chart on the Clients page.");
   }
   return out;
 }

@@ -18,6 +18,7 @@ describe("bulkReadiness", () => {
     expect(bulkReadiness(clean, { ...ctx, duplicate: true }).ready).toBe(false);
     expect(bulkReadiness(clean, { ...ctx, priorYear: true }).ready).toBe(false);
     expect(bulkReadiness({ ...clean, fields: { ...clean.fields, party_kind: "individual" } }, ctx).reason).toMatch(/last and first name/);
+    expect(bulkReadiness({ ...clean, fields: { ...clean.fields, other_deduction: "25.00" } }, ctx).reason).toMatch(/other deduction/);
   });
 
   it("asks staff to confirm a firm suggestion or a default, not the client's own history", () => {

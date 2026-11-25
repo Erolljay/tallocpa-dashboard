@@ -37,4 +37,9 @@ describe("coverage gaps", () => {
   it("does not stop at a COR with both VAT and percentage tax", () => {
     expect(coverageGaps([client({ taxTypes: ["vat", "percentage_tax"], hasReviewer: false })]).map((x) => x.kind)).toEqual(["no_reviewer"]);
   });
+
+  it("flags a client with no account titles (decision 2)", () => {
+    expect(coverageGaps([client({ hasChart: false })]).map((x) => x.kind)).toEqual(["no_chart"]);
+    expect(coverageGaps([client({ hasChart: true })])).toEqual([]);
+  });
 });

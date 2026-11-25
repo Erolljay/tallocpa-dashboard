@@ -119,14 +119,16 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
 /** Coverage gaps across the clients the user (or the admin client) can see. */
 export async function loadCoverage(db: SupabaseClient, today: IsoDate): Promise<Gap[]> {
   const since = monthStart(addDays(today, -95));
-  const [{ data: clients }, { data: regs }, { data: obligations }, { data: team }, { data: payroll }, { data: ewt }] = await Promise.all([
+  const [{ data: clients }, { data: regs }, { data: obligations }, { data: team }, { data: payroll }, { data: ewt }, { data: books }] = await Promise.all([
     db.from("clients").select("id, name, taxpayer_type").in("status", ["active", "onboarding"]),
     db.from("client_registrations").select("client_id, tax_types, created_at").order("created_at", { ascending: false }),
     db.from("obligations").select("client_id, form, end_date").or(`end_date.is.null,end_date.gte.${today}`),
     db.from("staff_assignments").select("client_id, role"),
     db.from("payroll_entries").select("client_id").gte("pay_month", since).limit(5000),
     db.from("register_lines").select("client_id").eq("kind", "purchase").gt("withholding", 0).gte("month", since).limit(5000),
+    db.from("client_books").select("client_id"),
   ]);
+  const charted = new Set((books ?? []).map((b: { client_id: string }) => b.client_id));
   const latestTaxTypes = new Map<string, TaxType[]>();
   for (const r of (regs ?? []) as { client_id: string; tax_types: TaxType[] | null }[]) if (!latestTaxTypes.has(r.client_id)) latestTaxTypes.set(r.client_id, r.tax_types ?? []);
   const withPayroll = new Set((payroll ?? []).map((p: { client_id: string }) => p.client_id));
@@ -141,6 +143,7 @@ export async function loadCoverage(db: SupabaseClient, today: IsoDate): Promise<
     hasReviewer: (team ?? []).some((t: { client_id: string; role: string }) => t.client_id === c.id && t.role === "reviewer"),
     recentPayroll: withPayroll.has(c.id),
     recentEwt: withEwt.has(c.id),
+    hasChart: charted.has(c.id),
   }));
   return coverageGaps(list);
 }

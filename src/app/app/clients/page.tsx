@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
+import { manilaToday } from "@/lib/filings/run";
+import { chartStart } from "@/lib/ledger/types";
+import { SetupCharts } from "./setup-charts";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -36,6 +39,11 @@ async function ClientList() {
   if (error) throw error;
   const rows = (data ?? []) as unknown as Row[];
   const isOwner = me.staff.role === "owner";
+  // Clients without account titles (decision 2), for the Owner.
+  const { data: books } = isOwner ? await supabase.from("client_books").select("client_id") : { data: null };
+  const charted = new Set((books ?? []).map((b) => b.client_id));
+  const noChart = isOwner ? rows.filter((r) => r.status !== "archived" && !charted.has(r.id)).map((r) => r.name) : [];
+  const today = manilaToday();
 
   return (
     <>
@@ -44,6 +52,7 @@ async function ClientList() {
         description={isOwner ? "Every client of the firm." : "Clients assigned to you."}
         actions={isOwner && <LinkButton href="/app/clients/new"><RiAddLine aria-hidden className="size-4" />New client</LinkButton>}
       />
+      {noChart.length > 0 && <SetupCharts missing={noChart} defaultMonth={chartStart(today).slice(0, 7)} />}
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
           <p className="font-medium text-text-primary">No clients yet</p>

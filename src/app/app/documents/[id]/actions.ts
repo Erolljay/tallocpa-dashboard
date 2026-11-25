@@ -20,6 +20,10 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
   for (const f of OCR_FIELDS) {
     if (f.kind === "amount" && raw[f.key] && !fields[f.key]) return { error: `${f.label}: enter a number like 1120.50.` };
   }
+  // Bookkeeping clients: bank or card charges need their account before anything is approved.
+  if (form.has("ledger_account") && Number(fields.other_deduction ?? 0) > 0 && !fields.other_deduction_account) {
+    return { error: "Choose the account for the other deduction (for example Bank Charges)." };
+  }
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc("approve_document", { p_document: documentId, p_fields: fields });
   if (error) return { error: error.message };

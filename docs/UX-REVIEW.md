@@ -123,7 +123,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 | Slice | Scope | When |
 |---|---|---|
-| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before the January 2027 go-live (decided) |
+| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before the January 2027 go-live (decided) · slices 1–4 built: register lines, worksheets from the register, books from the register, review fields (SC/PWD discount, VAT withheld, other deductions and their account, SLP category, payment account) and a chart for every client (migrations 20261125000001–03, 07) |
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
 | A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |

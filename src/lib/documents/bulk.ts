@@ -25,6 +25,8 @@ export function bulkReadiness(
   if (low) return { ready: false, reason: `${low} to check` };
   const issues = checkFields(e.fields ?? {}, { today: ctx.today, duplicateOf: ctx.duplicate ? "yes" : null, priorYear: ctx.priorYear });
   if (issues.length) return { ready: false, reason: issues[0].message };
+  // Bank or card charges need their account chosen on the document's own page.
+  if (Number(e.fields?.other_deduction ?? 0) > 0 && !e.fields?.other_deduction_account) return { ready: false, reason: "Choose the account for the other deduction" };
   return { ready: true, reason: null };
 }
 
