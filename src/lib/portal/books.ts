@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { accountFromRow, bookEntryFromRow, loadTrialBalance, type BooksClient } from "@/lib/ledger/data";
 import type { BooksReader } from "@/lib/ledger/loose-leaf";
+import type { ReportKind } from "@/lib/ledger/statements";
 import { toCentavos } from "@/lib/returns/money";
 import type { StatementHold } from "./report-periods";
 
@@ -9,7 +10,7 @@ import type { StatementHold } from "./report-periods";
  * The client's books as the portal reads them (decision 19): through the
  * portal_* functions, which answer only for the user's own business and only for
  * locked months. The financial statements also wait for the client's approval of
- * the returns covering a month (migration 20261207000001). Client users never read
+ * the returns (REWORK 19a, migration 20261207000002). Client users never read
  * the ledger tables themselves.
  */
 
@@ -40,13 +41,13 @@ export async function loadPortalBooks(supabase: SupabaseClient, clientId: string
     books_start: string;
     permit: string | null;
     locked_through: string | null;
-    statement_holds?: { month: string; filing_id: string; form: string; period_label: string; status: string }[];
+    statement_holds?: { scope?: "month" | "year"; month: string; filing_id: string; form: string; period_label: string; status: string; amended?: boolean }[];
   };
   return {
     booksStart: b.books_start,
     permit: b.permit,
     lockedThrough: b.locked_through,
-    statementHolds: (b.statement_holds ?? []).map((h) => ({ month: h.month, filingId: h.filing_id, form: h.form, periodLabel: h.period_label, status: h.status })),
+    statementHolds: (b.statement_holds ?? []).map((h) => ({ scope: h.scope ?? "month", month: h.month, filingId: h.filing_id, form: h.form, periodLabel: h.period_label, status: h.status, amended: h.amended ?? false })),
   };
 }
 
@@ -68,6 +69,6 @@ export function portalBooksReader(supabase: SupabaseClient, clientId: string): B
   };
 }
 
-/** The statements' trial balance: locked months none of which waits for the client's approval of its returns. */
-export const loadPortalTrialBalance = (supabase: SupabaseClient, clientId: string, from: string, to: string) =>
-  loadTrialBalance(supabase, clientId, from, to, "portal_trial_balance");
+/** The statements' trial balance for a report (`kind`) whose months, for a client user, do not wait for the client's approval of their returns. */
+export const loadPortalTrialBalance = (supabase: SupabaseClient, clientId: string, from: string, to: string, kind: ReportKind = "monthly") =>
+  loadTrialBalance(supabase, clientId, from, to, "portal_trial_balance", kind);

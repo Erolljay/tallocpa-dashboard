@@ -6,7 +6,7 @@ import { Notice, Skeleton } from "@/components/ui";
 import { statementsFrom } from "@/lib/ledger/data";
 import { REPORT_KINDS, type ReportKind } from "@/lib/ledger/statements";
 import { loadPortalBooks, loadPortalTrialBalance, portalBooksClient } from "@/lib/portal/books";
-import { lockedMonths, statementPeriods } from "@/lib/portal/report-periods";
+import { lockedMonths, monthEnd, statementPeriods } from "@/lib/portal/report-periods";
 import { portalContext } from "../../client-context";
 import { HeldNote } from "../held-note";
 import { ParamSelect } from "../param-select";
@@ -53,7 +53,12 @@ async function Statements({ searchParams }: Pick<PageProps<"/portal/reports/stat
   }
   const { month, kinds } = periods.find((p) => p.month.slice(0, 7) === q.month) ?? periods[0];
   const kind: ReportKind = kinds.find((k) => k === q.kind) ?? kinds[0];
-  const result = await statementsFrom((from, to) => loadPortalTrialBalance(supabase, client.id, from, to), client, kind, month.slice(0, 7), books?.booksStart ?? null);
+  // The database checks the months the report stands on; the annual statement's prior-year column is read as that year's last month.
+  const end = monthEnd(month);
+  const result = await statementsFrom(
+    (from, to) => loadPortalTrialBalance(supabase, client.id, from, to, to === end ? kind : "monthly"),
+    client, kind, month.slice(0, 7), books?.booksStart ?? null,
+  );
 
   return (
     <div className="space-y-6">

@@ -2160,9 +2160,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/data.ts": {
-    "mtime": 1795643336.194688,
-    "seen": 1795643610.9403265,
-    "ast_hash": "f1e9a4c62e01825be33f32d2303e455b",
+    "mtime": 1795644156.2968369,
+    "seen": 1795644679.6137779,
+    "ast_hash": "4e5171fcbc28cd936b8795e1364fddda",
     "semantic_hash": ""
   },
   "src/lib/ledger/fs-lines.ts": {
@@ -3168,9 +3168,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795643603.7128038,
-    "seen": 1795643610.9408145,
-    "ast_hash": "012bceb05582d86f8cf868b5fe194132",
+    "mtime": 1795644561.2728608,
+    "seen": 1795644679.6202402,
+    "ast_hash": "9c779735fb25abbb192c5b5a8789003d",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
@@ -3852,9 +3852,9 @@
     "semantic_hash": ""
   },
   "src/app/portal/reports/statements/page.tsx": {
-    "mtime": 1795643320.552787,
-    "seen": 1795643610.9398966,
-    "ast_hash": "548968159bf84fab0f4f07fb2d8aa08b",
+    "mtime": 1795644171.588208,
+    "seen": 1795644679.6068194,
+    "ast_hash": "9c6bceae3b86a842e2ee7dd2f3b56b7f",
     "semantic_hash": ""
   },
   "src/components/bir/form-2307-list.tsx": {
@@ -3912,9 +3912,9 @@
     "semantic_hash": ""
   },
   "src/lib/portal/books.ts": {
-    "mtime": 1795643278.0887847,
-    "seen": 1795643610.9404953,
-    "ast_hash": "771d73693368cdb62c53bba113b52934",
+    "mtime": 1795644515.0289323,
+    "seen": 1795644679.615703,
+    "ast_hash": "ed098f293d35051f0487fe9ed12c3d1a",
     "semantic_hash": ""
   },
   "src/lib/portal/filed-returns.test.ts": {
@@ -3930,15 +3930,15 @@
     "semantic_hash": ""
   },
   "src/lib/portal/report-periods.test.ts": {
-    "mtime": 1795643368.62479,
-    "seen": 1795643610.9405077,
-    "ast_hash": "6a2c4205e152ea3b4e3058d07b0c9810",
+    "mtime": 1795644536.9328594,
+    "seen": 1795644679.6158473,
+    "ast_hash": "bfbd402d33aec62e7b0ecbca9022fb74",
     "semantic_hash": ""
   },
   "src/lib/portal/report-periods.ts": {
-    "mtime": 1795643257.0567834,
-    "seen": 1795643610.9405096,
-    "ast_hash": "21361291ca43af8aa2d18ef2ce75cab4",
+    "mtime": 1795644515.0265996,
+    "seen": 1795644679.6158502,
+    "ast_hash": "b92708369a9cfc73b57f0bef8cc747b9",
     "semantic_hash": ""
   },
   "supabase/tests/books-2307.test.ts": {
@@ -3954,15 +3954,15 @@
     "semantic_hash": ""
   },
   "src/app/portal/reports/held-note.tsx": {
-    "mtime": 1795643290.0607853,
-    "seen": 1795643610.9398863,
-    "ast_hash": "9fc9d07d1ce1f0caa9ecf6f48017bb35",
+    "mtime": 1795644525.9768589,
+    "seen": 1795644679.6067014,
+    "ast_hash": "bc528fb784e9b74832d0e6f6be3e97c3",
     "semantic_hash": ""
   },
   "supabase/tests/portal-statements-approval.test.ts": {
-    "mtime": 1795643443.948798,
-    "seen": 1795643610.9407427,
-    "ast_hash": "65c044a10d4cb93989a5204cdcf44edd",
+    "mtime": 1795644555.3694727,
+    "seen": 1795644679.6194701,
+    "ast_hash": "a12871220dacefa95e76bbd179c4a2ec",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
