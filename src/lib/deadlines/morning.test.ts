@@ -10,7 +10,7 @@ const MARCO = { userId: "u-marco", name: "Marco R." };
 
 function row(id: string, clientName: string, status: BoardRow["status"], documentsIn: boolean, today: string, team: Partial<Pick<BoardRow, "preparer" | "reviewer">> = {}): BoardRow {
   return {
-    id, clientId: `c-${id}`, clientName, clientCode: "", form: "1601-C", periodLabel: "March 2027", periodEnd: "2027-03-31", dueDate: "2027-04-12", status,
+    id, clientId: `c-${id}`, clientName, clientCode: "", form: "1601-C", periodLabel: "March 2027", periodEnd: "2027-03-31", dueDate: "2027-04-12", status, taxDue: null,
     preparer: RHEA, reviewer: MARCO, ...team, steps, risk: riskOf({ steps, status, documentsIn, today, holidays: none }),
   };
 }

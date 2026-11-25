@@ -23,6 +23,8 @@ export interface BoardRow {
   periodEnd: IsoDate;
   dueDate: IsoDate;
   status: FilingStatus;
+  /** Tax due on the return, once prepared (0 for a nil return). */
+  taxDue: number | null;
   preparer: { userId: string; name: string } | null;
   reviewer: { userId: string; name: string } | null;
   steps: Step[];
@@ -38,6 +40,7 @@ interface FilingRow {
   period_end: string;
   due_date: string;
   status: FilingStatus;
+  tax_due: string | number | null;
   clients: { name: string; code: string; submission_cutoff_day: number | null } | null;
 }
 
@@ -58,7 +61,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
   const [{ data: filings, error }, holidays] = await Promise.all([
     db
       .from("filing_instances")
-      .select("id, client_id, form, period_label, period_start, period_end, due_date, status, clients(name, code, submission_cutoff_day)")
+      .select("id, client_id, form, period_label, period_start, period_end, due_date, status, tax_due, clients(name, code, submission_cutoff_day)")
       .neq("status", "proof_uploaded")
       .lte("due_date", until)
       .gte("due_date", addDays(today, -120))
@@ -109,6 +112,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
       periodEnd: f.period_end,
       dueDate: f.due_date,
       status: f.status,
+      taxDue: f.tax_due == null ? null : Number(f.tax_due),
       preparer,
       reviewer,
       steps,
