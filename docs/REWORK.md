@@ -48,7 +48,9 @@ Lead → Prospect → Won → Onboarding → Client
 12. Missing 2307: the CWT is **claimed and followed up**; whether to keep claiming at year end is **the client's decision**, asked on the portal.
 13. Sign-off: **Prepared → Reviewed → Client approved → Owner approved → Filed & paid.** Nil returns skip client approval. The Owner approves once the client's payment **for that return's own item** is verified.
 14. **Filed & paid:** staff attach **one scanned copy** (return, proof of payment, attachments) on the return; it shows in the client's portal.
-15. **eSubmission:** after the Owner's approval, **the app sends** the DAT attachments (SLS, SLP, SAWT, QAP, alphalists) from the firm's mailbox to esubmission@bir.gov.ph and attaches the BIR's **validation report** from the reply. Errors: fix and resend. A return with attachments is complete only with its validation report.
+15. **eSubmission:** after the Owner's approval, **the app sends** the DAT attachments (SLS, SLP, SAWT, QAP, alphalists) from **attachments@tallocpa.com** to esubmission@bir.gov.ph and attaches the BIR's **validation report** from the reply in that mailbox. Errors: fix and resend. A return with attachments is complete only with its validation report. tallocpa.com is on Google Workspace, so one internal Google app covers Gmail and Calendar with no Google review.
+15a. **Tax codes per uploaded document:** OCR suggests the tax code(s) from the VAT figures and the withholding code from the ATC; the Inbox row shows them beside the account title; what staff confirm becomes that customer's or supplier's default for the client. A document with VATable and exempt amounts becomes two lines.
+15b. **Paying the client's dues (client's books):** when the Owner verifies the client's payment, the app records a Payment in the cash disbursements journal, dated the day the client paid: Dr EWT payable / Withholding tax – compensation payable / SSS, PhilHealth, Pag-IBIG payable / VAT payable, Cr Cash. **No clearing account.** VAT is first closed when the 2550Q is filed: Dr Output VAT, Cr Input VAT, Cr Creditable VAT withheld (WV), Cr VAT payable; an excess stays as Input VAT carried over.
 
 ### Collections and the portal
 16. The statement carries the retainer and each return and contribution as its own item. The **Owner ticks which items a verified payment pays**; the rest stay open and the client can keep paying until settled. Verified tax and contribution money is **cash for remittance** until remitted.
@@ -93,7 +95,7 @@ Existing data moves across in a migration: every approved document and register 
 | Phase | Dates | Scope |
 |---|---|---|
 | 0 · Week 1 | Merged Nov 25 | Five-place sidebar, Inbox by stream, payroll intake (PR #51). |
-| 1 · Books | Nov 26 – Dec 6 | Tax codes; Sales Invoices, Receipts, Purchase Invoices, Payments with AR/AP per party; Inbox approval posts to the Books; Manager-style modules, lists, Transaction Journal view, Summary; migration from the register; collapsible sidebar |
+| 1 · Books | Nov 26 – Dec 6 · database built Nov 25 | Tax codes; Sales Invoices, Receipts, Purchase Invoices, Payments with AR/AP per party; Inbox approval posts to the Books; Manager-style modules, lists, Transaction Journal view, Summary; migration from the register; collapsible sidebar |
 | 2 · Lock and payroll | Dec 7 – Dec 13 | Payslips in the Books; reviewer lock, unlock requests, amended-return flag; returns appear only for locked periods; Filings by due date with books still open |
 | 3 · Returns | Dec 14 – Dec 20 | Worksheets (2550Q, 0619-E, 1601-EQ, 1601-C, 1702Q) from tax codes; SLS/SLP/SAWT/QAP DAT; income tax method per client; 5-step sign-off with per-item payment check; filed copy; eSubmission through the firm's Gmail with the validation report |
 | 4 · Collections and portal | Dec 21 – Dec 31 | Items ticked on verification, cash for remittance, payment statuses; portal Home, Upload, Reports (filed returns, 2307 and 2316 generators, loose-leaf books), Billing (channel QR, previous statements) |
@@ -103,7 +105,7 @@ Each phase ships as its own pull request, with database tests for every new rule
 
 ## Needed from the Owner
 
-1. **Google:** if tallocpa.com is on Google Workspace, one internal Google Cloud app covers Calendar and Gmail with no Google review. Otherwise Gmail sending and reading needs Google's verification, which takes weeks; Phase 3 would then send eSubmission through the firm's mail server instead. Which is it?
+1. **Google (before Phase 3):** in Google Cloud under tallocpa.com, a project with an Internal consent screen, the Calendar and Gmail APIs on, and an OAuth client whose ID and secret go into Vercel. Set up the attachments@tallocpa.com mailbox.
 2. **Payment channels:** each bank or e-wallet you accept, with its QR image, account name and number (Settings).
 3. **Tax codes:** the full list from your Manager.io (the screenshot started at "Input VAT 12% (Capital Goods)"), so the codes and their form lines match yours.
 4. **Loose-leaf details per client:** permit number and registered address, if not already on the COR.
