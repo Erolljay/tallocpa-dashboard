@@ -335,6 +335,7 @@ export async function closeYearAction(clientId: string, yearEnd: string, partner
   const { error } = await supabase.rpc("close_books_year", { p_client: clientId, p_year_end: yearEnd, p_shares: shares });
   if (error) return { error: friendly(error.message) };
   revalidatePath(path(clientId), "layout");
+  revalidatePath(`/app/clients/${clientId}/year-end`);
   return { ok: "Closed." };
 }
 

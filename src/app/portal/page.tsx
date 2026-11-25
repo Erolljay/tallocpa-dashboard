@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { RiArrowRightSLine, RiCalendarScheduleLine, RiCheckboxCircleLine, RiErrorWarningLine, RiMailLine, RiTimeLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
-import { Badge, Button, Card, LinkButton, Skeleton } from "@/components/ui";
+import { Badge, Card, LinkButton, Skeleton } from "@/components/ui";
 import { nextCutoff } from "@/lib/documents/cutoff";
 import { showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
@@ -74,6 +74,8 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     Promise.all(clients.map((c) => supabase.rpc("portal_books_summary", { p_client: c.id, p_from: from, p_to: today }))),
     supabase.rpc("portal_client_team", { p_client: business.id }),
   ]);
+  const decisions = await Promise.all(clients.map((c) => supabase.rpc("missing_2307s", { p_client: c.id })));
+  const undecided = decisions.flatMap((d) => (d.data ?? []) as { claim: string | null; closed: boolean; year_ended: boolean }[]).filter((r) => r.year_ended && !r.closed && !r.claim).length;
 
   const summaryOf = new Map(clients.map((c, i) => [c.id, (summaries[i].data ?? null) as BooksSummaryRaw | null]));
   const openDues = cents((dues ?? []).reduce((a, d) => a + Number(d.open_amount), 0).toFixed(2));
@@ -87,6 +89,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     requests: (requests ?? []).map((r) => ({ id: r.id, subject: `${prefix(r.client_id)}${r.subject}` })),
     dues: openDues,
     duesLabel: `${formatPeso(openDues)} open${pendingProofs ? " · a payment is being verified" : ""}`,
+    missing2307Decisions: undecided,
     missing2307: months.flatMap((m, i) => ((checks[i].data as { cwt?: { party: string; amount: number }[] } | null)?.cwt ?? []).map((w) => ({ party: w.party, amount: cents(w.amount) }))),
   });
 
@@ -221,7 +224,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
 
       <BooksCards books={books ?? null} today={today} name={several ? business.name : null} />
 
-      <TeamCard team={(team ?? []) as TeamMember[]} name={several ? business.name : null} />
+      <TeamCard team={(team ?? []) as TeamMember[]} name={several ? business.name : null} bookHref={`/portal/book?business=${business.id}`} />
     </div>
   );
 }
@@ -279,9 +282,8 @@ interface TeamMember {
 const ROLE = { preparer: "Your bookkeeper", reviewer: "Your reviewer" } as const;
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
-/** The client's preparer and reviewer. Booking a meeting comes with the booking page (Phase 5); until then, email. */
-function TeamCard({ team, name }: { team: TeamMember[]; name: string | null }) {
-  const reviewer = team.find((t) => t.role === "reviewer") ?? team[0];
+/** The client's preparer and reviewer, and Book a meeting (decision 22): the reviewer's free times, with a Meet link. */
+function TeamCard({ team, name, bookHref }: { team: TeamMember[]; name: string | null; bookHref: string }) {
   return (
     <Card title={name ? `${name}: your team` : "Your team"}>
       {team.length === 0 ? (
@@ -304,17 +306,13 @@ function TeamCard({ team, name }: { team: TeamMember[]; name: string | null }) {
           ))}
         </ul>
       )}
-      <div className="mt-4 space-y-1 border-t border-separator-border pt-4">
-        <Button className="w-full justify-center" disabled aria-describedby="book-note">
-          <RiCalendarScheduleLine aria-hidden className="size-5" /> Book a meeting
-        </Button>
-        <p id="book-note" className="text-center text-caption-1-regular text-text-tertiary">
-          Online booking opens in January.
-          {reviewer?.email && (
-            <> Until then, <a href={`mailto:${reviewer.email}?subject=${encodeURIComponent("Meeting request")}`} className="text-button-ghost-foreground underline">email {reviewer.full_name.split(" ")[0]}</a>.</>
-          )}
-        </p>
-      </div>
+      {team.length > 0 && (
+        <div className="mt-4 border-t border-separator-border pt-4">
+          <LinkButton href={bookHref} variant="secondary" className="w-full justify-center">
+            <RiCalendarScheduleLine aria-hidden className="size-5" /> Book a meeting
+          </LinkButton>
+        </div>
+      )}
     </Card>
   );
 }

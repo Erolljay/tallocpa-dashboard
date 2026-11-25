@@ -6,13 +6,14 @@ import { cx } from "@/utils/cx";
 
 /*
  * The pages that sit under one sidebar place (rework, 25 November 2026): Home has
- * My work, Clients has customers and suppliers, requests and registrations,
+ * My work and the team calendar, Clients has customers and suppliers, requests and registrations,
  * Filings has Review. BoardUI underline tabs, as links so each page keeps its URL.
  */
 export const SECTIONS = {
   home: [
     { key: "overview", label: "Overview", href: "/app" },
     { key: "work", label: "My work", href: "/app/work" },
+    { key: "calendar", label: "Team calendar", href: "/app/calendar" },
   ],
   clients: [
     { key: "clients", label: "Clients", href: "/app/clients" },

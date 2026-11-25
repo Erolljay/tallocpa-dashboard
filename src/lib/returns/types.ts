@@ -63,6 +63,8 @@ export interface SourceDocument {
   /** CWT / VAT withheld on a Sales Invoice: whether the customer's 2307 is in, and when its absence was followed up. */
   cwtSupported?: boolean;
   cwtFollowedUpAt?: string | null;
+  /** CWT with no 2307: the client decided at year end to stop claiming it (decision 12). Left off the SAWT and the tax credits. */
+  cwtStopped?: boolean;
 }
 
 /** OSD, itemized, or 8% (individuals only), set per client (clients.income_tax_method). */
@@ -86,6 +88,24 @@ export interface EwtRemittance {
   settled: boolean;
   computed: boolean;
   remitted: Centavos;
+}
+
+/** One quarter's 1601-EQ for the 1604-E's summary of remittances (database function ewt_year_remittances). */
+export interface EwtQuarter {
+  /** First day of the quarter. */
+  quarterStart: string;
+  periodLabel: string | null;
+  status: string | null;
+  /** Filed and paid. */
+  settled: boolean;
+  computed: boolean;
+  /** Item 19 of the 1601-EQ worksheet: the quarter's taxes withheld. */
+  withheld: Centavos;
+  /** The 1601-EQ's penalties. */
+  penalties: Centavos;
+  filedOn: string | null;
+  paymentReference: string | null;
+  paidOn: string | null;
 }
 
 /** One employee's payslip of the month (database function payslips), the 1601-C's supporting schedule. */
@@ -122,6 +142,8 @@ export interface WorksheetContext {
   vatCarryOver?: VatCarryOver | null;
   /** 1601-EQ: the 0619-E of months 1 and 2. */
   ewtRemittances?: EwtRemittance[];
+  /** 1604-E: the four 1601-EQ of the year, for the summary of remittances. */
+  ewtYear?: EwtQuarter[];
   /** 1601-C: the month's payslips (a supporting schedule, not sent to the BIR). */
   payslips?: PayslipRow[];
   filing: { id: string; form: string; periodLabel: string; periodStart: string; periodEnd: string; dueDate: string };

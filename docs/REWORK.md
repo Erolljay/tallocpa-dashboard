@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51), Phases 1–2 (PR #53) and Phase 3 with Portal Billing and the Leads pipeline (PR #54) merged. Phase 4 built (PR #55). Phase 5 next: year-end, 1604-C/1604-E, Google Calendar. eSubmission waits on the Google setup. |
+| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51), Phases 1–2 (PR #53) and Phase 3 with Portal Billing and the Leads pipeline (PR #54) merged. Phase 4 (PR #55) merged. Phase 5 built: Year-end page with the Owner's closing entry, 1604-E from the year's QAP, final 2316s, the client's missing-2307 decision, Google Calendar team calendar and booking pages. eSubmission and the calendar wait on the Google setup. |
 | **Screens** | Clickable mockup per user (Owner, Reviewer, Preparer, Client), shared as a claude.ai artifact |
 | **Target** | Monthly work and the client portal live before 31 December 2026; year-end and the annual returns ready before their January deadlines |
 
@@ -104,7 +104,7 @@ Existing data moves across in a migration: every approved document and register 
 | 2 · Lock and payroll | Dec 7 – Dec 13 | Payslips in the Books; reviewer lock, unlock requests, amended-return flag; returns appear only for locked periods; Filings by due date with books still open |
 | 3 · Returns | Dec 14 – Dec 20 | Worksheets (2550Q, 0619-E, 1601-EQ, 1601-C, 1702Q) from tax codes; SLS/SLP/SAWT/QAP DAT; income tax method per client; 5-step sign-off with per-item payment check; filed copy; eSubmission through the firm's Gmail with the validation report |
 | 4 · Collections and portal | Dec 21 – Dec 31 | Items ticked on verification, cash for remittance, payment statuses; portal Home, Upload, Reports (filed returns, 2307 and 2316 generators, loose-leaf books), Billing (channel QR, previous statements) |
-| 5 · Year-end, leads, calendar | Jan 2 – Jan 15 | Year-end page and closing entry, 1604-C/1604-E with eSubmission, 2316 final; Leads pipeline with discovery calls; inquiry, discovery-call and onboarding answers into client Notes; Google Calendar team calendar and booking page |
+| 5 · Year-end, leads, calendar | Built Nov 25 (leads in PR #54) | Year-end page and closing entry, 1604-C/1604-E with eSubmission, 2316 final; Leads pipeline with discovery calls; inquiry, discovery-call and onboarding answers into client Notes; Google Calendar team calendar and booking page |
 
 ### What depends on Phase 3
 
@@ -123,7 +123,8 @@ Each phase ships as its own pull request, with database tests for every new rule
 
 ## Needed from the Owner
 
-1. **Google (before Phase 3):** in Google Cloud under tallocpa.com, a project with an Internal consent screen, the Calendar and Gmail APIs on, and an OAuth client whose ID and secret go into Vercel. Set up the attachments@tallocpa.com mailbox.
+1. **Google (before Phase 3):** in Google Cloud under tallocpa.com, a project with an Internal consent screen, the Calendar and Gmail APIs on, and an OAuth client whose ID and secret go into Vercel. Set up the attachments@tallocpa.com mailbox. For the calendar, also `GOOGLE_TOKEN_KEY` and the redirect URI (docs/SETUP.md, Google Calendar); then each staff member connects their calendar on Home → Team calendar.
 2. **Payment channels:** each bank or e-wallet you accept, with its QR image, account name and number (Settings).
 3. **Tax codes:** the full list from your Manager.io (the screenshot started at "Input VAT 12% (Capital Goods)"), so the codes and their form lines match yours.
 4. **Loose-leaf details per client:** permit number and registered address, if not already on the COR.
+5. **1604-E DAT:** run the first 1604-E DAT through the BIR Alphalist validation module before the first eSubmission; the worksheet warns until then. Its layout follows the 1604-C DAT and the QAP and has not been checked against a file the BIR accepted.

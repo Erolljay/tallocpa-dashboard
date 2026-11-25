@@ -10,7 +10,7 @@ import { OpeningChecklist } from "../opening-checklist";
 import { BooksFrame } from "../books-frame";
 import { booksMonth } from "@/lib/books/ui";
 import { manilaToday } from "@/lib/filings/run";
-import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, CloseYearForm, PermitForm, RelockForm, ReverseForm } from "../forms";
+import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, RelockForm, ReverseForm } from "../forms";
 
 export default function BooksToolsPage(props: PageProps<"/app/clients/[id]/books/tools">) {
   return (
@@ -244,7 +244,9 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
                     {closedOn.has(end) ? (
                       <Badge tone="done">Closed {fmtDate(closedOn.get(end)!.slice(0, 10))}</Badge>
                     ) : (
-                      <CloseYearForm clientId={id} yearEnd={end} partners={partners} />
+                      <Link href={`/app/clients/${id}/year-end?year=${end}`} className="text-body-regular text-button-ghost-foreground hover:underline">
+                        {isOwner ? "Close on the Year-end page" : "On the Year-end page (the Owner closes)"}
+                      </Link>
                     )}
                   </li>
                 ))}

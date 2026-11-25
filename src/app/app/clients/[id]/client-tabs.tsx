@@ -28,8 +28,7 @@ export function ClientTabs({ clientId, active, work, books }: { clientId: string
     ["inbox", "Inbox", `/app/documents?client=${clientId}`, work],
     ["books", "Books", `${c}/books`, work && books],
     ["returns", "Returns", `${c}/returns`, work],
-    // Year-end closing lives with the Books tools until its own page (phase 5).
-    ["year-end", "Year-end", `${c}/books/tools#year-end`, work && books],
+    ["year-end", "Year-end", `${c}/year-end`, work && books],
   ];
   return (
     <nav aria-label="Client" className="mb-6 flex gap-1 overflow-x-auto border-b border-separator-border">

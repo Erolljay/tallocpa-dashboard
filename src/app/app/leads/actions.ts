@@ -109,3 +109,12 @@ export async function convertLeadAction(leadId: string, _: LeadState, form: Form
   refresh(leadId);
   redirect(`/app/clients/${data as string}/onboarding`);
 }
+
+/** The lead's booking page link (decision 22): the reviewer's free times; the lead books the discovery call. */
+export async function bookingLinkAction(leadId: string): Promise<LeadState> {
+  await requireOwnerOrReviewer();
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("lead_booking_token", { p_lead: leadId });
+  if (error) return { error: error.message };
+  return { ok: "Send this link to the lead.", link: `/book/${data as string}` };
+}

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import {
   assignReviewerAction,
+  bookingLinkAction,
   convertLeadAction,
   markLostAction,
   recordCallAction,
@@ -137,6 +138,30 @@ export function ConvertForm({ leadId, defaultStart, staff, reviewers, leadReview
       <p className="text-caption-1-regular text-text-secondary">The client&apos;s reviewer may differ from the lead&apos;s. Either can be left for the Team card; the onboarding checklist asks for both.</p>
       <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Make the client (Onboarding)"}</Button>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
+    </form>
+  );
+}
+
+/** Shows the lead's booking link, to copy into an email. */
+export function BookingLink({ leadId }: { leadId: string }) {
+  const [state, action, pending] = useActionState(async () => bookingLinkAction(leadId), {} as LeadState);
+  const [copied, setCopied] = useState(false);
+  const url = state.link && typeof window !== "undefined" ? `${window.location.origin}${state.link}` : state.link;
+  if (state.link && url) {
+    return (
+      <div className="space-y-2">
+        <p className="break-all rounded-xl bg-background-secondary-default px-3 py-2 font-mono text-caption-1-regular text-text-primary">{url}</p>
+        <p className="text-body-regular text-text-secondary">
+          {state.ok}{" "}
+          <button type="button" className="underline" onClick={() => navigator.clipboard.writeText(url).then(() => setCopied(true))}>{copied ? "Link copied" : "Copy the link"}</button>
+        </p>
+      </div>
+    );
+  }
+  return (
+    <form action={action} className="space-y-2">
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Getting the link…" : "Get the booking link"}</Button>
+      <Result state={state} />
     </form>
   );
 }

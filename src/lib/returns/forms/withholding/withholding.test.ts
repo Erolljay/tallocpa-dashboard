@@ -47,8 +47,8 @@ const lineMap = (r: WorksheetResult) => Object.fromEntries(r.sections.flatMap((s
 const byKey = (r: WorksheetResult) => Object.fromEntries(r.sections.flatMap((s) => s.lines).map((l) => [l.key, l.amount]));
 
 describe("registry entries", () => {
-  it("cover 0619-E and 1601-EQ only (1601-C is the payroll module's)", () => {
-    expect(WITHHOLDING_FORMS.flatMap((m) => m.forms)).toEqual(["0619-E", "1601-EQ"]);
+  it("cover 0619-E, 1601-EQ and 1604-E (1601-C and 1604-C are the payroll module's)", () => {
+    expect(WITHHOLDING_FORMS.flatMap((m) => m.forms)).toEqual(["0619-E", "1601-EQ", "1604-E"]);
   });
 });
 

@@ -102,6 +102,12 @@ describe("todoList", () => {
     expect(t[2].href).toBe("/portal/requests/r1");
   });
 
+  it("asks for the year-end decision on missing 2307s before the follow-ups", () => {
+    const t = todoList({ returnedDocuments: 0, returnsToApprove: [], requests: [], dues: 0, missing2307: [{ party: "Bacolod Feeds", amount: 20_000 }], missing2307Decisions: 2 });
+    expect(t.map((x) => x.key)).toEqual(["2307-decide", "2307-Bacolod Feeds"]);
+    expect(t[0]).toMatchObject({ title: "Decide on 2 missing 2307s", href: "/portal/missing-2307" });
+  });
+
   it("is empty when nothing waits on the client", () => {
     expect(todoList({ returnedDocuments: 0, returnsToApprove: [], requests: [], dues: 0, missing2307: [] })).toEqual([]);
   });

@@ -81,8 +81,8 @@ describe.skipIf(!url)("ledger: year-end closing", () => {
     const { id, acct } = await books("TC-9701", "stock_corporation", "corporation");
     await post(id, "2025-03-01", [[acct.cash_on_hand, 50_000, 0], [acct.sales, 0, 50_000]]);
     await post(id, "2025-06-01", [[acct.rent, 20_000, 0], [acct.cash_on_hand, 0, 20_000]]);
-    await expect(as(STAFF, `select public.close_books_year($1, '2025-11-30')`, [id])).rejects.toThrow(/last day of the taxable year/);
-    await expect(as(STAFF, `select public.close_books_year($1, '2099-12-31')`, [id])).rejects.toThrow(/not ended yet/);
+    await expect(as(OWNER, `select public.close_books_year($1, '2025-11-30')`, [id])).rejects.toThrow(/last day of the taxable year/);
+    await expect(as(OWNER, `select public.close_books_year($1, '2099-12-31')`, [id])).rejects.toThrow(/not ended yet/);
     // A filed return locks December: the closing entry still goes through.
     const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, '1601-C', 'monthly', '2020-01-01') returning id`, [id])).rows[0].id;
     await db.query(
@@ -90,14 +90,16 @@ describe.skipIf(!url)("ledger: year-end closing", () => {
        values ($1, $2, '1601-C', '2025-12', '2025-12-01', '2025-12-31', '1601C', '2026-01-10', '2026-01-10', 'filed')`,
       [ob, id],
     );
-    const e = (await as(STAFF, `select public.close_books_year($1, '2025-12-31') as id`, [id])).rows[0].id;
+    // The closing entry is the Owner's (migration 20261210000002).
+    await expect(as(STAFF, `select public.close_books_year($1, '2025-12-31')`, [id])).rejects.toThrow(/Only the Owner posts or reverses the closing entry/);
+    const e = (await as(OWNER, `select public.close_books_year($1, '2025-12-31') as id`, [id])).rows[0].id;
     const lines = (await db.query(`select a.template_key as k, l.debit, l.credit from public.journal_lines l join public.ledger_accounts a on a.id = l.account_id where l.entry_id = $1 order by l.line_no`, [e])).rows;
     expect(lines).toEqual([
       { k: "sales", debit: "50000.00", credit: "0.00" },
       { k: "rent", debit: "0.00", credit: "20000.00" },
       { k: "retained_earnings", debit: "0.00", credit: "30000.00" },
     ]);
-    await expect(as(STAFF, `select public.close_books_year($1, '2025-12-31')`, [id])).rejects.toThrow(/already closed/);
+    await expect(as(OWNER, `select public.close_books_year($1, '2025-12-31')`, [id])).rejects.toThrow(/already closed/);
 
     // The year, before closing; the next year opens after it.
     expect(await tb(id, "2025-01-01", "2025-12-31")).toMatchObject({ sales: [0, -5_000_000 / 100], rent: [0, 20_000], cash_on_hand: [0, 30_000] });
@@ -110,26 +112,27 @@ describe.skipIf(!url)("ledger: year-end closing", () => {
     expect(Number(income)).toBe(-30_000);
 
     // Reversing the closing entry (dated in the locked December) reopens the year for closing.
-    await as(STAFF, `select public.reverse_journal_entry($1, '2025-12-31', 'Missed accrual')`, [e]);
+    await expect(as(STAFF, `select public.reverse_journal_entry($1, '2025-12-31', 'Missed accrual')`, [e])).rejects.toThrow(/Only the Owner/);
+    await as(OWNER, `select public.reverse_journal_entry($1, '2025-12-31', 'Missed accrual')`, [e]);
     expect((await tb(id, "2026-01-01", "2026-01-31")).retained_earnings).toBeUndefined();
-    expect(await as(STAFF, `select public.close_books_year($1, '2025-12-31') as id`, [id]).then((r) => r.rows[0].id)).toBeTruthy();
+    expect(await as(OWNER, `select public.close_books_year($1, '2025-12-31') as id`, [id]).then((r) => r.rows[0].id)).toBeTruthy();
   });
 
   it("closes a sole proprietor's income and drawings into capital", async () => {
     const { id, acct } = await books("TC-9702", "sole_proprietorship", "individual");
     await post(id, "2025-02-01", [[acct.cash_on_hand, 10_000, 0], [acct.service_income, 0, 10_000]]);
     await post(id, "2025-02-02", [[acct.owners_drawings, 4_000, 0], [acct.cash_on_hand, 0, 4_000]]);
-    await as(STAFF, `select public.close_books_year($1, '2025-12-31')`, [id]);
+    await as(OWNER, `select public.close_books_year($1, '2025-12-31')`, [id]);
     expect(await tb(id, "2026-01-01", "2026-01-31")).toEqual({ cash_on_hand: [6_000, 6_000], owners_capital: [-6_000, -6_000] });
   });
 
   it("splits a partnership's income by the partners' shares", async () => {
     const { id, acct } = await books("TC-9703", "partnership", "partnership");
     await post(id, "2025-02-01", [[acct.cash_on_hand, 10_000.01, 0], [acct.service_income, 0, 10_000.01]]);
-    await expect(as(STAFF, `select public.close_books_year($1, '2025-12-31')`, [id])).rejects.toThrow(/each partner's share/);
+    await expect(as(OWNER, `select public.close_books_year($1, '2025-12-31')`, [id])).rejects.toThrow(/each partner's share/);
     const shares = (a: number, b: number) => JSON.stringify([{ account_id: acct.partner_a_capital, percent: a }, { account_id: acct.partner_b_capital, percent: b }]);
-    await expect(as(STAFF, `select public.close_books_year($1, '2025-12-31', $2)`, [id, shares(60, 30)])).rejects.toThrow(/add up to 90 percent/);
-    await as(STAFF, `select public.close_books_year($1, '2025-12-31', $2)`, [id, shares(60, 40)]);
+    await expect(as(OWNER, `select public.close_books_year($1, '2025-12-31', $2)`, [id, shares(60, 30)])).rejects.toThrow(/add up to 90 percent/);
+    await as(OWNER, `select public.close_books_year($1, '2025-12-31', $2)`, [id, shares(60, 40)]);
     const next = await tb(id, "2026-01-01", "2026-01-31");
     expect(next.partner_a_capital).toEqual([-6_000.01, -6_000.01]);
     expect(next.partner_b_capital).toEqual([-4_000, -4_000]);
