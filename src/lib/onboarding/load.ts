@@ -29,13 +29,26 @@ export async function loadOnboarding(db: SupabaseClient, clientId: string, fisca
     count(db.from("batch_uploads").select("id", { count: "exact", head: true }).eq("client_id", clientId)),
     count(db.from("employees").select("id", { count: "exact", head: true }).eq("client_id", clientId)),
   ]);
+  // Phase 2: a proposal accepted online is the client's proposal and signed contract.
+  const { data: funnel } = await db
+    .from("proposals")
+    .select("token, accepted_at, accepted_name, accepted_position, monthly_retainer, leads!inner(client_id)")
+    .eq("leads.client_id", clientId)
+    .eq("status", "accepted")
+    .order("accepted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const ids = (users ?? []).map((u) => u.user_id as string);
   const { data: emails } = ids.length ? await db.rpc("user_emails", { p_user_ids: ids }) : { data: [] };
   const fileRows = (files.data ?? []) as ClientFileRow[];
   const contracts = fileRows.filter((f) => f.kind === "contract");
   const facts: OnboardingFacts = {
     clientId,
-    files: { proposal: fileRows.filter((f) => f.kind === "proposal").length, contract: contracts.length, contractSigned: contracts.some((f) => f.signed_on) },
+    files: {
+      proposal: fileRows.filter((f) => f.kind === "proposal").length + (funnel ? 1 : 0),
+      contract: contracts.length + (funnel ? 1 : 0),
+      contractSigned: Boolean(funnel) || contracts.some((f) => f.signed_on),
+    },
     engagementActive: (eng ?? []).length > 0,
     corRecorded: ((reg?.tax_types as unknown[] | null) ?? []).length > 0,
     obligations,
@@ -51,5 +64,8 @@ export async function loadOnboarding(db: SupabaseClient, clientId: string, fisca
     employees,
     ticks: new Map(((ticks ?? []) as { item: string; note: string | null; done_by: string; done_at: string }[]).map((t) => [t.item, { by: t.done_by, at: String(t.done_at).slice(0, 10), note: t.note }])),
   };
-  return { facts, files: fileRows };
+  const accepted = funnel
+    ? { token: funnel.token as string, acceptedAt: String(funnel.accepted_at), acceptedName: funnel.accepted_name as string, acceptedPosition: funnel.accepted_position as string | null }
+    : null;
+  return { facts, files: fileRows, accepted };
 }
