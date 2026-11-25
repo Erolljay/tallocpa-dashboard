@@ -11,6 +11,7 @@ import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
+import { NotesCard } from "./notes-card";
 import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
@@ -240,6 +241,10 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           )}
           {isOwner && <ClientUserForm clientId={id} />}
         </Card>
+
+        <Suspense fallback={<Skeleton rows={3} />}>
+          <NotesCard clientId={id} canWrite={canWork} />
+        </Suspense>
       </div>
     </>
   );

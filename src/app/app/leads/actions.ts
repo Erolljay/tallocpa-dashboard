@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOwner } from "@/lib/auth";
+import { requireOwner, requireOwnerOrReviewer } from "@/lib/auth";
 import { addDays } from "@/lib/deadlines/dates";
 import { buildQuote } from "@/lib/fees/quote";
 import { toSettings } from "@/lib/fees/schedule";
@@ -17,6 +17,8 @@ const refresh = (id?: string) => {
   revalidatePath("/app/leads");
   if (id) revalidatePath(`/app/leads/${id}`);
 };
+const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+const uuidOrNull = (v: string) => (/^[0-9a-f-]{36}$/i.test(v) ? v : null);
 
 export async function setFunnelOpenAction(open: boolean): Promise<LeadState> {
   await requireOwner();
@@ -27,18 +29,42 @@ export async function setFunnelOpenAction(open: boolean): Promise<LeadState> {
   return { ok: open ? "The funnel is open to the public." : "The funnel is closed; only staff can try it." };
 }
 
-/** Phase 2, step 3: a proposal from the lead's profile, priced on today's active fee schedule. */
+/** The Owner assigns the reviewer who holds the discovery call. */
+export async function assignReviewerAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("assign_lead_reviewer", { p_lead: leadId, p_reviewer: uuidOrNull(text(form, "reviewer")) });
+  if (error) return { error: error.message };
+  refresh(leadId);
+  return { ok: "Saved." };
+}
+
+/** The assigned reviewer records the discovery call. The time is entered in Manila time. */
+export async function recordCallAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
+  await requireOwnerOrReviewer();
+  const heldAt = text(form, "held_at");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(heldAt)) return { error: "Enter the date and time of the call." };
+  const notes = text(form, "notes");
+  if (!notes) return { error: "Write the notes of the call." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("record_discovery_call", { p_lead: leadId, p_held_at: `${heldAt}:00+08:00`, p_notes: notes });
+  if (error) return { error: error.message };
+  refresh(leadId);
+  return { ok: "Discovery call recorded." };
+}
+
+/** Funnel step 3: a proposal from the lead's profile, priced on today's active fee schedule. The Owner or the lead's reviewer. */
 export async function sendProposalAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
-  const owner = await requireOwner();
+  const me = await requireOwnerOrReviewer();
   const supabase = await supabaseServer();
   const { data: lead } = await supabase.from("leads").select("id, profile").eq("id", leadId).maybeSingle();
   if (!lead) return { error: "Lead not found." };
-  const schedule = (await loadSchedules(supabase, owner.staff.brandId)).find((s) => s.status === "active");
-  if (!schedule) return { error: "Activate a fee schedule first (Settings → Fee schedule)." };
-  const [items, taxOnFee] = await Promise.all([loadItems(supabase, schedule.id), loadTaxOnFee(supabase, owner.staff.brandId)]);
+  const schedule = (await loadSchedules(supabase, me.staff.brandId)).find((s) => s.status === "active");
+  if (!schedule) return { error: "The Owner activates a fee schedule first (Settings → Fee schedule)." };
+  const [items, taxOnFee] = await Promise.all([loadItems(supabase, schedule.id), loadTaxOnFee(supabase, me.staff.brandId)]);
   const today = manilaToday();
   const quote = buildQuote({ profile: lead.profile as ClientProfile, items, settings: toSettings(schedule), taxOnFee, quoteDate: today });
-  const terms = String(form.get("terms") ?? "").trim();
+  const terms = text(form, "terms");
   if (!terms) return { error: "The proposal needs its terms of engagement." };
   const days = Math.min(Math.max(Number(form.get("valid_days") ?? 30) || 30, 1), 120);
   const { data, error } = await supabase.rpc("create_proposal", {
@@ -49,22 +75,36 @@ export async function sendProposalAction(leadId: string, _: LeadState, form: For
   return { ok: "Proposal ready. Send the link to the prospect.", link: `/proposal/${(data as { token: string }).token}` };
 }
 
-export async function setLeadStatusAction(leadId: string, status: "new" | "lost", _: LeadState, form: FormData): Promise<LeadState> {
-  await requireOwner();
+/** Lost needs its reason. */
+export async function markLostAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
+  await requireOwnerOrReviewer();
+  const reason = text(form, "reason");
+  if (!reason) return { error: "Give the reason the lead was lost." };
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("set_lead_status", { p_lead: leadId, p_status: status, p_reason: String(form.get("reason") ?? "") || null });
+  const { error } = await supabase.rpc("mark_lead_lost", { p_lead: leadId, p_reason: reason });
   if (error) return { error: error.message };
   refresh(leadId);
-  return { ok: status === "lost" ? "Marked lost." : "Reopened." };
+  return { ok: "Marked lost." };
 }
 
-/** Phase 2, step 5: the client, in Onboarding. */
+export async function reopenLeadAction(leadId: string): Promise<LeadState> {
+  await requireOwnerOrReviewer();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("reopen_lead", { p_lead: leadId });
+  if (error) return { error: error.message };
+  refresh(leadId);
+  return { ok: "Reopened." };
+}
+
+/** Funnel step 5: the client, in Onboarding, with its own preparer and reviewer. */
 export async function convertLeadAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
   await requireOwner();
-  const start = String(form.get("start") ?? "");
+  const start = text(form, "start");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return { error: "Choose the date the services start." };
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.rpc("convert_lead", { p_lead: leadId, p_start: start });
+  const { data, error } = await supabase.rpc("convert_lead", {
+    p_lead: leadId, p_start: start, p_preparer: uuidOrNull(text(form, "preparer")), p_reviewer: uuidOrNull(text(form, "reviewer")),
+  });
   if (error) return { error: error.message };
   refresh(leadId);
   redirect(`/app/clients/${data as string}/onboarding`);
