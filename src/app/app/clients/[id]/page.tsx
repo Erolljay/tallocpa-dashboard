@@ -54,6 +54,8 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const cases = registrationCase.data ?? [];
   const openNewBusiness = cases.some((c) => c.kind === "new_business" && c.status === "open");
   const taxTypes = ((registration.data?.tax_types ?? []) as TaxType[]).map((t) => TAX_TYPES[t] ?? t);
+  const canWork = isOwner || (team.data ?? []).some((a) => a.user_id === me.userId);
+  const hasBooks = (engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active");
   const retainerTotal = (engagements.data ?? []).filter((e) => e.status === "active").reduce((s, e) => s + Number(e.monthly_retainer), 0);
 
   return (
@@ -69,12 +71,19 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           </div>
         }
       />
-      <ClientTabs
-        clientId={id}
-        active="overview"
-        work={isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)}
-        books={(engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active")}
-      />
+      <ClientTabs clientId={id} active="overview" work={canWork} books={hasBooks} />
+      <nav aria-label="Work areas" className="mb-6 flex flex-wrap gap-2">
+        <LinkButton href={`/app/clients/${id}/onboarding`} variant="secondary" size="sm">Onboarding</LinkButton>
+        {canWork && (
+          <>
+            <LinkButton href={`/app/clients/${id}/register`} variant="secondary" size="sm">Register</LinkButton>
+            <LinkButton href={`/app/clients/${id}/batch`} variant="secondary" size="sm">Batch upload</LinkButton>
+            <LinkButton href={`/app/clients/${id}/workpapers`} variant="secondary" size="sm">Workpapers</LinkButton>
+            <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary" size="sm">Payroll</LinkButton>
+            <LinkButton href={`/app/clients/${id}/fixed-assets`} variant="secondary" size="sm">Fixed assets</LinkButton>
+          </>
+        )}
+      </nav>
       {client.status === "onboarding" && (
         <div className="mb-6"><Notice tone="waiting">This client is onboarding. The <Link href={`/app/clients/${id}/onboarding`} className="underline">Onboarding tab</Link> has the checklist, the proposal and the signed contract.</Notice></div>
       )}

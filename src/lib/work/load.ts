@@ -87,7 +87,7 @@ export async function loadMyWork(db: SupabaseClient, me: { userId: string; role:
   }
   for (const [k, n] of count(suggested as { client_id: string; entry_date: string }[] | null, (e) => `${e.client_id}|${ym(e.entry_date)}`)) {
     const [c, p] = k.split("|");
-    push(c, p, "preparer", `Confirm ${plural(n, "suggested entry", "suggested entries")}`, `/app/clients/${c}/books`);
+    push(c, p, "preparer", `Confirm ${plural(n, "suggested entry", "suggested entries")}`, `/app/clients/${c}/books/tools`);
   }
 
   // Payroll runs not in the books (clients with books, months from the books start).
