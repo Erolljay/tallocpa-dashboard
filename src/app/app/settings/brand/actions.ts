@@ -23,7 +23,7 @@ function refresh() {
   revalidatePath("/app/settings/brand");
   revalidatePath("/app/settings");
   revalidatePath("/app/collections", "layout");
-  revalidatePath("/portal/statement", "layout");
+  revalidatePath("/portal/billing", "layout");
 }
 
 /** Saves one card of the brand settings. Changing the tax on our fee needs the Owner's explicit confirmation. */

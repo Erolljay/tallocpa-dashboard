@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOpenItems, agingBucket, describeBillingDays, nextBillingDate, parseBillingDays } from "./collections";
+import { ageOpenItems, agingBucket, describeBillingDays, groupPaidItems, nextBillingDate, parseBillingDays } from "./collections";
 
 describe("agingBucket", () => {
   it("puts amounts not yet due in current, then 30/60/90-day buckets", () => {
@@ -47,5 +47,22 @@ describe("billing days", () => {
     expect(parseBillingDays("20 10 10")).toEqual({ days: [10, 20] });
     expect(parseBillingDays("31")).toHaveProperty("error");
     expect(parseBillingDays("")).toHaveProperty("error");
+  });
+});
+
+describe("groupPaidItems", () => {
+  it("lists what each payment paid, in allocation order, joining parts of the same item", () => {
+    const items = groupPaidItems([
+      { deposit_id: "d1", due_id: "retainer", amount: "3000.00", client_dues: { description: "Retainer, October" } },
+      { deposit_id: "d1", due_id: "tax", amount: "1500.00", client_dues: { description: "1601-C October" } },
+      { deposit_id: "d2", due_id: "tax", amount: "500.00", client_dues: { description: "1601-C October" } },
+      { deposit_id: "d1", due_id: "retainer", amount: "0.50", client_dues: null },
+    ]);
+    expect(items.get("d1")).toEqual([
+      { dueId: "retainer", description: "Retainer, October", amount: 3000.5 },
+      { dueId: "tax", description: "1601-C October", amount: 1500 },
+    ]);
+    expect(items.get("d2")).toEqual([{ dueId: "tax", description: "1601-C October", amount: 500 }]);
+    expect(items.get("d3")).toBeUndefined();
   });
 });
