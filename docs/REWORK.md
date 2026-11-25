@@ -28,8 +28,13 @@ A document has three states: **Sent → Approved (or Returned) → In register**
 3. **The monthly cutoff and "I've sent everything" stay.**
 4. **The whole lifecycle is in scope**: lead → proposal and signing → onboarding → monthly work → year-end.
 5. **Client approval of returns stays.** Nil returns skip client approval but are still reviewed and approved by the Owner.
-6. **Sign-off order: preparer → reviewer → client → Owner → filed and paid.** The Owner approves only after the client's cash for the dues is in. "Cash received" means a payment proof the Owner has verified (portal Pay Now → Verify).
-7. **The nine workpaper schedules give way to one Check panel per client and month**: register totals vs return lines vs books, green or red, with a note where they differ.
+6. **Sign-off order: preparer → reviewer → client → Owner → filed and paid.** The Owner approves only after the client's cash for that return is in.
+7. **How a payment reaches each due.** The statement carries every item: the retainer, each return, and SSS, PhilHealth and Pag-IBIG.
+   - The client uploads a proof and may pay only part of it (for example the retainer and the 1601-C).
+   - When verifying, the Owner ticks which items the payment covers. Those show Paid; the rest stay open, and the client can keep adding payments until the statement is settled.
+   - Verified tax and contribution money goes to the client's **cash for remittance**, which goes down when the firm pays the BIR, SSS, PhilHealth or Pag-IBIG.
+   - At Owner approval a return shows "Payment verified ✓" from its own item only. An unpaid retainer does not block a paid return. (Today a verified payment is applied oldest item first, and the payment check also counts other open items; both change.)
+8. **The nine workpaper schedules give way to one Check panel per client and month**: register totals vs return lines vs books, green or red, with a note where they differ.
 
 ## Navigation
 
@@ -47,5 +52,5 @@ A document has three states: **Sent → Approved (or Returned) → In register**
 |---|---|---|---|
 | 1 | 26 Nov – 3 Dec | Five-item sidebar with section tabs; Firm page; Inbox tabs by stream; payroll intake (own format) | **Built** |
 | 2 | 4 – 10 Dec | Registers with column-total cards, edited in place; payroll register from the Tallo template; Books tab (TB, FS, Lock month); new client tabs | To do |
-| 3 | 11 – 17 Dec | Check panel; five-step sign-off with the cash check and the nil-return skip; one Filings page; portal Home with balance and dues cards | To do |
+| 3 | 11 – 17 Dec | Check panel; five-step sign-off with the per-item payment check and the nil-return skip; verify a payment by ticking the items it pays; cash for remittance; one Filings page; portal Home with balance and dues cards | To do |
 | 4–5 | 18 – 31 Dec | Leads with the quote on the same page; signing creates the client, engagement and retainer; onboarding cut to six essentials; Year-end page | To do |
