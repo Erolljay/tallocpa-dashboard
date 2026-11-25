@@ -38,13 +38,15 @@ create policy workpaper_explanations_delete on public.workpaper_explanations for
  *   compensation     net debit to Salaries and Wages, and 13th Month Pay and Employee Benefits
  *   cash_from_sales  debits to cash and bank accounts in the posted entries of the
  *                    period's cash sales (register lines of the period)
+ *   ppe_additions    net debit to property and equipment accounts other than land (A1, T-9)
+ *   depreciation     net debit to Depreciation Expense, direct or not (A1, T-10)
  *   suggested        entries of the period still only suggested
  * Runs as the caller, so row-level security applies.
  */
 create or replace function public.workpaper_ledger(p_client uuid, p_from date, p_to date) returns jsonb
 language sql stable security invoker set search_path = '' as $$
   with lines as (
-    select a.type, a.control, a.template_key, l.debit, l.credit
+    select a.type, a.control, a.template_key, a.fs_line, a.normal_side, l.debit, l.credit
     from public.journal_lines l
     join public.journal_entries e on e.id = l.entry_id
     join public.ledger_accounts a on a.id = l.account_id
@@ -66,6 +68,8 @@ language sql stable security invoker set search_path = '' as $$
       join public.ledger_accounts a on a.id = l.account_id and a.control in ('cash', 'bank')
       where r.client_id = p_client and r.kind = 'sale' and r.terms = 'cash' and r.month between date_trunc('month', p_from)::date and p_to
     ), 0),
+    'ppe_additions', coalesce((select sum(debit - credit) from lines where fs_line = 'ppe' and normal_side = 'debit' and coalesce(template_key, '') <> 'land'), 0),
+    'depreciation', coalesce((select sum(debit - credit) from lines where template_key in ('depreciation', 'depreciation_direct')), 0),
     'suggested', (select count(*) from public.journal_entries e where e.client_id = p_client and e.status = 'suggested' and e.entry_date between p_from and p_to)
   )
 $$;

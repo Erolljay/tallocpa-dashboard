@@ -13,8 +13,8 @@
  *   T-6  Tax withheld on compensation: payroll register vs Withholding Tax Payable – Compensation
  *   T-7  Gross compensation: payroll register vs salaries, wages and benefits in the books
  *   T-8  Net receipts: sales register vs the cash and bank debits of those sales
- *   T-9  Asset additions: fixed asset register vs property and equipment   (after A1)
- *   T-10 Depreciation: schedule vs Depreciation Expense                    (after A1)
+ *   T-9  Asset additions: fixed asset register vs property and equipment (land left out)
+ *   T-10 Depreciation: schedule vs Depreciation Expense
  * The books side counts posted entries only: a suggested entry is not in the books yet.
  */
 import type { Centavos } from "@/lib/returns/types";
@@ -56,8 +56,20 @@ export interface LedgerTotals {
   compensation: Centavos;
   /** Debits to cash and bank accounts in the posted entries of the month's cash sales. */
   cashFromSales: Centavos;
+  /** Net debit to property and equipment other than land (T-9). */
+  ppeAdditions: Centavos;
+  /** Net debit to Depreciation Expense (T-10). */
+  depreciation: Centavos;
   /** Entries of the month still only suggested. */
   suggested: number;
+}
+
+/** The fixed asset register's month (src/lib/assets/schedule.ts). */
+export interface AssetTotals {
+  additions: Centavos;
+  depreciation: Centavos;
+  /** Assets bought before the month whose depreciation is not set up. */
+  waiting: number;
 }
 
 export interface PayrollTotals {
@@ -74,6 +86,8 @@ export interface TieInputs {
   ledger: LedgerTotals | null;
   /** Null when the client has no payroll for the month. */
   payroll: PayrollTotals | null;
+  /** The fixed asset register's month; null when not loaded. */
+  assets?: AssetTotals | null;
   /** Written explanations by tie-out. */
   explanations: Partial<Record<TieId, string>>;
 }
@@ -89,7 +103,8 @@ export function tieOuts(input: TieInputs): TieOut[] {
   const unconfirmed = ledger && ledger.suggested > 0 ? `${ledger.suggested} entr${ledger.suggested === 1 ? "y is" : "ies are"} still suggested; confirm them on the Books page.` : null;
   const noBooks = "This client has no account titles yet.";
   const noPayroll = "No payroll this month.";
-  const afterA1 = "Comes with the fixed asset register (A1).";
+  const assets = input.assets ?? null;
+  const waiting = assets && assets.waiting > 0 ? `${assets.waiting} asset${assets.waiting === 1 ? " waits" : "s wait"} for depreciation setup on the Fixed assets page.` : null;
 
   const tie = (id: TieId, what: string, refs: string[], left: [string, Centavos | null], right: [string, Centavos | null], na: string | null, hint: string | null = null): TieOut => {
     if (na) return { id, what, refs, left: { label: left[0], amount: null }, right: { label: right[0], amount: null }, difference: null, status: "not_applicable", note: na, explanation: null };
@@ -130,8 +145,12 @@ export function tieOuts(input: TieInputs): TieOut[] {
       "Payroll does not post to the books yet: record the month's payroll entry."),
     tie("T-8", "Net receipts: sales register vs cash and bank debits from those sales", ["10", "A"],
       ["Net receipts, cash sales", cashSalesNet], ["Cash and bank debits", ledger?.cashFromSales ?? null], ledger ? null : noBooks, unconfirmed),
-    tie("T-9", "Asset additions: fixed asset register vs property and equipment", ["E"], ["Fixed asset register", null], ["Property and equipment", null], afterA1),
-    tie("T-10", "Depreciation: schedule vs Depreciation Expense", ["E"], ["Depreciation schedule", null], ["Depreciation Expense", null], afterA1),
+    tie("T-9", "Asset additions: fixed asset register vs property and equipment in the books", ["E"],
+      ["Fixed asset register", assets?.additions ?? 0], ["Property and equipment", ledger?.ppeAdditions ?? null], ledger ? null : noBooks,
+      unconfirmed ?? "An item under ₱10,000 booked to an asset account (expense it, decision 12), an asset bought without a document, or a manual entry."),
+    tie("T-10", "Depreciation: schedule vs Depreciation Expense in the books", ["E"],
+      ["Depreciation schedule", assets?.depreciation ?? 0], ["Depreciation Expense", ledger?.depreciation ?? null], ledger ? null : noBooks,
+      waiting ?? "Run the month's depreciation on the Fixed assets page, or reverse a manual depreciation entry."),
   ];
 }
 

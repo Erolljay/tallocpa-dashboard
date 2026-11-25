@@ -10,7 +10,9 @@ import { loadPayrollContext } from "@/lib/payroll/load";
 import { buildYear, month1601C } from "@/lib/payroll/year";
 import { toRegisterLine, type RegisterLine, type RegisterRow } from "@/lib/register/parts";
 import { toCentavos } from "@/lib/returns/money";
-import { tieOuts, type LedgerTotals, type PayrollTotals, type TieId, type TieOut } from "./tieouts";
+import { loadAssets } from "@/lib/assets/load";
+import { monthTotals } from "@/lib/assets/schedule";
+import { tieOuts, type AssetTotals, type LedgerTotals, type PayrollTotals, type TieId, type TieOut } from "./tieouts";
 
 const COLUMNS =
   "id, document_id, kind, source, month, line_date, reference, party_name, party_tin, terms, vatable, vat_exempt, zero_rated, vat, total, discount, vat_withheld, other_deduction, atc, withholding, net, slp_category, vat_registered";
@@ -32,6 +34,7 @@ export interface PeriodFile {
   quarterToDate: RegisterLine[];
   ledger: LedgerTotals | null;
   payroll: PayrollTotals | null;
+  assets: AssetTotals | null;
   ties: TieOut[];
   explainedBy: Partial<Record<TieId, { at: string }>>;
 }
@@ -56,8 +59,17 @@ export async function loadPeriodFile(db: SupabaseClient, clientId: string, month
     const j = (l ?? {}) as Record<string, unknown>;
     ledger = {
       revenue: c(j.revenue), outputVat: c(j.output_vat), inputVat: c(j.input_vat), ewtPayable: c(j.ewt_payable),
-      wtcPayable: c(j.wtc_payable), compensation: c(j.compensation), cashFromSales: c(j.cash_from_sales), suggested: Number(j.suggested ?? 0),
+      wtcPayable: c(j.wtc_payable), compensation: c(j.compensation), cashFromSales: c(j.cash_from_sales),
+      ppeAdditions: c(j.ppe_additions), depreciation: c(j.depreciation), suggested: Number(j.suggested ?? 0),
     };
+  }
+
+  // The fixed asset register's month (T-9, T-10).
+  let assets: AssetTotals | null = null;
+  if (books) {
+    const list = await loadAssets(db, clientId);
+    const t = monthTotals(list, month);
+    assets = { additions: t.additions, depreciation: t.book, waiting: t.waiting.filter((a) => a.acquiredOn < month).length };
   }
 
   let payroll: PayrollTotals | null = null;
@@ -73,5 +85,5 @@ export async function loadPeriodFile(db: SupabaseClient, clientId: string, month
     explanations[n.tie] = n.explanation;
     explainedBy[n.tie] = { at: n.explained_at };
   }
-  return { month, lines, quarterToDate: all, ledger, payroll, ties: tieOuts({ month: lines, quarterToDate: all, ledger, payroll, explanations }), explainedBy };
+  return { month, lines, quarterToDate: all, ledger, payroll, assets, ties: tieOuts({ month: lines, quarterToDate: all, ledger, payroll, assets, explanations }), explainedBy };
 }

@@ -10,7 +10,7 @@ const row = (over: Partial<RegisterRow>): RegisterRow => ({
 });
 const sale = toRegisterLine(row({ vatable: "120000.00", vat: "14400.00", total: "134400.00", withholding: "1200.00", net: "133200.00" }));
 const buy = toRegisterLine(row({ kind: "purchase", vatable: "45000.00", vat: "5400.00", total: "50400.00", withholding: "2250.00", net: "48150.00" }));
-const books: LedgerTotals = { revenue: 12000000, outputVat: 1440000, inputVat: 540000, ewtPayable: 225000, wtcPayable: 48390, compensation: 23650000, cashFromSales: 13320000, suggested: 0 };
+const books: LedgerTotals = { revenue: 12000000, outputVat: 1440000, inputVat: 540000, ewtPayable: 225000, wtcPayable: 48390, compensation: 23650000, cashFromSales: 13320000, ppeAdditions: 0, depreciation: 0, suggested: 0 };
 const base = { month: [sale, buy], quarterToDate: [sale, buy], ledger: books, payroll: { gross: 23650000, taxWithheld: 48390 }, explanations: {} };
 const byId = (ties: ReturnType<typeof tieOuts>) => Object.fromEntries(ties.map((t) => [t.id, t]));
 
@@ -19,7 +19,8 @@ describe("tie-outs", () => {
     const t = byId(tieOuts(base));
     for (const id of ["T-1", "T-2", "T-4", "T-5", "T-6", "T-7", "T-8"]) expect(t[id].status).toBe("clean");
     expect(t["T-3"]).toMatchObject({ status: "open", difference: 120000 });
-    expect(t["T-9"].status).toBe("not_applicable");
+    expect(t["T-9"].status).toBe("clean");
+    expect(t["T-10"].status).toBe("clean");
   });
 
   it("allow ₱1 of rounding and flag more, with the likely cause", () => {
@@ -49,6 +50,13 @@ describe("tie-outs", () => {
     const t = byId(tieOuts({ ...base, month: [disc], quarterToDate: [disc], ledger: { ...books, revenue: 250000, outputVat: 0, inputVat: 0, ewtPayable: 0, cashFromSales: 200000 } }));
     expect(t["T-1"].status).toBe("clean");
     expect(t["T-8"].status).toBe("clean");
+  });
+
+  it("tie the fixed asset register to the books (T-9, T-10)", () => {
+    const t = byId(tieOuts({ ...base, assets: { additions: 8500000, depreciation: 141665, waiting: 1 }, ledger: { ...books, ppeAdditions: 8500000, depreciation: 0 } }));
+    expect(t["T-9"].status).toBe("clean");
+    expect(t["T-10"]).toMatchObject({ status: "open", difference: 141665 });
+    expect(t["T-10"].note).toMatch(/1 asset waits/);
   });
 
   it("lists a period's months", () => {

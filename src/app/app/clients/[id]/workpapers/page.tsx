@@ -84,7 +84,11 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
     { ref: "30", title: "Payroll register", detail: file.payroll ? `Gross ${amt(file.payroll.gross)} · tax withheld ${amt(file.payroll.taxWithheld)}` : "No payroll this month", href: `/app/clients/${id}/payroll` },
     { ref: "B-2", title: "Creditable withholding tax (2307s received)", detail: `Quarter to date: ${received.length} certificate${received.length === 1 ? "" : "s"} · ${amt(totals(received).withholding)}`, href: register },
     { ref: "BB-2", title: "Withholding on payments", detail: `EWT on purchases ${amt(p.withholding)}`, href: register },
-    { ref: "E", title: "Property and equipment", detail: "Comes with the fixed asset register (A1)", tone: "neutral" },
+    {
+      ref: "E", title: "Property and equipment · fixed asset register and depreciation",
+      detail: file.assets ? `Additions ${amt(file.assets.additions)} · depreciation ${amt(file.assets.depreciation)}${file.assets.waiting ? ` · ${file.assets.waiting} waiting for setup` : ""}` : "No account titles yet",
+      href: `/app/clients/${id}/fixed-assets?month=${month}`,
+    },
   ];
 
   return (

@@ -55,7 +55,7 @@ describe.skipIf(!url)("workpapers: tie-outs to the books", () => {
   const ledger = async (): Promise<LedgerTotals> => {
     const j = (await as(STAFF, `select public.workpaper_ledger($1, '2027-03-01', '2027-03-31') as j`, [client])).rows[0].j;
     const c = (v: unknown) => Math.round(Number(v) * 100);
-    return { revenue: c(j.revenue), outputVat: c(j.output_vat), inputVat: c(j.input_vat), ewtPayable: c(j.ewt_payable), wtcPayable: c(j.wtc_payable), compensation: c(j.compensation), cashFromSales: c(j.cash_from_sales), suggested: Number(j.suggested) };
+    return { revenue: c(j.revenue), outputVat: c(j.output_vat), inputVat: c(j.input_vat), ewtPayable: c(j.ewt_payable), wtcPayable: c(j.wtc_payable), compensation: c(j.compensation), cashFromSales: c(j.cash_from_sales), ppeAdditions: c(j.ppe_additions), depreciation: c(j.depreciation), suggested: Number(j.suggested) };
   };
   const ties = async () => {
     const lines = ((await db.query(`select * from public.register_lines where client_id = $1 and month = '2027-03-01'`, [client])).rows as RegisterRow[]).map(toRegisterLine);
