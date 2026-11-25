@@ -141,6 +141,7 @@ export function quarterOf(ctx: Pick<WorksheetContext, "client" | "filing">): num
 
 /** Sales/purchases excluding VAT: the VATable + exempt + zero-rated breakdown, or total less VAT when OCR read only the total. */
 export function netOfVat(d: SourceDocument): Centavos {
+  if (d.fromBooks) return d.vatable + d.vatExempt + d.zeroRated + (d.nonVat ?? 0);
   const breakdown = d.vatable + d.vatExempt + d.zeroRated;
   return breakdown > 0 ? breakdown : Math.max(0, d.total - d.vat);
 }
@@ -162,6 +163,8 @@ export interface VatSplit {
  */
 export function vatSplit(d: SourceDocument, side: "sale" | "purchase", vatRatePct: number): VatSplit {
   const { vatExempt: exempt, zeroRated } = d;
+  // The Books give the split by tax code: nothing to infer (non-VAT amounts are on no VAT return).
+  if (d.fromBooks) return { vatable: d.vatable, vat: d.vat, exempt, zeroRated };
   if (d.vatable > 0 || exempt > 0 || zeroRated > 0) {
     let vatable = d.vatable;
     if (vatable === 0 && d.vat > 0) vatable = Math.max(0, d.total - d.vat - exempt - zeroRated);
@@ -177,7 +180,19 @@ export function vatSplit(d: SourceDocument, side: "sale" | "purchase", vatRatePc
 }
 
 export const docLabel = (d: SourceDocument) =>
-  `${d.docType === "sales_invoice" ? "Invoice" : d.docType === "purchase_receipt" ? "Receipt" : "2307"} ${d.number ?? "(no number)"}${d.partyName ? ` — ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
+  `${d.docType === "sales_invoice" ? (d.fromBooks ? "Sales Invoice" : "Invoice") : d.docType === "purchase_receipt" ? (d.fromBooks ? "Purchase Invoice" : "Receipt") : "2307"} ${d.number ?? "(no number)"}${d.partyName ? ` — ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
+
+/** Blocking errors for Book invoices with lines that carry no tax code (every line is coded, decision 7). */
+export function uncodedErrors(docs: SourceDocument[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const d of docs) {
+    if (!d.fromBooks || !d.uncoded || seen.has(d.id)) continue;
+    seen.add(d.id);
+    out.push(`${docLabel(d)}: lines of ₱${peso(d.uncoded)} have no tax code (or a code that cannot go on this invoice). Give every line its tax code in the Books.`);
+  }
+  return out;
+}
 
 // ── TINs and alphalist text (taxify reports/sls-report.js, reports/sawt-report.js) ──
 

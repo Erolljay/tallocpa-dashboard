@@ -12,7 +12,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
 import { NotesCard } from "./notes-card";
-import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
+import { AssignForm, ClientUserForm, EngagementForm, IncomeTaxMethodForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
   return (
@@ -106,6 +106,11 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
             <dt className="text-text-tertiary">BIR payment</dt><dd className="min-w-0 break-words text-text-primary">{client.payment_mode === "firm_remits" ? "We remit for the client" : "Client pays directly"}</dd>
             <dt className="text-text-tertiary">Document cutoff</dt><dd className="min-w-0 break-words text-text-primary">Day {client.submission_cutoff_day} of the following month</dd>
           </dl>
+        </Card>
+
+        <Card title="Income tax">
+          <IncomeTaxMethodForm clientId={id} value={client.income_tax_method ?? null} individual={client.taxpayer_type === "individual"} canEdit={canWork} />
+          {!canWork && <p className="mt-3 text-caption-1-regular text-text-tertiary">Only the Owner and staff assigned to this client change it.</p>}
         </Card>
 
         <Card title="Filing obligations">

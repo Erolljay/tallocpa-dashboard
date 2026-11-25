@@ -12,7 +12,7 @@ import { formatAmount, formatPeso } from "@/lib/returns/money";
 import { flattenFigures } from "@/lib/returns/source";
 import type { WorksheetLine, WorksheetResult, WorksheetSchedule } from "@/lib/returns/types";
 import { supabaseServer } from "@/lib/supabase/server";
-import { WorksheetInputsForm } from "./forms";
+import { FollowUpForm, WorksheetInputsForm } from "./forms";
 
 export default function WorksheetPage(props: PageProps<"/app/filings/[id]/worksheet">) {
   return (
@@ -127,7 +127,7 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
   const supabase = await supabaseServer();
   const loaded = await loadWorksheet(id, supabase);
   if (!loaded) notFound();
-  const { filing, module: form, ctx, saved, documents } = loaded;
+  const { filing, module: form, ctx, saved, documents, notReady } = loaded;
   const status = filing.status as FilingStatus;
 
   const header = (
@@ -142,6 +142,19 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
       actions={<Badge tone={filingStatusTone[status]}>{filingStatusLabel[status]}</Badge>}
     />
   );
+  if (notReady) {
+    // Decision 10: a return is worked out only once the Books of its period are locked.
+    return (
+      <>
+        {header}
+        <Notice tone="waiting">
+          <p className="font-medium">{notReady}.</p>
+          <p className="mt-1">The reviewer locks each month once its Inbox is clear; the worksheet is worked out from the Books after that.</p>
+          <Link href={`/app/clients/${filing.clientId}/books/months`} className="mt-2 inline-block text-button-ghost-foreground hover:underline">Open the months of the Books</Link>
+        </Notice>
+      </>
+    );
+  }
   if (!form || !ctx) {
     return (
       <>
@@ -164,7 +177,9 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
   const stale = !locked && saved?.result != null && !sameFigures(flattenFigures(saved.result), flattenFigures(live));
   const used = new Set(shown.documentIds);
   const attachments = form.attachments?.(ctx, shown) ?? [];
-  const fromBooks = !!form.usesLedger && booksCover(ctx);
+  const fromBooks = ctx.source === "books" || (!!form.usesLedger && booksCover(ctx));
+  // Decision 12: CWT claimed without the customer's 2307 yet, to follow up.
+  const missing2307 = [...new Map(ctx.documents.filter((d) => d.fromBooks && d.docType === "bir_2307_received" && d.cwtSupported === false && d.withholding > 0 && used.has(d.id)).map((d) => [d.id, d])).values()];
 
   return (
     <>
@@ -218,27 +233,52 @@ async function Worksheet({ params }: { params: PageProps<"/app/filings/[id]/work
             </Card>
           )}
 
+          {missing2307.length > 0 && (
+            <Card title="2307s still to come">
+              <p className="mb-3 text-body-regular text-text-secondary">The tax these customers withheld is claimed. Ask each for the 2307 and mark it followed up; whether to keep claiming at year end is the client&rsquo;s decision.</p>
+              <ul className="space-y-4 text-body-regular">
+                {missing2307.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/app/clients/${filing.clientId}/books/sales-invoices/${d.id}`} className="text-button-ghost-foreground hover:underline">Sales Invoice{d.number ? ` ${d.number}` : ""}</Link>
+                    <span className="block text-caption-1-regular text-text-tertiary">
+                      {[d.partyName, d.atc, formatPeso(d.withholding)].filter(Boolean).join(" · ")}
+                      {d.cwtFollowedUpAt ? ` · followed up ${when(d.cwtFollowedUpAt)}` : " · not followed up yet"}
+                    </span>
+                    {canEdit && <FollowUpForm filingId={filing.id} invoiceId={d.id} />}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
           {fromBooks && (
             <Card title="From the books">
               <p className="text-body-regular text-text-secondary">
-                Sales, cost of sales, other income and deductions are the posted entries of the taxable year to date, by each account&rsquo;s BIR line. Creditable tax withheld comes from the 2307s below.
+                {ctx.source === "books"
+                  ? "The figures are the Sales and Purchase Invoices in the Books by tax code, for locked months only: the VAT codes for the SLS and SLP, the withholding codes for the SAWT (on Sales Invoices) and the QAP (on Purchase Invoices). "
+                  : ""}
+                {form.usesLedger && booksCover(ctx) ? "Sales, cost of sales, other income and deductions are the posted entries of the taxable year to date, by each account’s BIR line, with ND lines added back." : ""}
               </p>
               <Link href={`/app/clients/${filing.clientId}/books`} className="mt-3 inline-block text-body-medium text-button-ghost-foreground hover:underline">Open the books</Link>
             </Card>
           )}
 
-          <Card title="Source documents">
+          <Card title={ctx.source === "books" ? "Sources" : "Source documents"}>
             {documents.length === 0 ? (
-              <p className="text-body-regular text-text-secondary">No approved documents for {filing.periodLabel}. Documents count once a staff member approves their figures.</p>
+              <p className="text-body-regular text-text-secondary">{ctx.source === "books" ? `No invoices in the Books for ${filing.periodLabel}.` : `No approved documents for ${filing.periodLabel}. Documents count once a staff member approves their figures.`}</p>
             ) : (
               <ul className="space-y-3 text-body-regular">
                 {documents.map((d) => {
                   const s = d.source;
-                  const amount = s.docType.startsWith("bir_2307") ? s.withholding : s.total;
+                  const amount = s.docType.startsWith("bir_2307") && !d.href ? s.withholding : s.total;
                   return (
                     <li key={d.id} className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
-                        <Link href={`/app/documents/${d.id}`} className="text-button-ghost-foreground hover:underline">{DOC_TYPES[s.docType as DocType]}{s.number ? ` ${s.number}` : ""}</Link>
+                        {d.href ? (
+                          <Link href={d.href} className="text-button-ghost-foreground hover:underline">{d.label}</Link>
+                        ) : (
+                          <Link href={`/app/documents/${d.id}`} className="text-button-ghost-foreground hover:underline">{DOC_TYPES[s.docType as DocType]}{s.number ? ` ${s.number}` : ""}</Link>
+                        )}
                         <span className="block truncate text-caption-1-regular text-text-tertiary">
                           {[s.partyName, s.atc, showMonth(s.month)].filter(Boolean).join(" · ")}
                         </span>

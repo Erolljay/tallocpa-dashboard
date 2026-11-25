@@ -113,6 +113,66 @@ export function fromRegisterLine(r: RegisterSourceRow): SourceDocument {
   };
 }
 
+/** A row of the database function books_return_sources (migration 20261127000001): one invoice and kind of source, by tax code. */
+export interface BooksSourceRow {
+  invoice_id: string;
+  source: "sales_invoice" | "purchase_receipt" | "bir_2307_received" | "bir_2307_issued";
+  month: string;
+  issue_date: string | null;
+  reference: string | null;
+  party_id: string | null;
+  party_name: string | null;
+  party_tin: string | null;
+  slp_category: SourceDocument["slpCategory"];
+  vatable: string | number;
+  vat_exempt: string | number;
+  zero_rated: string | number;
+  non_vat: string | number;
+  vat: string | number;
+  total: string | number;
+  atc: string | null;
+  tax_code: string | null;
+  withholding: string | number;
+  uncoded: string | number;
+  cwt_supported: boolean | null;
+  cwt_followed_up_at: string | null;
+  document_id: string | null;
+}
+
+/**
+ * A Books row → SourceDocument: the Sales or Purchase Invoice's figures by tax code, or its
+ * withholding (CWT, VAT withheld or EWT) as the 2307 it stands for. The id is the invoice's.
+ */
+export function fromBooksRow(r: BooksSourceRow): SourceDocument {
+  const doc: SourceDocument = {
+    id: r.invoice_id,
+    docType: r.source,
+    month: String(r.month).slice(0, 10),
+    date: r.issue_date ? String(r.issue_date).slice(0, 10) : null,
+    number: text(r.reference),
+    partyName: text(r.party_name),
+    partyTin: text(r.party_tin),
+    partyAddress: null,
+    vatable: amount(r.vatable),
+    vatExempt: amount(r.vat_exempt),
+    zeroRated: amount(r.zero_rated),
+    vat: amount(r.vat),
+    total: amount(r.total),
+    atc: normalizeAtc(text(r.atc)),
+    withholding: amount(r.withholding),
+    slpCategory: r.slp_category ?? null,
+    fromBooks: true,
+    nonVat: amount(r.non_vat),
+    uncoded: amount(r.uncoded),
+    taxCode: r.tax_code,
+  };
+  if (r.source === "bir_2307_received") {
+    doc.cwtSupported = r.cwt_supported === true;
+    doc.cwtFollowedUpAt = r.cwt_followed_up_at;
+  }
+  return doc;
+}
+
 /** "2026-02-14" → "2026-02-01". */
 export const monthOf = (iso: string) => `${iso.slice(0, 7)}-01`;
 

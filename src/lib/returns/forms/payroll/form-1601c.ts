@@ -8,8 +8,9 @@
  * from the suggested amount by more than ₱1 (December: the year-end adjustment).
  */
 import { penaltyLines, PENALTY_INPUTS, readNonNegative } from "../../inputs";
-import { formatAmount } from "../../money";
-import type { FormModule, ManualInput, WorksheetContext, WorksheetResult } from "../../types";
+import { formatAmount, toDecimalString } from "../../money";
+import { csv } from "../business/util";
+import type { AttachmentFile, FormModule, ManualInput, PayslipRow, WorksheetContext, WorksheetResult, WorksheetSchedule } from "../../types";
 import { differsFromSuggestion, enteredNet } from "@/lib/payroll/compute";
 import { tinDashed } from "@/lib/payroll/alphalist";
 import { buildYear, displayName, month1601C } from "@/lib/payroll/year";
@@ -47,6 +48,12 @@ export const form1601C: FormModule = {
         warnings.push(`${name}: tax withheld ${formatAmount(enteredNet(r.lines))} differs from ${formatAmount(r.suggestion.net)} under ${what}.`);
       }
     }
+
+    // The month's payslips in the Books: the supporting schedule (shown and exported, not sent to the BIR).
+    const payslips = ctx.payslips ?? [];
+    const payslipTax = payslips.reduce((a, p) => a + p.tax, 0);
+    if (ctx.payslips && payslipTax !== t.l25 + t.l26)
+      warnings.push(`The payslips of ${monthLabel} withhold ${formatAmount(payslipTax)}, but the return computes ${formatAmount(t.l25 + t.l26)} (items 25 and 26). Check the month's payroll.`);
 
     const previously = readNonNegative(ctx.inputs, INPUTS.previous, errors) ?? 0;
     const other = readNonNegative(ctx.inputs, INPUTS.other, errors) ?? 0;
@@ -115,10 +122,53 @@ export const form1601C: FormModule = {
             suggested: r.suggestion.net,
           })),
         },
+        ...(ctx.payslips ? [payslipSchedule(monthLabel, payslips)] : []),
       ],
       errors,
       warnings,
       documentIds: [],
     };
   },
+
+  attachments(ctx: WorksheetContext) {
+    if (!ctx.payslips?.length) return [];
+    const payslips = ctx.payslips;
+    const month = ctx.filing.periodStart.slice(0, 7);
+    return [{ kind: "payslips-csv", label: "Employees of the month · payslips (CSV; kept on file, not sent to the BIR)", build: () => payslipCsv(ctx, month, payslips) }];
+  },
 };
+
+const PAYSLIP_COLUMNS: { key: keyof PayslipRow; label: string; numeric?: boolean }[] = [
+  { key: "employeeNo", label: "No." },
+  { key: "employeeName", label: "Employee" },
+  { key: "payPeriodEnd", label: "Pay period ending" },
+  { key: "gross", label: "Gross pay", numeric: true },
+  { key: "sss", label: "SSS", numeric: true },
+  { key: "philhealth", label: "PhilHealth", numeric: true },
+  { key: "pagibig", label: "Pag-IBIG", numeric: true },
+  { key: "tax", label: "Tax withheld", numeric: true },
+  { key: "otherDeductions", label: "Other deductions", numeric: true },
+  { key: "net", label: "Net pay", numeric: true },
+];
+
+/** The month's employees and their payslips: the 1601-C's supporting schedule (not sent to the BIR). */
+export function payslipSchedule(monthLabel: string, payslips: PayslipRow[]): WorksheetSchedule {
+  return {
+    title: `Employees of ${monthLabel} — payslips (supporting schedule; not sent to the BIR)`,
+    columns: PAYSLIP_COLUMNS.map((c) => ({ key: c.key, label: c.label, ...(c.numeric ? { numeric: true } : {}) })),
+    rows: payslips.map((p) => ({ ...p })),
+  };
+}
+
+/** The same schedule as an Excel-compatible CSV. */
+export function payslipCsv(ctx: Pick<WorksheetContext, "client">, month: string, payslips: PayslipRow[]): AttachmentFile {
+  const rows: (string | number | null)[][] = [
+    [`${ctx.client.name} — employees and payslips for ${month}`],
+    ["Supporting schedule of BIR Form 1601-C; not sent to the BIR."],
+    [],
+    PAYSLIP_COLUMNS.map((c) => c.label),
+    ...payslips.map((p) => PAYSLIP_COLUMNS.map((c) => (c.numeric ? toDecimalString(p[c.key] as number) : ((p[c.key] as string | null) ?? "")))),
+    ["", "Total", "", ...PAYSLIP_COLUMNS.slice(3).map((c) => toDecimalString(payslips.reduce((a, p) => a + (p[c.key] as number), 0)))],
+  ];
+  return { fileName: `PAYSLIPS_1601C_${month}.csv`, contentType: "text/csv; charset=utf-8", body: csv(rows) };
+}

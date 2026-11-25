@@ -13,15 +13,17 @@
  * accounts and carry-overs from dedicated balance-sheet accounts. Here, for a
  * bookkeeping client whose books cover the taxable year to date, sales, cost
  * of sales, other income and itemized deductions come from the ledger, grouped
- * by each account's BIR line (book-income.ts). Otherwise sales come from
- * approved sales invoices and expenses from purchase receipts (a rough proxy),
- * with cost of sales and other income typed in. Creditable tax withheld comes
- * from 2307s received either way (the SAWT needs each payor), and prior
- * quarters' payments from typed figures or the previous quarter's worksheet
- * (`priorFigures`).
+ * by each account's BIR line (book-income.ts), with lines coded ND added back
+ * (NR and NVP lines stay deductible). Otherwise sales come from approved sales
+ * invoices and expenses from purchase receipts (a rough proxy), with cost of
+ * sales and other income typed in. Creditable tax withheld (the SAWT) comes from
+ * the CWT codes on the Sales Invoices in the Books, or for a client without
+ * Books from the 2307s received; prior quarters' payments from typed figures or
+ * the previous quarter's worksheet (`priorFigures`). OSD, itemized or 8% is the
+ * client's income tax method (client settings), else the worksheet's choice.
  */
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
-import type { Centavos, FormModule, ManualInput, SourceDocument, WorksheetContext, WorksheetLine, WorksheetResult, WorksheetSchedule } from "../../types";
+import type { Centavos, FormModule, IncomeTaxMethod, ManualInput, SourceDocument, WorksheetContext, WorksheetLine, WorksheetResult, WorksheetSchedule } from "../../types";
 import { bookIncome, linesWithMovement } from "./book-income";
 import { corporateRates, eightPercentRate, graduatedIncomeTax, mcitRate, osdRate } from "../../rates";
 import { buildSawt, sawtAttachments, sawtSchedule, type SawtResult } from "./sawt";
@@ -120,7 +122,11 @@ export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, for
     if (ctx.ledger.suggested > 0)
       warnings.push(`${ctx.ledger.suggested} suggested entr${ctx.ledger.suggested === 1 ? "y is" : "ies are"} not posted yet for the taxable year to date; confirm them on the Books page, then compute again.`);
     if (q.excluded + prev.excluded !== 0) warnings.push(`Income subject to final tax or exempt (₱${peso(q.excluded + prev.excluded)} to date) is left out of taxable income.`);
-    if (q.nondeductible + prev.nondeductible !== 0) warnings.push(`Non-deductible expenses (₱${peso(q.nondeductible + prev.nondeductible)} to date) are not deducted.`);
+    const nd = ctx.ledger.nonDeductible;
+    if (q.nondeductible + prev.nondeductible !== 0)
+      warnings.push(
+        `Non-deductible expenses (₱${peso(q.nondeductible + prev.nondeductible)} to date) are not deducted${nd && nd.period + nd.earlier !== 0 ? `, including ₱${peso(nd.period + nd.earlier)} of lines coded ND (added back)` : ""}.`,
+      );
     const rows: Record<string, string | Centavos>[] = linesWithMovement(q, prev).map((k) => {
       const a = q.byLine[k] ?? 0;
       const b = prev.byLine[k] ?? 0;
@@ -249,8 +255,25 @@ const BOOK_FIGURES = new Set(["cost_of_sales", "non_operating_income"]);
 export type InputsCtx = Pick<WorksheetContext, "client" | "filing" | "ledger">;
 export const withoutBookFigures = (ctx: InputsCtx, xs: ManualInput[]) => (booksCover(ctx) ? xs.filter((x) => !BOOK_FIGURES.has(x.key)) : xs);
 
+/** 1701Q regime from the client's income tax method (client settings). */
+const REGIME_OF_METHOD: Record<IncomeTaxMethod, string> = { osd: "graduated_osd", itemized: "graduated_itemized", eight_percent: "8pct" };
+const METHOD_LABEL: Record<IncomeTaxMethod, string> = { osd: "optional standard deduction (OSD)", itemized: "itemized deductions", eight_percent: "8% on gross sales or receipts" };
+
+/** The choice set on the client wins; the worksheet asks only while it is not set. */
+const withoutMethodChoice = (ctx: InputsCtx, key: string, xs: ManualInput[]) => (ctx.client.incomeTaxMethod ? xs.filter((x) => x.key !== key) : xs);
+
+/** A warning while the client has no income tax method set (the worksheet's own choice is used). */
+const methodNote = (ctx: WorksheetContext): string[] =>
+  ctx.client.incomeTaxMethod ? [] : ["No income tax method is set on the client; the choice on this worksheet is used. Set it on the client's page so every return uses it."];
+
+/** The method line under Part I: where the deduction method came from. */
+const methodLine = (ctx: WorksheetContext, chosen: string): WorksheetLine =>
+  line("income_tax_method", "—", "Income tax method", null, {
+    basis: ctx.client.incomeTaxMethod ? `${METHOD_LABEL[ctx.client.incomeTaxMethod]} (set on the client)` : `${chosen} (chosen on this worksheet)`,
+  });
+
 function inputs1701Q(ctx: InputsCtx): ManualInput[] {
-  return withoutBookFigures(ctx, [
+  return withoutMethodChoice(ctx, "regime", withoutBookFigures(ctx, [
     { key: "regime", label: "Income tax regime for the year", kind: "choice", choices: REGIMES, required: true },
     {
       key: "has_compensation_income",
@@ -272,7 +295,7 @@ function inputs1701Q(ctx: InputsCtx): ManualInput[] {
     amountInput("interest", "Interest (Item 65)"),
     amountInput("compromise", "Compromise (Item 66)"),
     ...ownerNameInputs(ctx),
-  ]);
+  ]));
 }
 
 function compute1701Q(ctx: WorksheetContext): WorksheetResult {
@@ -282,8 +305,9 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
   const warnings: string[] = [];
   const empty = (errs: string[]): WorksheetResult => ({ sections: [], schedules: [], errors: errs, warnings: [], documentIds: [] });
   if (ctx.client.taxpayerType !== "individual") return empty(["BIR Form 1701Q is for individuals; this client files 1702Q."]);
-  const regime = inp.choice("regime");
-  if (!regime) return empty(["Choose the client's income tax regime for the year (graduated + OSD, graduated + itemized, or 8%)."]);
+  const regime = ctx.client.incomeTaxMethod ? REGIME_OF_METHOD[ctx.client.incomeTaxMethod] : inp.choice("regime");
+  if (!regime) return empty(["Set the client's income tax method (OSD, itemized, or 8%) on the client's page, or choose the regime here."]);
+  warnings.push(...methodNote(ctx));
   if (regime === "8pct" && ctx.client.vatRegistered) errors.push("A VAT-registered individual cannot use the 8% option; choose graduated rates.");
 
   const p = periods(ctx);
@@ -382,7 +406,10 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
 
   return {
     sections: [
-      { title: regime === "8pct" ? "Schedule II — 8% income tax rate" : "Schedule I — Graduated income tax rates", lines: schedule },
+      {
+        title: regime === "8pct" ? "Schedule II — 8% income tax rate" : "Schedule I — Graduated income tax rates",
+        lines: [methodLine(ctx, REGIMES.find((r) => r.value === regime)?.label ?? regime), ...schedule],
+      },
       {
         title: "Schedule III — Tax credits/payments",
         lines: [
@@ -425,7 +452,7 @@ function compute1701Q(ctx: WorksheetContext): WorksheetResult {
 // ── 1702Q ──────────────────────────────────────────────────
 
 function inputs1702Q(ctx: InputsCtx): ManualInput[] {
-  return withoutBookFigures(ctx, [
+  return withoutMethodChoice(ctx, "deduction", withoutBookFigures(ctx, [
     {
       key: "deduction",
       label: "Deduction method for the year",
@@ -456,7 +483,7 @@ function inputs1702Q(ctx: InputsCtx): ManualInput[] {
     amountInput("interest", "Interest (Item 22)"),
     amountInput("compromise", "Compromise (Item 23)"),
     ...ownerNameInputs(ctx),
-  ]);
+  ]));
 }
 
 function compute1702Q(ctx: WorksheetContext): WorksheetResult {
@@ -466,10 +493,13 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
   const warnings: string[] = [];
   const empty = (errs: string[]): WorksheetResult => ({ sections: [], schedules: [], errors: errs, warnings: [], documentIds: [] });
   if (ctx.client.taxpayerType === "individual") return empty(["BIR Form 1702Q is for corporations, partnerships and other non-individuals; this client files 1701Q."]);
-  const deduction = inp.choice("deduction");
+  const method = ctx.client.incomeTaxMethod;
+  if (method === "eight_percent") return empty(["The 8% option is for individuals only; set the client's income tax method to OSD or itemized."]);
+  const deduction = method ?? inp.choice("deduction");
   const rateChoice = inp.choice("corporate_rate");
-  const missing = [!deduction && "the deduction method (OSD or itemized)", !rateChoice && "the regular income tax rate"].filter(Boolean);
+  const missing = [!deduction && "the deduction method (OSD or itemized; set it on the client's page)", !rateChoice && "the regular income tax rate"].filter(Boolean);
   if (missing.length) return empty([`Choose ${missing.join(" and ")}.`]);
+  warnings.push(...methodNote(ctx));
 
   const p = periods(ctx);
   const rateDate = p.yearEnd;
@@ -547,6 +577,7 @@ function compute1702Q(ctx: WorksheetContext): WorksheetResult {
       {
         title: "Schedule 2 — Declaration this quarter (regular/normal rate)",
         lines: [
+          methodLine(ctx, osd ? "optional standard deduction (OSD)" : "itemized deductions"),
           line("sales", "S2-1", "Sales/receipts/revenues/fees", q.sales, { basis: src.basis.sales }),
           line("cost_of_sales", "S2-2", "Less: Cost of sales/services", q.cogs, { basis: src.basis.cos }),
           line("gross_income_operations", "S2-3", "Gross income from operation", q.grossIncomeOps, { emphasis: "subtotal" }),

@@ -143,7 +143,7 @@ describe("1701Q", () => {
   });
 
   it("requires a regime and an individual", () => {
-    expect(form1701Q.compute(ctxFor({ form: "1701Q", ...q(1), client: individual, documents: [] })).errors[0]).toMatch(/income tax regime/);
+    expect(form1701Q.compute(ctxFor({ form: "1701Q", ...q(1), client: individual, documents: [] })).errors[0]).toMatch(/income tax method/);
     expect(form1701Q.compute(ctxFor({ form: "1701Q", ...q(1), documents: [], inputs: { regime: "8pct" } })).errors[0]).toMatch(/files 1702Q/);
   });
 
@@ -310,7 +310,7 @@ describe("1702Q", () => {
   });
 
   it("requires the deduction method and rate, and a non-individual", () => {
-    expect(form1702Q.compute(ctxFor({ form: "1702Q", ...q(1), documents: [] })).errors).toEqual(["Choose the deduction method (OSD or itemized) and the regular income tax rate."]);
+    expect(form1702Q.compute(ctxFor({ form: "1702Q", ...q(1), documents: [] })).errors).toEqual(["Choose the deduction method (OSD or itemized; set it on the client's page) and the regular income tax rate."]);
     expect(form1702Q.compute(ctxFor({ form: "1702Q", ...q(1), client: individual, documents: [] })).errors[0]).toMatch(/files 1701Q/);
   });
 });
