@@ -16,6 +16,8 @@ Return every field you can read; use null for a field that is not on the documen
 - date: the document date as YYYY-MM-DD.
 - number: the invoice / receipt / serial number as printed.
 - party_name, party_tin, party_address: the OTHER party — the seller on a purchase receipt, the buyer/customer on a sales invoice, the payor (withholding agent) on a 2307.
+- party_kind: "individual" when the other party is a natural person (a sole proprietor, a professional, a person buying or selling in their own name), "non_individual" for a corporation, partnership, cooperative or other entity. A sole proprietor's business is still "individual": its BIR registered name is the owner's name (often printed as "JUAN S. DELA CRUZ - Prop." under the trade name).
+- party_last_name, party_first_name, party_middle_name: for an individual only, the person's name split as the BIR lists want it. Keep a compound surname together ("Dela Cruz", "De los Santos"); put Jr./Sr./III with the first name; give the middle name or initial as printed, null if none. For a sole proprietor this is the owner's name, while party_name keeps what is printed as the business name. Null for a non-individual.
 - vatable, vat_exempt, zero_rated, vat, total: amounts in pesos as plain numbers, no currency sign or commas.
 - atc and withholding: the ATC code and tax withheld, on a 2307 only.
 - payment_terms: on an invoice or receipt, "cash" if it is a cash sale / paid in cash (the "Cash" box is ticked or it is an official receipt for payment), "charge" if it is a charge / credit sale on account (the "Charge" box is ticked, or it shows terms such as "30 days"); null if the document does not say.

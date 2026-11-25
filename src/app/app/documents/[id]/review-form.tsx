@@ -5,7 +5,7 @@ import { useActionState, useRef, useState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/documents/actions";
 import type { Issue } from "@/lib/ocr/checks";
-import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PAYMENT_TERMS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
+import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PARTY_KINDS, PAYMENT_TERMS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { approveDocumentAction } from "./actions";
 
 const typeLabel: Record<string, string> = {
@@ -53,6 +53,8 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
   const lowCount = Object.values(props.confidence).filter((c) => c < LOW_CONFIDENCE).length;
   const formRef = useRef<HTMLFormElement>(null);
   const [usedDirectory, setUsedDirectory] = useState(false);
+  // Last, first and middle name show only for an individual (the BIR lists need them).
+  const [partyKind, setPartyKind] = useState(props.fields.party_kind ?? "");
   const dir = props.directory;
   /** Copies the directory's registered name, TIN and address into the party fields. */
   const applyDirectory = () => {
@@ -73,6 +75,7 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {OCR_FIELDS.map((f) => {
+            if (f.kind === "person" && partyKind !== "individual") return null;
             const conf = props.confidence[f.key];
             const low = conf != null && conf < LOW_CONFIDENCE;
             const issue = issueFor(f.key);
@@ -85,6 +88,11 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">—</option>
                       {OCR_DOC_TYPES.map((t) => <option key={t} value={t}>{typeLabel[t]}</option>)}
+                    </Select>
+                  ) : f.kind === "party_kind" ? (
+                    <Select id={id} name={f.key} value={partyKind} onChange={(e) => setPartyKind(e.target.value)} disabled={!props.canAct}>
+                      <option value="">Not stated (business)</option>
+                      {Object.entries(PARTY_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                     </Select>
                   ) : f.kind === "terms" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>

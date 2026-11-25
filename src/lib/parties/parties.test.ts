@@ -158,6 +158,14 @@ describe("fillFromDirectory (when OCR reads a document)", () => {
     expect(r.fields).toBe(fields);
   });
 
+  it("brings an individual's last, first and middle name for the BIR lists", () => {
+    const shop = party({ ...person, trade_name: "JDC Hardware" });
+    const r = fillFromDirectory({ party_name: "JDC Hardware", party_tin: "123456789", party_kind: "non_individual" }, {}, shop);
+    expect(r.fields).toMatchObject({ party_name: "Dela Cruz, Juan Santos", party_kind: "individual", party_last_name: "Dela Cruz", party_first_name: "Juan", party_middle_name: "Santos" });
+    const biz = fillFromDirectory({ party_name: "Acme Trading Corp", party_tin: "123456789", party_kind: "individual", party_last_name: "Corp" }, {}, party());
+    expect(biz.fields).toMatchObject({ party_kind: "non_individual", party_last_name: null });
+  });
+
   it("does nothing when the TIN is not on file", () => {
     expect(fillFromDirectory({ party_name: "X", party_tin: "999999999" }, {}, undefined).filled).toBe(false);
   });

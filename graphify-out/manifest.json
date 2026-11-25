@@ -672,9 +672,9 @@
     "semantic_hash": ""
   },
   "src/app/app/documents/[id]/review-form.tsx": {
-    "mtime": 1795556117.8982723,
-    "seen": 1795565923.2266195,
-    "ast_hash": "569c183bffcd5ed3dfd6ef395179bef0",
+    "mtime": 1795569704.4528916,
+    "seen": 1795569815.6636395,
+    "ast_hash": "7a84c13dcc00939be15bb7d951547742",
     "semantic_hash": ""
   },
   "src/app/app/documents/page.tsx": {
@@ -684,21 +684,21 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/checks.test.ts": {
-    "mtime": 1795556117.9076705,
-    "seen": 1795565923.226959,
-    "ast_hash": "4209eac89f7fed4097a3d66e5e1ee0a2",
+    "mtime": 1795569695.9133816,
+    "seen": 1795569815.6691866,
+    "ast_hash": "05d116d385bc5e826a93f6bafab3f55c",
     "semantic_hash": ""
   },
   "src/lib/ocr/checks.ts": {
-    "mtime": 1795556117.9084349,
-    "seen": 1795565923.2269604,
-    "ast_hash": "cefd3627640767e9436c2b88bdd5f4a1",
+    "mtime": 1795569669.374348,
+    "seen": 1795569815.669188,
+    "ast_hash": "a1b6836b20495104d164a790812c9391",
     "semantic_hash": ""
   },
   "src/lib/ocr/fields.ts": {
-    "mtime": 1795556117.9084349,
-    "seen": 1795565923.226962,
-    "ast_hash": "849a9d27342055996e791d3720881444",
+    "mtime": 1795569661.6830223,
+    "seen": 1795569815.6691902,
+    "ast_hash": "23a49daffaec3ca83dee5604064b2522",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.test.ts": {
@@ -708,9 +708,9 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.ts": {
-    "mtime": 1795556117.9084349,
-    "seen": 1795565923.2269657,
-    "ast_hash": "760a6ce31912cd564a6d00c70c7b64f4",
+    "mtime": 1795569669.373975,
+    "seen": 1795569815.6692133,
+    "ast_hash": "fd6f0465ebf256effe0d70120024d0b5",
     "semantic_hash": ""
   },
   "src/lib/ocr/provider.ts": {
@@ -1290,15 +1290,15 @@
     "semantic_hash": ""
   },
   "src/lib/parties/parties.test.ts": {
-    "mtime": 1795556117.9086792,
-    "seen": 1795565923.2269752,
-    "ast_hash": "9ae9b91e2c48c73d33c32b43054b3337",
+    "mtime": 1795569686.5087063,
+    "seen": 1795569815.669325,
+    "ast_hash": "8ed4f73df1aa918149cadee0785e8e96",
     "semantic_hash": ""
   },
   "src/lib/parties/resolve.ts": {
-    "mtime": 1795556117.9086792,
-    "seen": 1795565923.226977,
-    "ast_hash": "94c5f3a8a2a36033d305a1d973390d08",
+    "mtime": 1795569676.3160715,
+    "seen": 1795569815.669327,
+    "ast_hash": "f2a938b8d349bdd936e70820918ef327",
     "semantic_hash": ""
   },
   "src/lib/parties/schema.ts": {
@@ -1680,9 +1680,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/parties.test.ts": {
-    "mtime": 1795556117.9154902,
-    "seen": 1795565923.2271078,
-    "ast_hash": "77ea7b8e7796e351870658427ad0136a",
+    "mtime": 1795569747.458344,
+    "seen": 1795569815.6717315,
+    "ast_hash": "5c894fc63771605754bc04d894496850",
     "semantic_hash": ""
   },
   "supabase/tests/payroll.test.ts": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795565930.7257884,
-    "seen": 1795566337.666522,
-    "ast_hash": "bcbd83efd1dec5bef09e19862d39cd9c",
+    "mtime": 1795569458.465871,
+    "seen": 1795569815.6722066,
+    "ast_hash": "8f943d49e2ebc33ce4fa6801f511cce5",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2646,21 +2646,33 @@
     "semantic_hash": ""
   },
   "src/lib/deadlines/safeguards-load.ts": {
-    "mtime": 1795568403.5488958,
-    "seen": 1795568598.303759,
-    "ast_hash": "aec6434912c6e806a188aee5a6c0a02b",
+    "mtime": 1795569447.8639698,
+    "seen": 1795569815.6681051,
+    "ast_hash": "6be7d5e11a9e2991704d6ba6ac304ff5",
     "semantic_hash": ""
   },
   "src/lib/deadlines/safeguards.test.ts": {
-    "mtime": 1795568334.3288918,
-    "seen": 1795568598.30376,
-    "ast_hash": "439985b9fe10852499981a1f4282da23",
+    "mtime": 1795569447.864145,
+    "seen": 1795569815.6681073,
+    "ast_hash": "0e6f09495c17e7f9e675615eee4fbb64",
     "semantic_hash": ""
   },
   "src/lib/deadlines/safeguards.ts": {
-    "mtime": 1795568315.2048907,
-    "seen": 1795568598.3037615,
-    "ast_hash": "2abc1eaa2aa72df57e90c8bf091ee768",
+    "mtime": 1795569447.8636374,
+    "seen": 1795569815.6681087,
+    "ast_hash": "ff9de95be83ab56dff8da214af0f26c7",
+    "semantic_hash": ""
+  },
+  "src/lib/parties/names.test.ts": {
+    "mtime": 1795569661.6883783,
+    "seen": 1795569815.6693213,
+    "ast_hash": "f1619b798a13e913fa107ba82c38bc94",
+    "semantic_hash": ""
+  },
+  "src/lib/parties/names.ts": {
+    "mtime": 1795569661.6867895,
+    "seen": 1795569815.6693232,
+    "ast_hash": "c36a744c418079135faa7db5c97d574c",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

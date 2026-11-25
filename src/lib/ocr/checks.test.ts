@@ -38,3 +38,20 @@ describe("normalizing what OCR read", () => {
     expect(ocrOutputSchema.safeParse({ fields: {}, confidence: { total: 2 } }).success).toBe(false);
   });
 });
+
+describe("individual names", () => {
+  it("asks for the last and first name of an individual", () => {
+    const base = { date: "2026-11-10", party_kind: "individual" };
+    expect(checkFields({ ...base, party_last_name: "Dela Cruz" }, { today: "2026-11-25" }).map((i) => i.field)).toEqual(["party_last_name"]);
+    expect(checkFields({ ...base, party_last_name: "Dela Cruz", party_first_name: "Juan" }, { today: "2026-11-25" })).toEqual([]);
+  });
+});
+
+describe("normalizeFields for the party's kind", () => {
+  it("splits an individual read in one line, and clears name parts for a business", () => {
+    expect(normalizeFields({ party_kind: "Individual", party_name: "Juan S. Dela Cruz" })).toMatchObject({ party_kind: "individual", party_last_name: "Dela Cruz", party_first_name: "Juan", party_middle_name: "S." });
+    expect(normalizeFields({ party_kind: "individual", party_name: "Juan Dela Cruz", party_last_name: "DELA CRUZ", party_first_name: "JUAN" })).toMatchObject({ party_last_name: "DELA CRUZ", party_middle_name: null });
+    expect(normalizeFields({ party_kind: "non_individual", party_last_name: "X" })).toMatchObject({ party_last_name: null });
+    expect(normalizeFields({ party_kind: "someone" })).toMatchObject({ party_kind: null });
+  });
+});

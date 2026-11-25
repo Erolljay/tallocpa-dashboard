@@ -28,6 +28,9 @@ export function checkFields(f: OcrFields, ctx: { today: string; duplicateOf?: st
   if (total != null && parts.length > 1 && Math.abs(parts.reduce((a, b) => a + b, 0) - total) > 1) {
     issues.push({ field: "total", message: "VATable + exempt + zero-rated + VAT does not add up to the total." });
   }
+  if (f.party_kind === "individual" && (!f.party_last_name || !f.party_first_name)) {
+    issues.push({ field: "party_last_name", message: "Enter the last and first name: the BIR lists (SLS, SLP, QAP, SAWT) need them for an individual." });
+  }
   if (!f.date) issues.push({ field: "date", message: "Enter the document date." });
   else if (f.date > ctx.today) issues.push({ field: "date", message: "The date is in the future." });
   if (ctx.priorYear) issues.push({ field: "date", message: "This is from a prior taxable year: it goes to the exceptions queue, not this year's return." });

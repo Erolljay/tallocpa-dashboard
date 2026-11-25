@@ -3,12 +3,18 @@
  * checked, and the shape every OCR provider must return.
  */
 import { z } from "zod";
+import { splitPersonName } from "@/lib/parties/names";
 
 export const OCR_FIELDS = [
   { key: "doc_type", label: "Document type", kind: "doc_type" },
   { key: "date", label: "Date", kind: "date" },
   { key: "number", label: "Document number", kind: "text" },
   { key: "party_name", label: "Supplier / customer", kind: "text" },
+  // Individuals (a sole proprietor, a professional): the BIR lists (SLS, SLP, QAP, SAWT) need last, first and middle name.
+  { key: "party_kind", label: "Individual or business", kind: "party_kind" },
+  { key: "party_last_name", label: "Last name", kind: "person" },
+  { key: "party_first_name", label: "First name", kind: "person" },
+  { key: "party_middle_name", label: "Middle name", kind: "person" },
   { key: "party_tin", label: "TIN", kind: "tin" },
   { key: "party_address", label: "Address", kind: "text" },
   { key: "vatable", label: "VATable sales / purchases", kind: "amount" },
@@ -31,6 +37,17 @@ export function normalizeTerms(v: string | null | undefined): PaymentTerms | nul
   if (!t) return null;
   if (/^cash/.test(t)) return "cash";
   if (/charge|account|credit|terms|\bnet\b|days/.test(t)) return "charge";
+  return null;
+}
+
+/** Whether the other party is a natural person or a business (corporation, partnership, cooperative). */
+export const PARTY_KINDS = { non_individual: "Business (corporation, partnership)", individual: "Individual (person or sole proprietor)" } as const;
+export type PartyKind = keyof typeof PARTY_KINDS;
+
+export function normalizePartyKind(v: string | null | undefined): PartyKind | null {
+  const t = (v ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (t === "individual" || t === "person") return "individual";
+  if (t === "non_individual" || t === "business" || t === "corporation" || t === "company") return "non_individual";
   return null;
 }
 
@@ -79,6 +96,15 @@ export function normalizeFields(f: OcrFields): OcrFields {
     if (def.kind === "tin") out[def.key] = v == null ? null : (normalizeTin(v) ?? v);
     if (def.kind === "date") out[def.key] = v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
     if (def.kind === "terms") out[def.key] = normalizeTerms(v);
+    if (def.kind === "party_kind") out[def.key] = normalizePartyKind(v);
+    if (def.kind === "person") out[def.key] = v?.replace(/\s+/g, " ").trim() || null;
   }
+  // An individual named in one line only: split it so the BIR lists get last, first and middle name.
+  if (out.party_kind === "individual" && !out.party_last_name && !out.party_first_name && out.party_name) {
+    const n = splitPersonName(out.party_name);
+    if (n) Object.assign(out, { party_last_name: n.last, party_first_name: n.first, party_middle_name: n.middle });
+  }
+  // A business has no name parts.
+  if (out.party_kind === "non_individual") Object.assign(out, { party_last_name: null, party_first_name: null, party_middle_name: null });
   return out;
 }
