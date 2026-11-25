@@ -13,6 +13,8 @@ import { loadBoard, loadCoverage } from "@/lib/deadlines/safeguards-load";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
 import { DashboardStats } from "./dashboard-stats";
 import { OwnerSections } from "./owner-sections";
+import { UnlockRequests } from "./unlock-requests";
+import { keepBooksReady } from "@/lib/filings/books-ready";
 import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function DashboardPage() {
@@ -25,6 +27,9 @@ export default function DashboardPage() {
       </Suspense>
       <Suspense fallback={null}>
         <AmendmentNotice />
+      </Suspense>
+      <Suspense fallback={null}>
+        <UnlockRequests />
       </Suspense>
       <Suspense fallback={null}>
         <SafeguardsNotice />
@@ -155,7 +160,8 @@ async function Summary() {
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("exception_status", "open"),
   ]);
   const missedRows = (missed.data ?? []) as unknown as { client_id: string; period: string; cutoff_date: string; clients: { name: string } | null }[];
-  const rows = [...((overdue.data ?? []) as unknown as FilingListRow[]), ...((next14.data ?? []) as unknown as FilingListRow[])];
+  // Returns appear only for locked periods (docs/REWORK.md, decision 10); Filings lists the Books still open.
+  const rows = await keepBooksReady([...((overdue.data ?? []) as unknown as FilingListRow[]), ...((next14.data ?? []) as unknown as FilingListRow[])], supabase);
 
   const n = (c: number | null) => c ?? 0;
   const flag = (c: number | null, bad: string, good: string) => (n(c) > 0 ? { delta: bad, deltaColor: "rose" as const } : { delta: good, deltaColor: "lime" as const });
