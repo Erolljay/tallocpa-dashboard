@@ -73,7 +73,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
   const [{ data: team }, { data: people }, { data: cycles }] = await Promise.all([
     db.from("staff_assignments").select("client_id, user_id, role").in("client_id", clientIds),
     db.from("staff_profiles").select("user_id, full_name"),
-    db.from("document_cycles").select("client_id, period, nothing_to_submit_at, missed_cutoff, closed_at").in("client_id", clientIds).gte("period", monthStart(addDays(today, -150))),
+    db.from("document_cycles").select("client_id, period, nothing_to_submit_at, missed_cutoff, closed_at, client_confirmed_at").in("client_id", clientIds).gte("period", monthStart(addDays(today, -150))),
   ]);
   const nameOf = new Map((people ?? []).map((p: { user_id: string; full_name: string }) => [p.user_id, p.full_name]));
   const member = (clientId: string, role: "preparer" | "reviewer") => {
@@ -81,7 +81,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
     return a ? { userId: a.user_id, name: nameOf.get(a.user_id) ?? "—" } : null;
   };
   const cycleOf = new Map(
-    (cycles ?? []).map((y: { client_id: string; period: string; nothing_to_submit_at: string | null; missed_cutoff: boolean | null; closed_at: string | null }) => [
+    (cycles ?? []).map((y: { client_id: string; period: string; nothing_to_submit_at: string | null; missed_cutoff: boolean | null; closed_at: string | null; client_confirmed_at: string | null }) => [
       `${y.client_id}|${String(y.period).slice(0, 10)}`,
       y,
     ]),
@@ -93,10 +93,10 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
     const reviewer = member(f.client_id, "reviewer");
     if (opts.userId && preparer?.userId !== opts.userId && reviewer?.userId !== opts.userId) continue;
     const steps = stepsFor({ dueDate: f.due_date, periodEnd: f.period_end, periodStart: f.period_start ?? undefined, cutoffDay: f.clients?.submission_cutoff_day ?? 5, holidays });
-    // Documents for the period are in when its last month's cycle says so: nothing to submit,
-    // something came in by the cutoff, or the month was closed.
+    // Documents for the period are in when its last month's cycle says so: the client confirmed
+    // they sent everything (P1), nothing to submit, something came in by the cutoff, or the month was closed.
     const y = cycleOf.get(`${f.client_id}|${monthStart(f.period_end)}`);
-    const documentsIn = Boolean(y && (y.nothing_to_submit_at || y.closed_at || y.missed_cutoff === false));
+    const documentsIn = Boolean(y && (y.client_confirmed_at || y.nothing_to_submit_at || y.closed_at || y.missed_cutoff === false));
     const risk = riskOf({ steps, status: f.status, documentsIn, today, holidays });
     board.push({
       id: f.id,

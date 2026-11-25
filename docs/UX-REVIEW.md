@@ -127,7 +127,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
 | A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |
-| P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live |
+| P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live · built (migration 20261125000006) |
 | E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
 | W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
 | W3 | Review notes, My work | After cycle 1 |
@@ -164,6 +164,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 22 | Financial statements | Monthly or quarterly, set per client. |
 | 23 | Registrations | Keep it in the sidebar. |
 | 24 | Quarterly step dates | A return covering more than one month is prepared by the 15th of the month it is due, then reviewed, client approved and Owner approved one working day apart, and filed the day the Owner approves. |
+| 25 | Individuals' names | OCR reads whether a supplier or customer is an individual and splits last, first and middle name for the SLS, SLP, QAP and SAWT; the reviewer confirms them and the parties directory keeps them. |
 
 ## Workpaper index
 

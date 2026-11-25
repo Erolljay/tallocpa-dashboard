@@ -6,19 +6,23 @@ export interface CycleRow {
   nothing_to_submit_at: string | null;
   missed_cutoff: boolean | null;
   closed_at: string | null;
+  /** The client confirmed they sent everything for the month (P1). */
+  client_confirmed_at?: string | null;
 }
 
-export type Submission = "nothing" | "submitted" | "missed" | "waiting" | "not_due";
+export type Submission = "complete" | "nothing" | "submitted" | "missed" | "waiting" | "not_due";
 
 /** Submission state as of `today`, given how many documents for the month have come in. */
 export function submission(y: CycleRow, documents: number, today: string): Submission {
   if (y.missed_cutoff === true) return "missed";
   if (y.nothing_to_submit_at) return "nothing";
+  if (y.client_confirmed_at) return "complete";
   if (documents > 0 || y.missed_cutoff === false) return "submitted";
   return today > y.cutoff_date ? "missed" : y.requested_at ? "waiting" : "not_due";
 }
 
 export const submissionLabel: Record<Submission, string> = {
+  complete: "Sent everything",
   nothing: "Nothing to submit",
   submitted: "Submitted",
   missed: "Missed cutoff",
@@ -27,6 +31,7 @@ export const submissionLabel: Record<Submission, string> = {
 };
 
 export const submissionTone = {
+  complete: "done",
   nothing: "done",
   submitted: "done",
   missed: "blocked",
