@@ -142,6 +142,32 @@ describe("2550Q", () => {
     ]);
   });
 
+  it("takes capital goods and services from the register lines' categories when nothing is typed in", () => {
+    const docs = [
+      purchase({ month: "2026-01", vatable: 85_000, vat: 10_200, total: 95_200, slpCategory: "capital_goods", ...SUPP1 }),
+      purchase({ month: "2026-01", vatable: 45_000, vat: 5_400, total: 50_400, slpCategory: "services", ...SUPP2 }),
+      purchase({ month: "2026-01", vatable: 10_000, vat: 1_200, total: 11_200, ...SUPP2 }),
+    ];
+    const r = form2550Q.compute(ctxFor({ form: "2550Q", periodStart: "2026-01-01", periodEnd: "2026-03-31", client: { vatRegistered: true }, inputs: { input_tax_carried_over: "0" }, documents: docs }));
+    expect(r.errors).toEqual([]);
+    const line = r.sections.flatMap((s) => s.lines).find((l) => l.key === "domestic_purchases");
+    expect(line?.amount).toBe(14_000_000);
+    expect(line?.basis).toBe("Capital goods ₱85,000.00, services ₱45,000.00, other goods ₱10,000.00.");
+    // Each supplier keeps its own amounts on the SLP, not a proportional share.
+    const slp = r.schedules.find((s) => s.title.includes("(SLP)"))!.rows;
+    expect(slp.map((x) => [x.name, x.cap, x.svc, x.other])).toEqual([
+      ["Supplier One", 8_500_000, 0, 0],
+      ["Supplier Two", 0, 4_500_000, 1_000_000],
+    ]);
+    expect(r.warnings.join(" ")).not.toMatch(/All VATable purchases are treated|spread over suppliers/);
+  });
+
+  it("uses the typed split over the lines' categories", () => {
+    const docs = [purchase({ month: "2026-01", vatable: 85_000, vat: 10_200, total: 95_200, slpCategory: "capital_goods", ...SUPP1 })];
+    const r = form2550Q.compute(ctxFor({ form: "2550Q", periodStart: "2026-01-01", periodEnd: "2026-03-31", client: { vatRegistered: true }, inputs: { input_tax_carried_over: "0", purchases_capital_goods: "0", purchases_services: "0" }, documents: docs }));
+    expect(r.sections.flatMap((s) => s.lines).find((l) => l.key === "domestic_purchases")?.basis).toBe("Capital goods ₱0.00, services ₱0.00, other goods ₱85,000.00.");
+  });
+
   it("refuses a goods/services split larger than the purchases", () => {
     const r = form2550Q.compute(quarter({ inputs: { purchases_capital_goods: "40000", purchases_services: "20000" } }));
     expect(r.errors[0]).toMatch(/exceed the VATable purchases/);

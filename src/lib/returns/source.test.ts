@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { lookupAtc, normalizeAtc } from "./atc";
-import { buildPriorFigures, flattenFigures, isApproved, monthInPeriod, monthsInPeriod, priorKey, taxableYearStart, toSourceDocument, type DocumentRow } from "./source";
+import { buildPriorFigures, flattenFigures, fromRegisterLine, isApproved, monthInPeriod, monthsInPeriod, priorKey, taxableYearStart, toSourceDocument, type DocumentRow } from "./source";
 
 const row = (over: Partial<DocumentRow> = {}): DocumentRow => ({
   id: "d1",
@@ -82,5 +82,23 @@ describe("ATC master", () => {
     expect(lookupAtc("WC250")).toBeNull(); // final tax, not creditable EWT
     expect(lookupAtc("WV010")).toBeNull();
     expect(normalizeAtc("  ")).toBeNull();
+  });
+});
+
+describe("register lines", () => {
+  it("give the worksheets the same figures as the approved document they come from", () => {
+    const fields = { date: "2026-02-14", number: "SI-0412", party_name: "Bacolod Feeds Corp.", party_tin: "123-456-789-00000", party_address: "Bacolod City", vatable: "120000.00", vat: "14400.00", total: "134400.00", atc: "wc158", withholding: "1200.00" };
+    const fromDoc = toSourceDocument({ id: "d1", doc_type: "sales_invoice", document_month: "2026-02-01", status: "posted", extractions: { approved_fields: fields } });
+    const fromLine = fromRegisterLine({
+      document_id: "d1", kind: "sale", month: "2026-02-01", line_date: "2026-02-14", reference: "SI-0412", party_name: "Bacolod Feeds Corp.", party_tin: "123-456-789-00000", party_address: "Bacolod City",
+      vatable: "120000.00", vat_exempt: "0.00", zero_rated: "0.00", vat: "14400.00", total: "134400.00", atc: "WC158", withholding: "1200.00", slp_category: null,
+    });
+    expect(fromLine).toEqual({ ...fromDoc, slpCategory: null });
+  });
+
+  it("map each kind of line to its document type and keep a missing total at zero", () => {
+    const base = { document_id: "d", month: "2026-02-01", line_date: null, reference: null, party_name: null, party_tin: null, party_address: null, vatable: "0", vat_exempt: "0", zero_rated: "0", vat: "0", total: "0", atc: null, withholding: "0", slp_category: null };
+    expect((["sale", "purchase", "cwt_received", "ewt_issued"] as const).map((kind) => fromRegisterLine({ ...base, kind }).docType)).toEqual(["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"]);
+    expect(fromRegisterLine({ ...base, kind: "purchase", vatable: "100.00", vat: "12.00", slp_category: "capital_goods" })).toMatchObject({ total: 0, vatable: 10000, slpCategory: "capital_goods" });
   });
 });

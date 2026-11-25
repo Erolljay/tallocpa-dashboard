@@ -98,6 +98,9 @@ const c = (v: string | number | null | undefined): Centavos => toCentavos(v ?? n
 
 export function toRegisterLine(r: RegisterRow): RegisterLine {
   const a = Array.isArray(r.ledger_accounts) ? r.ledger_accounts[0] : r.ledger_accounts;
+  const amounts = c(r.vatable) + c(r.vat_exempt) + c(r.zero_rated) + c(r.vat);
+  // The database keeps the total as approved; a missing one is the amounts plus VAT (as book_document).
+  const total = c(r.total) > 0 || (r.kind !== "sale" && r.kind !== "purchase") ? c(r.total) : amounts;
   return {
     id: r.id,
     documentId: r.document_id,
@@ -113,7 +116,7 @@ export function toRegisterLine(r: RegisterRow): RegisterLine {
     vatExempt: c(r.vat_exempt),
     zeroRated: c(r.zero_rated),
     vat: c(r.vat),
-    total: c(r.total),
+    total,
     discount: c(r.discount),
     vatWithheld: c(r.vat_withheld),
     otherDeduction: c(r.other_deduction),

@@ -33,6 +33,7 @@ export function doc(docType: SourceDocument["docType"], d: DocInput): SourceDocu
     total: P(d.total ?? 0),
     atc: d.atc ?? null,
     withholding: P(d.withholding ?? 0),
+    ...(d.slpCategory !== undefined ? { slpCategory: d.slpCategory } : {}),
   };
 }
 

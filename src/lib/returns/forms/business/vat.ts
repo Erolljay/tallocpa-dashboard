@@ -79,14 +79,17 @@ interface Split {
 
 /** Groups per party (same TIN = same taxpayer, as in taxify; else by name) per month. */
 function groupByPartyMonth(splits: Split[]) {
-  const groups = new Map<string, { monthKey: string; doc: SourceDocument; vatable: number; vat: number; exempt: number; zeroRated: number; txnCount: number }>();
+  const groups = new Map<string, { monthKey: string; doc: SourceDocument; vatable: number; vat: number; exempt: number; zeroRated: number; txnCount: number; cap: number; svc: number }>();
   for (const s of splits) {
     if (s.vatable + s.exempt + s.zeroRated === 0) continue;
     const mk = monthKeyOf(s.doc);
     const tin = tinDigits(s.doc.partyTin).substring(0, 9);
     const key = `${tin || "n:" + (s.doc.partyName ?? "").trim().toUpperCase()}|${mk}`;
-    const g = groups.get(key) ?? { monthKey: mk, doc: s.doc, vatable: 0, vat: 0, exempt: 0, zeroRated: 0, txnCount: 0 };
+    const g = groups.get(key) ?? { monthKey: mk, doc: s.doc, vatable: 0, vat: 0, exempt: 0, zeroRated: 0, txnCount: 0, cap: 0, svc: 0 };
     g.vatable += s.vatable;
+    // The register's SLP category of the line (capital goods, services), when known.
+    if (s.doc.slpCategory === "capital_goods") g.cap += s.vatable;
+    else if (s.doc.slpCategory === "services") g.svc += s.vatable;
     g.vat += s.vat;
     g.exempt += s.exempt;
     g.zeroRated += s.zeroRated;
@@ -156,16 +159,19 @@ function computeAll(ctx: WorksheetContext): VatData {
   const i36 = inp.amount("output_vat_recovered");
   const i37 = outputTax - i35 + i36;
 
-  // Purchases: the goods / services / capital-goods split is typed in (receipts don't carry it).
+  // Purchases: the goods / services / capital-goods split is typed in, or taken from the
+  // register lines' SLP categories (capital goods for property and equipment accounts).
   const vatablePurch = sum(purchases.map((s) => s.vatable));
   const inputTax = sum(purchases.map((s) => s.vat));
   const purZero = sum(purchases.map((s) => s.zeroRated));
   const purExempt = sum(purchases.map((s) => s.exempt));
   const capEntered = inp.optionalAmount("purchases_capital_goods");
   const svcEntered = inp.optionalAmount("purchases_services");
-  let capGoods = capEntered ?? 0;
-  let services = svcEntered ?? 0;
-  if (capEntered == null && svcEntered == null && vatablePurch > 0)
+  const catTotal = (cat: "capital_goods" | "services") => sum(purchases.filter((s) => s.doc.slpCategory === cat).map((s) => s.vatable));
+  const fromLines = capEntered == null && svcEntered == null && purchases.some((s) => s.doc.slpCategory === "capital_goods" || s.doc.slpCategory === "services");
+  let capGoods = capEntered ?? (fromLines ? catTotal("capital_goods") : 0);
+  let services = svcEntered ?? (fromLines ? catTotal("services") : 0);
+  if (capEntered == null && svcEntered == null && vatablePurch > 0 && !fromLines)
     warnings.push("All VATable purchases are treated as goods other than capital goods. Enter the capital-goods and services amounts to split them (SLP columns; capital goods over ₱1M may need deferral, Items 39/52).");
   if (capGoods + services > vatablePurch) {
     errors.push(`Capital goods (₱${peso(capGoods)}) plus services (₱${peso(services)}) exceed the VATable purchases on the receipts (₱${peso(vatablePurch)}).`);
@@ -219,14 +225,15 @@ function computeAll(ctx: WorksheetContext): VatData {
     taxable: g.vatable, zeroRated: g.zeroRated, exempt: g.exempt, vat: g.vat, txnCount: g.txnCount,
   }));
   const slpGroups = groupByPartyMonth(purchases);
-  const capParts = allocate(capGoods, slpGroups.map((g) => g.vatable));
-  const svcParts = allocate(services, slpGroups.map((g) => g.vatable));
+  // From the lines' categories each supplier keeps its own amounts; typed totals are spread in proportion.
+  const capParts = fromLines && capGoods === catTotal("capital_goods") ? slpGroups.map((g) => g.cap) : allocate(capGoods, slpGroups.map((g) => g.vatable));
+  const svcParts = fromLines && services === catTotal("services") ? slpGroups.map((g) => g.svc) : allocate(services, slpGroups.map((g) => g.vatable));
   const slp: SlpRow[] = slpGroups.map((g, i) => ({
     monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address,
     capGoods: capParts[i], services: svcParts[i], otherGoods: g.vatable - capParts[i] - svcParts[i],
     zeroRated: g.zeroRated, exempt: g.exempt, vat: g.vat, txnCount: g.txnCount,
   }));
-  if ((capGoods > 0 || services > 0) && slpGroups.length > 1)
+  if ((capGoods > 0 || services > 0) && slpGroups.length > 1 && !fromLines)
     warnings.push("On the SLP, the capital-goods and services amounts are spread over suppliers in proportion to their VATable purchases; adjust per supplier if needed.");
 
   const result: WorksheetResult = {

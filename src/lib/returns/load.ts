@@ -5,7 +5,7 @@ import "server-only";
  * source.ts (pure, tested); this file only queries.
  */
 import { moduleForForm } from "./registry";
-import { buildPriorFigures, isApproved, monthOf, taxableYearStart, toSourceDocument, withDirectoryParty, type DocumentRow } from "./source";
+import { buildPriorFigures, fromRegisterLine, monthOf, taxableYearStart, withDirectoryParty, type RegisterSourceRow } from "./source";
 import type { Centavos, FormModule, LedgerContext, LedgerMovement, SourceDocument, TaxpayerType, WorksheetContext, WorksheetResult } from "./types";
 import { toCentavos } from "./money";
 import { buildStatements, type FinancialStatements } from "@/lib/ledger/statements";
@@ -68,14 +68,6 @@ const PAYROLL_FORM_CODES = new Set(["1601-C", "1604-C"]);
 /** Statuses from which the worksheet is locked (database trigger return_worksheet_guard). */
 export { LOCKED_STATUSES } from "@/lib/documents/lock";
 
-/**
- * One approved document row → SourceDocument. The single place where rows
- * become source documents (e.g. to fill party details from a directory later).
- */
-function toSource(row: DocumentRow): SourceDocument | null {
-  return toSourceDocument(row);
-}
-
 
 /** The worksheet's context, module and saved state; null if the filing is not visible to the user. */
 export async function loadWorksheet(filingId: string, supabase?: Supabase): Promise<LoadedWorksheet | null> {
@@ -123,15 +115,13 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       .lte("start_date", f.period_end)
       .or(`end_date.is.null,end_date.gte.${f.period_start}`)
       .limit(1),
+    // One register (slice 2): the approved documents' figures, as register lines.
     db
-      .from("documents")
-      .select("id, doc_type, document_month, status, file_name, extractions(approved_fields)")
+      .from("register_lines")
+      .select("document_id, kind, month, line_date, reference, party_name, party_tin, party_address, vatable, vat_exempt, zero_rated, vat, total, atc, withholding, slp_category, documents(file_name, created_at)")
       .eq("client_id", f.client_id)
-      .eq("status", "posted")
-      .gte("document_month", docsFrom)
-      .lte("document_month", monthOf(f.period_end))
-      .order("document_month")
-      .order("created_at"),
+      .gte("month", docsFrom)
+      .lte("month", monthOf(f.period_end)),
     // Earlier worksheets of the same client in the same taxable year.
     db
       .from("return_worksheets")
@@ -142,12 +132,13 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       .lt("filing_instances.period_end", formModule.priorWithinPeriod ? f.period_end : f.period_start),
   ]);
 
-  const documents: ListedDocument[] = [];
-  for (const row of (docRows ?? []) as (DocumentRow & { file_name: string })[]) {
-    if (!isApproved(row)) continue;
-    const source = toSource(row);
-    if (source) documents.push({ id: row.id, fileName: row.file_name, source });
-  }
+  type LineRow = RegisterSourceRow & { documents: { file_name: string; created_at: string } | { file_name: string; created_at: string }[] | null };
+  const doc = (r: LineRow) => (Array.isArray(r.documents) ? r.documents[0] : r.documents);
+  // Same order as before the register: by month, then by upload.
+  const lineRows = ((docRows ?? []) as unknown as LineRow[]).sort(
+    (a, b) => String(a.month).localeCompare(String(b.month)) || (doc(a)?.created_at ?? "").localeCompare(doc(b)?.created_at ?? ""),
+  );
+  const documents: ListedDocument[] = lineRows.map((r) => ({ id: r.document_id, fileName: doc(r)?.file_name ?? "", source: fromRegisterLine(r) }));
   const directory = await lookupParties(db, documents.map((d) => d.source.partyTin)).catch(() => new Map<string, Party>());
   for (const d of documents) d.source = withDirectoryParty(d.source, directory);
 

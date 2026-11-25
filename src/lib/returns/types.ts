@@ -47,6 +47,8 @@ export interface SourceDocument {
   total: Centavos;
   atc: string | null;
   withholding: Centavos;
+  /** SLP purchase category from the register line, when known (capital goods for property and equipment). */
+  slpCategory?: "capital_goods" | "other_goods" | "services" | "zero_rated" | "exempt" | null;
 }
 
 export interface WorksheetContext {
