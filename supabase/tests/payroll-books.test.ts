@@ -113,4 +113,11 @@ describe.skipIf(!url)("payroll to the books", () => {
     expect(Number(j.compensation)).toBe(10000 + 11000 + 8000);
     expect(Number(j.wtc_payable)).toBe(500 + 600);
   });
+
+  it("will not post a merged whole-month run on top of the month's runs already in the books", async () => {
+    // Editing the grid grosses the month up into one entry per employee (as taxify).
+    await save([pay(office, null, { basic: "21000", withholding_tax: "1100", sss_ee: "450", sss_er: "950" })]);
+    expect((await run(null)).gross).toBe(21000 + 8000 - 8000);
+    await expect(as(`select public.post_payroll($1, '2027-03-01', null)`, [client])).rejects.toThrow(/already in the books; reverse them first/);
+  });
 });

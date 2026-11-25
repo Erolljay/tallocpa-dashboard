@@ -35,11 +35,10 @@ export async function PayrollRuns({ supabase, clientId, month }: { supabase: Db;
   ]);
   const periods = [...new Set((entries ?? []).map((e) => (e.pay_period_end ? String(e.pay_period_end).slice(0, 10) : "")))].sort();
   if (periods.length === 0) return null;
-  const monthEnd = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10);
   const runs = await Promise.all(
     periods.map(async (period) => {
       const { data, error } = await supabase.rpc("payroll_run", { p_client: clientId, p_month: month, p_period_end: period || null });
-      const posting = (postings ?? []).find((x) => String(x.period_end).slice(0, 10) === (period || monthEnd));
+      const posting = (postings ?? []).find((x) => String(x.period_end).slice(0, 10) === (period || month));
       const posted = posting && (posting.journal_entries as unknown as { status: string } | null)?.status === "posted";
       return { period, run: (data ?? null) as Run | null, error: error?.message ?? null, posted };
     }),

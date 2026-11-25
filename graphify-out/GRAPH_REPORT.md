@@ -1,7 +1,7 @@
 # Graph Report - tallocpa-dashboard  (2026-11-25)
 
 ## Corpus Check
-- 506 files · ~398,418 words
+- 506 files · ~398,627 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: .css 6, (none) 4, .mdc 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `78d63c4a`
+- Built from commit: `2415ae28`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -697,16 +697,16 @@ Nodes (5): PARTICLES, PersonName, splitPersonName(), SUFFIXES, tidy()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `react` connect `Skeleton` to `package.json`, `checkbox.tsx`, `fixed-assets/forms.tsx`, `Card`, `registrations/[id]/page.tsx`, `sign-in-form.tsx`, `dependencies`, `statements.ts`, `clients/[id]/page.tsx`, `scores/page.tsx`, `Notice`, `payroll/forms.tsx`, `[month]/page.tsx`, `registrations/forms.tsx`, `notification.tsx`, `manilaToday`, `document-upload.tsx`, `books/page.tsx`, `statement-view.tsx`, `tabs.tsx`, `dropdown.tsx`, `worksheet/page.tsx`, `fields.ts`, `books/forms.tsx`, `social-button.tsx`, `client-form.tsx`, `stat-cards.tsx`, `theme-toggle.tsx`, `payment-forms.tsx`, `requireStaff`, `button.tsx`, `cx.ts`, `file-upload.tsx`, `workpapers/load.ts`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `LinkButton`, `supabaseServer`, `print/page.tsx`, `Textarea`, `brand/forms.tsx`, `books/reports/page.tsx`, `parties/[id]/page.tsx`, `quote/page.tsx`, `app/documents/page.tsx`, `pending-review.tsx`, `showMonth`, `supabaseAdmin`, `Skeleton`, `sign-off-actions.tsx`, `fees/forms.tsx`?**
-  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+  _High betweenness centrality (0.130) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _18 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `sign-off.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.11231884057971014 - nodes in this community are weakly interconnected._
-- **Why does `next` connect `supabaseServer` to `package.json`, `fixed-assets/forms.tsx`, `src/app/layout.tsx`, `Card`, `registrations/[id]/page.tsx`, `sign-in-form.tsx`, `dependencies`, `proxy.ts`, `clients/[id]/page.tsx`, `scores/page.tsx`, `payroll/forms.tsx`, `Skeleton`, `[month]/page.tsx`, `registrations/forms.tsx`, `manilaToday`, `ledger/types.ts`, `payroll/data.ts`, `document-upload.tsx`, `branches/page.tsx`, `books/page.tsx`, `register-xlsx.ts`, `dropdown.tsx`, `returns/types.ts`, `worksheet/page.tsx`, `fields.ts`, `books/forms.tsx`, `theme-toggle.tsx`, `payment-forms.tsx`, `requireStaff`, `workpapers/load.ts`, `app/app/layout.tsx`, `LinkButton`, `server-only`, `clients/actions.ts`, `print/page.tsx`, `Textarea`, `brand/forms.tsx`, `books/reports/page.tsx`, `parties/[id]/page.tsx`, `settings/actions.ts`, `quote/page.tsx`, `app/documents/page.tsx`, `pending-review.tsx`, `parties/actions.ts`, `showMonth`, `supabaseAdmin`, `Skeleton`, `sign-off-actions.tsx`?**
-  _High betweenness centrality (0.115) - this node is a cross-community bridge._
+- **Why does `vitest` connect `vitest` to `package.json`, `generate.ts`, `sign-off.ts`, `db.test.ts`, `IsoDate`, `devDependencies`, `quote.test.ts`, `arap.ts`, `documents/period.ts`, `checks.test.ts`, `gemini.ts`, `Card`, `registrations/[id]/page.tsx`, `sign-in-form.tsx`, `statements.ts`, `parts.ts`, `names.ts`, `scores/page.tsx`, `ref_node_fs`, `[month]/page.tsx`, `registrations/forms.tsx`, `manilaToday`, `ledger/types.ts`, `deadlines/page.tsx`, `payroll/types.ts`, `Centavos`, `branches/page.tsx`, `returns/types.ts`, `gap.ts`, `fixed-assets/page.tsx`, `returns/types.ts`, `fields.ts`, `client-form.tsx`, `requireStaff`, `workpapers/load.ts`, `document-scanner.tsx`, `server-only`, `opening.ts`, `clients/actions.ts`, `print/page.tsx`, `rates.ts`, `parties/[id]/page.tsx`, `engine.ts`, `settings/actions.ts`, `quote/page.tsx`, `app/documents/page.tsx`, `dates.ts`, `acting-approver.test.ts`, `pending-review.tsx`, `showMonth`, `receipts.ts`, `template.ts`?**
+  _High betweenness centrality (0.116) - this node is a cross-community bridge._
 - **Should `generate.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.14130434782608695 - nodes in this community are weakly interconnected._
-- **Why does `vitest` connect `vitest` to `package.json`, `generate.ts`, `sign-off.ts`, `db.test.ts`, `IsoDate`, `devDependencies`, `quote.test.ts`, `arap.ts`, `documents/period.ts`, `checks.test.ts`, `gemini.ts`, `Card`, `registrations/[id]/page.tsx`, `sign-in-form.tsx`, `statements.ts`, `parts.ts`, `names.ts`, `scores/page.tsx`, `ref_node_fs`, `[month]/page.tsx`, `registrations/forms.tsx`, `manilaToday`, `ledger/types.ts`, `deadlines/page.tsx`, `payroll/types.ts`, `Centavos`, `branches/page.tsx`, `returns/types.ts`, `gap.ts`, `fixed-assets/page.tsx`, `returns/types.ts`, `fields.ts`, `client-form.tsx`, `requireStaff`, `workpapers/load.ts`, `document-scanner.tsx`, `server-only`, `opening.ts`, `clients/actions.ts`, `print/page.tsx`, `rates.ts`, `parties/[id]/page.tsx`, `engine.ts`, `settings/actions.ts`, `quote/page.tsx`, `app/documents/page.tsx`, `dates.ts`, `acting-approver.test.ts`, `pending-review.tsx`, `showMonth`, `receipts.ts`, `template.ts`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `next` connect `supabaseServer` to `package.json`, `fixed-assets/forms.tsx`, `src/app/layout.tsx`, `Card`, `registrations/[id]/page.tsx`, `sign-in-form.tsx`, `dependencies`, `proxy.ts`, `clients/[id]/page.tsx`, `scores/page.tsx`, `payroll/forms.tsx`, `Skeleton`, `[month]/page.tsx`, `registrations/forms.tsx`, `manilaToday`, `ledger/types.ts`, `payroll/data.ts`, `document-upload.tsx`, `branches/page.tsx`, `books/page.tsx`, `register-xlsx.ts`, `dropdown.tsx`, `returns/types.ts`, `worksheet/page.tsx`, `fields.ts`, `books/forms.tsx`, `theme-toggle.tsx`, `payment-forms.tsx`, `requireStaff`, `workpapers/load.ts`, `app/app/layout.tsx`, `LinkButton`, `server-only`, `clients/actions.ts`, `print/page.tsx`, `Textarea`, `brand/forms.tsx`, `books/reports/page.tsx`, `parties/[id]/page.tsx`, `settings/actions.ts`, `quote/page.tsx`, `app/documents/page.tsx`, `pending-review.tsx`, `parties/actions.ts`, `showMonth`, `supabaseAdmin`, `Skeleton`, `sign-off-actions.tsx`?**
+  _High betweenness centrality (0.100) - this node is a cross-community bridge._
 - **Should `migrate.yml` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._

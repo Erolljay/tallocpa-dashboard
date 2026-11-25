@@ -86,7 +86,7 @@ begin
 end;
 $$;
 
--- One entry per payroll run (client, month, pay period; a whole month is keyed by its last day).
+-- One entry per payroll run (client, month, pay period; a whole month is keyed by its first day).
 create table public.payroll_postings (
   client_id uuid not null references public.clients (id) on delete cascade,
   pay_month date not null check (extract(day from pay_month) = 1),
@@ -199,12 +199,23 @@ create or replace function public.post_payroll(p_client uuid, p_month date, p_pe
 language plpgsql security definer set search_path = '' as $$
 declare
   m date := date_trunc('month', p_month)::date;
-  k date := coalesce(p_period_end, (date_trunc('month', p_month) + interval '1 month - 1 day')::date);
+  -- The run's key: its pay period's end, or the month's first day for the whole month.
+  k date := coalesce(p_period_end, date_trunc('month', p_month)::date);
+  dated date := coalesce(p_period_end, (date_trunc('month', p_month) + interval '1 month - 1 day')::date);
   r jsonb;
   e uuid;
 begin
   if not private.can_keep_books(p_client) then
     raise exception 'Only the Owner or staff assigned to this client can post to its books' using errcode = '42501';
+  end if;
+  -- Everything dated in a month grosses up to the month (as taxify): editing the grid merges the
+  -- month's runs into one. Posting that whole-month run on top of runs already in the books would
+  -- book the pay twice.
+  if p_period_end is null and exists (
+    select 1 from public.payroll_postings p join public.journal_entries j on j.id = p.entry_id
+    where p.client_id = p_client and p.pay_month = m and p.period_end <> k and j.status <> 'reversed'
+  ) then
+    raise exception 'Payroll runs of this month are already in the books; reverse them first, or book the change by journal entry' using errcode = '22023';
   end if;
   if exists (select 1 from public.payroll_postings p join public.journal_entries j on j.id = p.entry_id
              where p.client_id = p_client and p.period_end = k and j.status <> 'reversed') then
@@ -213,9 +224,9 @@ begin
   r := public.payroll_run(p_client, m, p_period_end);
   if jsonb_array_length(r -> 'problems') > 0 then raise exception '%', r -> 'problems' ->> 0 using errcode = '22023'; end if;
   if jsonb_array_length(r -> 'lines') < 2 then raise exception 'There is no payroll to post for this period' using errcode = '22023'; end if;
-  e := private.insert_entry(p_client, k, 'cash_disbursements', 'manual',
-         'Payroll ' || case when p_period_end is null then to_char(m, 'FMMonth YYYY') else to_char(m, 'FMMonth') || ' ' || to_char(m, 'FMDD') || '–' || to_char(k, 'FMDD, YYYY') end,
-         'PAY ' || to_char(k, 'YYYY-MM-DD'),
+  e := private.insert_entry(p_client, dated, 'cash_disbursements', 'manual',
+         'Payroll ' || case when p_period_end is null then to_char(m, 'FMMonth YYYY') else to_char(m, 'FMMonth') || ' ' || case when extract(day from k) <= 15 then '1' else '16' end || '–' || to_char(k, 'FMDD, YYYY') end,
+         'PAY ' || to_char(dated, 'YYYY-MM-DD') || case when p_period_end is null then ' (month)' else '' end,
          (select jsonb_agg(jsonb_build_object('account_id', x ->> 'account_id', 'debit', x ->> 'debit', 'credit', x ->> 'credit', 'description', 'Payroll')) from jsonb_array_elements(r -> 'lines') x),
          null, null);
   perform public.confirm_journal_entry(e);
