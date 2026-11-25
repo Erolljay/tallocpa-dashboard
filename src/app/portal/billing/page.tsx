@@ -38,7 +38,7 @@ async function Billing() {
     return (
       <div className="space-y-4">
         <h1 className="text-title-1-medium text-text-primary">Billing</h1>
-        <p className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">No statements yet. Your first statement appears here on your billing day.</p>
+        <p className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">No statements yet. Your first statement appears here once we bill you for the month.</p>
       </div>
     );
   }

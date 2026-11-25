@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51) and Phases 1–2 (PR #53) merged. Phase 3 built (PR #54), with Portal Billing (Phase 4) and the Leads pipeline (Phase 5) built alongside it; eSubmission waits on the Google setup. |
+| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51), Phases 1–2 (PR #53) and Phase 3 with Portal Billing and the Leads pipeline (PR #54) merged. Phase 4 built (PR #55). Phase 5 next: year-end, 1604-C/1604-E, Google Calendar. eSubmission waits on the Google setup. |
 | **Screens** | Clickable mockup per user (Owner, Reviewer, Preparer, Client), shared as a claude.ai artifact |
 | **Target** | Monthly work and the client portal live before 31 December 2026; year-end and the annual returns ready before their January deadlines |
 
@@ -26,7 +26,7 @@ Lead → Prospect → Won → Onboarding → Client
 
 ### Intake and Inbox
 1. Four streams: **Sales, Purchases & Expenses** (one stream, as on the SLP), **Payroll**, **Other**.
-2. Payroll comes in the client's own format (Excel, PDF or a photo). Staff copy it into the Tallo template and load it.
+2. Payroll comes in the client's own format (Excel, PDF or a photo). Staff copy it into the Tallo template and load it. The portal has no payroll register upload or template download (Owner, 25 November 2026).
 3. The monthly cutoff and "I've sent everything" stay.
 4. Approving a document posts it to the Books as the entry chosen on the row: a cash sale is a Sales Invoice **and** its Receipt; a sale on account is a Sales Invoice only, and its balance waits under the Customer; purchases the same with Purchase Invoices and Payments; a customer's 2307 is the CWT line of its Receipt.
 
@@ -54,9 +54,14 @@ Lead → Prospect → Won → Onboarding → Client
 
 ### Collections and the portal
 16. The statement carries the retainer and each return and contribution as its own item. The **Owner ticks which items a verified payment pays**; the rest stay open and the client can keep paying until settled. Verified tax and contribution money is **cash for remittance** until remitted.
+16a. **Ticking (Owner, 25 November 2026):** the Owner can tick any open item on any of the client's statements, not only the statement paid. Leftover credit still pays the oldest open item at the next billing, so it can later pay an item left unticked; those show as "Later, from the credit".
+16b. **Cash for remittance:** a tax item is remitted when its return is Filed & paid. A client's payment that arrives after the return was filed is not held: the firm advanced the tax, and the payment reimburses the firm (the item stays open on the statement until then). Only the Owner marks a contribution remitted, and may do so before the client pays when the firm advances it.
+16c. **The Owner runs billing (Owner, 25 November 2026):** nothing is billed automatically; billing days no longer issue statements. A return's tax is billable once the **client approves** it, or **two days before its BIR deadline** if still only reviewed, whichever comes first; nil returns never. Collections lists **Ready to bill** per client (returns with "Client approved" or "Due in N days", unbilled contributions and charges, the month's retainer from the 1st) with **Run billing** per client or for all; the retainer goes on the same statement. Home shows the Owner how many clients are ready.
+    **No retainer month is lost (Owner, 25 November 2026; 20261209000001):** every month from the engagement's start through the billing month with a retainer above zero and no retainer due yet is in Ready to bill (earlier months marked "Not billed"), and a run bills all of them, each its own due with its own month; billed or waived months, months outside the engagement's start and end, and future months are never billed.
 17. Portal Billing: the client **chooses a bank or e-wallet and sees only its QR**, uploads the proof; each payment shows **Pending verification → Verified** (with the items it paid) or **Rejected** (with the reason). Previous statements are listed.
 18. Portal Home: progress of the month, to-do, financial position and a 6-month chart, dues, the client's team with Book a meeting.
 19. Portal Reports: financial statements; **filed returns per year per tax type, one link to the scanned copy**; **2307 per supplier, per transaction, month or quarter**; **2316 per employee per year**; the loose-leaf books. No payroll or BIR-list sections.
+19a. **Statements after the client's approval (Owner, option b):** each month stands on its own returns: a closed month's financial statements show in the portal once every monthly or quarterly return covering **that month** is Client approved or later (a nil return once past that step); an unapproved earlier month does not hold later months, although statements read the year to date. A month no return covers shows on the lock alone. A **quarter** shows when its three months show; the **year** when its twelve months show **and its annual income tax return** (1701, 1701A, 1702-RT/EX/MX) is Client approved or later. Other annual returns (1604-C, 1604-E, inventory list) hold nothing. **The latest return of a period decides:** once an amended return is started for an obligation and period, the original's approval no longer counts and the period's statements are hidden again until the client approves the amended return (the books of that period were corrected; the client sees the corrected statements together with the amended return). The portal says "Corrected — waiting for your approval of the amended *form* for *period*" with the link to the return. Corrections stay in the original return's period (unlocking and amending are unchanged). An approval sent back (kick-back, unlock) no longer counts. Staff see everything; the loose-leaf books, 2307s and Home keep the lock-only rule (migrations 20261207000001 and 20261207000002).
 
 ### Firm, leads, calendar, year-end
 20. Leads pipeline: **Lead → Prospect → Won → Onboarding | Lost** (with a reason). **The Owner assigns a reviewer**, who holds the **discovery call** and writes its notes; quote and proposal follow. When won, the client's preparer and reviewer are picked separately at onboarding.

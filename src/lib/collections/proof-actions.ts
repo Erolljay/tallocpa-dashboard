@@ -81,7 +81,10 @@ export async function submitProof(input: z.input<typeof submitSchema>): Promise<
   return { ok: "Thank you. We received your proof of payment and will verify it." };
 }
 
-/** The Owner confirms the money arrived: it is recorded as a deposit and the statement is paid. */
+/**
+ * The Owner confirms the money arrived: it is recorded as a deposit applied to the
+ * items the Owner ticked (oldest first); the rest is the client's credit.
+ */
 export async function verifyProofAction(soaId: string, proofId: string, _: ProofState, form: FormData): Promise<ProofState> {
   await requireOwner();
   const parsed = z
@@ -94,10 +97,11 @@ export async function verifyProofAction(soaId: string, proofId: string, _: Proof
     p_received_on: parsed.data.received_on,
     p_amount: parsed.data.amount,
     p_bir_invoice_number: parsed.data.bir || null,
+    p_due_ids: form.getAll("due_ids").map(String),
   });
   if (error) return { error: error.message };
   refresh(soaId);
-  return { ok: "Verified. The payment is recorded." };
+  return { ok: "Verified. The payment is applied to the ticked items." };
 }
 
 export async function rejectProofAction(soaId: string, proofId: string, _: ProofState, form: FormData): Promise<ProofState> {

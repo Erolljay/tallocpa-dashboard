@@ -61,38 +61,63 @@ export function ageOpenItems(items: { due_on: string; open_amount: number | stri
   return { buckets: mapValues(cents, fromCents), total: fromCents(total), overdue: fromCents(total - cents.current) };
 }
 
-/** The next billing date on or after `today` for a client billed on `days` of the month (1–28). */
-export function nextBillingDate(days: readonly number[], today: string): string | null {
-  const valid = [...new Set(days)].filter((d) => Number.isInteger(d) && d >= 1 && d <= 28).sort((a, b) => a - b);
-  if (valid.length === 0) return null;
-  const [y, m, d] = today.split("-").map(Number);
-  const sameMonth = valid.find((day) => day >= d);
-  if (sameMonth !== undefined) return iso(y, m, sameMonth);
-  return m === 12 ? iso(y + 1, 1, valid[0]) : iso(y, m + 1, valid[0]);
+/** Why an item is in Ready to bill (public.ready_to_bill, decision 16c). */
+/** "retainer_unbilled": an earlier month's retainer never billed; every such month is billed on the next run. */
+export type ReadyReason = "retainer" | "retainer_unbilled" | "client_approved" | "due_soon" | "charge";
+
+/** One item a billing run would put on the client's statement now. */
+export interface ReadyItem {
+  client_id: string;
+  client_code: string;
+  client_name: string;
+  kind: DueKind;
+  description: string;
+  amount: number | string;
+  reason: ReadyReason;
+  /** Days from the billing date to the return's BIR deadline (tax items only). */
+  days_to_due: number | null;
+  filing_instance_id: string | null;
+  due_id: string | null;
 }
 
-/** "10th and 20th", "10th" — how a client's billing days read in a sentence. */
-export function describeBillingDays(days: readonly number[]): string {
-  const sorted = [...new Set(days)].sort((a, b) => a - b).map(ordinal);
-  if (sorted.length <= 1) return sorted[0] ?? "—";
-  return `${sorted.slice(0, -1).join(", ")} and ${sorted.at(-1)}`;
+/** "Client approved", "Due in 2 days", "Due today", "Past due" — why a return is ready to bill. */
+export function readyReasonLabel(item: Pick<ReadyItem, "reason" | "days_to_due">): string {
+  switch (item.reason) {
+    case "client_approved":
+      return "Client approved";
+    case "due_soon": {
+      const d = item.days_to_due ?? 0;
+      if (d < 0) return "Past due";
+      if (d === 0) return "Due today";
+      return `Due in ${d} day${d === 1 ? "" : "s"}`;
+    }
+    case "retainer":
+      return "This month's retainer";
+    case "retainer_unbilled":
+      return "Not billed";
+    case "charge":
+      return "Not yet billed";
+  }
 }
 
-export function ordinal(n: number): string {
-  const tens = n % 100;
-  if (tens >= 11 && tens <= 13) return `${n}th`;
-  return `${n}${{ 1: "st", 2: "nd", 3: "rd" }[n % 10] ?? "th"}`;
+export interface ReadyClient {
+  id: string;
+  code: string;
+  name: string;
+  items: ReadyItem[];
+  total: number;
 }
 
-/** Parses "10, 20" or "10 20" into billing days, or an error sentence. */
-export function parseBillingDays(input: string): { days: number[] } | { error: string } {
-  const parts = input.split(/[\s,]+/).filter(Boolean);
-  if (parts.length === 0) return { error: "Enter at least one billing day." };
-  const days = parts.map(Number);
-  if (days.some((d) => !Number.isInteger(d) || d < 1 || d > 28)) return { error: "Billing days are whole numbers from 1 to 28." };
-  const unique = [...new Set(days)].sort((a, b) => a - b);
-  if (unique.length > 4) return { error: "Use at most four billing days." };
-  return { days: unique };
+/** Groups Ready to bill rows by client, keeping the database's order; totals in centavos. */
+export function groupReady(rows: ReadyItem[]): ReadyClient[] {
+  const out = new Map<string, { id: string; code: string; name: string; items: ReadyItem[]; cents: number }>();
+  for (const r of rows) {
+    const c = out.get(r.client_id) ?? { id: r.client_id, code: r.client_code, name: r.client_name, items: [], cents: 0 };
+    c.items.push(r);
+    c.cents += toCents(r.amount);
+    out.set(r.client_id, c);
+  }
+  return [...out.values()].map(({ cents, ...c }) => ({ ...c, total: fromCents(cents) }));
 }
 
 export function toCents(v: number | string): number {
@@ -107,25 +132,78 @@ function mapValues<K extends string, A, B>(o: Record<K, A>, f: (a: A) => B): Rec
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, f(v as A)])) as Record<K, B>;
 }
 
-function iso(y: number, m: number, d: number): string {
-  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-export type AllocationRow = { deposit_id: string; due_id: string; amount: string | number; client_dues: { description: string } | null };
-export type PaidItem = { dueId: string; description: string; amount: number };
+export type AllocationRow = {
+  deposit_id: string;
+  due_id: string;
+  amount: string | number;
+  /** Applied later from the payment's leftover credit, not ticked by the Owner at verification. */
+  from_credit?: boolean | null;
+  client_dues: { description: string } | null;
+};
+export type PaidItem = { dueId: string; description: string; amount: number; fromCredit: boolean };
 
 /**
- * The items each deposit paid, in the order the allocation applied it (oldest
- * first), one line per item even when it was applied in several parts.
+ * The items each deposit paid, in the order they were applied: first the items the
+ * Owner ticked (oldest first), then any its leftover credit paid later. One line per
+ * item even when it was applied in several parts.
  */
 export function groupPaidItems(rows: AllocationRow[]): Map<string, PaidItem[]> {
   const out = new Map<string, PaidItem[]>();
   for (const a of rows) {
     const list = out.get(a.deposit_id) ?? [];
-    const same = list.find((x) => x.dueId === a.due_id);
+    const fromCredit = Boolean(a.from_credit);
+    const same = list.find((x) => x.dueId === a.due_id && x.fromCredit === fromCredit);
     if (same) same.amount = Math.round((same.amount + Number(a.amount)) * 100) / 100;
-    else list.push({ dueId: a.due_id, description: a.client_dues?.description ?? "Item", amount: Number(a.amount) });
+    else list.push({ dueId: a.due_id, description: a.client_dues?.description ?? "Item", amount: Number(a.amount), fromCredit });
     out.set(a.deposit_id, list);
   }
   return out;
+}
+
+/** A tax or contribution item and the client's money held for it (public.remittance_items). */
+export interface RemittanceItem {
+  due_id: string;
+  kind: "tax" | "contribution";
+  description: string;
+  due_on: string;
+  received: number;
+  remitted: boolean;
+  remitted_on: string | null;
+  remit_reference: string | null;
+  held: number;
+}
+
+/**
+ * Cash for remittance (decision 16): tax and contribution money received from
+ * clients and not yet remitted, totalled per client and firm-wide. Sums in
+ * centavos to avoid float drift.
+ */
+export function totalHeld(rows: { client_id: string; held: number | string }[]): { byClient: Map<string, number>; total: number } {
+  const cents = new Map<string, number>();
+  for (const r of rows) cents.set(r.client_id, (cents.get(r.client_id) ?? 0) + toCents(r.held));
+  const byClient = new Map([...cents].map(([k, v]) => [k, fromCents(v)] as const));
+  return { byClient, total: fromCents([...cents.values()].reduce((a, b) => a + b, 0)) };
+}
+
+/**
+ * The items ticked by default when verifying a payment of `amount`: open items
+ * oldest first until the amount is used up (the last one may be paid in part).
+ */
+export function suggestTicks(items: { id: string; open: number }[], amount: number): string[] {
+  let left = toCents(amount);
+  const out: string[] = [];
+  for (const i of items) {
+    if (left <= 0) break;
+    out.push(i.id);
+    left -= toCents(i.open);
+  }
+  return out;
+}
+
+/** How a payment of `amount` lands on the ticked items: applied, kept as the client's credit, and still open on them. */
+export function tickedSplit(ticked: { open: number }[], amount: number): { applied: number; credit: number; stillOpen: number } {
+  const open = ticked.reduce((s, i) => s + toCents(i.open), 0);
+  const amt = Math.max(toCents(amount), 0);
+  const applied = Math.min(open, amt);
+  return { applied: fromCents(applied), credit: fromCents(amt - applied), stillOpen: fromCents(open - applied) };
 }

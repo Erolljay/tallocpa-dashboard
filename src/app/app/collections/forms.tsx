@@ -6,9 +6,10 @@ import { CONTRIBUTIONS, methodLabel, type DepositMethod } from "@/lib/collection
 import {
   addChargeAction,
   applyCreditAction,
+  clearRemittedAction,
+  markRemittedAction,
   recordDepositAction,
   runBillingAction,
-  setBillingDaysAction,
   voidDepositAction,
   waiveDueAction,
   type MoneyState,
@@ -20,7 +21,21 @@ function Result({ state }: { state: MoneyState }) {
   return null;
 }
 
-/** Runs billing now: for every client scheduled on the date, or for one client. */
+/**
+ * "Run billing" on a Ready to bill row (one client) or "Run billing for all ready"
+ * (clientId null), as of today in Manila.
+ */
+export function RunReadyButton({ clientId, label, variant = "secondary" }: { clientId: string | null; label: string; variant?: "primary" | "secondary" }) {
+  const [state, run, pending] = useActionState(runBillingAction.bind(null, clientId), {} as MoneyState);
+  return (
+    <form action={run} className="flex flex-col items-end gap-2">
+      <Button type="submit" size="sm" variant={variant} disabled={pending}>{pending ? "Billing…" : label}</Button>
+      <Result state={state} />
+    </form>
+  );
+}
+
+/** Runs billing now for one client, on a date the Owner picks (today by default). */
 export function RunBillingForm({ clientId, today }: { clientId: string | null; today: string }) {
   const [state, run, pending] = useActionState(runBillingAction.bind(null, clientId), {} as MoneyState);
   return (
@@ -29,7 +44,7 @@ export function RunBillingForm({ clientId, today }: { clientId: string | null; t
         {clientId ? "Bill this client now" : "Run billing"}
       </summary>
       <form action={run} className="absolute right-0 z-10 mt-2 w-80 space-y-3 rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-lift">
-        <Field label="Billing date" htmlFor="billing_date" hint={clientId ? "Issues a statement with everything ready to bill." : "Bills every client whose billing days include this day."}>
+        <Field label="Billing date" htmlFor="billing_date" hint={clientId ? "Issues a statement with everything ready to bill on this date, the month's retainer included." : "Bills every client ready to bill on this date."}>
           <Input id="billing_date" name="billing_date" type="date" defaultValue={today} required />
         </Field>
         <Button type="submit" disabled={pending} className="w-full">{pending ? "Billing…" : "Issue Statements"}</Button>
@@ -226,15 +241,45 @@ export function ApplyCreditButton({ clientId }: { clientId: string }) {
   );
 }
 
-export function BillingDaysForm({ clientId, days }: { clientId: string; days: number[] }) {
-  const [state, run, pending] = useActionState(setBillingDaysAction.bind(null, clientId), {} as MoneyState);
+/** Records a contribution's remittance to the agency (date and reference), or undoes one recorded by mistake. */
+export function RemittedForm({ clientId, dueId, today, remitted }: { clientId: string; dueId: string; today: string; remitted: boolean }) {
+  const [state, run, pending] = useActionState(markRemittedAction.bind(null, clientId, dueId), {} as MoneyState);
+  const [undoState, setUndoState] = useState<MoneyState>({});
+  const [undoing, setUndoing] = useState(false);
+  if (remitted) {
+    return (
+      <div className="space-y-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={undoing}
+          onClick={async () => {
+            setUndoing(true);
+            setUndoState(await clearRemittedAction(clientId, dueId));
+            setUndoing(false);
+          }}
+        >
+          {undoing ? "Undoing…" : "Undo remitted"}
+        </Button>
+        <Result state={undoState} />
+      </div>
+    );
+  }
   return (
-    <form action={run} className="flex flex-wrap items-end gap-3">
-      <Field label="Billing days" htmlFor="billing_days" hint="Days of the month, e.g. 10, 20 (or just 10 to bill once a month).">
-        <Input id="billing_days" name="billing_days" defaultValue={days.join(", ")} required className="w-40" />
-      </Field>
-      <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
-      <Result state={state} />
-    </form>
+    <details className="group">
+      <summary className="cursor-pointer list-none text-body-medium text-button-ghost-foreground hover:underline pointer-coarse:min-h-11">Mark remitted</summary>
+      <form action={run} className="mt-2 grid gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
+        <Field label="Date remitted" htmlFor={`remitted_on_${dueId}`}>
+          <Input id={`remitted_on_${dueId}`} name="remitted_on" type="date" defaultValue={today} max={today} required />
+        </Field>
+        <Field label="Reference" htmlFor={`remit_ref_${dueId}`} hint="PRN or receipt number">
+          <Input id={`remit_ref_${dueId}`} name="reference" maxLength={100} />
+        </Field>
+        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+        <div className="sm:col-span-3">
+          <Result state={state} />
+        </div>
+      </form>
+    </details>
   );
 }

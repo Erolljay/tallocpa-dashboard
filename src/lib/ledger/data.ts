@@ -6,6 +6,7 @@ import { toCentavos } from "@/lib/returns/money";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { OpenItem } from "./arap";
 import type { BookEntry } from "./books";
+import type { BooksReader } from "./loose-leaf";
 import type { OpeningItem } from "./opening";
 import { defaultCashFlow, type CashFlowClass } from "./cash-flow";
 import { buildStatements, reportPeriod, taxableYearStart, type ReportKind, type StatementRow } from "./statements";
@@ -106,8 +107,20 @@ export interface TbRowOut {
   closing: Centavos;
 }
 
-export async function loadTrialBalance(supabase: SupabaseClient, clientId: string, from: string, to: string): Promise<TbRowOut[]> {
-  const { data, error } = await supabase.rpc("trial_balance", { p_client: clientId, p_from: from, p_to: to });
+/**
+ * The trial balance of `from`…`to`: `trial_balance` for staff, `portal_trial_balance`
+ * for the portal (locked months; for a client user, the months the report `kind`
+ * stands on approved).
+ */
+export async function loadTrialBalance(
+  supabase: SupabaseClient,
+  clientId: string,
+  from: string,
+  to: string,
+  rpc: "trial_balance" | "portal_trial_balance" = "trial_balance",
+  kind?: "monthly" | "quarterly" | "annual",
+): Promise<TbRowOut[]> {
+  const { data, error } = await supabase.rpc(rpc, { p_client: clientId, p_from: from, p_to: to, ...(rpc === "portal_trial_balance" && kind ? { p_kind: kind } : {}) });
   if (error) throw new Error(`Could not load the trial balance: ${error.message}`);
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     accountId: r.account_id as string,
@@ -187,24 +200,14 @@ export async function loadOpenItems(supabase: SupabaseClient, clientId: string):
   }));
 }
 
-/** Posted (and later reversed) entries dated `from`…`to`, oldest first, for the books of account. */
-export async function loadBookEntries(supabase: SupabaseClient, clientId: string, from: string, to: string): Promise<BookEntry[]> {
-  const { data, error } = await supabase
-    .from("journal_entries")
-    .select("id, entry_date, book, reference, memo, created_at, journal_lines(line_no, account_id, description, debit, credit, party_name, parties(display_name, tin))")
-    .eq("client_id", clientId)
-    .in("status", ["posted", "reversed"])
-    .gte("entry_date", from)
-    .lte("entry_date", to)
-    .order("entry_date")
-    .order("created_at");
-  if (error) throw new Error(`Could not load the books: ${error.message}`);
-  return (data ?? []).map((e) => ({
-    id: e.id,
-    date: e.entry_date,
+/** One journal_entries row with its embedded journal_lines (and their parties), as a book entry. */
+export function bookEntryFromRow(e: Record<string, unknown>): BookEntry {
+  return {
+    id: e.id as string,
+    date: e.entry_date as string,
     book: e.book as Book,
-    reference: e.reference,
-    memo: e.memo,
+    reference: (e.reference as string | null) ?? null,
+    memo: e.memo as string,
     lines: ((e.journal_lines ?? []) as Record<string, unknown>[])
       .sort((a, b) => (a.line_no as number) - (b.line_no as number))
       .map((l) => {
@@ -218,7 +221,33 @@ export async function loadBookEntries(supabase: SupabaseClient, clientId: string
           credit: cents(l.credit),
         };
       }),
-  }));
+  };
+}
+
+/** Posted (and later reversed) entries dated `from`…`to`, oldest first, for the books of account. */
+export async function loadBookEntries(supabase: SupabaseClient, clientId: string, from: string, to: string): Promise<BookEntry[]> {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("id, entry_date, book, reference, memo, created_at, journal_lines(line_no, account_id, description, debit, credit, party_name, parties(display_name, tin))")
+    .eq("client_id", clientId)
+    .in("status", ["posted", "reversed"])
+    .gte("entry_date", from)
+    .lte("entry_date", to)
+    .order("entry_date")
+    .order("created_at");
+  if (error) throw new Error(`Could not load the books: ${error.message}`);
+  return (data ?? []).map((e) => bookEntryFromRow(e as Record<string, unknown>));
+}
+
+/** Staff reading a client's books directly (RLS: staff who keep them). */
+export function staffBooksReader(supabase: SupabaseClient, clientId: string): BooksReader {
+  return {
+    entries: async (from, to) => {
+      const [accounts, entries] = await Promise.all([loadAccounts(supabase, clientId), loadBookEntries(supabase, clientId, from, to)]);
+      return { accounts, entries };
+    },
+    trialBalance: (from, to) => loadTrialBalance(supabase, clientId, from, to),
+  };
 }
 
 /** A month of the books: open, locked by the returns filed for it, or reopened by an amendment. */
@@ -297,20 +326,43 @@ export async function loadAmendments(supabase: SupabaseClient, clientId: string)
  * yet posted. `endMonth` is "YYYY-MM".
  */
 export async function loadStatements(supabase: SupabaseClient, client: BooksClient, kind: ReportKind, endMonth: string) {
+  const { data: b } = await supabase.from("client_books").select("books_start").eq("client_id", client.id).maybeSingle();
+  const result = await statementsFrom((from, to) => loadTrialBalance(supabase, client.id, from, to), client, kind, endMonth, (b?.books_start as string | undefined) ?? null);
+  if (!result.fs) return { error: result.error } as const;
+  const { count } = await supabase
+    .from("journal_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", client.id)
+    .eq("status", "suggested")
+    .gte("entry_date", result.fs.yearStart)
+    .lte("entry_date", result.fs.periodEnd);
+  return { fs: result.fs, suggested: count ?? 0 } as const;
+}
+
+/**
+ * The financial statements for a report from a trial-balance reader (staff: the
+ * ledger itself; the portal: locked months only). `booksStart` decides whether
+ * an annual report shows the prior year beside it.
+ */
+export async function statementsFrom(
+  tb: (from: string, to: string) => Promise<TbRowOut[]>,
+  client: Pick<BooksClient, "name" | "tin" | "registered_address" | "fiscal_year_end_month">,
+  kind: ReportKind,
+  endMonth: string,
+  booksStart: string | null,
+) {
   const p = reportPeriod(kind, endMonth, client.fiscal_year_end_month);
   if ("error" in p) return { error: p.error } as const;
-  const toRows = (tb: TbRowOut[]): StatementRow[] => tb.map((r) => ({ code: r.code, name: r.name, fsLine: r.fsLine, cashFlow: r.cashFlow, opening: r.opening, debit: r.debit, credit: r.credit, closing: r.closing }));
+  const toRows = (rows: TbRowOut[]): StatementRow[] => rows.map((r) => ({ code: r.code, name: r.name, fsLine: r.fsLine, cashFlow: r.cashFlow, opening: r.opening, debit: r.debit, credit: r.credit, closing: r.closing }));
   // Annual: the prior taxable year beside it, when the books hold it (its balance sheet at least as the opening balances).
   const priorEnd = new Date(Date.parse(`${p.yearStart}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
   const priorStart = taxableYearStart(priorEnd, client.fiscal_year_end_month);
-  const { data: b } = await supabase.from("client_books").select("books_start").eq("client_id", client.id).maybeSingle();
-  const booksStart = (b?.books_start as string | undefined) ?? p.yearStart;
-  const withPrior = kind === "annual" && priorEnd >= new Date(Date.parse(`${booksStart}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-  const [year, period, prior, { count }] = await Promise.all([
-    loadTrialBalance(supabase, client.id, p.yearStart, p.end),
-    p.start !== p.yearStart ? loadTrialBalance(supabase, client.id, p.start, p.end) : Promise.resolve(null),
-    withPrior ? loadTrialBalance(supabase, client.id, priorStart, priorEnd) : Promise.resolve(null),
-    supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", client.id).eq("status", "suggested").gte("entry_date", p.yearStart).lte("entry_date", p.end),
+  const start = booksStart ?? p.yearStart;
+  const withPrior = kind === "annual" && priorEnd >= new Date(Date.parse(`${start}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const [year, period, prior] = await Promise.all([
+    tb(p.yearStart, p.end),
+    p.start !== p.yearStart ? tb(p.start, p.end) : Promise.resolve(null),
+    withPrior ? tb(priorStart, priorEnd) : Promise.resolve(null),
   ]);
   const fs = buildStatements({
     kind,
@@ -320,9 +372,9 @@ export async function loadStatements(supabase: SupabaseClient, client: BooksClie
     client: { name: client.name, tin: client.tin, address: client.registered_address },
     year: toRows(year),
     period: period ? toRows(period) : undefined,
-    prior: prior ? { end: priorEnd, rows: toRows(prior), income: priorStart >= booksStart } : undefined,
+    prior: prior ? { end: priorEnd, rows: toRows(prior), income: priorStart >= start } : undefined,
   });
-  return { fs, suggested: count ?? 0 } as const;
+  return { fs } as const;
 }
 
 export interface ReleasedReport {

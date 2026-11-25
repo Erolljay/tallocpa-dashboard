@@ -25,7 +25,7 @@ export async function runDocumentCycles(admin: SupabaseClient, today: string, si
   if (dueError) throw new Error(`Monthly cycle notices: ${dueError.message}`);
   const notices = (due ?? []) as Due[];
 
-  const portalUrl = `${siteUrl.replace(/\/$/, "")}/portal`;
+  const portalUrl = `${siteUrl.replace(/\/$/, "")}/portal/upload`;
   const emailCache = new Map<string, string | null>();
   const emailOf = async (userId: string) => {
     if (!emailCache.has(userId)) {

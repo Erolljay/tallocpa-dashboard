@@ -25,7 +25,7 @@ export async function OwnerSections() {
   const year = lastMonths(today, 12);
   const scoreMonths = lastMonths(today, SCORE_RULES.months);
 
-  const [clients, cards, late, dues, ocr, queues, staff, assignments, engagements] = await Promise.all([
+  const [clients, cards, late, dues, ocr, queues, staff, assignments, engagements, ready] = await Promise.all([
     supabase.from("clients").select("id, name").in("status", ["onboarding", "active"]),
     supabase.rpc("client_scorecard", { p_from: scoreMonths[0], p_to: scoreMonths[scoreMonths.length - 1] }),
     supabase.rpc("late_filings", { p_from: year[0], p_to: today }),
@@ -35,6 +35,8 @@ export async function OwnerSections() {
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active").order("full_name"),
     supabase.from("staff_assignments").select("user_id, client_id, role"),
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
+    // Decision 16c: billing waits for the Owner; Collections lists what is ready.
+    supabase.rpc("ready_to_bill", { p_date: today }).select("client_id"),
   ]);
 
   const nameOfClient = new Map(((clients.data ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]));
@@ -50,6 +52,8 @@ export async function OwnerSections() {
   const lateRows = (late.data ?? []) as LateFiling[];
   const byClient = lateRows.filter((l) => l.cause === "client").length;
   const byStaff = lateRows.length - byClient;
+
+  const readyToBill = new Set(((ready.data ?? []) as { client_id: string }[]).map((r) => r.client_id)).size;
 
   const aging = ageOpenItems((dues.data ?? []) as { due_on: string; open_amount: string }[], today);
 
@@ -108,6 +112,15 @@ export async function OwnerSections() {
               </div>
             ))}
           </dl>
+          <p className="mt-2 text-body-regular text-text-secondary">
+            {readyToBill > 0 ? (
+              <Link href="/app/collections" className="font-medium text-text-primary hover:underline">
+                {readyToBill} client{readyToBill === 1 ? "" : "s"} ready to bill
+              </Link>
+            ) : (
+              "No client ready to bill."
+            )}
+          </p>
           <LinkButton href="/app/collections" variant="ghost" className="mt-3 -ml-5">Collections</LinkButton>
         </Card>
         <Card title="OCR corrections, 90 days">

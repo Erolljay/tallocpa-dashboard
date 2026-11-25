@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Badge, Button, Card, peso } from "@/components/ui";
 import { confirmMonthAction, undoMonthAction, type CycleState } from "@/lib/cycle/actions";
@@ -123,7 +124,7 @@ export function MonthComplete(props: {
                         <Button size="sm" variant="secondary" onClick={() => setCancelled(toggle(cancelled, r.key, true))}>{r.numbers.length === 1 ? "It was" : "They were"} cancelled</Button>
                       </div>
                       {uploading.has(r.key) && (
-                        <p className="text-caption-1-regular text-text-secondary">Send {r.numbers.length === 1 ? "it" : "them"} with the upload form above. This list updates once we&apos;ve read {r.numbers.length === 1 ? "it" : "them"}, usually within a minute.</p>
+                        <p className="text-caption-1-regular text-text-secondary">Send {r.numbers.length === 1 ? "it" : "them"} under <Link href="/portal/upload?stream=sales" className="text-button-ghost-foreground underline">Upload, Sales</Link>. This list updates once we&apos;ve read {r.numbers.length === 1 ? "it" : "them"}, usually within a minute.</p>
                       )}
                     </>
                   )}

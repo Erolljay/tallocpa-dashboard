@@ -2,7 +2,7 @@
  * Portal Billing (rework decisions 16–17; migration 20261128000001_portal_billing.sql):
  * payment channels only the Owner manages, clients seeing only their firm's
  * active channels and their QR images, and payments that go Pending
- * verification → Verified (applied oldest item first) or Rejected (with a reason).
+ * verification → Verified (applied to the ticked items, oldest first) or Rejected (with a reason).
  *
  * Runs in its own database so it can run alongside db.test.ts. `pnpm test:db`.
  */
@@ -184,17 +184,17 @@ describe.skipIf(!url)("portal billing", () => {
       }
     });
 
-    it("verified: applied to the oldest item first, and the client sees which items it paid", async () => {
+    it("verified: applied to the ticked items, oldest first, and the client sees which items it paid", async () => {
       await db.query("begin");
       try {
         await signIn(CLIENT_A);
         const proof = await submit("pay.jpg", 1500, bpi, "transfer", "BPI-77");
         await signIn(CLIENT_A);
-        await fails(`select public.verify_payment_proof($1, null, null, null)`, [proof], /Only the Owner/);
+        await fails(`select public.verify_payment_proof($1, null, null, null, $2)`, [proof, [older, newer]], /Only the Owner/);
         await signIn(STAFF);
-        await fails(`select public.verify_payment_proof($1, null, null, null)`, [proof], /Only the Owner/);
+        await fails(`select public.verify_payment_proof($1, null, null, null, $2)`, [proof, [older, newer]], /Only the Owner/);
         await signIn(OWNER);
-        await db.query(`select public.verify_payment_proof($1, null, null, null)`, [proof]);
+        await db.query(`select public.verify_payment_proof($1, null, null, null, $2)`, [proof, [older, newer]]);
         await signIn(CLIENT_A);
         const paid = await q(
           `select d.description, a.amount::text
@@ -216,7 +216,7 @@ describe.skipIf(!url)("portal billing", () => {
         // A reviewed payment is final.
         await signIn(OWNER);
         await fails(`select public.reject_payment_proof($1, 'Changed my mind')`, [proof], /already reviewed/);
-        await fails(`select public.verify_payment_proof($1, null, null, null)`, [proof], /already reviewed/);
+        await fails(`select public.verify_payment_proof($1, null, null, null, $2)`, [proof, [older, newer]], /already reviewed/);
       } finally {
         await db.query("rollback");
       }
@@ -241,7 +241,7 @@ describe.skipIf(!url)("portal billing", () => {
         ]);
         expect(await q(`select sum(open_amount)::text as open from public.due_balances where soa_id = $1`, [soaA])).toEqual([{ open: "3000.00" }]);
         await signIn(OWNER);
-        await fails(`select public.verify_payment_proof($1, null, null, null)`, [proof], /already reviewed/);
+        await fails(`select public.verify_payment_proof($1, null, null, null, $2)`, [proof, [older, newer]], /already reviewed/);
       } finally {
         await db.query("rollback");
       }

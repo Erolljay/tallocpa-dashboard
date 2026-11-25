@@ -56,7 +56,7 @@ async function Returns() {
           <p className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Nothing to approve right now.</p>
         ) : (
           waiting.map((r) => (
-            <article key={r.id} className="space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-5">
+            <article key={r.id} id={`return-${r.id}`} className="scroll-mt-6 space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
                   <p className="text-headline-semibold text-text-primary">{r.form} · {r.period_label}</p>

@@ -31,3 +31,4 @@ $$;
 alter table storage.objects enable row level security;
 grant usage on schema storage to authenticated, anon;
 grant select, insert, update, delete on storage.objects to authenticated;
+alter table auth.users add column if not exists raw_user_meta_data jsonb;

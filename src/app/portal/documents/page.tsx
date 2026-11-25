@@ -257,7 +257,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
           </ul>
         {folder === "payroll" && (
           <p className="text-caption-1-regular text-text-tertiary">
-            Payroll registers are sent from the <Link href="/portal/payroll" className="text-button-ghost-foreground hover:underline">Payroll tab</Link>.
+            Send your payroll from <Link href="/portal" className="text-button-ghost-foreground hover:underline">Upload</Link>, in your own format.
           </p>
         )}
       </section>
