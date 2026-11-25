@@ -54,6 +54,8 @@ Lead → Prospect → Won → Onboarding → Client
 
 ### Collections and the portal
 16. The statement carries the retainer and each return and contribution as its own item. The **Owner ticks which items a verified payment pays**; the rest stay open and the client can keep paying until settled. Verified tax and contribution money is **cash for remittance** until remitted.
+16a. **Ticking (Owner, 25 November 2026):** the Owner can tick any open item on any of the client's statements, not only the statement paid. Leftover credit still pays the oldest open item at the next billing, so it can later pay an item left unticked; those show as "Later, from the credit".
+16b. **Cash for remittance:** a tax item is remitted when its return is Filed & paid. A client's payment that arrives after the return was filed is not held: the firm advanced the tax, and the payment reimburses the firm (the item stays open on the statement until then). Only the Owner marks a contribution remitted, and may do so before the client pays when the firm advances it.
 17. Portal Billing: the client **chooses a bank or e-wallet and sees only its QR**, uploads the proof; each payment shows **Pending verification → Verified** (with the items it paid) or **Rejected** (with the reason). Previous statements are listed.
 18. Portal Home: progress of the month, to-do, financial position and a 6-month chart, dues, the client's team with Book a meeting.
 19. Portal Reports: financial statements; **filed returns per year per tax type, one link to the scanned copy**; **2307 per supplier, per transaction, month or quarter**; **2316 per employee per year**; the loose-leaf books. No payroll or BIR-list sections.
