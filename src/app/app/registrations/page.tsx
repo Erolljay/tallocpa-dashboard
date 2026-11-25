@@ -8,6 +8,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { YearRenewalsForm } from "./forms";
 import { daysTone, manilaDate } from "@/lib/registration/slip";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function RegistrationsPage(props: PageProps<"/app/registrations">) {
   return (
@@ -77,6 +78,7 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
           )
         }
       />
+      <SectionTabs section="clients" active="registrations" />
       <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-body-medium">
         <div className="flex gap-1">
           <Link href={href({ kind: kindFilter })} aria-current={!closed ? "page" : undefined} className={pill(!closed)}>Open</Link>

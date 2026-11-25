@@ -1,43 +1,26 @@
 "use client";
 
-import {
-  RiBarChartBoxLine,
-  RiCheckboxMultipleLine,
-  RiCalendarCheckLine,
-  RiCalendarScheduleLine,
-  RiFileList3Line,
-  RiFileTransferLine,
-  RiFilter3Line,
-  RiGroupLine,
-  RiQuestionAnswerLine,
-  RiHomeLine,
-  RiSettings4Line,
-  RiShieldCheckLine,
-  RiTeamLine,
-  RiWallet3Line,
-} from "@remixicon/react";
+import { RiBriefcase4Line, RiCalendarScheduleLine, RiGroupLine, RiHomeLine, RiInboxArchiveLine } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/utils/cx";
 
+/*
+ * Five places (rework, 25 November 2026): Home, Clients, Inbox, Filings, Firm.
+ * Each owns the older pages that now sit under it as section tabs, so the row
+ * stays selected on any of them.
+ */
 const items = {
-  dashboard: { href: "/app", label: "Dashboard", icon: RiHomeLine },
-  work: { href: "/app/work", label: "My work", icon: RiCheckboxMultipleLine },
-  clients: { href: "/app/clients", label: "Clients", icon: RiGroupLine },
-  deadlines: { href: "/app/deadlines", label: "Deadlines", icon: RiCalendarScheduleLine },
-  documents: { href: "/app/documents", label: "Documents", icon: RiFileList3Line },
-  cycle: { href: "/app/cycle", label: "Monthly cycle", icon: RiCalendarCheckLine },
-  registrations: { href: "/app/registrations", label: "Registrations", icon: RiFileTransferLine },
-  requests: { href: "/app/requests", label: "Requests", icon: RiQuestionAnswerLine },
-  review: { href: "/app/review", label: "Review", icon: RiShieldCheckLine },
-  leads: { href: "/app/leads", label: "Leads", icon: RiFilter3Line },
-  collections: { href: "/app/collections", label: "Collections", icon: RiWallet3Line },
-  scores: { href: "/app/scores", label: "Scores", icon: RiBarChartBoxLine },
-  staff: { href: "/app/staff", label: "Staff", icon: RiTeamLine },
-  settings: { href: "/app/settings", label: "Settings", icon: RiSettings4Line },
+  home: { href: "/app", label: "Home", icon: RiHomeLine, also: ["/app/work"] },
+  clients: { href: "/app/clients", label: "Clients", icon: RiGroupLine, also: ["/app/parties", "/app/requests", "/app/registrations"] },
+  inbox: { href: "/app/documents", label: "Inbox", icon: RiInboxArchiveLine, also: ["/app/cycle"] },
+  filings: { href: "/app/deadlines", label: "Filings", icon: RiCalendarScheduleLine, also: ["/app/review", "/app/filings"] },
+  firm: { href: "/app/firm", label: "Firm", icon: RiBriefcase4Line, also: ["/app/leads", "/app/collections", "/app/scores", "/app/staff", "/app/settings"] },
 } as const;
 
 export type NavKey = keyof typeof items;
+
+const under = (path: string, href: string) => path === href || path.startsWith(`${href}/`);
 
 /** Sidebar rows in BoardUI's sidebar style: the current page is the filled accent row. */
 export function NavLinks({ keys }: { keys: readonly NavKey[] }) {
@@ -50,10 +33,14 @@ export function NavLinksFallback({ keys }: { keys: readonly NavKey[] }) {
 }
 
 function Links({ keys, path }: { keys: readonly NavKey[]; path: string | null }) {
-  const active = (href: string) => path !== null && (href === "/app" ? path === "/app" : path === href || path.startsWith(`${href}/`));
+  const active = (key: NavKey) => {
+    if (path === null) return false;
+    const { href, also } = items[key];
+    return (href === "/app" ? path === "/app" : under(path, href)) || also.some((a) => under(path, a));
+  };
   return keys.map((key) => {
     const { href, label, icon: Icon } = items[key];
-    const current = active(href);
+    const current = active(key);
     return (
       <Link
         key={href}

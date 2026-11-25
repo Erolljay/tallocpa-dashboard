@@ -7,8 +7,8 @@ import { lookupParties } from "@/lib/parties/lookup";
 import { fillFromDirectory } from "@/lib/parties/resolve";
 import { partyKey } from "@/lib/parties/tin";
 
-/** Files staff attach to filings are not read by OCR. */
-const SKIP: DocType[] = ["filed_return", "payment_proof"];
+/** Files staff attach to filings, and payroll in the client's own format, are not read by OCR. */
+const SKIP: DocType[] = ["filed_return", "payment_proof", "payroll"];
 const MAX_ATTEMPTS = 3;
 
 /**

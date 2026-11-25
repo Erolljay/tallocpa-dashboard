@@ -8,11 +8,13 @@ import { showDate } from "@/lib/filings/labels";
 import { reviewQueue, type QueueFiling } from "@/lib/filings/review-queue";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
+import { FilingsTabs } from "@/app/app/nav/section-tabs";
 
 export default function ReviewPage() {
   return (
     <>
       <PageHeader title="Review" description="Returns waiting for a reviewer or for the final approval. Open one to act on it." />
+      <FilingsTabs active="review" />
       <Suspense fallback={<Skeleton rows={8} />}>
         <Queue />
       </Suspense>

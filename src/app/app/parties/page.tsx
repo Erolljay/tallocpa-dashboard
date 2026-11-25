@@ -5,6 +5,7 @@ import { Badge, Button, Input, LinkButton, PageHeader, Select, Skeleton } from "
 import { requireStaff } from "@/lib/auth";
 import { PARTY_KINDS, VAT_STATUSES, partyTinLabel, type Party } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function PartiesPage(props: PageProps<"/app/parties">) {
   return (
@@ -63,6 +64,7 @@ async function PartyList({ searchParams }: Pick<PageProps<"/app/parties">, "sear
         description={clientName ? `Parties ${clientName} deals with.` : "Every customer and supplier our clients deal with, by TIN. Registered names here go on the BIR attachments."}
         actions={<LinkButton href="/app/parties/new"><RiAddLine aria-hidden className="size-4" />New party</LinkButton>}
       />
+      <SectionTabs section="clients" active="parties" />
       <form className="mb-6 grid gap-3 sm:grid-cols-[1fr_10rem_10rem_10rem_auto] sm:items-end" role="search">
         {clientId && <input type="hidden" name="client" value={clientId} />}
         <div>

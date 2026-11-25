@@ -8,6 +8,7 @@ import { cx } from "@/utils/cx";
 import { daysBetween } from "@/lib/registration/steps";
 import { manilaDate } from "@/lib/registration/slip";
 import { NewRequestForm } from "./new-request-form";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function RequestsPage(props: PageProps<"/app/requests">) {
   return (
@@ -53,6 +54,7 @@ async function Requests({ searchParams }: Pick<PageProps<"/app/requests">, "sear
   return (
     <>
       <PageHeader title="Requests & tickets" description="What we asked clients for, and what clients asked us. Clients see and answer these in the portal." />
+      <SectionTabs section="clients" active="requests" />
       <div className="mb-4 flex gap-1 text-body-medium">
         <Link href="/app/requests" aria-current={!closed ? "page" : undefined} className={pill(!closed)}>Open</Link>
         <Link href="/app/requests?show=closed" aria-current={closed ? "page" : undefined} className={pill(closed)}>Closed</Link>

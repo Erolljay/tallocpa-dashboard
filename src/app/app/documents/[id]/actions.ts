@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { DocActionState } from "@/lib/documents/actions";
+import { streamOf, type DocType } from "@/lib/documents/labels";
 import { normalizeFields, OCR_FIELDS, type OcrFields } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -37,5 +38,8 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
     if (booked.error) return { error: `The figures were approved, but the document was not booked: ${booked.error.message}` };
   }
   if (mode === "edit" && clientId) redirect(`/app/documents?tab=approved&client=${clientId}`);
-  redirect(clientId ? `/app/documents?client=${clientId}` : "/app/documents");
+  // Back to the Inbox tab the document came from (Sales, Purchases & Expenses, Other).
+  const stream = streamOf((data as { doc_type?: string } | null)?.doc_type as DocType);
+  const tab = stream && stream !== "sales" ? `&tab=${stream}` : "";
+  redirect(clientId ? `/app/documents?client=${clientId}${tab}` : "/app/documents");
 }

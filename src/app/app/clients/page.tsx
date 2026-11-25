@@ -7,6 +7,7 @@ import { SetupCharts } from "./setup-charts";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function ClientsPage() {
   return (
@@ -50,6 +51,7 @@ async function ClientList() {
         description={isOwner ? "Every client of the firm." : "Clients assigned to you."}
         actions={isOwner && <LinkButton href="/app/clients/new"><RiAddLine aria-hidden className="size-4" />New client</LinkButton>}
       />
+      <SectionTabs section="clients" active="clients" />
       {noChart.length > 0 && <SetupCharts missing={noChart} defaultMonth={BOOKS_GO_LIVE.slice(0, 7)} />}
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">

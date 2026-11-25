@@ -8,6 +8,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { loadMyWork } from "@/lib/work/load";
 import { nextActions, URGENCY_LABELS, type Urgency, type WorkItem } from "@/lib/work/next-actions";
 import { cx } from "@/utils/cx";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function MyWorkPage(props: PageProps<"/app/work">) {
   return (
@@ -54,6 +55,7 @@ async function MyWork({ searchParams }: Pick<PageProps<"/app/work">, "searchPara
           )
         }
       />
+      <SectionTabs section="home" active="work" />
       <Card title={rows.length ? `${rows.length} client-month${rows.length === 1 ? "" : "s"} · ${total} action${total === 1 ? "" : "s"}` : undefined}>
         {rows.length === 0 ? (
           <p className="text-body-regular text-text-secondary">Nothing waiting for you. New documents, returns at your step and review notes show up here.</p>

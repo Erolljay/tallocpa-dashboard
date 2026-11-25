@@ -5,14 +5,11 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
 import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase/server";
 import { NavLinks, NavLinksFallback, type NavKey } from "./nav/app-nav";
 
-const nav = ["dashboard", "work", "clients", "deadlines", "documents", "cycle", "registrations", "requests"] as const satisfies readonly NavKey[];
-/** Shown to the Owner and to anyone who reviews a client's returns. */
-const reviewNav = ["review"] as const satisfies readonly NavKey[];
-/** Shown only to the Owner. */
-const ownerNav = ["leads", "collections", "scores", "staff", "settings"] as const satisfies readonly NavKey[];
+const nav = ["home", "clients", "inbox", "filings"] as const satisfies readonly NavKey[];
+/** Leads, collections, scores, staff and settings: the Owner's. */
+const ownerNav = ["firm"] as const satisfies readonly NavKey[];
 
 const roleLabel = { owner: "Owner", reviewer: "Reviewer", staff: "Staff" } as const;
 
@@ -60,20 +57,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
 
 async function OwnerNavLinks() {
   const id = await getIdentity();
-  if (!id.staff) return null;
-  if (id.staff.role === "owner") {
-    return (
-      <>
-        <p className="hidden px-2 pt-4 pb-1 text-caption-1-semibold text-text-tertiary md:block">Firm</p>
-        <NavLinks keys={[...reviewNav, ...ownerNav]} />
-      </>
-    );
-  }
-  if (id.staff.role === "reviewer") return <NavLinks keys={reviewNav} />;
-  // A staff member assigned as a client's reviewer also gets the Review page.
-  const supabase = await supabaseServer();
-  const { count } = await supabase.from("staff_assignments").select("client_id", { count: "exact", head: true }).eq("user_id", id.userId).eq("role", "reviewer");
-  return count ? <NavLinks keys={reviewNav} /> : null;
+  return id.staff?.role === "owner" ? <NavLinks keys={ownerNav} /> : null;
 }
 
 async function UserMenu() {
