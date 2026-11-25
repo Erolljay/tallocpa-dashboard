@@ -129,7 +129,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 | A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) | · built (migration 20261125000009): register E from the purchases register's capital goods, per-item setup with a tax life, straight-line run that posts the month's entry, opening assets, T-9 and T-10. The 1701Q still takes depreciation from the books; the tax-column adjustment comes with the book–tax reconciliation.
 | P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live · built (migration 20261125000006) |
 | E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
-| W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
+| W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle | · built (migration 20261125000011): preparer and reviewer sign-off per workpaper, review notes (0-1) raised, answered and cleared, and "Mark reviewed" held until the workpapers a return draws on are reviewer-signed with no open note, from January 2027.
 | W3 | Review notes, My work | After cycle 1 |
 | B1 | Batch upload in the register layout, at onboarding | Later, with onboarding |
 | W4 | Approval memo, PDF binder, LOA ratios feed (Phase 4) | After cycle 1 |

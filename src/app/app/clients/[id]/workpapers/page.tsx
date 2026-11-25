@@ -13,7 +13,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { loadPeriodFile } from "@/lib/workpapers/load";
 import { blockingTies, TIES_FOR_FORM, type TieOut, type TieStatus } from "@/lib/workpapers/tieouts";
 import { cx } from "@/utils/cx";
+import { refsToSign, SIGNED_REFS, type SignedRef, type Signoff } from "@/lib/workpapers/review";
 import { ExplainForm } from "./explain-form";
+import { NoteActions, RaiseNoteForm, SignButtons } from "./review-forms";
 
 export default function WorkpapersPage(props: PageProps<"/app/clients/[id]/workpapers">) {
   return (
@@ -54,10 +56,14 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
   const { data: client } = await supabase.from("clients").select("id, name").eq("id", id).maybeSingle();
   if (!client) notFound();
   let canAct = me.staff.role === "owner";
+  // The reviewer signs the review and clears notes: the client's reviewer, or the Owner.
+  let canReview = canAct;
   if (!canAct) {
-    const { data: a } = await supabase.from("staff_assignments").select("user_id").eq("client_id", id).eq("user_id", me.userId).limit(1);
+    const { data: a } = await supabase.from("staff_assignments").select("user_id, role").eq("client_id", id).eq("user_id", me.userId);
     if (!a?.length) notFound();
     canAct = true;
+    // As private.can_manage_client(): a reviewer on the staff assigned to this client.
+    canReview = me.staff.role === "reviewer";
   }
 
   // The month asked for, else last month (the one being closed).
@@ -76,8 +82,11 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
   const href = (m: string) => `/app/clients/${id}/workpapers?month=${m}`;
   const register = `/app/clients/${id}/register?month=${month}`;
 
+  const openNotes = file.notes.filter((n) => !n.clearedAt);
+  const needed = new Set(refsToSign(file.activity));
   const index: { ref: string; title: string; detail: string; href?: string; tone?: "done" | "blocked" | "neutral" }[] = [
     { ref: "0", title: "Lead: returns of the period", detail: `${(filings ?? []).length} return${(filings ?? []).length === 1 ? "" : "s"} cover ${showMonth(first)}`, href: "#lead" },
+    { ref: "0-1", title: "Review notes", detail: openNotes.length ? `${openNotes.length} open` : file.notes.length ? "All cleared" : "None raised", href: "#notes", tone: openNotes.length ? "blocked" : "done" },
     { ref: "0-2", title: "Tie-outs T-1 to T-10", detail: open.length ? `${open.length} to explain` : "Nothing to explain", href: "#tieouts", tone: open.length ? "blocked" : "done" },
     { ref: "10", title: "Revenue · sales register", detail: `${s.count} line${s.count === 1 ? "" : "s"} · net receipts ${amt(s.net)}`, href: register },
     { ref: "20", title: "Cost of sales and expenses · purchases register", detail: `${p.count} line${p.count === 1 ? "" : "s"} · net paid ${amt(p.net)}`, href: register },
@@ -119,10 +128,41 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
                   <span className="block text-caption-1-regular text-text-tertiary">{w.detail}</span>
                 </span>
                 {w.tone && w.tone !== "neutral" && <Badge tone={w.tone}>{w.tone === "done" ? "Clean" : "Open"}</Badge>}
+                {w.ref in SIGNED_REFS && (
+                  <div className="flex w-full flex-wrap items-center gap-2 ps-16 sm:w-auto sm:ps-0">
+                    <SignStatus s={file.signoffs.find((x) => x.ref === w.ref)} needed={needed.has(w.ref as SignedRef)} />
+                    {canAct && (
+                      <SignButtons clientId={id} month={first} refId={w.ref as SignedRef} canReview={canReview}
+                        prepared={Boolean(file.signoffs.find((x) => x.ref === w.ref)?.preparedAt)} reviewed={Boolean(file.signoffs.find((x) => x.ref === w.ref)?.reviewedAt)} />
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </Card>
+
+        <section id="notes">
+          <Card title="0-1 · Review notes" actions={<span className="text-caption-1-regular text-text-tertiary">A workpaper with an open note cannot be reviewer-signed</span>}>
+            {file.notes.length === 0 ? (
+              <p className="mb-3 text-body-regular text-text-secondary">No review notes for {showMonth(first)}.</p>
+            ) : (
+              <ul className="mb-4 divide-y divide-separator-border">
+                {[...openNotes, ...file.notes.filter((n) => n.clearedAt)].map((n) => (
+                  <li key={n.id} className="space-y-2 py-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="text-body-regular text-text-primary"><span className="font-medium">{n.ref}</span> · {n.note}</p>
+                      <Badge tone={n.clearedAt ? "done" : "blocked"}>{n.clearedAt ? "Cleared" : n.response ? "Answered" : "Open"}</Badge>
+                    </div>
+                    {n.response && <p className="text-body-regular text-text-secondary">Answer: “{n.response}”</p>}
+                    {canAct && <NoteActions clientId={id} noteId={n.id} open={!n.clearedAt} canReview={canReview} response={n.response} />}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canAct && <RaiseNoteForm clientId={id} month={first} refs={Object.keys(SIGNED_REFS) as SignedRef[]} />}
+          </Card>
+        </section>
 
         <section id="lead">
           <Card title="0 · Lead: returns of the period">
@@ -201,4 +241,10 @@ function TieRow({ t, clientId, month, canAct }: { t: TieOut; clientId: string; m
       </div>
     </li>
   );
+}
+
+function SignStatus({ s, needed }: { s: Signoff | undefined; needed: boolean }) {
+  if (s?.reviewedAt) return <Badge tone="done">Reviewed</Badge>;
+  if (s?.preparedAt) return <Badge tone="waiting">Prepared</Badge>;
+  return needed ? <Badge tone="blocked">To sign</Badge> : <Badge>Not needed this month</Badge>;
 }

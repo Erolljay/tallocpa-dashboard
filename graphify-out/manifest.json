@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   "src/app/app/filings/actions.ts": {
-    "mtime": 1795571099.0981715,
-    "seen": 1795571240.529183,
-    "ast_hash": "113886a433c7f7ed67ac552fac132bfd",
+    "mtime": 1795573684.7647324,
+    "seen": 1795573777.1814914,
+    "ast_hash": "1f240af0fef7885bf8644fa282a4809a",
     "semantic_hash": ""
   },
   "src/app/app/filings/sign-off-actions.tsx": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795573192.2220259,
-    "seen": 1795573196.3255062,
-    "ast_hash": "737b1b219432a54c0ef4303da233f51e",
+    "mtime": 1795573766.9763904,
+    "seen": 1795573777.1919591,
+    "ast_hash": "f91de8ea1c6a17e77b60e3b2a92a4142",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2736,9 +2736,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/actions.ts": {
-    "mtime": 1795571051.6364005,
-    "seen": 1795571240.528445,
-    "ast_hash": "cee170a01f659b7dfa7e7419ce318e04",
+    "mtime": 1795573620.7590556,
+    "seen": 1795573777.1805043,
+    "ast_hash": "524bd489d1d7128c826157bb5305b930",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/explain-form.tsx": {
@@ -2748,15 +2748,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/page.tsx": {
-    "mtime": 1795571720.976694,
-    "seen": 1795571855.28749,
-    "ast_hash": "f6575923ead825d74ffa954521b1ba90",
+    "mtime": 1795573673.6524215,
+    "seen": 1795573777.180548,
+    "ast_hash": "d742a2626b75dd3757a29e837a8e0c56",
     "semantic_hash": ""
   },
   "src/lib/workpapers/load.ts": {
-    "mtime": 1795571591.0275567,
-    "seen": 1795571855.295879,
-    "ast_hash": "6be43731789e4e8a9218c136a07da138",
+    "mtime": 1795573595.0652547,
+    "seen": 1795573777.1907887,
+    "ast_hash": "043ece98d03cab1aee2ec379dffda617",
     "semantic_hash": ""
   },
   "src/lib/workpapers/tieouts.test.ts": {
@@ -2853,6 +2853,30 @@
     "mtime": 1795573386.5657907,
     "seen": 1795573478.158909,
     "ast_hash": "d801229f65966516556cc8aa104059bd",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/workpapers/review-forms.tsx": {
+    "mtime": 1795573620.7630556,
+    "seen": 1795573777.180551,
+    "ast_hash": "1738e5dae6fbec600b16c70319229f4a",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/review.test.ts": {
+    "mtime": 1795573583.3293717,
+    "seen": 1795573777.1907918,
+    "ast_hash": "8a4bba3dae6575888b859f40a8e723e2",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/review.ts": {
+    "mtime": 1795573583.327598,
+    "seen": 1795573777.1907945,
+    "ast_hash": "d00ac42f6f483b07b07af184a02b2753",
+    "semantic_hash": ""
+  },
+  "supabase/tests/workpaper-reviews.test.ts": {
+    "mtime": 1795573707.2990606,
+    "seen": 1795573777.1914368,
+    "ast_hash": "75fc8d19844080a8017e98e9f79e3bc9",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

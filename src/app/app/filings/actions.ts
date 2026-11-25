@@ -8,6 +8,8 @@ import type { SignOffAction } from "@/lib/filings/sign-off";
 import { showMonth } from "@/lib/documents/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadPeriodFile } from "@/lib/workpapers/load";
+import { BOOKS_GO_LIVE } from "@/lib/ledger/types";
+import { REFS_FOR_FORM, reviewGaps } from "@/lib/workpapers/review";
 import { blockingTies, monthsOf, TIES_FOR_FORM } from "@/lib/workpapers/tieouts";
 
 export type SignOffState = { ok?: string; error?: string };
@@ -43,6 +45,10 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   if (action === "prepare") {
     const blocked = await tieOutsBlocking(supabase, filingId);
     if (blocked) return { error: blocked };
+  }
+  if (action === "review") {
+    const held = await reviewHolding(supabase, filingId);
+    if (held) return { error: held };
   }
   const { error } = await supabase.rpc("advance_filing", {
     p_filing: filingId,
@@ -80,11 +86,29 @@ async function tieOutsBlocking(supabase: Awaited<ReturnType<typeof supabaseServe
   const { data: f } = await supabase.from("filing_instances").select("client_id, form, period_start, period_end").eq("id", filingId).maybeSingle();
   if (!f || !(TIES_FOR_FORM[f.form] ?? []).length) return null;
   const open: string[] = [];
-  for (const m of monthsOf(f.period_start, f.period_end)) {
+  // Workpapers start with the January 2027 cycle (decision 26); earlier periods are not held.
+  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= BOOKS_GO_LIVE)) {
     const file = await loadPeriodFile(supabase, f.client_id, m);
     for (const t of blockingTies(file.ties, f.form)) open.push(`${t.id} (${showMonth(m)})`);
   }
   return open.length
     ? `Explain ${open.join(", ")} in the client's Workpapers (0-2 tie-outs) before marking this return prepared: the difference is over ₱1.`
     : null;
+}
+
+/**
+ * W2, decision 8: a return cannot be marked reviewed until the workpapers it draws on
+ * are reviewer-signed, with no open review note, in every month it covers.
+ */
+async function reviewHolding(supabase: Awaited<ReturnType<typeof supabaseServer>>, filingId: string): Promise<string | null> {
+  const { data: f } = await supabase.from("filing_instances").select("client_id, form, period_start, period_end").eq("id", filingId).maybeSingle();
+  if (!f || !(REFS_FOR_FORM[f.form] ?? []).length) return null;
+  const gaps: string[] = [];
+  // Workpapers start with the January 2027 cycle (decision 26); earlier periods are not held.
+  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= BOOKS_GO_LIVE)) {
+    const file = await loadPeriodFile(supabase, f.client_id, m);
+    const open = file.notes.filter((n) => !n.clearedAt).map((n) => n.ref);
+    for (const g of reviewGaps(f.form, file.activity, file.signoffs, open)) gaps.push(`${showMonth(m)}: ${g}`);
+  }
+  return gaps.length ? `Before marking this return reviewed, sign its workpapers in the client's Workpapers: ${gaps.join("; ")}.` : null;
 }

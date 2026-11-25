@@ -12,6 +12,7 @@ import { toRegisterLine, type RegisterLine, type RegisterRow } from "@/lib/regis
 import { toCentavos } from "@/lib/returns/money";
 import { loadAssets } from "@/lib/assets/load";
 import { monthTotals } from "@/lib/assets/schedule";
+import type { MonthActivity, SignedRef, Signoff } from "./review";
 import { tieOuts, type AssetTotals, type LedgerTotals, type PayrollTotals, type TieId, type TieOut } from "./tieouts";
 
 const COLUMNS =
@@ -37,16 +38,31 @@ export interface PeriodFile {
   assets: AssetTotals | null;
   ties: TieOut[];
   explainedBy: Partial<Record<TieId, { at: string }>>;
+  activity: MonthActivity;
+  signoffs: Signoff[];
+  notes: ReviewNote[];
+}
+
+export interface ReviewNote {
+  id: string;
+  ref: SignedRef;
+  note: string;
+  raisedAt: string;
+  response: string | null;
+  respondedAt: string | null;
+  clearedAt: string | null;
 }
 
 /** The period file for `month` (YYYY-MM-01). */
 export async function loadPeriodFile(db: SupabaseClient, clientId: string, month: string): Promise<PeriodFile> {
   const to = monthEnd(month);
-  const [{ data: rows, error }, { data: books }, { data: notes }, { count: paid }] = await Promise.all([
+  const [{ data: rows, error }, { data: books }, { data: notes }, { count: paid }, { data: signRows }, { data: noteRows }] = await Promise.all([
     db.from("register_lines").select(COLUMNS).eq("client_id", clientId).gte("month", quarterStart(month)).lte("month", month).limit(20000),
     db.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
     db.from("workpaper_explanations").select("tie, explanation, explained_at").eq("client_id", clientId).eq("period", month),
     db.from("payroll_entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("pay_month", month),
+    db.from("workpaper_signoffs").select("ref, prepared_at, reviewed_at").eq("client_id", clientId).eq("period", month),
+    db.from("review_notes").select("id, ref, note, raised_at, response, responded_at, cleared_at").eq("client_id", clientId).eq("period", month).order("raised_at"),
   ]);
   if (error) throw new Error(`Could not load the register: ${error.message}`);
   const all = ((rows ?? []) as unknown as RegisterRow[]).map(toRegisterLine);
@@ -85,5 +101,18 @@ export async function loadPeriodFile(db: SupabaseClient, clientId: string, month
     explanations[n.tie] = n.explanation;
     explainedBy[n.tie] = { at: n.explained_at };
   }
-  return { month, lines, quarterToDate: all, ledger, payroll, assets, ties: tieOuts({ month: lines, quarterToDate: all, ledger, payroll, assets, explanations }), explainedBy };
+  const activity: MonthActivity = {
+    payroll: payroll != null,
+    certificatesReceived: lines.some((l) => l.kind === "cwt_received"),
+    ewtOnPurchases: lines.some((l) => l.kind === "purchase" && l.withholding > 0),
+    fixedAssets: Boolean(assets && (assets.additions > 0 || assets.depreciation > 0)),
+  };
+  return {
+    month, lines, quarterToDate: all, ledger, payroll, assets,
+    ties: tieOuts({ month: lines, quarterToDate: all, ledger, payroll, assets, explanations }), explainedBy, activity,
+    signoffs: ((signRows ?? []) as { ref: SignedRef; prepared_at: string | null; reviewed_at: string | null }[]).map((r) => ({ ref: r.ref, preparedAt: r.prepared_at, reviewedAt: r.reviewed_at })),
+    notes: ((noteRows ?? []) as { id: string; ref: SignedRef; note: string; raised_at: string; response: string | null; responded_at: string | null; cleared_at: string | null }[]).map((n) => ({
+      id: n.id, ref: n.ref, note: n.note, raisedAt: n.raised_at, response: n.response, respondedAt: n.responded_at, clearedAt: n.cleared_at,
+    })),
+  };
 }
