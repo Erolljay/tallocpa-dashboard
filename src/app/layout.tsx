@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 /* BoardUI styles (src/styles) plus the Tallo app layer, one Tailwind entry. */
 import "./globals.css";
+import { sidebarScript } from "@/lib/sidebar-state";
 
 /* BoardUI's typeface: the theme reads it from --font-inter. */
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], axes: ["opsz"] });
@@ -30,6 +31,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Staff sidebar collapse, from its cookie, so the rail paints at the right width. */}
+        <script dangerouslySetInnerHTML={{ __html: sidebarScript }} />
       </head>
       <body className="flex min-h-full flex-col bg-background-full text-text-primary">{children}</body>
     </html>

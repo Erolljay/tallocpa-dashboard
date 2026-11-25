@@ -22,7 +22,11 @@ export type NavKey = keyof typeof items;
 
 const under = (path: string, href: string) => path === href || path.startsWith(`${href}/`);
 
-/** Sidebar rows in BoardUI's sidebar style: the current page is the filled accent row. */
+/**
+ * Sidebar rows in BoardUI's sidebar style: the current page is the filled accent row.
+ * On the collapsed icon rail (md and up) the label becomes visually hidden, so the
+ * link keeps its accessible name, and the title gives sighted users a tooltip.
+ */
 export function NavLinks({ keys }: { keys: readonly NavKey[] }) {
   return <Links keys={keys} path={usePathname()} />;
 }
@@ -46,14 +50,16 @@ function Links({ keys, path }: { keys: readonly NavKey[]; path: string | null })
         key={href}
         href={href}
         aria-current={current ? "page" : undefined}
+        title={label}
         className={cx(
           "flex shrink-0 items-center gap-2 rounded-2lg p-2 transition-colors duration-150 pointer-coarse:min-h-11",
+          "md:sidebar-collapsed:justify-center",
           "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
           current ? "bg-linear-to-b from-accent-500 to-accent-600 shadow-nav-selected" : "hover:bg-background-secondary-hover",
         )}
       >
         <Icon aria-hidden className={cx("size-5 shrink-0", current ? "text-text-white" : "text-foreground-icon-secondary")} />
-        <span className={cx("text-body-medium whitespace-nowrap", current ? "text-text-white" : "text-text-secondary")}>{label}</span>
+        <span className={cx("text-body-medium whitespace-nowrap md:sidebar-collapsed:sr-only", current ? "text-text-white" : "text-text-secondary")}>{label}</span>
       </Link>
     );
   });
