@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { obligationChanges, obligationsForTaxTypes, TaxTypeError } from "@/lib/clients/obligations";
 import { assignmentSchema, editClientSchema, engagementSchema, formToObject, newClientSchema } from "@/lib/clients/schema";
-import { manilaToday } from "@/lib/filings/run";
 import { templatePayload } from "@/lib/ledger/coa";
 import { chartStart, TEMPLATE_FOR_TAXPAYER } from "@/lib/ledger/types";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -62,7 +61,7 @@ export async function createClientAction(_: FormState, form: FormData): Promise<
   await supabase.rpc("setup_books", {
     p_client: clientId,
     p_template: TEMPLATE_FOR_TAXPAYER[v.taxpayer_type] ?? "stock_corporation",
-    p_books_start: chartStart(manilaToday(), v.registration_date),
+    p_books_start: chartStart(v.registration_date),
     p_accounts: templatePayload(TEMPLATE_FOR_TAXPAYER[v.taxpayer_type] ?? "stock_corporation"),
   });
 

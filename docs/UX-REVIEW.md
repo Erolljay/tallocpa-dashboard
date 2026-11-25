@@ -165,6 +165,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 23 | Registrations | Keep it in the sidebar. |
 | 24 | Quarterly step dates | A return covering more than one month is prepared by the 15th of the month it is due, then reviewed, client approved and Owner approved one working day apart, and filed the day the Owner approves. |
 | 25 | Individuals' names | OCR reads whether a supplier or customer is an individual and splits last, first and middle name for the SLS, SLP, QAP and SAWT; the reviewer confirms them and the parties directory keeps them. |
+| 26 | Books start | January 2027, the go-live cycle, for every client's chart (a client registered later starts in its registration month). |
 
 ## Workpaper index
 
