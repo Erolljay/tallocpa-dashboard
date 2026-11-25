@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/db.test.ts": {
-    "mtime": 1795644066.6848314,
-    "seen": 1795644085.407749,
-    "ast_hash": "8dab6319d8ae1bfe2b256f7d4db141c0",
+    "mtime": 1795644812.7208757,
+    "seen": 1795644817.5869553,
+    "ast_hash": "1bdbf73ba082091147501639b28f8043",
     "semantic_hash": ""
   },
   "supabase/tests/grants.sql": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "src/app/app/collections/[clientId]/page.tsx": {
-    "mtime": 1795644066.6808314,
-    "seen": 1795644085.407129,
-    "ast_hash": "39f8f0d6376a1db830250728f7cb69fb",
+    "mtime": 1795644812.7168758,
+    "seen": 1795644817.5730112,
+    "ast_hash": "99acce406822f782436ece6f626d19d4",
     "semantic_hash": ""
   },
   "src/app/app/collections/actions.ts": {
@@ -852,9 +852,9 @@
     "semantic_hash": ""
   },
   "src/app/app/collections/page.tsx": {
-    "mtime": 1795644066.6808314,
-    "seen": 1795644085.4071343,
-    "ast_hash": "059334d0903917d0a15b7a50caab6a52",
+    "mtime": 1795644812.7168758,
+    "seen": 1795644817.5730567,
+    "ast_hash": "0b2cc21626a9cb2e852e9fc9e6793014",
     "semantic_hash": ""
   },
   "src/app/app/collections/statements/[id]/page.tsx": {
@@ -1104,15 +1104,15 @@
     "semantic_hash": ""
   },
   "src/lib/collections/collections.test.ts": {
-    "mtime": 1795644066.6808314,
-    "seen": 1795644085.4074802,
-    "ast_hash": "7c48db38d5877efb0e28ab82825465b4",
+    "mtime": 1795644812.7168758,
+    "seen": 1795644817.57877,
+    "ast_hash": "95e0cee2bb149d17d06c5b454b2d0423",
     "semantic_hash": ""
   },
   "src/lib/collections/collections.ts": {
-    "mtime": 1795644066.6808314,
-    "seen": 1795644085.4074812,
-    "ast_hash": "43b759b117b16262be276efd1dc6b317",
+    "mtime": 1795644812.7208757,
+    "seen": 1795644817.578772,
+    "ast_hash": "0d4c4cc8eb2d7b616faccac03d80261b",
     "semantic_hash": ""
   },
   "src/lib/collections/statement.ts": {
@@ -3168,9 +3168,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795644696.008869,
-    "seen": 1795644704.9402194,
-    "ast_hash": "b66bbc97a36ce64493f22477ba095579",
+    "mtime": 1795644812.6648757,
+    "seen": 1795644817.587924,
+    "ast_hash": "90dcda00e185b182f1dbfa50be150318",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
