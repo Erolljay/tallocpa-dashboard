@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { loadEmployees, loadItems, loadStored, payrollAccess, employeesForMonth } from "@/lib/payroll/data";
 import { buildEmployeeTemplate } from "@/lib/payroll/employees-xlsx";
 import { buildRegisterTemplate, monthTitle, XLSX_TYPE } from "@/lib/payroll/register-xlsx";
+import { draftToTemplate, initialDraft } from "@/lib/payroll/read/draft";
+import type { PayrollDraft, PayrollRead } from "@/lib/payroll/read/types";
 import { byName } from "@/lib/payroll/year";
 import { yearWorksheet } from "../year-data";
 
@@ -19,6 +21,7 @@ function file(body: string | Buffer, name: string, type: string) {
  *   ?kind=employees                the employee master (.xlsx)
  *   ?kind=dat|csv1|csv2&year=YYYY  the 1604-C alphalist: DAT, Schedule 1 CSV, Schedule 2 CSV
  *   ?kind=submission&id=…          a register a client sent from the portal
+ *   ?kind=read&document=…          the register prefilled from a payroll read from the client's own file
  */
 export async function GET(request: NextRequest, ctx: RouteContext<"/app/clients/[id]/payroll/export">) {
   const { id } = await ctx.params;
@@ -35,6 +38,18 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/app/clients/
     const list = employeesForMonth(employees, month, new Set(existing.keys())).sort(byName);
     const buf = await buildRegisterTemplate({ clientName: client.name, month, employees: list, items, existing });
     return file(buf, `Payroll_Register_${safe(client.name)}_${monthTitle(month).replace(" ", "_")}.xlsx`, XLSX_TYPE);
+  }
+  if (kind === "read") {
+    const { data: doc } = await supabase.from("documents").select("id, period").eq("id", q.get("document") ?? "").eq("client_id", id).eq("doc_type", "payroll").maybeSingle();
+    const { data: ext } = doc ? await supabase.from("payroll_extractions").select("result, draft").eq("document_id", doc.id).maybeSingle() : { data: null };
+    if (!doc || !ext?.result) return new NextResponse("Not found", { status: 404 });
+    const month = String(doc.period).slice(0, 10);
+    const [items, employees] = await Promise.all([loadItems(supabase, id), loadEmployees(supabase, id)]);
+    const draft = (ext.draft as PayrollDraft | null) ?? initialDraft(ext.result as PayrollRead, employees);
+    const { existing, newRows } = draftToTemplate(draft);
+    const list = employeesForMonth(employees, month, new Set(existing.keys())).sort(byName);
+    const buf = await buildRegisterTemplate({ clientName: client.name, month, employees: list, items, existing, newRows });
+    return file(buf, `Payroll_Register_${safe(client.name)}_${monthTitle(month).replace(" ", "_")}_read.xlsx`, XLSX_TYPE);
   }
   if (kind === "employees") {
     const employees = (await loadEmployees(supabase, id)).sort(byName);

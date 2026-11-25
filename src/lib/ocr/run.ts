@@ -6,8 +6,13 @@ import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { lookupParties } from "@/lib/parties/lookup";
 import { fillFromDirectory } from "@/lib/parties/resolve";
 import { partyKey } from "@/lib/parties/tin";
+import { runPayrollRead, runPendingPayrollReads } from "@/lib/payroll/read/run";
 
-/** Files staff attach to filings, and payroll in the client's own format, are not read by OCR. */
+/**
+ * Files staff attach to filings are not read by OCR. Payroll in the client's own
+ * format is not read into extractions either: it has its own reader, into the
+ * Tallo payroll register for staff review (lib/payroll/read).
+ */
 const SKIP: DocType[] = ["filed_return", "payment_proof", "payroll"];
 const MAX_ATTEMPTS = 3;
 
@@ -16,10 +21,11 @@ const MAX_ATTEMPTS = 3;
  * service-role client (after an upload, from the Owner's button, or the nightly
  * job). A received document moves to Under review once OCR is done.
  */
-export async function runOcr(admin: SupabaseClient, documentId: string, provider: OcrProvider | null = ocrProviderFromEnv()) {
-  if (!provider) return { skipped: "No OCR key is set (GEMINI_API_KEY)." };
+export async function runOcr(admin: SupabaseClient, documentId: string, provider: OcrProvider | null = ocrProviderFromEnv()): Promise<{ ok: true } | { skipped: string } | { error: string }> {
   const { data: doc, error } = await admin.from("documents").select("id, storage_path, mime_type, doc_type, status").eq("id", documentId).single();
   if (error || !doc) return { error: `Document not found: ${error?.message ?? documentId}` };
+  if (doc.doc_type === "payroll") return runPayrollRead(admin, documentId);
+  if (!provider) return { skipped: "No OCR key is set (GEMINI_API_KEY)." };
   if (SKIP.includes(doc.doc_type as DocType) || !["received", "under_review"].includes(doc.status)) return { skipped: "Not a document for OCR." };
 
   const { data: prior } = await admin.from("extractions").select("attempts").eq("document_id", documentId).maybeSingle();
@@ -49,10 +55,11 @@ export async function runOcr(admin: SupabaseClient, documentId: string, provider
   }
 }
 
-/** Nightly safety net: documents never read, or whose OCR failed fewer than 3 times. */
+/** Nightly safety net: documents never read, or whose OCR failed fewer than 3 times; payroll documents too. */
 export async function runPendingOcr(admin: SupabaseClient, limit = 50) {
+  const payroll = await runPendingPayrollReads(admin).catch((e: Error) => ({ error: e.message }));
   const provider = ocrProviderFromEnv();
-  if (!provider) return { read: 0, failed: 0, skipped: "no key" };
+  if (!provider) return { read: 0, failed: 0, skipped: "no key", payroll };
   const { data: docs } = await admin.from("documents").select("id, extractions(status, attempts)").in("status", ["received", "under_review"]).not("doc_type", "in", `(${SKIP.join(",")})`).order("created_at").limit(500);
   const todo = (docs ?? [])
     .filter((d) => {
@@ -67,5 +74,5 @@ export async function runPendingOcr(admin: SupabaseClient, limit = 50) {
     if ("ok" in r) read++;
     else if ("error" in r) failed++;
   }
-  return { read, failed };
+  return { read, failed, payroll };
 }

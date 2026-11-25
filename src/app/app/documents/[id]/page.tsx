@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
@@ -15,7 +15,14 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
 import { pendingDocumentTaxCodes } from "@/lib/books/actions";
 import { loadTaxCodes } from "@/lib/books/data";
+import { loadEmployees, loadItems } from "@/lib/payroll/data";
+import { sortItems } from "@/lib/payroll/items";
+import { targetOptions } from "@/lib/payroll/read/columns";
+import { initialDraft, matchesOf } from "@/lib/payroll/read/draft";
+import type { PayrollDraft, PayrollRead } from "@/lib/payroll/read/types";
+import { byName, displayName } from "@/lib/payroll/year";
 import { PayrollIntake } from "./payroll-intake";
+import { ColumnMapping, PayrollReadReview, ReadPayrollButton, SheetPreview } from "./payroll-read";
 import { ReviewForm, type Booking } from "./review-form";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
@@ -128,12 +135,45 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
 
 const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
 
-/** Payroll in the client's own format: the file, and the steps to load it (no OCR, no register line). */
-function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; file_name: string; mime_type: string; status: string; source: string; clients: unknown }; canAct: boolean }) {
+/**
+ * Payroll in the client's own format (no register line): the file beside the
+ * Tallo register read from it, for staff on the client to check, edit and load
+ * into the month; or the manual steps when it has not been read.
+ */
+async function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; file_name: string; mime_type: string; status: string; source: string; clients: unknown }; canAct: boolean }) {
   const client = doc.clients as { name: string } | null;
   const ym = doc.period.slice(0, 7);
   const isPdf = doc.mime_type === "application/pdf";
   const isImage = doc.mime_type.startsWith("image/");
+  const open = ["received", "under_review"].includes(doc.status);
+  const supabase = await supabaseServer();
+  // RLS: only the Owner and staff assigned to the client read the payroll reading.
+  const { data: ext } = canAct ? await supabase.from("payroll_extractions").select("status, result, draft, error, loaded_at, finished_at").eq("document_id", doc.id).maybeSingle() : { data: null };
+  const read = ext?.status === "done" ? (ext.result as PayrollRead | null) : null;
+  const sheetFile = SPREADSHEET_TYPES.includes(doc.mime_type) || /\.(xlsx|csv)$/i.test(doc.file_name);
+  const canRead = canAct && open && (sheetFile || Boolean(process.env.GEMINI_API_KEY));
+  let review: ReactNode = null;
+  if (read) {
+    const [items, employees] = await Promise.all([loadItems(supabase, doc.client_id), loadEmployees(supabase, doc.client_id)]);
+    const draft = (ext?.draft as PayrollDraft | null) ?? initialDraft(read, employees);
+    const active = sortItems(items.filter((i) => i.active));
+    review = (
+      <div className="space-y-4">
+        {read.sheet && open && <ColumnMapping key={String(ext?.finished_at)} documentId={doc.id} read={read} options={targetOptions(items)} />}
+        <PayrollReadReview
+          key={String(ext?.finished_at)}
+          documentId={doc.id}
+          read={read}
+          draft={draft}
+          matches={matchesOf(read, employees)}
+          employees={[...employees].sort(byName).map((e) => ({ id: e.id, label: `${displayName(e)}${e.employeeNo ? ` · ${e.employeeNo}` : ""}${e.active ? "" : " (inactive)"}` }))}
+          items={active.map((i) => ({ id: i.id, name: i.name, kind: i.kind }))}
+          open={open}
+          downloadHref={`/app/clients/${doc.client_id}/payroll/export?kind=read&document=${doc.id}`}
+        />
+      </div>
+    );
+  }
   return (
     <>
       <PageHeader
@@ -146,13 +186,18 @@ function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string
         }
         actions={<Badge tone={docStatusTone[doc.status as keyof typeof docStatusTone]}>{doc.status === "posted" ? "Loaded" : docStatusLabel[doc.status]}</Badge>}
       />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card title={doc.file_name}>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <Card title={doc.file_name} className="xl:sticky xl:top-4 xl:self-start">
           {isPdf ? (
             <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : isImage ? (
             // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed link, not an optimisable asset
             <img src={`/files/${doc.id}`} alt={`Payroll for ${showMonth(doc.period)} sent by the client`} className="max-h-[75vh] w-full rounded-lg border border-separator-border object-contain" />
+          ) : read?.sheet ? (
+            <>
+              <p className="mb-2 text-body-2-regular text-text-secondary">Sheet “{read.sheet.name}” as read; the heading row is shaded.</p>
+              <SheetPreview grid={read.sheet.grid} headerRow={read.sheet.headerRow} />
+            </>
           ) : (
             <p className="text-body-regular text-text-secondary">The client&apos;s own spreadsheet. Download it to open in Excel.</p>
           )}
@@ -160,18 +205,31 @@ function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string
             {isPdf || isImage ? "Open full size" : "Download the client's file"}
           </a>
         </Card>
-        <Card title="Load into payroll">
-          {canAct ? (
-            <PayrollIntake
-              documentId={doc.id}
-              open={["received", "under_review"].includes(doc.status)}
-              templateHref={`/app/clients/${doc.client_id}/payroll/export?kind=template&month=${ym}`}
-              monthHref={`/app/clients/${doc.client_id}/payroll/month/${ym}`}
-            />
-          ) : (
-            <p className="text-body-regular text-text-secondary">Only the Owner and the staff assigned to this client can load its payroll.</p>
+        <div className="min-w-0 space-y-6">
+          {canAct && (
+            <Card title="Tallo payroll register" actions={canRead ? <ReadPayrollButton documentId={doc.id} again={Boolean(ext)} /> : null}>
+              <div className="space-y-4">
+                {ext?.loaded_at && <Notice tone="done">Loaded into payroll.</Notice>}
+                {!ext && <p className="text-body-regular text-text-secondary">{canRead ? "Not read yet. “Read payroll” fills the register from the client's file for you to check." : open ? "A PDF or photo needs the OCR key (GEMINI_API_KEY) to be read; copy it into the template below." : "Not read."}</p>}
+                {ext?.status === "pending" && <Notice>Reading the client&apos;s file. Refresh in a moment.</Notice>}
+                {ext?.status === "failed" && <Notice tone="blocked">The file could not be read: {ext.error}</Notice>}
+                {review}
+              </div>
+            </Card>
           )}
-        </Card>
+          <Card title={read ? "Or by hand" : "Load into payroll"}>
+            {canAct ? (
+              <PayrollIntake
+                documentId={doc.id}
+                open={open}
+                templateHref={`/app/clients/${doc.client_id}/payroll/export?kind=template&month=${ym}`}
+                monthHref={`/app/clients/${doc.client_id}/payroll/month/${ym}`}
+              />
+            ) : (
+              <p className="text-body-regular text-text-secondary">Only the Owner and the staff assigned to this client can load its payroll.</p>
+            )}
+          </Card>
+        </div>
       </div>
     </>
   );
