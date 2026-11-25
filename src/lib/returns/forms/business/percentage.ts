@@ -10,13 +10,14 @@
 import type { FormModule, ManualInput, WorksheetContext, WorksheetResult, WorksheetSchedule } from "../../types";
 import { percentageTaxRate } from "../../rates";
 import { buildSawt, sawtAttachments, sawtSchedule } from "./sawt";
-import { Inputs, amountInput, docLabel, docsWithin, filerWarnings, labelsOf, line, netOfVat, ownerNameInputs, pct, peso, quarterOf, sum } from "./util";
+import { Inputs, amountInput, docLabel, docsWithin, filerWarnings, labelsOf, line, netOfVat, ownerNameInputs, pct, peso, quarterOf, sum, uncodedErrors } from "./util";
 
 const FORM = "2551Q";
 
 function inputsFor(ctx: Pick<WorksheetContext, "client">): ManualInput[] {
   const list: ManualInput[] = [];
-  if (ctx.client.taxpayerType === "individual") {
+  // The client's income tax method (client settings) answers Item 13; asked here only while it is not set.
+  if (ctx.client.taxpayerType === "individual" && !ctx.client.incomeTaxMethod) {
     list.push({
       key: "income_tax_option",
       label: "Income tax rate option for the year (Item 13)",
@@ -49,7 +50,8 @@ function compute(ctx: WorksheetContext): WorksheetResult {
   const empty = (errs: string[]): WorksheetResult => ({ sections: [], schedules: [], errors: errs, warnings, documentIds: [] });
 
   if (ctx.client.taxpayerType === "individual") {
-    const option = inp.choice("income_tax_option");
+    const method = ctx.client.incomeTaxMethod;
+    const option = method ? (method === "eight_percent" ? "8pct" : "graduated") : inp.choice("income_tax_option");
     if (!option) return empty(["Choose the client's income tax rate option (graduated or 8%) — it decides whether a 2551Q is due."]);
     if (option === "8pct")
       return empty([
@@ -61,6 +63,8 @@ function compute(ctx: WorksheetContext): WorksheetResult {
   const { periodStart, periodEnd } = ctx.filing;
   const docs = docsWithin(ctx.documents, periodStart, periodEnd);
   const sales = docs.filter((d) => d.docType === "sales_invoice");
+  errors.push(...uncodedErrors(docs));
+  const books = ctx.source === "books";
 
   // Schedule 1: one row per rate in force during the quarter.
   const byRate = new Map<number, { amount: number; months: Set<string> }>();
@@ -120,7 +124,11 @@ function compute(ctx: WorksheetContext): WorksheetResult {
       {
         title: "Schedule 1 — Computation of tax",
         lines: [
-          line("gross_sales", "Sch. 1", "Gross sales/receipts for the quarter (net of VAT)", grossSales, { basis: `${sales.length} approved sales invoice(s) in the quarter.` }),
+          line("gross_sales", "Sch. 1", "Gross sales/receipts for the quarter (net of VAT)", grossSales, {
+            basis: books
+              ? `${sales.length} Sales Invoice(s) in the Books: Non-VAT Sales (NVS) and any exempt or zero-rated lines.`
+              : `${sales.length} approved sales invoice(s) in the quarter.`,
+          }),
           ...schedLines,
           line("total_tax_due_schedule1", "Sch. 1 total", "Total tax due", taxDue, { emphasis: "subtotal" }),
         ],
@@ -146,7 +154,7 @@ function compute(ctx: WorksheetContext): WorksheetResult {
     schedules: [schedule1, sawtSchedule("SAWT — creditable percentage tax withheld", sawt.rows)],
     errors,
     warnings,
-    documentIds: [...sales.map((d) => d.id), ...sawt.documentIds],
+    documentIds: [...new Set([...sales.map((d) => d.id), ...sawt.documentIds])],
   };
 }
 

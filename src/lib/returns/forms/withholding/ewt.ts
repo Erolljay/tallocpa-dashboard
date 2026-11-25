@@ -47,7 +47,10 @@ export interface AtcTotal {
   count: number;
 }
 
-const docLabel = (d: SourceDocument) => `2307${d.number ? ` no. ${d.number}` : ""}${d.partyName ? ` to ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
+const docLabel = (d: SourceDocument) =>
+  d.fromBooks
+    ? `Purchase Invoice${d.number ? ` ${d.number}` : ""}${d.partyName ? ` from ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`
+    : `2307${d.number ? ` no. ${d.number}` : ""}${d.partyName ? ` to ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
 
 /** 9+ digits, as the alphalist validation module needs. */
 export const tinDigits = (tin: string | null) => (tin ?? "").replace(/\D/g, "");
@@ -64,13 +67,19 @@ export function ewtLines(documents: SourceDocument[]): { lines: EwtLine[]; error
   for (const d of documents) {
     if (d.docType !== "bir_2307_issued") continue;
     const label = docLabel(d);
+    const fix = d.fromBooks ? "Edit the Purchase Invoice in the Books and" : "Edit the document and";
     let bad = false;
+    if (d.fromBooks && d.withholding <= 0) {
+      // The Books say nothing was withheld, whatever the code's rate.
+      warnings.push(`${label}: withholding code ${d.taxCode ?? d.atc ?? ""} but no tax withheld; left out.`);
+      continue;
+    }
     if (!d.atc) {
-      errors.push(`${label}: no ATC. Edit the document and enter the ATC.`);
+      errors.push(d.fromBooks ? `${label}: tax withheld but no withholding code. ${fix} choose its WC / WI code.` : `${label}: no ATC. ${fix} enter the ATC.`);
       bad = true;
     }
     if (!d.partyTin) {
-      errors.push(`${label}: no payee TIN. Edit the document and enter the payee's TIN.`);
+      errors.push(`${label}: no payee TIN. ${fix} enter the ${d.fromBooks ? "supplier" : "payee"}'s TIN.`);
       bad = true;
     } else if (tinDigits(d.partyTin).length < 9) {
       errors.push(`${label}: the payee TIN ${d.partyTin} is not 9 digits.`);
@@ -97,7 +106,7 @@ export function ewtLines(documents: SourceDocument[]): { lines: EwtLine[]; error
       warnings.push(`${label}: no tax withheld on the 2307; computed at ${rate}% (${formatPeso(withheld)}).`);
     }
     if (base <= 0 && withheld <= 0) {
-      errors.push(`${label}: no income payment or tax withheld. Edit the document and enter the amounts.`);
+      errors.push(`${label}: no income payment or tax withheld. ${fix} enter the amounts.`);
       continue;
     }
     if (info && base > 0 && withheld > 0) {

@@ -14,7 +14,7 @@ import { vatRate } from "../../rates";
 import { buildSawt, sawtAttachments, sawtSchedule } from "./sawt";
 import {
   Inputs, MONTH_NAMES, amountInput, crlf, csv, datDate, docLabel, docsWithin, filerOf, filerWarnings, labelsOf, line, monthEnd, monthKeyOf, ownerNameInputs, pct, peso,
-  plain, qd, quarterOf, stripSpecial, sum, tinDashed, tin9, tinDigits, vatSplit,
+  plain, qd, quarterOf, stripSpecial, sum, tinDashed, tin9, tinDigits, uncodedErrors, vatSplit,
 } from "./util";
 
 const FORM = "2550Q";
@@ -134,6 +134,8 @@ function computeAll(ctx: WorksheetContext): VatData {
 
   const { periodStart, periodEnd } = ctx.filing;
   const docs = docsWithin(ctx.documents, periodStart, periodEnd);
+  const books = ctx.source === "books";
+  errors.push(...uncodedErrors(docs));
 
   const split = (d: SourceDocument, side: "sale" | "purchase"): Split => {
     const rate = vatRate(d.month);
@@ -143,11 +145,13 @@ function computeAll(ctx: WorksheetContext): VatData {
       warnings.push(`${docLabel(d)}: VAT ₱${peso(s.vat)} is not ${rate}% of the VATable amount ₱${peso(s.vatable)}; check the OCR figures.`);
     if (s.vat > 0 && s.vatable === 0) warnings.push(`${docLabel(d)}: VAT without a VATable amount; check the OCR figures.`);
     if ((s.vatable > 0 || s.vat > 0) && tinDigits(d.partyTin).length < 9)
-      errors.push(`${docLabel(d)} is VATable but has no ${side === "sale" ? "customer" : "supplier"} TIN; the ${side === "sale" ? "SLS" : "SLP"} needs one. Add it in review.`);
+      errors.push(`${docLabel(d)} is VATable but has no ${side === "sale" ? "customer" : "supplier"} TIN; the ${side === "sale" ? "SLS" : "SLP"} needs one. ${d.fromBooks ? "Add it to the invoice in the Books." : "Add it in review."}`);
     return { doc: d, ...s };
   };
   const sales = docs.filter((d) => d.docType === "sales_invoice").map((d) => split(d, "sale"));
   const purchases = docs.filter((d) => d.docType === "purchase_receipt").map((d) => split(d, "purchase"));
+  const nonVatSales = sum(docs.filter((d) => d.docType === "sales_invoice").map((d) => d.nonVat ?? 0));
+  if (nonVatSales > 0) warnings.push(`Sales Invoices carry ₱${peso(nonVatSales)} of Non-VAT Sales (NVS), which is on no VAT return; a VAT-registered client codes its sales VATable, exempt or zero-rated.`);
 
   // Part IV — sales and output tax.
   const vatableSales = sum(sales.map((s) => s.vatable));
@@ -168,7 +172,8 @@ function computeAll(ctx: WorksheetContext): VatData {
   const capEntered = inp.optionalAmount("purchases_capital_goods");
   const svcEntered = inp.optionalAmount("purchases_services");
   const catTotal = (cat: "capital_goods" | "services") => sum(purchases.filter((s) => s.doc.slpCategory === cat).map((s) => s.vatable));
-  const fromLines = capEntered == null && svcEntered == null && purchases.some((s) => s.doc.slpCategory === "capital_goods" || s.doc.slpCategory === "services");
+  // From the Books every purchase line has its SLP column by its tax code.
+  const fromLines = capEntered == null && svcEntered == null && (books || purchases.some((s) => s.doc.slpCategory === "capital_goods" || s.doc.slpCategory === "services"));
   let capGoods = capEntered ?? (fromLines ? catTotal("capital_goods") : 0);
   let services = svcEntered ?? (fromLines ? catTotal("services") : 0);
   if (capEntered == null && svcEntered == null && vatablePurch > 0 && !fromLines)
@@ -187,6 +192,19 @@ function computeAll(ctx: WorksheetContext): VatData {
   // Carry-over from the previous quarter (taxify left it for "a future phase"; here: typed, else the previous worksheet).
   let i38 = inp.optionalAmount("input_tax_carried_over");
   let i38Basis = "Typed in.";
+  if (i38 == null && ctx.vatCarryOver !== undefined) {
+    // The previous 2550Q, across taxable years (database function vat_carry_over).
+    const co = ctx.vatCarryOver;
+    i38 = co?.computed ? co.excess : 0;
+    if (!co) i38Basis = "No earlier 2550Q on file.";
+    else if (!co.computed) {
+      i38Basis = `The ${co.periodLabel} 2550Q has no saved worksheet.`;
+      warnings.push(`The ${co.periodLabel} 2550Q has no saved worksheet, so no input tax is carried over; save it, or enter Item 38 as filed.`);
+    } else {
+      i38Basis = `Excess input tax on the ${co.periodLabel} 2550Q worksheet${co.filed ? "" : " (not filed yet)"}.`;
+      if (!co.filed && co.excess > 0) warnings.push(`The ${co.periodLabel} 2550Q is not filed yet; the carry-over (Item 38) is its worksheet's excess input tax and changes if that return does.`);
+    }
+  }
   if (i38 == null) {
     const prior = quarterOf(ctx) > 1 ? ctx.priorFigures[FORM]?.excess_input_tax : undefined;
     i38 = prior ?? 0;
@@ -241,7 +259,7 @@ function computeAll(ctx: WorksheetContext): VatData {
       {
         title: "Part IV — Sales and output tax",
         lines: [
-          line("vatable_sales", "31A", "VATable sales", vatableSales, { basis: `${sales.length} approved sales invoice(s) in the quarter.` }),
+          line("vatable_sales", "31A", "VATable sales", vatableSales, { basis: books ? `${sales.length} Sales Invoice(s) in the Books, by tax code (Output VAT 12%).` : `${sales.length} approved sales invoice(s) in the quarter.` }),
           line("output_tax", "31B", "Output tax on VATable sales", outputTax),
           line("zero_rated_sales", "32A", "Zero-rated sales", zeroRated),
           line("exempt_sales", "33A", "Exempt sales", exemptSales),
@@ -269,7 +287,7 @@ function computeAll(ctx: WorksheetContext): VatData {
           }),
           line("zero_rated_purchases", "48A", "Domestic purchases with no input tax (zero-rated)", purZero),
           line("exempt_purchases", "49A", "VAT-exempt purchases", purExempt),
-          line("total_current_purchases", "50A", "Total current purchases", totalCurPurch, { emphasis: "subtotal", basis: `${purchases.length} approved purchase receipt(s) in the quarter.` }),
+          line("total_current_purchases", "50A", "Total current purchases", totalCurPurch, { emphasis: "subtotal", basis: books ? `Purchase Invoices in the Books by tax code (ND, NR and Non-VAT lines are on no VAT return).` : `${purchases.length} approved purchase receipt(s) in the quarter.` }),
           line("total_current_input_tax", "50B", "Total current input tax", totalCurInTax, { emphasis: "subtotal" }),
           line("total_available_input_tax", "51B", "Total available input tax (43B + 50B)", i51, { emphasis: "subtotal" }),
           line("input_tax_deferred_next", "52B", "Input tax on capital goods > ₱1M deferred for succeeding period", i52),
@@ -288,7 +306,7 @@ function computeAll(ctx: WorksheetContext): VatData {
         title: "Part II — Total tax payable",
         lines: [
           line("net_vat_payable_part2", "15", "Net VAT payable / (excess input tax) (Item 61)", i61),
-          line("creditable_vat_withheld", "16", "Creditable VAT withheld (Schedule 3)", i16, { basis: `${sawt.rows.length} SAWT row(s) from 2307s received with a WV ATC.` }),
+          line("creditable_vat_withheld", "16", "Creditable VAT withheld (Schedule 3)", i16, { basis: books ? `${sawt.rows.length} SAWT row(s): VAT withheld (WV010 / WV020) on Sales Invoices.` : `${sawt.rows.length} SAWT row(s) from 2307s received with a WV ATC.` }),
           line("advance_vat_payments", "17", "Advance VAT payments", i17),
           line("amended_vat_paid", "18", "VAT paid in return previously filed, if amended", i18),
           line("other_credits", "19", "Other credits / payment", i19),
@@ -325,7 +343,7 @@ function computeAll(ctx: WorksheetContext): VatData {
     ],
     errors,
     warnings,
-    documentIds: [...sales.map((s) => s.doc.id), ...purchases.map((s) => s.doc.id), ...sawt.documentIds],
+    documentIds: [...new Set([...sales.map((s) => s.doc.id), ...purchases.map((s) => s.doc.id), ...sawt.documentIds])],
   };
   return { result, sls, slp };
 }

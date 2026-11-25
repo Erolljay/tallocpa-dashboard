@@ -55,3 +55,28 @@ export function bookIncome(rows: LedgerMovement[]): BookIncome {
 export function linesWithMovement(...xs: BookIncome[]): BirLineKey[] {
   return (Object.keys(BIR_LINES) as BirLineKey[]).filter((k) => xs.some((x) => (x.byLine[k] ?? 0) !== 0));
 }
+
+/** ND-coded purchase lines on one account (database function books_non_deductible). */
+export interface NonDeductibleRow {
+  code: string;
+  amount: Centavos;
+}
+
+/**
+ * Moves the ND-coded amounts (non-deductible: penalties, fines, unsupported expenses) off
+ * their accounts to the non-deductible line, so they stay in the books but are added back
+ * for income tax. NR (no invoice) lines stay deductible. An account already on the
+ * non-deductible line is left as it is.
+ */
+export function withNonDeductible(rows: LedgerMovement[], nd: NonDeductibleRow[]): { rows: LedgerMovement[]; addedBack: Centavos } {
+  const byCode = new Map(nd.map((n) => [n.code, n.amount]));
+  let addedBack = 0;
+  const out: LedgerMovement[] = rows.map((r) => {
+    const a = byCode.get(r.code) ?? 0;
+    if (a === 0 || r.birLine === "nondeductible" || r.type === "income_tax") return r;
+    addedBack += a;
+    return { ...r, net: r.net - a };
+  });
+  if (addedBack !== 0) out.push({ code: "ND", name: "Non-deductible expenses (ND tax code)", type: "expense", birLine: "nondeductible", net: addedBack });
+  return { rows: out, addedBack };
+}

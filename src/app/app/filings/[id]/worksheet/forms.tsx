@@ -3,7 +3,21 @@
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import type { ManualInput } from "@/lib/returns/types";
-import { recomputeWorksheetAction, type WorksheetState } from "./actions";
+import { markCwtFollowedUpAction, recomputeWorksheetAction, type WorksheetState } from "./actions";
+
+/** Marks that the customer was asked for a missing 2307 (the CWT stays claimed). */
+export function FollowUpForm({ filingId, invoiceId }: { filingId: string; invoiceId: string }) {
+  const [state, run, pending] = useActionState(markCwtFollowedUpAction.bind(null, filingId, invoiceId), {} as WorksheetState);
+  return (
+    <form action={run} className="mt-2 flex flex-wrap items-end gap-2">
+      <Field label="Note (optional)" htmlFor={`fu-${invoiceId}`}>
+        <Input id={`fu-${invoiceId}`} name="note" autoComplete="off" placeholder="e.g. Emailed the customer" />
+      </Field>
+      <Button type="submit" variant="secondary" size="sm" disabled={pending}>{pending ? "Saving…" : "Mark followed up"}</Button>
+      {state.error && <Notice tone="blocked">{state.error}</Notice>}
+    </form>
+  );
+}
 
 /** The figures staff type in, and the Recompute button that saves the snapshot. */
 export function WorksheetInputsForm({ filingId, inputs, values, canEdit }: { filingId: string; inputs: ManualInput[]; values: Record<string, string>; canEdit: boolean }) {
