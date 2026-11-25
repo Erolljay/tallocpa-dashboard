@@ -6,9 +6,10 @@ import { BOOK_KINDS, BOOK_TITLES } from "@/lib/ledger/books";
 import { periodTitle, REPORT_KINDS, type ReportKind } from "@/lib/ledger/statements";
 import { loadPortalBooks, portalBooksClient } from "@/lib/portal/books";
 import { filedYears, groupFiledReturns, type FiledFileRow, type FiledReturnRow, type LegacyFileRow } from "@/lib/portal/filed-returns";
-import { booksYears, lockedMonths, monthEnd, reportKindsEnding } from "@/lib/portal/report-periods";
+import { booksYears, lockedMonths, monthEnd, statementPeriods, type StatementHold } from "@/lib/portal/report-periods";
 import { cx } from "@/utils/cx";
 import { portalContext } from "../client-context";
+import { HeldNote } from "./held-note";
 import { ParamSelect } from "./param-select";
 import { emptyClass, linkClass, listClass, monthLabel, pickClient, reportsHref, rowLi } from "./shared";
 
@@ -23,8 +24,9 @@ export default function PortalReports(props: PageProps<"/portal/reports">) {
 const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" }).format(new Date(iso));
 
 /**
- * Client portal Reports (decision 19), phone first: financial statements and the
- * loose-leaf books for locked months, filed returns per year per tax type with
+ * Client portal Reports (decision 19), phone first: financial statements for locked
+ * months whose returns the client has approved (Owner, option b), the loose-leaf
+ * books for locked months, filed returns per year per tax type with
  * the scanned copy, the 2307s and the released 2316s. No payroll or BIR-list sections.
  */
 async function Reports({ searchParams }: Pick<PageProps<"/portal/reports">, "searchParams">) {
@@ -72,7 +74,7 @@ async function Reports({ searchParams }: Pick<PageProps<"/portal/reports">, "sea
         )}
       </div>
 
-      <Statements clientId={client1} months={months} fye={fye} released={(released ?? []) as Released[]} />
+      <Statements clientId={client1} closed={months} holds={books?.statementHolds ?? []} fye={fye} released={(released ?? []) as Released[]} />
 
       <Section title="Filed returns" description="Each return we filed for you, with its scanned copy (the return, proof of payment and attachments) and the BIR's validation report." action={years.length > 1 && year != null ? (
         <ParamSelect name="year" label="Year" value={String(year)} options={years.map((y) => ({ value: String(y), label: String(y) }))} className="w-28" />
@@ -139,15 +141,17 @@ interface Released {
   released_at: string;
 }
 
-function Statements({ clientId, months, fye, released }: { clientId: string | null; months: string[]; fye: number; released: Released[] }) {
-  // The latest report of each kind that ends on a locked month.
+function Statements({ clientId, closed, holds, fye, released }: { clientId: string | null; closed: string[]; holds: StatementHold[]; fye: number; released: Released[] }) {
+  // The latest report of each kind offered: on a closed month whose returns the client has approved.
+  const periods = statementPeriods(closed, holds, fye).reverse();
   const latest = (["monthly", "quarterly", "annual"] as ReportKind[])
-    .map((kind) => ({ kind, month: [...months].reverse().find((m) => reportKindsEnding(m, fye).includes(kind)) }))
+    .map((kind) => ({ kind, month: periods.find((p) => p.kinds.includes(kind))?.month }))
     .filter((x): x is { kind: ReportKind; month: string } => !!x.month);
   return (
-    <Section title="Financial statements" description="Balance sheet, income statement and notes, from your books for the months we have closed.">
+    <Section title="Financial statements" description="Balance sheet, income statement and notes, from your books for the months we have closed and you have approved the returns.">
+      <HeldNote holds={holds} />
       {latest.length === 0 ? (
-        <p className={emptyClass}>Your statements appear here once we close the first month of your books.</p>
+        closed.length === 0 ? <p className={emptyClass}>Your statements appear here once we close the first month of your books.</p> : null
       ) : (
         <ul className={listClass}>
           {latest.map(({ kind, month }) => (

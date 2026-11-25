@@ -107,7 +107,7 @@ export interface TbRowOut {
   closing: Centavos;
 }
 
-/** The trial balance of `from`…`to`: `trial_balance` for staff, `portal_trial_balance` (locked months only) for the portal. */
+/** The trial balance of `from`…`to`: `trial_balance` for staff, `portal_trial_balance` (locked months whose returns the client approved) for the portal. */
 export async function loadTrialBalance(supabase: SupabaseClient, clientId: string, from: string, to: string, rpc: "trial_balance" | "portal_trial_balance" = "trial_balance"): Promise<TbRowOut[]> {
   const { data, error } = await supabase.rpc(rpc, { p_client: clientId, p_from: from, p_to: to });
   if (error) throw new Error(`Could not load the trial balance: ${error.message}`);
