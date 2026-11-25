@@ -17,6 +17,7 @@ export const TAX_CODE_KINDS = [
   "input_vat_services",
   "vat_exempt_purchases",
   "zero_rated_purchases",
+  "not_reported_purchases",
   "withholding",
   "govt_vat_withheld",
 ] as const;
@@ -31,6 +32,7 @@ export const TAX_CODE_KIND_LABELS: Record<TaxCodeKind, string> = {
   input_vat_services: "Input VAT – services",
   vat_exempt_purchases: "VAT-exempt purchases",
   zero_rated_purchases: "Zero-rated purchases",
+  not_reported_purchases: "No invoice – not reported (deductible expense)",
   withholding: "Withholding tax (EWT on purchases, CWT on sales)",
   govt_vat_withheld: "VAT withheld by a government customer",
 };
@@ -101,6 +103,8 @@ export const RETURN_LINES: Record<TaxCodeKind, Partial<Record<InvoiceKind, Retur
   },
   vat_exempt_purchases: { purchase: [L("2550Q", "49A", "VAT-exempt purchases"), L("SLP", "exempt_purchases", "Exempt purchases")] },
   zero_rated_purchases: { purchase: [L("2550Q", "48A", "Zero-rated purchases"), L("SLP", "zero_rated_purchases", "Zero-rated purchases")] },
+  // Purchases with no invoice: in the income statement and deductible, but on no BIR list or return.
+  not_reported_purchases: { purchase: [] },
   withholding: {
     purchase: [
       L("0619-E", "14", "Amount of remittance (by ATC)"),

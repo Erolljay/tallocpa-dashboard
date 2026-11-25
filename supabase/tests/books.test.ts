@@ -105,7 +105,7 @@ describe.skipIf(!url)("books transactions", () => {
   describe("tax codes", () => {
     it("are seeded with their kinds, rates and ATCs", async () => {
       const rows = (await as(STAFF, `select code, kind, rate::text, atc, payee_type, applies_to from public.tax_codes order by sort_order`)).rows;
-      expect(rows).toHaveLength(18);
+      expect(rows).toHaveLength(19);
       expect(rows.find((r) => r.code === "OVAT12")).toMatchObject({ kind: "output_vat", rate: "0.1200", applies_to: "sales" });
       expect(rows.find((r) => r.code === "IVAT12-CG")).toMatchObject({ kind: "input_vat_capital", applies_to: "purchases" });
       expect(rows.find((r) => r.code === "WI010")).toMatchObject({ kind: "withholding", rate: "0.1000", atc: "WI010", payee_type: "individual", applies_to: "both" });
@@ -156,6 +156,22 @@ describe.skipIf(!url)("books transactions", () => {
         ["accounts_payable", "0.00", "48150.00"],
         ["ewt_payable", "0.00", "2250.00"],
       ]);
+    });
+
+    it("books a purchase with no invoice in full to its expense, with no input VAT and on no BIR list", async () => {
+      const fish = await saveInvoice({
+        kind: "purchase", party_name: "Fishermen, Arevalo market", reference: "PV-0101", issue_date: "2026-03-05",
+        lines: [{ account_id: acct.office_supplies, amount: "3500", tax_code_id: code.NR }],
+      });
+      const inv = await invoice(fish);
+      expect(inv).toMatchObject({ tax_total: "0.00", total: "3500.00", withholding: "0.00", amount_due: "3500.00" });
+      expect(await lines(inv.journal_entry_id)).toEqual([
+        ["office_supplies", "3500.00", "0.00"],
+        ["accounts_payable", "0.00", "3500.00"],
+      ]);
+      const nr = (await db.query(`select kind, rate, applies_to from public.tax_codes where code = 'NR'`)).rows[0];
+      expect(nr).toEqual({ kind: "not_reported_purchases", rate: "0.0000", applies_to: "purchases" });
+      await expect(saveInvoice({ kind: "sales", party_name: "X", issue_date: "2026-03-05", lines: [{ account_id: acct.sales, amount: "100", tax_code_id: code.NR }] })).rejects.toThrow(/cannot go on a sales invoice/);
     });
 
     it("splits VATable and exempt lines, and books the SC/PWD discount and VAT withheld by a government customer", async () => {

@@ -3,11 +3,20 @@ import { appliesTo, canGoOn, formsFor, placeOf, RETURN_LINES, returnLinesFor, TA
 
 describe("tax code kinds", () => {
   it("covers every kind the database allows, each with the return lines it feeds", () => {
-    expect(TAX_CODE_KINDS).toHaveLength(10);
+    expect(TAX_CODE_KINDS).toHaveLength(11);
     for (const k of TAX_CODE_KINDS) {
-      for (const side of appliesTo(k)) expect(returnLinesFor(k, side).length, `${k} on ${side}`).toBeGreaterThan(0);
+      // Purchases with no invoice are deliberately on no BIR list or return.
+      if (k !== "not_reported_purchases") for (const side of appliesTo(k)) expect(returnLinesFor(k, side).length, `${k} on ${side}`).toBeGreaterThan(0);
       expect(Object.keys(RETURN_LINES[k]).sort()).toEqual([...appliesTo(k)].sort());
     }
+  });
+
+  it("keeps purchases with no invoice off every BIR list, on purchase lines only", () => {
+    expect(appliesTo("not_reported_purchases")).toEqual(["purchase"]);
+    expect(canGoOn("not_reported_purchases", "purchase", "line")).toBe(true);
+    expect(canGoOn("not_reported_purchases", "sales", "line")).toBe(false);
+    expect(returnLinesFor("not_reported_purchases", "purchase")).toEqual([]);
+    expect(formsFor("not_reported_purchases", "purchase")).toEqual([]);
   });
 
   it("puts VAT codes on lines of their own side and withholding codes on the invoice", () => {
