@@ -165,6 +165,13 @@ describe.skipIf(!url)("returns: five-step sign-off, filed copy, Books entries, e
     });
   });
 
+  describe("settled returns", () => {
+    it("treat Filed & paid ('filed') as filed and paid", async () => {
+      const r = (await db.query(`select private.filing_settled('filed') as f, private.filing_settled('owner_approved') as a`)).rows[0];
+      expect(r).toEqual({ f: true, a: false });
+    });
+  });
+
   describe("Books of the first quarter", () => {
     it("are posted, and a return cannot be prepared until its months are locked", async () => {
       await invoice(remits, {

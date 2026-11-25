@@ -249,9 +249,9 @@ describe.skipIf(!url)("returns from the Books by tax code", () => {
       ]);
     });
 
-    it("counts a 0619-E once it is paid, and a filed but unpaid one not yet", async () => {
-      await db.query(`update public.filing_instances set status = 'paid' where id = $1`, [filing["0619-E-01"]]);
-      await db.query(`update public.filing_instances set status = 'filed' where id = $1`, [filing["0619-E-02"]]);
+    it("counts a 0619-E once it is Filed & paid ('filed', five-step sign-off), and an approved one not yet", async () => {
+      await db.query(`update public.filing_instances set status = 'filed' where id = $1`, [filing["0619-E-01"]]);
+      await db.query(`update public.filing_instances set status = 'owner_approved' where id = $1`, [filing["0619-E-02"]]);
       expect(await remitted()).toEqual([
         { month: "2026-01", period_label: "January 2026", settled: true, remitted: "3260" },
         { month: "2026-02", period_label: "February 2026", settled: false, remitted: "0" },
