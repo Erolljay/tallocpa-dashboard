@@ -2154,9 +2154,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/actions.ts": {
-    "mtime": 1795556117.8957388,
-    "seen": 1795565923.2265525,
-    "ast_hash": "487c02a560b5f6a89e17e91b11489830",
+    "mtime": 1795574059.8613987,
+    "seen": 1795574180.2036452,
+    "ast_hash": "3fcbda22bdb75db50d3d92720ad0e12d",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/export/route.ts": {
@@ -2166,15 +2166,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/forms.tsx": {
-    "mtime": 1795556117.8957388,
-    "seen": 1795565923.2265568,
-    "ast_hash": "5bbbc159d3f0b5d4bca4c305db79a29e",
+    "mtime": 1795574059.8610108,
+    "seen": 1795574180.2037015,
+    "ast_hash": "e4f82807fca802ffce2337b3b9ee0c15",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/journal/new/page.tsx": {
-    "mtime": 1795556117.8961687,
-    "seen": 1795565923.2265587,
-    "ast_hash": "c827789f384d6d0382c562faecdec490",
+    "mtime": 1795574059.860465,
+    "seen": 1795574180.2037048,
+    "ast_hash": "27507e8f1b4ea5919ae650816dd63657",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/page.tsx": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795573766.9763904,
-    "seen": 1795573777.1919591,
-    "ast_hash": "f91de8ea1c6a17e77b60e3b2a92a4142",
+    "mtime": 1795574144.912916,
+    "seen": 1795574180.2161915,
+    "ast_hash": "8e93b4d9ee262eaf75b950f55882971f",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2736,9 +2736,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/actions.ts": {
-    "mtime": 1795573620.7590556,
-    "seen": 1795573777.1805043,
-    "ast_hash": "524bd489d1d7128c826157bb5305b930",
+    "mtime": 1795574084.8807998,
+    "seen": 1795574180.2049365,
+    "ast_hash": "db7068bcffba1dc91e864570a6c1c46e",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/explain-form.tsx": {
@@ -2748,15 +2748,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/page.tsx": {
-    "mtime": 1795573673.6524215,
-    "seen": 1795573777.180548,
-    "ast_hash": "d742a2626b75dd3757a29e837a8e0c56",
+    "mtime": 1795574084.8814368,
+    "seen": 1795574180.2049887,
+    "ast_hash": "6aa4a49868eaa75b23f41a4cc1e8d099",
     "semantic_hash": ""
   },
   "src/lib/workpapers/load.ts": {
-    "mtime": 1795573595.0652547,
-    "seen": 1795573777.1907887,
-    "ast_hash": "043ece98d03cab1aee2ec379dffda617",
+    "mtime": 1795574084.8804433,
+    "seen": 1795574180.215261,
+    "ast_hash": "b0a948658053afa26ddaf1798f74d8cf",
     "semantic_hash": ""
   },
   "src/lib/workpapers/tieouts.test.ts": {
@@ -2856,9 +2856,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/workpapers/review-forms.tsx": {
-    "mtime": 1795573620.7630556,
-    "seen": 1795573777.180551,
-    "ast_hash": "1738e5dae6fbec600b16c70319229f4a",
+    "mtime": 1795574084.881088,
+    "seen": 1795574180.2049928,
+    "ast_hash": "584b855f09ebbab5bb2d209c2ab70b2d",
     "semantic_hash": ""
   },
   "src/lib/workpapers/review.test.ts": {
@@ -2877,6 +2877,12 @@
     "mtime": 1795573707.2990606,
     "seen": 1795573777.1914368,
     "ast_hash": "75fc8d19844080a8017e98e9f79e3bc9",
+    "semantic_hash": ""
+  },
+  "supabase/tests/adjustments.test.ts": {
+    "mtime": 1795574110.3470845,
+    "seen": 1795574180.215445,
+    "ast_hash": "20c97e1c01305997101d23ae86700ed2",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

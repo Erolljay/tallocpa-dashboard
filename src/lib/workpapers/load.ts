@@ -41,6 +41,21 @@ export interface PeriodFile {
   activity: MonthActivity;
   signoffs: Signoff[];
   notes: ReviewNote[];
+  adjustments: Adjustment[];
+}
+
+/** An adjustment of the month (a journal entry marked as one; recommendation 2). */
+export interface Adjustment {
+  entryId: string;
+  date: string;
+  memo: string;
+  reference: string | null;
+  kind: string;
+  reason: string;
+  documentId: string | null;
+  amount: number;
+  reversed: boolean;
+  tickedAt: string | null;
 }
 
 export interface ReviewNote {
@@ -101,6 +116,18 @@ export async function loadPeriodFile(db: SupabaseClient, clientId: string, month
     explanations[n.tie] = n.explanation;
     explainedBy[n.tie] = { at: n.explained_at };
   }
+  const { data: adjRows } = await db
+    .from("adjustments")
+    .select("entry_id, entry_date, kind, reason, document_id, ticked_at, journal_entries(memo, reference, status, journal_lines(debit))")
+    .eq("client_id", clientId).gte("entry_date", month).lte("entry_date", to).order("entry_date");
+  const adjustments: Adjustment[] = ((adjRows ?? []) as unknown as {
+    entry_id: string; entry_date: string; kind: string; reason: string; document_id: string | null; ticked_at: string | null;
+    journal_entries: { memo: string; reference: string | null; status: string; journal_lines: { debit: string | number }[] } | null;
+  }[]).map((a) => ({
+    entryId: a.entry_id, date: String(a.entry_date).slice(0, 10), memo: a.journal_entries?.memo ?? "", reference: a.journal_entries?.reference ?? null,
+    kind: a.kind, reason: a.reason, documentId: a.document_id, tickedAt: a.ticked_at, reversed: a.journal_entries?.status === "reversed",
+    amount: (a.journal_entries?.journal_lines ?? []).reduce((s2, l) => s2 + c(l.debit), 0),
+  }));
   const activity: MonthActivity = {
     payroll: payroll != null,
     certificatesReceived: lines.some((l) => l.kind === "cwt_received"),
@@ -110,6 +137,7 @@ export async function loadPeriodFile(db: SupabaseClient, clientId: string, month
   return {
     month, lines, quarterToDate: all, ledger, payroll, assets,
     ties: tieOuts({ month: lines, quarterToDate: all, ledger, payroll, assets, explanations }), explainedBy, activity,
+    adjustments,
     signoffs: ((signRows ?? []) as { ref: SignedRef; prepared_at: string | null; reviewed_at: string | null }[]).map((r) => ({ ref: r.ref, preparedAt: r.prepared_at, reviewedAt: r.reviewed_at })),
     notes: ((noteRows ?? []) as { id: string; ref: SignedRef; note: string; raised_at: string; response: string | null; responded_at: string | null; cleared_at: string | null }[]).map((n) => ({
       id: n.id, ref: n.ref, note: n.note, raisedAt: n.raised_at, response: n.response, respondedAt: n.responded_at, clearedAt: n.cleared_at,

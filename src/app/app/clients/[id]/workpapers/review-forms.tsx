@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Button, Input, Select, Textarea } from "@/components/ui";
 import { SIGNED_REFS, type SignedRef } from "@/lib/workpapers/review";
-import { noteAction, raiseNoteAction, signWorkpaperAction, type ExplainState } from "./actions";
+import { noteAction, raiseNoteAction, signWorkpaperAction, tickAdjustmentAction, type ExplainState } from "./actions";
 
 function Msg({ s }: { s: ExplainState }) {
   if (s.error) return <span role="alert" className="text-caption-1-regular text-text-error-primary">{s.error}</span>;
@@ -73,5 +73,15 @@ export function NoteActions({ clientId, noteId, open, canReview, response }: { c
         </form>
       )}
     </div>
+  );
+}
+
+export function TickButton({ clientId, entryId, ticked }: { clientId: string; entryId: string; ticked: boolean }) {
+  const [state, run, pending] = useActionState(() => tickAdjustmentAction(clientId, entryId, !ticked), {} as ExplainState);
+  return (
+    <form action={run} className="flex items-center gap-2">
+      <Button type="submit" size="sm" variant={ticked ? "ghost" : "primary"} disabled={pending}>{ticked ? "Take tick back" : "Tick as reviewed"}</Button>
+      <Msg s={state} />
+    </form>
   );
 }

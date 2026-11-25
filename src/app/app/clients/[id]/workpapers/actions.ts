@@ -53,3 +53,12 @@ export async function noteAction(clientId: string, noteId: string, action: "resp
   revalidatePath(`/app/clients/${clientId}/workpapers`);
   return { ok: action === "respond" ? "Answer saved." : action === "clear" ? "Cleared." : "Reopened." };
 }
+
+/** The reviewer ticks an adjustment as reviewed, or takes the tick back. */
+export async function tickAdjustmentAction(clientId: string, entryId: string, ticked: boolean): Promise<ExplainState> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("tick_adjustment", { p_entry: entryId, p_ticked: ticked });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/clients/${clientId}/workpapers`);
+  return { ok: ticked ? "Ticked." : "Tick taken back." };
+}

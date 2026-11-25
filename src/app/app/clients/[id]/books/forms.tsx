@@ -183,8 +183,18 @@ export function OpeningUpload({ clientId }: { clientId: string }) {
 // ---------------------------------------------------------------------------
 // Manual journal entry.
 // ---------------------------------------------------------------------------
-export function EntryForm({ clientId, accounts, minDate }: { clientId: string; accounts: LedgerAccount[]; minDate: string }) {
+/** Adjustment kinds (recommendation 2): an adjustment is only ever a journal entry, never a typed figure. */
+const ADJUSTMENT_KINDS = {
+  disallowance: "Disallowance (e.g. input VAT or an expense not allowed)",
+  reclassification: "Reclassification to another account",
+  accrual: "Accrual or deferral",
+  correction: "Correction of an error",
+  other: "Other",
+} as const;
+
+export function EntryForm({ clientId, accounts, minDate, documents = [] }: { clientId: string; accounts: LedgerAccount[]; minDate: string; documents?: { id: string; label: string }[] }) {
   const [state, action, pending] = useActionState(postEntryAction.bind(null, clientId), {} as FormState);
+  const [adjustment, setAdjustment] = useState(false);
   const [rows, setRows] = useState(4);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const e = state.fieldErrors ?? {};
@@ -205,6 +215,31 @@ export function EntryForm({ clientId, accounts, minDate }: { clientId: string; a
         <Field label="Date" htmlFor="date" error={e.date}><Input id="date" name="date" type="date" min={minDate} required /></Field>
         <Field label="Explanation" htmlFor="memo" error={e.memo}><Input id="memo" name="memo" required placeholder="e.g. Depreciation for January 2027" /></Field>
         <Field label="Reference" htmlFor="reference"><Input id="reference" name="reference" placeholder="JV-0001" /></Field>
+      </div>
+      <div className="space-y-3 rounded-2xl bg-background-secondary-default p-3">
+        <label className="flex items-center gap-2 text-body-medium text-text-primary">
+          <input type="checkbox" name="is_adjustment" checked={adjustment} onChange={(x) => setAdjustment(x.target.checked)} className="size-4 accent-accent-600" />
+          This is an adjustment (the reviewer ticks it in the workpapers)
+        </label>
+        {adjustment && (
+          <div className="grid gap-3 sm:grid-cols-[16rem_1fr]">
+            <Field label="Kind" htmlFor="adjustment_kind" error={e.adjustment_kind}>
+              <Select id="adjustment_kind" name="adjustment_kind" defaultValue="" required>
+                <option value="" disabled>Choose…</option>
+                {Object.entries(ADJUSTMENT_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </Select>
+            </Field>
+            <Field label="Reason" htmlFor="adjustment_reason" error={e.adjustment_reason}>
+              <Input id="adjustment_reason" name="adjustment_reason" required placeholder="Why the figures change, for the reviewer and the file" />
+            </Field>
+            <Field label="Supporting document" htmlFor="adjustment_document" hint="Optional: an uploaded document of this client.">
+              <Select id="adjustment_document" name="adjustment_document" defaultValue="" className="sm:col-span-2">
+                <option value="">None</option>
+                {documents.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+              </Select>
+            </Field>
+          </div>
+        )}
       </div>
       <div className="space-y-3">
         {Array.from({ length: rows }, (_, i) => (
@@ -233,7 +268,7 @@ export function EntryForm({ clientId, accounts, minDate }: { clientId: string; a
         </p>
       </div>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
-      <Button type="submit" disabled={pending || totals.dr === 0 || totals.dr !== totals.cr}>{pending ? "Posting…" : "Post entry"}</Button>
+      <Button type="submit" disabled={pending || totals.dr === 0 || totals.dr !== totals.cr}>{pending ? "Posting…" : adjustment ? "Post adjustment" : "Post entry"}</Button>
     </form>
   );
 }

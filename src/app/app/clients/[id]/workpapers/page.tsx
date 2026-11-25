@@ -15,7 +15,7 @@ import { blockingTies, TIES_FOR_FORM, type TieOut, type TieStatus } from "@/lib/
 import { cx } from "@/utils/cx";
 import { refsToSign, SIGNED_REFS, type SignedRef, type Signoff } from "@/lib/workpapers/review";
 import { ExplainForm } from "./explain-form";
-import { NoteActions, RaiseNoteForm, SignButtons } from "./review-forms";
+import { NoteActions, RaiseNoteForm, SignButtons, TickButton } from "./review-forms";
 
 export default function WorkpapersPage(props: PageProps<"/app/clients/[id]/workpapers">) {
   return (
@@ -86,6 +86,7 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
   const needed = new Set(refsToSign(file.activity));
   const index: { ref: string; title: string; detail: string; href?: string; tone?: "done" | "blocked" | "neutral" }[] = [
     { ref: "0", title: "Lead: returns of the period", detail: `${(filings ?? []).length} return${(filings ?? []).length === 1 ? "" : "s"} cover ${showMonth(first)}`, href: "#lead" },
+    { ref: "ADJ", title: "Adjustments (journal entries marked as adjustments)", detail: file.adjustments.length ? `${file.adjustments.length} · ${file.adjustments.filter((a) => !a.tickedAt && !a.reversed).length} to tick` : "None this month", href: "#adjustments", tone: file.adjustments.some((a) => !a.tickedAt && !a.reversed) ? "blocked" : file.adjustments.length ? "done" : undefined },
     { ref: "0-1", title: "Review notes", detail: openNotes.length ? `${openNotes.length} open` : file.notes.length ? "All cleared" : "None raised", href: "#notes", tone: openNotes.length ? "blocked" : "done" },
     { ref: "0-2", title: "Tie-outs T-1 to T-10", detail: open.length ? `${open.length} to explain` : "Nothing to explain", href: "#tieouts", tone: open.length ? "blocked" : "done" },
     { ref: "10", title: "Revenue · sales register", detail: `${s.count} line${s.count === 1 ? "" : "s"} · net receipts ${amt(s.net)}`, href: register },
@@ -161,6 +162,29 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
               </ul>
             )}
             {canAct && <RaiseNoteForm clientId={id} month={first} refs={Object.keys(SIGNED_REFS) as SignedRef[]} />}
+          </Card>
+        </section>
+
+        <section id="adjustments">
+          <Card title="Adjustments" actions={<LinkButton href={`/app/clients/${id}/books/journal/new`} variant="secondary" size="sm">Create journal entry</LinkButton>}>
+            <p className="mb-3 text-caption-1-regular text-text-tertiary">An adjustment is only ever a journal entry: create one and mark it as an adjustment, with its kind, reason and support. The reviewer ticks each one; 0-2 cannot be reviewer-signed until they are.</p>
+            {file.adjustments.length === 0 ? (
+              <p className="text-body-regular text-text-secondary">No adjustments in {showMonth(first)}.</p>
+            ) : (
+              <ul className="divide-y divide-separator-border">
+                {file.adjustments.map((a, i) => (
+                  <li key={a.entryId} className="flex flex-wrap items-start gap-x-4 gap-y-2 py-3">
+                    <span className="w-14 shrink-0 text-body-medium tabular-nums text-text-primary">ADJ {i + 1}</span>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-body-regular text-text-primary">{a.memo}{a.reference ? ` · ${a.reference}` : ""} · {formatAmount(a.amount)}</p>
+                      <p className="text-caption-1-regular text-text-secondary">{a.date} · {a.kind} · {a.reason}{a.documentId && <> · <Link href={`/app/documents/${a.documentId}`} className="text-button-ghost-foreground hover:underline">support</Link></>}</p>
+                    </div>
+                    {a.reversed ? <Badge>Reversed</Badge> : a.tickedAt ? <Badge tone="done">Ticked</Badge> : <Badge tone="waiting">To tick</Badge>}
+                    {canReview && !a.reversed && <TickButton clientId={id} entryId={a.entryId} ticked={Boolean(a.tickedAt)} />}
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </section>
 
