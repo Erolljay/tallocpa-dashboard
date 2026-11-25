@@ -171,6 +171,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 29 | Adjustments | Made only through "Create journal entry", marked as an adjustment with its kind, reason and supporting document; never as a typed figure in a worksheet. |
 | 30 | Email and batch intake | E1 and B1 come later, after the rest of phase 1. |
 | 31 | Onboarding tab | Every client has an Onboarding tab: a checklist (engagement, registration, client access, books, payroll, kickoff) and the client's file with the proposal and the signed contract. Phase 2 attaches the proposal it generates and the e-signed contract to the same list. |
+| 32 | Phase 2 funnel | Built but not live, so it can be tried end to end. The website form (/start) gives an instant quote from the active fee schedule and records a lead. The Owner sends a proposal (the quote plus engagement terms), and the prospect accepts it online by typing their name: an e-signature with time, IP, browser and a hash of what was accepted. The Owner then makes the client, in Onboarding, with the engagement and retainer. Leads → "Open the funnel" makes it public; until then only signed-in staff see the pages, and their leads are marked as tests. Not built yet: emailing the proposal link, and reading a COR uploaded on the form. |
 
 ## Workpaper index
 

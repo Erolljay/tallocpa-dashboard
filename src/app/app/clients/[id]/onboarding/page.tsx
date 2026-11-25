@@ -36,7 +36,7 @@ async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboardi
   const supabase = await supabaseServer();
   const { data: client } = await supabase.from("clients").select("id, name, code, status, fiscal_year_end_month").eq("id", id).maybeSingle();
   if (!client) notFound();
-  const [{ facts, files }, { data: team }, { data: bookkeeping }, { data: staff }, { data: openCase }] = await Promise.all([
+  const [{ facts, files, accepted }, { data: team }, { data: bookkeeping }, { data: staff }, { data: openCase }] = await Promise.all([
     loadOnboarding(supabase, id, client.fiscal_year_end_month),
     supabase.from("staff_assignments").select("user_id").eq("client_id", id),
     supabase.from("engagements").select("id").eq("client_id", id).eq("service_line", "bookkeeping").eq("status", "active").limit(1),
@@ -112,7 +112,14 @@ async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboardi
         <div id="files">
           <Card title="Proposal, contract and other files">
             <div className="space-y-5">
-              {files.length === 0 ? (
+              {accepted && (
+                <p className="rounded-2xl bg-background-secondary-default p-4 text-body-regular text-text-primary">
+                  Proposal and engagement terms accepted online on {fmtDate(accepted.acceptedAt)} by {accepted.acceptedName}
+                  {accepted.acceptedPosition ? `, ${accepted.acceptedPosition}` : ""} (e-signature).{" "}
+                  <a href={`/proposal/${accepted.token}`} target="_blank" rel="noreferrer" className="underline">Open the signed proposal</a>
+                </p>
+              )}
+              {files.length === 0 && !accepted ? (
                 <p className="text-body-regular text-text-secondary">Nothing attached yet.</p>
               ) : (
                 <ul className="divide-y divide-separator-border">
