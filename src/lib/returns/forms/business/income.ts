@@ -76,9 +76,15 @@ function typedOrPrior(inp: Inputs, ctx: WorksheetContext, form: string, inputKey
 
 // ── Income and deductions: from the books, else from documents ──
 
-/** The client's books cover the taxable year to date (books started on or before its first day). */
+/**
+ * The client's books cover the taxable year to date: they started on or before its first
+ * day, or part-way through it with the year to date's income and expenses in the opening
+ * balances (a mid-year cut-off; src/lib/ledger/cutoff.ts).
+ */
 export function booksCover(ctx: Pick<WorksheetContext, "ledger" | "filing" | "client">): boolean {
-  return !!ctx.ledger && ctx.ledger.booksStart <= taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth).start;
+  if (!ctx.ledger) return false;
+  const start = taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth).start;
+  return ctx.ledger.booksStart <= start || (ctx.ledger.openingYtd === true && ctx.ledger.booksStart <= ctx.filing.periodEnd);
 }
 
 export interface IncomeSource {
@@ -171,7 +177,8 @@ export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, for
   const errors: string[] = [];
   const warnings: string[] = [];
   if (cosQ > costsQ) errors.push(`Cost of sales (₱${peso(cosQ)}) is more than this quarter's purchase receipts (₱${peso(costsQ)}).`);
-  if (ctx.ledger) warnings.push(`The books start on ${ctx.ledger.booksStart}, after the start of the taxable year: figures come from documents for this year.`);
+  if (ctx.ledger)
+    warnings.push(`The books start on ${ctx.ledger.booksStart}, after the start of the taxable year, and the opening balances carry no income or expenses for the year to date: figures come from documents. Enter the year to date's income and expenses in the opening balances to use the books.`);
   return {
     fromBooks: false,
     salesQ,

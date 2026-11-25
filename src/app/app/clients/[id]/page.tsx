@@ -9,6 +9,7 @@ import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { CASE_KINDS } from "@/lib/registration/steps";
 import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
+import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
 import { AssignForm, ClientUserForm, EngagementForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
@@ -63,20 +64,20 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={statusTone[client.status as keyof typeof statusTone]}>{statusLabel[client.status]}</Badge>
-            {(isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)) && (
-              <>
-                <LinkButton href={`/app/clients/${id}/register`} variant="secondary">Register</LinkButton>
-                <LinkButton href={`/app/clients/${id}/workpapers`} variant="secondary">Workpapers</LinkButton>
-                <LinkButton href={`/app/clients/${id}/fixed-assets`} variant="secondary">Fixed assets</LinkButton>
-                {(engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active") && <LinkButton href={`/app/clients/${id}/books`} variant="secondary">Books</LinkButton>}
-                <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>
-              </>
-            )}
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
             {isOwner && client.status === "onboarding" && !openNewBusiness && <StatusButton clientId={id} to="active" label="Mark active" />}
           </div>
         }
       />
+      <ClientTabs
+        clientId={id}
+        active="overview"
+        work={isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)}
+        books={(engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active")}
+      />
+      {client.status === "onboarding" && (
+        <div className="mb-6"><Notice tone="waiting">This client is onboarding. The <Link href={`/app/clients/${id}/onboarding`} className="underline">Onboarding tab</Link> has the checklist, the proposal and the signed contract.</Notice></div>
+      )}
       {pageError === "assign_failed" && (
         <div className="mb-6"><Notice tone="blocked">The client was saved, but the preparer or reviewer could not be assigned. Assign them under Team below.</Notice></div>
       )}

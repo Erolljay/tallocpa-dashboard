@@ -13,6 +13,7 @@ import { DocumentUpload } from "@/components/document-upload";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 import { AmendFilingForm } from "../amend-form";
+import { ApprovalMemo } from "./approval-memo";
 
 export default function FilingPage(props: PageProps<"/app/filings/[id]">) {
   return (
@@ -117,6 +118,18 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
 
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-6">
+          {/* W4: the approval memo, for the reviewer and the Owner once the return is reviewed. */}
+          {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "proof_uploaded" && (
+            <Suspense fallback={<Skeleton rows={3} />}>
+              <ApprovalMemo
+                db={supabase}
+                filing={{ id: f.id, clientId: f.client_id, obligationId: f.obligation_id, form: f.form, periodStart: f.period_start, periodEnd: f.period_end, taxDue: f.tax_due == null ? null : Number(f.tax_due) }}
+                preparedBy={nameOf.get(preparedBy ?? "") ?? null}
+                reviewedBy={nameOf.get([...history].reverse().find((e) => e.action === "review")?.actor ?? "") ?? null}
+              />
+            </Suspense>
+          )}
+
           <Card title="Sign-off">
             {/* One row of steps: scrolls sideways on phones, shares the width on wider screens. */}
             <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">

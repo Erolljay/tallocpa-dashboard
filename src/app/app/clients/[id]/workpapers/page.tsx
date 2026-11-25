@@ -234,6 +234,7 @@ async function Workpapers({ params, searchParams }: Pick<PageProps<"/app/clients
           <LinkButton href={`/app/clients/${id}`} variant="secondary">Back to the client</LinkButton>
           <LinkButton href={register} variant="secondary">Register</LinkButton>
           <LinkButton href={`/app/clients/${id}/books`} variant="secondary">Books</LinkButton>
+          <LinkButton href={`/app/clients/${id}/workpapers/binder?month=${month}`} variant="secondary">Binder (print or PDF)</LinkButton>
         </div>
       </div>
     </>

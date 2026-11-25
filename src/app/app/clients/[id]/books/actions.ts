@@ -6,6 +6,7 @@ import { templatePayload } from "@/lib/ledger/coa";
 import { booksAccess, loadAccounts, loadStatements } from "@/lib/ledger/data";
 import { REPORT_KINDS, type ReportKind } from "@/lib/ledger/statements";
 import { checkOpening, openingPayload, type CheckedOpening } from "@/lib/ledger/opening";
+import { cutoffOf } from "@/lib/ledger/cutoff";
 import { readOpeningFile } from "@/lib/ledger/opening-xlsx";
 import { checkUpdate, fromWorkbookData, updatePayload, type CheckedUpdate } from "@/lib/ledger/arap";
 import { readUpdateWorkbook } from "@/lib/ledger/arap-xlsx";
@@ -86,11 +87,12 @@ async function checkOpeningFile(clientId: string, form: FormData) {
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose the opening balances workbook (.xlsx)." } as const;
   if (file.size > 5 * 1024 * 1024) return { error: "The file is larger than 5 MB." } as const;
-  const { supabase, books } = await booksAccess(clientId);
+  const { supabase, books, client } = await booksAccess(clientId);
   if (!books) return { error: "Set up the books first." } as const;
   const read = await readOpeningFile(await file.arrayBuffer());
   if ("error" in read) return { error: read.error } as const;
-  const checked = checkOpening(read.tb, read.items, await loadAccounts(supabase, clientId));
+  const cutoff = cutoffOf(books.booksStart, client.fiscal_year_end_month);
+  const checked = checkOpening(read.tb, read.items, await loadAccounts(supabase, clientId), { atYearStart: cutoff.atYearStart });
   return { supabase, checked } as const;
 }
 
@@ -334,4 +336,15 @@ export async function closeYearAction(clientId: string, yearEnd: string, partner
   if (error) return { error: friendly(error.message) };
   revalidatePath(path(clientId), "layout");
   return { ok: "Closed." };
+}
+
+/** Moves the books start (the cut-off) while only the opening balances are in the books; the opening is removed. */
+export async function changeBooksStartAction(clientId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const month = String(form.get("books_start") ?? "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return { error: "Choose the first month of the books." };
+  const { error } = await supabase.rpc("change_books_start", { p_client: clientId, p_start: `${month}-01` });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath(path(clientId), "layout");
+  return { ok: "Books start changed. Enter the opening balances as of the new cut-off." };
 }

@@ -20,6 +20,7 @@ export interface BoardRow {
   clientCode: string;
   form: string;
   periodLabel: string;
+  periodEnd: IsoDate;
   dueDate: IsoDate;
   status: FilingStatus;
   preparer: { userId: string; name: string } | null;
@@ -105,6 +106,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
       clientCode: f.clients?.code ?? "",
       form: f.form,
       periodLabel: f.period_label,
+      periodEnd: f.period_end,
       dueDate: f.due_date,
       status: f.status,
       preparer,

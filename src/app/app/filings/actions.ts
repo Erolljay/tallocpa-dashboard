@@ -86,8 +86,9 @@ async function tieOutsBlocking(supabase: Awaited<ReturnType<typeof supabaseServe
   const { data: f } = await supabase.from("filing_instances").select("client_id, form, period_start, period_end").eq("id", filingId).maybeSingle();
   if (!f || !(TIES_FOR_FORM[f.form] ?? []).length) return null;
   const open: string[] = [];
-  // Workpapers start with the January 2027 cycle (decision 26); earlier periods are not held.
-  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= BOOKS_GO_LIVE)) {
+  // Workpapers start with the client's books (any cut-off), and never before the January 2027 cycle.
+  const from = await workpapersFrom(supabase, f.client_id);
+  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= from)) {
     const file = await loadPeriodFile(supabase, f.client_id, m);
     for (const t of blockingTies(file.ties, f.form)) open.push(`${t.id} (${showMonth(m)})`);
   }
@@ -104,11 +105,19 @@ async function reviewHolding(supabase: Awaited<ReturnType<typeof supabaseServer>
   const { data: f } = await supabase.from("filing_instances").select("client_id, form, period_start, period_end").eq("id", filingId).maybeSingle();
   if (!f || !(REFS_FOR_FORM[f.form] ?? []).length) return null;
   const gaps: string[] = [];
-  // Workpapers start with the January 2027 cycle (decision 26); earlier periods are not held.
-  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= BOOKS_GO_LIVE)) {
+  // Workpapers start with the client's books (any cut-off), and never before the January 2027 cycle.
+  const from = await workpapersFrom(supabase, f.client_id);
+  for (const m of monthsOf(f.period_start, f.period_end).filter((x) => x >= from)) {
     const file = await loadPeriodFile(supabase, f.client_id, m);
     const open = file.notes.filter((n) => !n.clearedAt).map((n) => n.ref);
     for (const g of reviewGaps(f.form, file.activity, file.signoffs, open)) gaps.push(`${showMonth(m)}: ${g}`);
   }
   return gaps.length ? `Before marking this return reviewed, sign its workpapers in the client's Workpapers: ${gaps.join("; ")}.` : null;
+}
+
+/** The first month held by the workpaper gates: the client's books start, not before the go-live cycle. */
+async function workpapersFrom(supabase: Awaited<ReturnType<typeof supabaseServer>>, clientId: string): Promise<string> {
+  const { data } = await supabase.from("client_books").select("books_start").eq("client_id", clientId).maybeSingle();
+  const start = data?.books_start ? `${String(data.books_start).slice(0, 7)}-01` : null;
+  return start && start > BOOKS_GO_LIVE ? start : BOOKS_GO_LIVE;
 }

@@ -2,6 +2,7 @@
 
 import {
   RiBarChartBoxLine,
+  RiCheckboxMultipleLine,
   RiCalendarCheckLine,
   RiCalendarScheduleLine,
   RiFileList3Line,
@@ -20,6 +21,7 @@ import { cx } from "@/utils/cx";
 
 const items = {
   dashboard: { href: "/app", label: "Dashboard", icon: RiHomeLine },
+  work: { href: "/app/work", label: "My work", icon: RiCheckboxMultipleLine },
   clients: { href: "/app/clients", label: "Clients", icon: RiGroupLine },
   deadlines: { href: "/app/deadlines", label: "Deadlines", icon: RiCalendarScheduleLine },
   documents: { href: "/app/documents", label: "Documents", icon: RiFileList3Line },

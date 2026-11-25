@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, Select } from "@/components/ui";
 import { setupMissingChartsAction } from "./actions";
 
 /**
@@ -22,6 +22,13 @@ export function SetupCharts({ missing, defaultMonth }: { missing: string[]; defa
         <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary" htmlFor="charts-start">
           Books start
           <Input id="charts-start" name="books_start" type="month" required defaultValue={defaultMonth} className="w-44" />
+        </label>
+        <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary" htmlFor="charts-rule">
+          For each client
+          <Select id="charts-rule" name="start_rule" defaultValue="same" className="w-auto">
+            <option value="same">Start in this month</option>
+            <option value="taxable_year">Start of its taxable year that includes this month (fiscal-year clients)</option>
+          </Select>
         </label>
         <Button type="submit" size="sm" disabled={pending}>{pending ? "Setting up…" : "Set up account titles for all"}</Button>
       </form>

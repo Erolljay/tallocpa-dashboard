@@ -298,6 +298,8 @@ Goal: show which clients look like LOA targets to BIR, early enough to fix the c
 4. Portal invitation is emailed to client users → consent screen → first login.
 5. (1B) Opening trial balance is imported.
 
+The client's **Onboarding** tab tracks these steps as a checklist. Most items follow the data. Staff tick the rest: BIR eFiling access, returns already filed this year, and the kickoff meeting. The tab also holds the proposal and the signed contract (engagement letter, with its signing date).
+
 ### 4.2 Assigning an uploaded document to a period
 
 - Period = the month of the **document date**, if that period is still open and the upload is before its cutoff.
