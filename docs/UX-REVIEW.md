@@ -71,7 +71,7 @@ Grouped by the month's flow, not by service, because bookkeeping and tax complia
 | Services | Registrations | As built |
 | Firm (Owner) | Collections · Scores · Staff · Settings | As built |
 
-**Closing the month (books).** Steps per client and month: documents in (client confirmed or cutoff), documents reviewed, entries confirmed, payroll posted, depreciation run, tie-outs clean, then close. Target: close by the 8th, before the month's first returns. Staff can reopen a closed month until a return covering it is filed; filing locks it (as built).
+**Closing the month (books).** Steps per client and month: documents in (client confirmed or cutoff), documents reviewed, entries confirmed, payroll posted, depreciation run, tie-outs clean, then close. Target: close by the 10th (decided); the client cutoff stays the 5th. Staff can reopen a closed month until a return covering it is filed; filing locks it (as built).
 
 ## Data flow: one register
 
@@ -160,6 +160,9 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 18 | Missing-invoice check | Blocks "I've sent everything" until answered, as in the mock. |
 | 19 | Undo after confirming | Allowed until the cutoff; after that staff reopen the month. |
 | 20 | Mailbox | Google Workspace; invoices+CODE@tallocpa.com for people with several businesses. |
+| 21 | Books close | By the 10th; the client's document cutoff stays the 5th. |
+| 22 | Financial statements | Monthly or quarterly, set per client. |
+| 23 | Registrations | Keep it in the sidebar. |
 
 ## Workpaper index
 
