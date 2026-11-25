@@ -105,7 +105,7 @@ describe.skipIf(!url)("books transactions", () => {
   describe("tax codes", () => {
     it("are seeded with their kinds, rates and ATCs", async () => {
       const rows = (await as(STAFF, `select code, kind, rate::text, atc, payee_type, applies_to from public.tax_codes order by sort_order`)).rows;
-      expect(rows).toHaveLength(21);
+      expect(rows).toHaveLength(22);
       expect(rows.find((r) => r.code === "OVAT12")).toMatchObject({ kind: "output_vat", rate: "0.1200", applies_to: "sales" });
       expect(rows.find((r) => r.code === "IVAT12-CG")).toMatchObject({ kind: "input_vat_capital", applies_to: "purchases" });
       expect(rows.find((r) => r.code === "WI010")).toMatchObject({ kind: "withholding", rate: "0.1000", atc: "WI010", payee_type: "individual", applies_to: "both" });
@@ -182,6 +182,13 @@ describe.skipIf(!url)("books transactions", () => {
       const nr = (await db.query(`select kind, rate, applies_to from public.tax_codes where code = 'NR'`)).rows[0];
       expect(nr).toEqual({ kind: "not_reported_purchases", rate: "0.0000", applies_to: "purchases" });
       await expect(saveInvoice({ kind: "sales", party_name: "X", issue_date: "2026-03-05", lines: [{ account_id: acct.sales, amount: "100", tax_code_id: code.NR }] })).rejects.toThrow(/cannot go on a sales invoice/);
+      const penalty = await saveInvoice({
+        kind: "purchase", party_name: "Bureau of Internal Revenue", reference: "Penalty 0619-E Aug", issue_date: "2026-03-06",
+        lines: [{ account_id: acct.office_supplies, amount: "1000", tax_code_id: code.ND }],
+      });
+      const pv = await invoice(penalty);
+      expect(pv).toMatchObject({ tax_total: "0.00", total: "1000.00" });
+      expect(await lines(pv.journal_entry_id)).toEqual([["office_supplies", "1000.00", "0.00"], ["accounts_payable", "0.00", "1000.00"]]);
     });
 
     it("splits VATable and exempt lines, and books the SC/PWD discount and VAT withheld by a government customer", async () => {

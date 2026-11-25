@@ -3,7 +3,7 @@ import { appliesTo, canGoOn, formsFor, placeOf, RETURN_LINES, returnLinesFor, TA
 
 describe("tax code kinds", () => {
   it("covers every kind the database allows, each with the return lines it feeds", () => {
-    expect(TAX_CODE_KINDS).toHaveLength(13);
+    expect(TAX_CODE_KINDS).toHaveLength(14);
     for (const k of TAX_CODE_KINDS) {
       // Purchases with no invoice are deliberately on no BIR list or return.
       if (k !== "not_reported_purchases" && k !== "non_vat_purchases") for (const side of appliesTo(k)) expect(returnLinesFor(k, side).length, `${k} on ${side}`).toBeGreaterThan(0);
@@ -17,6 +17,12 @@ describe("tax code kinds", () => {
     expect(canGoOn("not_reported_purchases", "sales", "line")).toBe(false);
     expect(returnLinesFor("not_reported_purchases", "purchase")).toEqual([]);
     expect(formsFor("not_reported_purchases", "purchase")).toEqual([]);
+  });
+
+  it("keeps non-deductible expenses off every VAT return and list, flagged for the income tax add-back", () => {
+    expect(appliesTo("non_deductible")).toEqual(["purchase"]);
+    expect(formsFor("non_deductible", "purchase")).toEqual(["1702Q", "1701Q"]);
+    for (const f of ["2550Q", "SLP", "SAWT", "QAP"]) expect(formsFor("non_deductible", "purchase")).not.toContain(f);
   });
 
   it("codes a non-VAT client's lines: sales feed the 2551Q, purchases no list", () => {
