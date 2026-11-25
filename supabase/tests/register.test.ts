@@ -12,6 +12,7 @@ import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { templatePayload } from "../../src/lib/ledger/coa";
+import { fromRegisterLine, toSourceDocument, type DocumentRow, type RegisterSourceRow } from "../../src/lib/returns/source";
 
 const url = process.env.TEST_DATABASE_URL;
 const root = path.resolve(import.meta.dirname, "..");
@@ -153,6 +154,23 @@ describe.skipIf(!url)("register: one line per approved document", () => {
     expect(await count(CLIENT_USER)).toBe(0);
     await expect(as(STAFF, `update public.register_lines set net = 0 where client_id = $1`, [client]).then((r) => r.rowCount)).resolves.toBe(0);
     await expect(as(STAFF, `delete from public.register_lines where client_id = $1`, [client]).then((r) => r.rowCount)).resolves.toBe(0);
+  });
+
+  it("gives the worksheets the same figures as the approved documents (slice 2)", async () => {
+    await approved(client, "sales_invoice", { date: "2027-01-22", number: "SI-301", party_name: "ABC", party_tin: ABC, party_address: "Iloilo City", vatable: "1000.00", vat_exempt: "500.00", vat: "120.00", total: "", atc: "wc158", withholding: "10.00" });
+    const docs = (await db.query(
+      `select d.id, d.doc_type, d.document_month::text as document_month, d.status, json_build_object('approved_fields', e.approved_fields) as extractions
+       from public.documents d join public.extractions e on e.document_id = d.id where d.client_id = $1 and d.status = 'posted'`, [client])).rows as DocumentRow[];
+    const lines = (await db.query(
+      `select document_id, kind, month::text as month, line_date::text as line_date, reference, party_name, party_tin, party_address, vatable, vat_exempt, zero_rated, vat, total, atc, withholding, slp_category
+       from public.register_lines where client_id = $1`, [client])).rows as RegisterSourceRow[];
+    expect(lines.length).toBe(docs.length);
+    for (const d of docs) {
+      const l = lines.find((x) => x.document_id === d.id)!;
+      const { slpCategory, ...fromLine } = fromRegisterLine(l);
+      expect(fromLine).toEqual(toSourceDocument(d));
+      expect(slpCategory === null || typeof slpCategory === "string").toBe(true);
+    }
   });
 
   it("accepts documents that came in by email or batch upload", async () => {

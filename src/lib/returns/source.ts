@@ -65,6 +65,54 @@ export function toSourceDocument(row: DocumentRow): SourceDocument | null {
   };
 }
 
+/** A register line as the worksheet loader reads it (migration 20261125000001_register.sql). */
+export interface RegisterSourceRow {
+  document_id: string;
+  kind: "sale" | "purchase" | "cwt_received" | "ewt_issued";
+  month: string;
+  line_date: string | null;
+  reference: string | null;
+  party_name: string | null;
+  party_tin: string | null;
+  party_address: string | null;
+  vatable: string | number;
+  vat_exempt: string | number;
+  zero_rated: string | number;
+  vat: string | number;
+  total: string | number;
+  atc: string | null;
+  withholding: string | number;
+  slp_category: SourceDocument["slpCategory"];
+}
+
+const DOC_TYPE_OF_KIND = { sale: "sales_invoice", purchase: "purchase_receipt", cwt_received: "bir_2307_received", ewt_issued: "bir_2307_issued" } as const;
+
+/**
+ * A register line → SourceDocument (one register, slice 2): the same figures
+ * toSourceDocument reads from the approved document, since the database writes
+ * the line from those fields, plus the line's SLP category.
+ */
+export function fromRegisterLine(r: RegisterSourceRow): SourceDocument {
+  return {
+    id: r.document_id,
+    docType: DOC_TYPE_OF_KIND[r.kind],
+    month: String(r.month).slice(0, 10),
+    date: r.line_date ? String(r.line_date).slice(0, 10) : null,
+    number: text(r.reference),
+    partyName: text(r.party_name),
+    partyTin: text(r.party_tin),
+    partyAddress: text(r.party_address),
+    vatable: amount(r.vatable),
+    vatExempt: amount(r.vat_exempt),
+    zeroRated: amount(r.zero_rated),
+    vat: amount(r.vat),
+    total: amount(r.total),
+    atc: normalizeAtc(text(r.atc)),
+    withholding: amount(r.withholding),
+    slpCategory: r.slp_category ?? null,
+  };
+}
+
 /** "2026-02-14" → "2026-02-01". */
 export const monthOf = (iso: string) => `${iso.slice(0, 7)}-01`;
 

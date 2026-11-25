@@ -9,8 +9,8 @@
 --                     account the document would be booked to)
 --   tax part          VAT status at the line's date and the SLP purchase category
 -- The entries and the tax lines themselves are worked out from the line
--- (src/lib/register/parts.ts). This slice keeps the register in step with the
--- approved documents; later slices point the worksheets and the books at it.
+-- (src/lib/register/parts.ts). The return worksheets read the register
+-- (src/lib/returns/load.ts); the books follow in a later slice.
 --
 -- The register is maintained by the database: a line is written whenever a
 -- document's approved figures, status, month or account title change, and
@@ -34,11 +34,13 @@ create table public.register_lines (
   party_id uuid references public.parties (id) on delete set null,
   party_name text,
   party_tin text,
+  party_address text,
   terms text not null default 'cash' check (terms in ('cash', 'charge')),
   vatable numeric(18, 2) not null default 0,
   vat_exempt numeric(18, 2) not null default 0,
   zero_rated numeric(18, 2) not null default 0,
   vat numeric(18, 2) not null default 0,
+  -- The total as approved (0 when none was read); `net` fills a missing total from the amounts.
   total numeric(18, 2) not null default 0,
   -- SC/PWD discount (sales), VAT withheld by a government payor, other deductions.
   discount numeric(18, 2) not null default 0,
@@ -110,8 +112,6 @@ begin
   v_wv := private.register_amount(f ->> 'vat_withheld');
   v_other := private.register_amount(f ->> 'other_deduction');
   v_disc := private.register_amount(f ->> 'discount');
-  -- As book_document: a missing total is the amounts plus VAT.
-  if v_total <= 0 and v_kind in ('sale', 'purchase') then v_total := v_vatable + v_exempt + v_zero + v_vat; end if;
 
   -- VAT-registered at the line's date: an open 2550Q obligation (as book_document).
   v_vat_reg := exists (
@@ -133,20 +133,21 @@ begin
   if v_kind <> 'purchase' then v_slp := null; end if;
 
   insert into public.register_lines as r (
-    client_id, document_id, kind, source, month, line_date, reference, party_id, party_name, party_tin, terms,
+    client_id, document_id, kind, source, month, line_date, reference, party_id, party_name, party_tin, party_address, terms,
     vatable, vat_exempt, zero_rated, vat, total, discount, vat_withheld, other_deduction, atc, withholding, net,
     account_id, slp_category, vat_registered
   ) values (
     d.client_id, d.id, v_kind, d.source, d.document_month, v_date, nullif(btrim(f ->> 'number'), ''),
-    private.document_party(f ->> 'party_tin'), nullif(btrim(f ->> 'party_name'), ''), nullif(btrim(f ->> 'party_tin'), ''),
+    private.document_party(f ->> 'party_tin'), nullif(btrim(f ->> 'party_name'), ''), nullif(btrim(f ->> 'party_tin'), ''), nullif(btrim(f ->> 'party_address'), ''),
     case when f ->> 'payment_terms' = 'charge' then 'charge' else 'cash' end,
     v_vatable, v_exempt, v_zero, v_vat, v_total, v_disc, v_wv, v_other, nullif(upper(btrim(f ->> 'atc')), ''), v_wh,
-    case when v_kind in ('sale', 'purchase') then v_total - v_wh - v_wv - v_other else 0 end,
+    -- As book_document: a missing total is the amounts plus VAT.
+    case when v_kind in ('sale', 'purchase') then (case when v_total > 0 then v_total else v_vatable + v_exempt + v_zero + v_vat end) - v_wh - v_wv - v_other else 0 end,
     v_account, v_slp, v_vat_reg
   )
   on conflict (document_id) do update set
     kind = excluded.kind, source = excluded.source, month = excluded.month, line_date = excluded.line_date,
-    reference = excluded.reference, party_id = excluded.party_id, party_name = excluded.party_name, party_tin = excluded.party_tin,
+    reference = excluded.reference, party_id = excluded.party_id, party_name = excluded.party_name, party_tin = excluded.party_tin, party_address = excluded.party_address,
     terms = excluded.terms, vatable = excluded.vatable, vat_exempt = excluded.vat_exempt, zero_rated = excluded.zero_rated,
     vat = excluded.vat, total = excluded.total, discount = excluded.discount, vat_withheld = excluded.vat_withheld,
     other_deduction = excluded.other_deduction, atc = excluded.atc, withholding = excluded.withholding, net = excluded.net,

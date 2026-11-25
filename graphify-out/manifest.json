@@ -1482,9 +1482,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/testing.ts": {
-    "mtime": 1795556117.9106123,
-    "seen": 1795565923.2270417,
-    "ast_hash": "27e0a339f50cc17e5e3a4a9d3471a001",
+    "mtime": 1795566231.3771396,
+    "seen": 1795566337.6650622,
+    "ast_hash": "f61fd8b6b8f3ddb55950d168bd2fb79d",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/util.ts": {
@@ -1494,15 +1494,15 @@
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/vat.test.ts": {
-    "mtime": 1795556117.9106123,
-    "seen": 1795565923.2270439,
-    "ast_hash": "d83912ba9093db7fb1512e331af434c4",
+    "mtime": 1795566231.3774285,
+    "seen": 1795566337.66509,
+    "ast_hash": "10e7f3fab9894b66d10cb5bccaba2433",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/vat.ts": {
-    "mtime": 1795556117.9106123,
-    "seen": 1795565923.227045,
-    "ast_hash": "dec67ae0c3d2d0c398bb1ea6f08698c7",
+    "mtime": 1795566193.184904,
+    "seen": 1795566337.6650918,
+    "ast_hash": "063604495a90ff0be8a1052b1a38a723",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/payroll.ts": {
@@ -1584,9 +1584,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/load.ts": {
-    "mtime": 1795556117.9118028,
-    "seen": 1795565923.227063,
-    "ast_hash": "d698524db92bfdc44c32ef99659fc579",
+    "mtime": 1795566182.0246012,
+    "seen": 1795566337.6654203,
+    "ast_hash": "dcaac8261e401a86980a8d02d3397609",
     "semantic_hash": ""
   },
   "src/lib/returns/money.test.ts": {
@@ -1620,15 +1620,15 @@
     "semantic_hash": ""
   },
   "src/lib/returns/source.test.ts": {
-    "mtime": 1795556117.9118028,
-    "seen": 1795565923.2270706,
-    "ast_hash": "3a3d6e89acf835122bc03e28954acca6",
+    "mtime": 1795566231.3781302,
+    "seen": 1795566337.6655283,
+    "ast_hash": "f844e16e2650eb23e6ea63deb118f52d",
     "semantic_hash": ""
   },
   "src/lib/returns/source.ts": {
-    "mtime": 1795556117.9118028,
-    "seen": 1795565923.227072,
-    "ast_hash": "93a98284f38c5c63558bec923f956eb4",
+    "mtime": 1795566182.023257,
+    "seen": 1795566337.6655302,
+    "ast_hash": "3bc50a088ed1bbddf1fde2b6f3a8320e",
     "semantic_hash": ""
   },
   "src/lib/returns/tax-rates.test.ts": {
@@ -1644,9 +1644,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/types.ts": {
-    "mtime": 1795556117.9118028,
-    "seen": 1795565923.2270765,
-    "ast_hash": "e6d3aea8de9a341ab9ec0b7c1a01e737",
+    "mtime": 1795566182.0226948,
+    "seen": 1795566337.6655731,
+    "ast_hash": "73143087db0e7ceb60b04fa6776908fe",
     "semantic_hash": ""
   },
   "src/lib/scores/compliance.ts": {
@@ -2574,27 +2574,27 @@
     "semantic_hash": ""
   },
   "src/lib/register/parts.ts": {
-    "mtime": 1795565757.6786177,
-    "seen": 1795565923.2270107,
-    "ast_hash": "99efe120c25034f839faa2176fee095c",
+    "mtime": 1795566182.0241446,
+    "seen": 1795566337.6645367,
+    "ast_hash": "89eae88d2fc1395a68ce022966d818cd",
     "semantic_hash": ""
   },
   "supabase/tests/register.test.ts": {
-    "mtime": 1795565692.4786139,
-    "seen": 1795565923.2271101,
-    "ast_hash": "49cf183944b12bbd62b582cb42f762dd",
+    "mtime": 1795566242.697189,
+    "seen": 1795566337.6661272,
+    "ast_hash": "ef175fb2e80a923bb8d977668c7c6e64",
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795565282.9505296,
-    "seen": 1795565923.2271338,
-    "ast_hash": "898b2376f13c7ca67d6e83bd4e5fea23",
+    "mtime": 1795565930.7257884,
+    "seen": 1795566337.666522,
+    "ast_hash": "bcbd83efd1dec5bef09e19862d39cd9c",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
-    "mtime": 1795565282.9499314,
-    "seen": 1795565923.227135,
-    "ast_hash": "4444431f2f3373637ee2c388c495d2c9",
+    "mtime": 1795565930.7251337,
+    "seen": 1795566337.6665244,
+    "ast_hash": "cda916ecf4191601bf540ac95a0800cb",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
