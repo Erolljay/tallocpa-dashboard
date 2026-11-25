@@ -329,7 +329,7 @@ describe.skipIf(!url)("database", () => {
       await db.query("begin");
       try {
         await db.query(`update public.clients set payment_mode = 'firm_remits' where id = $1`, [clientA]);
-        await db.query(`insert into public.engagements (client_id, service_line, monthly_retainer, start_date) values ($1, 'tax_compliance', 3000, '2027-01-01')`, [clientA]);
+        await db.query(`insert into public.engagements (client_id, service_line, monthly_retainer, start_date) values ($1, 'tax_compliance', 3000, '2027-02-01')`, [clientA]);
         const ob = async (form: string, frequency: string) =>
           (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, $2, $3, '2027-01-17') returning id`, [clientA, form, frequency])).rows[0].id;
         const filing = async (obligation: string, form: string, due: string, tax: number, status: string) =>
@@ -428,6 +428,53 @@ describe.skipIf(!url)("database", () => {
 
         await expect(as(STAFF, `select * from public.ready_to_bill()`)).rejects.toThrow(/Only the Owner/);
         await expect(as(CLIENT_USER, `select * from public.ready_to_bill()`)).rejects.toThrow(/Only the Owner/);
+      });
+    });
+
+    it("never loses a retainer month: missed months are listed and billed on the next run, each its own due", async () => {
+      await money(async ({ as, admin }) => {
+        // A second engagement, December 2026 to 20 January 2027 (ended), next to the 3,000 one from February 2027.
+        await admin(
+          `insert into public.engagements (client_id, service_line, monthly_retainer, start_date, end_date, status) values ($1, 'bookkeeping', 1000, '2026-12-10', '2027-01-20', 'ended')`,
+          [clientA],
+        );
+        const retainers = `select description, amount::text, reason from public.ready_to_bill($1) where client_id = $2 and kind = 'retainer'`;
+        const billed = `select description, amount::text, period_month::text, open_amount::text, (waived_at is not null) as waived from public.due_balances where client_id = $1 and kind = 'retainer' order by period_month`;
+
+        // Nothing before the engagement's start month; no future months.
+        expect(await as(OWNER, retainers, ["2026-11-30", clientA])).toEqual([]);
+        expect(await as(OWNER, retainers, ["2027-01-05", clientA])).toEqual([
+          { description: "Monthly retainer, December 2026", amount: "1000.00", reason: "retainer_unbilled" },
+          { description: "Monthly retainer, January 2027", amount: "1000.00", reason: "retainer" },
+        ]);
+        expect(await as(OWNER, `select public.run_billing('2027-01-05', $1) as n`, [clientA])).toEqual([{ n: 1 }]);
+        expect(await as(OWNER, billed, [clientA])).toEqual([
+          { description: "Monthly retainer, December 2026", amount: "1000.00", period_month: "2026-12-01", open_amount: "1000.00", waived: false },
+          { description: "Monthly retainer, January 2027", amount: "1000.00", period_month: "2027-01-01", open_amount: "1000.00", waived: false },
+        ]);
+        const [{ id: january }] = await as<{ id: string }>(OWNER, `select id from public.client_dues where client_id = $1 and period_month = '2027-01-01'`, [clientA]);
+        await as(OWNER, `select public.waive_due($1, 'Courtesy month')`, [january]);
+
+        // February is never billed. On 5 April: February and March are missed, April is this month; the ended
+        // engagement adds nothing after January; billed and waived months are not listed again; May is not listed.
+        expect(await as(OWNER, retainers, ["2027-04-05", clientA])).toEqual([
+          { description: "Monthly retainer, February 2027", amount: "3000.00", reason: "retainer_unbilled" },
+          { description: "Monthly retainer, March 2027", amount: "3000.00", reason: "retainer_unbilled" },
+          { description: "Monthly retainer, April 2027", amount: "3000.00", reason: "retainer" },
+        ]);
+        expect(await as(OWNER, `select public.run_billing('2027-04-05') as n`)).toEqual([{ n: 1 }]);
+        expect(await as(OWNER, billed, [clientA])).toEqual([
+          { description: "Monthly retainer, December 2026", amount: "1000.00", period_month: "2026-12-01", open_amount: "1000.00", waived: false },
+          { description: "Monthly retainer, January 2027", amount: "1000.00", period_month: "2027-01-01", open_amount: "0.00", waived: true },
+          { description: "Monthly retainer, February 2027", amount: "3000.00", period_month: "2027-02-01", open_amount: "3000.00", waived: false },
+          { description: "Monthly retainer, March 2027", amount: "3000.00", period_month: "2027-03-01", open_amount: "3000.00", waived: false },
+          { description: "Monthly retainer, April 2027", amount: "3000.00", period_month: "2027-04-01", open_amount: "3000.00", waived: false },
+        ]);
+        expect(
+          await as(OWNER, `select count(*)::int as n from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-04-05' and d.kind = 'retainer'`),
+        ).toEqual([{ n: 3 }]);
+        expect(await as(OWNER, retainers, ["2027-04-05", clientA])).toEqual([]);
+        expect(await as(OWNER, `select public.run_billing('2027-04-05', $1) as n`, [clientA])).toEqual([{ n: 0 }]);
       });
     });
 

@@ -125,7 +125,7 @@ async function Overview() {
         ) : (
           <>
             <p className="mb-3 text-body-regular text-text-secondary">
-              {readyClients.length} client{readyClients.length === 1 ? "" : "s"}, {peso.format(readyTotal)} in all. Nothing is billed until you run billing; each run issues one statement per client, with the month&apos;s retainer if not yet billed.
+              {readyClients.length} client{readyClients.length === 1 ? "" : "s"}, {peso.format(readyTotal)} in all. Nothing is billed until you run billing; each run issues one statement per client, with every month&apos;s retainer not yet billed, each as its own item.
             </p>
             <ul className="divide-y divide-separator-border">
               {readyClients.map((c) => (
@@ -141,6 +141,7 @@ async function Overview() {
                           <span className="flex min-w-0 flex-wrap items-center gap-2">
                             <span className="text-text-secondary">{i.description}</span>
                             {i.kind === "tax" && <Badge tone={i.reason === "client_approved" ? "done" : "waiting"}>{readyReasonLabel(i)}</Badge>}
+                            {i.reason === "retainer_unbilled" && <Badge tone="waiting">{readyReasonLabel(i)}</Badge>}
                           </span>
                           <span className="amount shrink-0 text-text-primary">{peso.format(Number(i.amount))}</span>
                         </li>

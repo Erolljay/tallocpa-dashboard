@@ -122,7 +122,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
                 {readyItems.map((i) => (
                   <li key={`${i.kind}-${i.filing_instance_id ?? i.due_id ?? i.description}`}>
                     {i.description}
-                    {i.kind === "tax" ? ` · ${readyReasonLabel(i)}` : ""}
+                    {i.kind === "tax" || i.reason === "retainer_unbilled" ? ` · ${readyReasonLabel(i)}` : ""}
                   </li>
                 ))}
               </ul>

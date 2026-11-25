@@ -50,6 +50,7 @@ describe("ready to bill", () => {
     expect(readyReasonLabel({ reason: "due_soon", days_to_due: 0 })).toBe("Due today");
     expect(readyReasonLabel({ reason: "due_soon", days_to_due: -3 })).toBe("Past due");
     expect(readyReasonLabel({ reason: "retainer", days_to_due: null })).toBe("This month's retainer");
+    expect(readyReasonLabel({ reason: "retainer_unbilled", days_to_due: null })).toBe("Not billed");
     expect(readyReasonLabel({ reason: "charge", days_to_due: null })).toBe("Not yet billed");
   });
 
