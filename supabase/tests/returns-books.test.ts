@@ -87,6 +87,7 @@ describe.skipIf(!url)("returns from the Books by tax code", () => {
       ["0619-E-02", "0619-E", "0619E", "February 2026", "2026-02-01", "2026-02-28", "2026-03-10"],
       ["1601-EQ-Q1", "1601-EQ", "1601EQ", "Q1 2026", "2026-01-01", "2026-03-31", "2026-04-30"],
       ["1702Q-Q1", "1702Q", "1702Q", "Q1 2026", "2026-01-01", "2026-03-31", "2026-05-30"],
+      ["1604-E-2026", "1604-E", "1604E", "2026", "2026-01-01", "2026-12-31", "2027-03-01"],
     ];
     const obligation: Record<string, string> = {};
     for (const [key, form, rule, label, start, end, due] of returns) {
@@ -270,6 +271,31 @@ describe.skipIf(!url)("returns from the Books by tax code", () => {
 
     it("is only for a 1601-EQ", async () => {
       expect((await as(PREPARER, `select * from public.ewt_remittances($1)`, [filing["2550Q-Q1"]])).rows).toEqual([]);
+    });
+  });
+
+  describe("1604-E summary of the year's 1601-EQ (migration 20261210000001)", () => {
+    const year = async (user = PREPARER) =>
+      (await as(user, `select to_char(quarter_start, 'YYYY-MM') as q, period_label, settled, computed, withheld, penalties from public.ewt_year_remittances($1)`, [filing["1604-E-2026"]])).rows;
+
+    it("lists the four quarters with each 1601-EQ's withheld and penalties", async () => {
+      await saveWorksheet(PREPARER, filing["1601-EQ-Q1"], { total_taxes_withheld: 9000, total_penalties: 125 });
+      await db.query(`update public.filing_instances set status = 'filed', filed_on = '2026-04-28', payment_reference = 'EFPS-9' where id = $1`, [filing["1601-EQ-Q1"]]);
+      expect(await year()).toEqual([
+        { q: "2026-01", period_label: "Q1 2026", settled: true, computed: true, withheld: "9000", penalties: "125" },
+        { q: "2026-04", period_label: null, settled: false, computed: false, withheld: "0", penalties: "0" },
+        { q: "2026-07", period_label: null, settled: false, computed: false, withheld: "0", penalties: "0" },
+        { q: "2026-10", period_label: null, settled: false, computed: false, withheld: "0", penalties: "0" },
+      ]);
+    });
+
+    it("is only for a 1604-E, and only for staff who can see the client", async () => {
+      expect((await as(PREPARER, `select * from public.ewt_year_remittances($1)`, [filing["1601-EQ-Q1"]])).rows).toEqual([]);
+      expect(await year(OTHER)).toEqual([]);
+    });
+
+    it("reads the Books only once all twelve months are locked", async () => {
+      await expect(as(PREPARER, `select * from public.books_return_sources($1)`, [filing["1604-E-2026"]])).rejects.toThrow(/not locked/);
     });
   });
 

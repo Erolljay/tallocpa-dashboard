@@ -70,6 +70,10 @@ export function buildSawt(docs: SourceDocument[], kinds: AtcKind[]): SawtResult 
       continue;
     }
     if (!kinds.includes(atcKind(atc))) continue;
+    if (d.cwtStopped) {
+      warnings.push(`${invoiceLabel(d)}: no 2307 came, and the client decided not to claim the tax withheld (${atc}); left out.`);
+      continue;
+    }
     const info = atcInfo(atc);
     let rate = info?.rate ?? 0;
     if (!info) {

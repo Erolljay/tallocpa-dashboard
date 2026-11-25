@@ -85,6 +85,19 @@ After the Owner approves a return with DAT attachments (SLS, SLP, SAWT, QAP, alp
    - `ESUBMISSION_TO` (optional) — default `esubmission@bir.gov.ph`; point it at an internal address to try the flow first.
 4. The reply check runs once a day (`/api/cron/esubmission` in `vercel.json`, 11:40 Manila, with `CRON_SECRET`); staff can also press **Check the mailbox for the reply** on the return. It reads the thread of each send still waiting: the BIR's attachment (or its message, as a text file) becomes the validation report, and the send is marked **Validated** or **Errors**. A reply the app cannot read is marked Errors with a note; staff open it and correct the result.
 
+### Google Calendar (optional, docs/REWORK.md decisions 18, 20 and 22)
+
+The team calendar (Home → Team calendar), the lead's booking page (`/book/…`, link on the lead) and the portal's **Book a meeting** read each staff member's own Google Calendar and create events with a Meet link. Each staff member connects their own calendar once from Home → Team calendar. Until this is set, those pages say Google Calendar is not set up and the booking pages ask the person to email instead.
+
+1. In the same Google Cloud project as eSubmission (Internal consent screen), turn on the **Google Calendar API** and add these scopes to the consent screen: `calendar.events`, `calendar.calendarlist.readonly`, `calendar.freebusy`, `openid`, `email`.
+2. On the same OAuth client, add the redirect URI `https://app.tallocpa.com/app/calendar/callback` (and the preview address if you try it there).
+3. Set in Vercel (server only):
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — the same OAuth client as eSubmission.
+   - `GOOGLE_TOKEN_KEY` — 32 random bytes, base64 (`openssl rand -base64 32`). Encrypts the staff refresh tokens kept in the database. Changing it disconnects everyone: each person connects again.
+   - `APP_URL` (optional) — e.g. `https://app.tallocpa.com`, so the OAuth redirect always uses that address.
+   - `GOOGLE_WORKSPACE_DOMAIN` (optional) — default `tallocpa.com`. Only accounts of this domain can connect, and each person only the account they sign in with.
+4. What shows: on the team calendar, events on each person's tallocpa.com calendar in full; their private events and personal calendars as **Busy** only. Bookings offer 9:00–17:00 Manila on working days (holidays from the deadline calendar skipped), from 24 hours ahead: 45-minute discovery calls over 14 days, 30-minute client meetings over 21 days.
+
 ## 6. Vercel
 
 1. Import the GitHub repository into Vercel.

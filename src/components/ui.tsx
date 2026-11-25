@@ -44,6 +44,15 @@ export function Button({ variant = "primary", size = "md", className, children, 
 }
 
 /** Next.js link styled as a BoardUI button. */
+/** A plain link styled as a button, for targets that must load as a full page (a route handler that redirects off-site). */
+export function AnchorButton({ variant = "primary", size = "md", className, children, ...props }: ComponentProps<"a"> & ButtonStyle) {
+  return (
+    <a className={buttonClass({ variant, size }, cx("gap-1.5", size === "sm" ? "px-2.5" : "px-3", className))} {...props}>
+      {children}
+    </a>
+  );
+}
+
 export function LinkButton({ variant = "primary", size = "md", className, children, ...props }: ComponentProps<typeof Link> & ButtonStyle) {
   return (
     <Link className={buttonClass({ variant, size }, cx("gap-1.5", size === "sm" ? "px-2.5" : "px-3", className))} {...props}>

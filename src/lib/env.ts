@@ -40,3 +40,34 @@ export function esubmissionMailEnv(): EsubmissionMailEnv | null {
     to: process.env.ESUBMISSION_TO || "esubmission@bir.gov.ph",
   };
 }
+
+/**
+ * Google Calendar for the team calendar and the booking pages (docs/REWORK.md, decision 22;
+ * docs/SETUP.md). Optional: null until set, and the calendar pages say so.
+ *
+ *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET   the internal OAuth client (tallocpa.com), shared with eSubmission
+ *   GOOGLE_TOKEN_KEY                         32 random bytes, base64: encrypts the staff refresh tokens at rest
+ *   APP_URL                                  optional; the app's address for the OAuth redirect (default: the request's host)
+ *   GOOGLE_WORKSPACE_DOMAIN                  optional; default tallocpa.com: only accounts of this domain connect
+ */
+export interface GoogleCalendarEnv {
+  clientId: string;
+  clientSecret: string;
+  tokenKey: string;
+  appUrl: string | null;
+  domain: string;
+}
+
+export function googleCalendarEnv(): GoogleCalendarEnv | null {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const tokenKey = process.env.GOOGLE_TOKEN_KEY;
+  if (!clientId || !clientSecret || !tokenKey) return null;
+  return {
+    clientId,
+    clientSecret,
+    tokenKey,
+    appUrl: process.env.APP_URL?.replace(/\/+$/, "") || null,
+    domain: (process.env.GOOGLE_WORKSPACE_DOMAIN || "tallocpa.com").toLowerCase(),
+  };
+}

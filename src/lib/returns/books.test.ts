@@ -158,6 +158,14 @@ describe("SAWT from the Books", () => {
       "Sales Invoice SI-2 — Jaro (2026-01-15): the customer's 2307 (WC160) is not in yet. The tax withheld is claimed; followed up on 2026-02-03.",
     ]);
   });
+
+  it("leaves out CWT the client stopped claiming at year end (decision 12)", () => {
+    const stopped = { ...row("bir_2307_received", { invoice_id: "s1", reference: "SI-1", month: "2026-01-01", party_name: "Arevalo", party_tin: "111-222-333", atc: "WC158", withholding: "14", total: "1400", cwt_supported: false }), cwtStopped: true };
+    const s = buildSawt([stopped], ["income"]);
+    expect(s.total).toBe(0);
+    expect(s.rows).toEqual([]);
+    expect(s.warnings).toEqual(["Sales Invoice SI-1 — Arevalo (2026-01-15): no 2307 came, and the client decided not to claim the tax withheld (WC158); left out."]);
+  });
 });
 
 describe("EWT from Purchase Invoices", () => {

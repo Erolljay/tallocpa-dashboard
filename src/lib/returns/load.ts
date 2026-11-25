@@ -11,7 +11,7 @@ import "server-only";
 import { moduleForForm } from "./registry";
 import { buildPriorFigures, fromBooksRow, fromRegisterLine, monthOf, taxableYearStart, withDirectoryParty, type BooksSourceRow, type RegisterSourceRow } from "./source";
 import type {
-  Centavos, EwtRemittance, FormModule, IncomeTaxMethod, LedgerContext, LedgerMovement, PayslipRow, SourceDocument, TaxpayerType, VatCarryOver, WorksheetContext, WorksheetResult,
+  Centavos, EwtQuarter, EwtRemittance, FormModule, IncomeTaxMethod, LedgerContext, LedgerMovement, PayslipRow, SourceDocument, TaxpayerType, VatCarryOver, WorksheetContext, WorksheetResult,
 } from "./types";
 import { toCentavos } from "./money";
 import { withNonDeductible, type NonDeductibleRow } from "./forms/business/book-income";
@@ -172,6 +172,14 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   );
   const registerDocs: ListedDocument[] = lineRows.map((r) => ({ id: r.document_id, fileName: doc(r)?.file_name ?? "", source: fromRegisterLine(r) }));
   const bookSources = ((booksRes.data ?? []) as BooksSourceRow[]).map(fromBooksRow);
+  // Decision 12: CWT whose 2307 never came and that the client chose to stop claiming.
+  const cwtIds = [...new Set(bookSources.filter((s) => s.docType === "bir_2307_received" && s.cwtSupported === false).map((s) => s.id))];
+  if (cwtIds.length) {
+    const { data: stopped, error: stopError } = await db.from("book_invoices").select("id").eq("client_id", f.client_id).eq("cwt_claim", "stop").gte("issue_date", docsFrom).lte("issue_date", f.period_end);
+    if (stopError) throw new Error(`Could not read the client's missing-2307 decisions: ${stopError.message}`);
+    const ids = new Set(((stopped ?? []) as { id: string }[]).map((r) => r.id));
+    for (const s of bookSources) if (ids.has(s.id) && s.docType === "bir_2307_received" && !(s.taxCode ?? "").startsWith("WV")) s.cwtStopped = true;
+  }
   const directory = await lookupParties(db, [...registerDocs.map((d) => d.source.partyTin), ...bookSources.map((s) => s.partyTin)]).catch(() => new Map<string, Party>());
   for (const d of registerDocs) d.source = withDirectoryParty(d.source, directory);
   const sources = [...registerDocs.map((d) => d.source), ...bookSources.map((s) => withDirectoryParty(s, directory))];
@@ -202,6 +210,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   };
   if (f.form === "2550Q") ctx.vatCarryOver = await loadVatCarryOver(db, f.id);
   if (f.form === "1601-EQ") ctx.ewtRemittances = await loadEwtRemittances(db, f.id);
+  if (f.form === "1604-E") ctx.ewtYear = await loadEwtYear(db, f.id);
   if (PAYROLL_FORM_CODES.has(f.form)) ctx.payroll = await loadPayrollContext(db, f.clients.id, f.form, f.period_start, f.period_end);
   if (f.form === "1601-C") ctx.payslips = await loadPayslips(db, f.client_id, f.period_start);
   if (formModule.usesLedger) {
@@ -253,6 +262,25 @@ async function loadEwtRemittances(db: Supabase, filingId: string): Promise<EwtRe
     settled: r.settled,
     computed: r.computed,
     remitted: Number(r.remitted),
+  }));
+}
+
+/** The four 1601-EQ of a 1604-E's year (database function ewt_year_remittances). */
+async function loadEwtYear(db: Supabase, filingId: string): Promise<EwtQuarter[]> {
+  const { data, error } = await db.rpc("ewt_year_remittances", { p_filing: filingId });
+  if (error) throw new Error(`Could not read the 1601-EQ returns: ${error.message}`);
+  type R = { quarter_start: string; period_label: string | null; status: string | null; settled: boolean; computed: boolean; withheld: string | number; penalties: string | number; filed_on: string | null; payment_reference: string | null; paid_on: string | null };
+  return ((data ?? []) as R[]).map((r) => ({
+    quarterStart: String(r.quarter_start).slice(0, 10),
+    periodLabel: r.period_label,
+    status: r.status,
+    settled: r.settled,
+    computed: r.computed,
+    withheld: Number(r.withheld),
+    penalties: Number(r.penalties),
+    filedOn: r.filed_on ? String(r.filed_on).slice(0, 10) : null,
+    paymentReference: r.payment_reference,
+    paidOn: r.paid_on ? String(r.paid_on).slice(0, 10) : null,
   }));
 }
 

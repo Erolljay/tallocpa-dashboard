@@ -137,6 +137,8 @@ export function todoList(input: {
   dues: Centavos;
   duesLabel?: string;
   missing2307: { party: string; amount: Centavos }[];
+  /** Missing 2307s of an ended taxable year waiting for the client's keep-or-stop decision (decision 12). */
+  missing2307Decisions?: number;
 }): Todo[] {
   const t: Todo[] = [];
   if (input.returnedDocuments > 0) {
@@ -151,6 +153,10 @@ export function todoList(input: {
   }
   if (input.dues > 0) {
     t.push({ key: "dues", title: "Pay your statement", detail: input.duesLabel, href: "/portal/billing", tone: "waiting" });
+  }
+  if (input.missing2307Decisions) {
+    const n = input.missing2307Decisions;
+    t.push({ key: "2307-decide", title: `Decide on ${n} missing 2307${n === 1 ? "" : "s"}`, detail: "The year has ended: keep claiming the tax withheld, or stop.", href: "/portal/missing-2307", tone: "waiting" });
   }
   for (const m of input.missing2307) {
     t.push({ key: `2307-${m.party}`, title: `Ask ${m.party} for their 2307`, detail: "They withheld tax from your sales and we don't have the certificate yet.", href: "/portal/upload?stream=sales", tone: "waiting" });

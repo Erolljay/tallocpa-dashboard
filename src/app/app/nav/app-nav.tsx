@@ -11,7 +11,7 @@ import { cx } from "@/utils/cx";
  * stays selected on any of them.
  */
 const items = {
-  home: { href: "/app", label: "Home", icon: RiHomeLine, also: ["/app/work"] },
+  home: { href: "/app", label: "Home", icon: RiHomeLine, also: ["/app/work", "/app/calendar"] },
   clients: { href: "/app/clients", label: "Clients", icon: RiGroupLine, also: ["/app/parties", "/app/requests", "/app/registrations"] },
   inbox: { href: "/app/documents", label: "Inbox", icon: RiInboxArchiveLine, also: ["/app/cycle"] },
   filings: { href: "/app/deadlines", label: "Filings", icon: RiCalendarScheduleLine, also: ["/app/review", "/app/filings"] },

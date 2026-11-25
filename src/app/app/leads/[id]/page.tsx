@@ -14,7 +14,7 @@ import { defaultTerms, SERVICE_LABELS } from "@/lib/funnel/terms";
 import { notesTimeline, type NoteRow } from "@/lib/leads/notes";
 import { manilaNowLocal } from "@/lib/leads/time";
 import { supabaseServer } from "@/lib/supabase/server";
-import { ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
+import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
 
 export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
   return (
@@ -26,6 +26,8 @@ export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
 
 type Person = { user_id: string; full_name: string; role: string; active: boolean };
 
+const bookedTime = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" });
+
 async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const { id } = await params;
   const me = await requireOwnerOrReviewer();
@@ -33,11 +35,13 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const supabase = await supabaseServer();
   const { data: lead } = await supabase.from("leads").select("*, brands(display_name, legal_name, tin)").eq("id", id).maybeSingle();
   if (!lead) notFound();
-  const [{ data: proposals }, { data: notes }, { data: staffRows }] = await Promise.all([
+  const [{ data: proposals }, { data: notes }, { data: staffRows }, { data: booked }] = await Promise.all([
     supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     supabase.from("lead_notes").select("source, source_id, at, author, body, details").eq("lead_id", id),
     supabase.from("staff_profiles").select("user_id, full_name, role, active").order("full_name"),
+    supabase.from("discovery_calls").select("scheduled_at, meet_url, booked_via").eq("lead_id", id).is("held_at", null).maybeSingle(),
   ]);
+  const bookedCall = booked as { scheduled_at: string | null; meet_url: string | null } | null;
   const staff = (staffRows ?? []) as Person[];
   const nameOf = new Map(staff.map((s) => [s.user_id, s.full_name]));
   const active = staff.filter((s) => s.active);
@@ -125,8 +129,16 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
               <div className="space-y-4">
                 <div className="flex items-start gap-2.5 rounded-2xl bg-background-secondary-default p-3 text-body-regular text-text-secondary">
                   <RiCalendarScheduleLine aria-hidden className="mt-0.5 size-4 shrink-0 text-foreground-icon-tertiary" />
-                  <p>Arrange the call with the client for now. Booking it through Google Calendar, with a Meet link, comes in a later phase.</p>
+                  {bookedCall?.scheduled_at ? (
+                    <p>
+                      Booked for {bookedTime.format(new Date(bookedCall.scheduled_at))}
+                      {bookedCall.meet_url?.startsWith("https://") && <> · <a href={bookedCall.meet_url} target="_blank" rel="noreferrer" className="underline">Google Meet</a></>}. Record the notes below after the call.
+                    </p>
+                  ) : (
+                    <p>The lead books the call on {lead.reviewer_id ? `${nameOf.get(lead.reviewer_id) ?? "the reviewer"}'s` : "the reviewer's"} free times from the booking link, with a Meet link. Or arrange it yourself and record it below.</p>
+                  )}
                 </div>
+                {!bookedCall?.scheduled_at && lead.reviewer_id && (stage === "lead" || stage === "prospect") && <BookingLink leadId={id} />}
                 <DiscoveryCallForm leadId={id} defaultAt={manilaNowLocal()} />
               </div>
             </Card>
