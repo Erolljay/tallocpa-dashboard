@@ -38,6 +38,13 @@ describe("lockActionFor", () => {
     expect(lockActionFor(month({ status: "locked" }), viewer({ preparer: true }), today)).toBeNull();
   });
 
+  it("lets the acting approver unlock a locked month directly, as the Owner does", () => {
+    const locked = { month: "2026-01-01", status: "locked", lock_source: "reviewer", locked_by: "x", locked_at: null, request_id: null, request_kind: null, requested_by: null, requested_at: null, request_reason: null, waiting_documents: 0, in_books: true } as never;
+    expect(lockActionFor(locked, viewer({ acting: true }), today)).toEqual({ kind: "unlock" });
+    expect(lockActionFor(locked, viewer({ owner: true }), today)).toEqual({ kind: "unlock" });
+    expect(lockActionFor(locked, viewer({ reviewer: true }), today)).toEqual({ kind: "request_unlock" });
+  });
+
   it("lets the Owner or the acting approver decide an unlock request", () => {
     const m = month({ status: "unlock_requested", request_id: "r1", request_kind: "unlock" });
     expect(lockActionFor(m, viewer({ acting: true }), today)).toEqual({ kind: "decide", requestId: "r1" });

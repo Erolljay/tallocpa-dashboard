@@ -3210,9 +3210,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795617887.055581,
-    "seen": 1795617957.8463132,
-    "ast_hash": "be4d3fa9a92514fbc073169bc806c82c",
+    "mtime": 1795618172.0989172,
+    "seen": 1795618174.3958733,
+    "ast_hash": "c3e7108b1fe619e50322cceb3732a90e",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
@@ -3258,9 +3258,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/books-lock.test.ts": {
-    "mtime": 1795616216.896772,
-    "seen": 1795616728.0431702,
-    "ast_hash": "9cd5ea72aa49544a7e2299869ee33b44",
+    "mtime": 1795618123.0887961,
+    "seen": 1795618174.3950324,
+    "ast_hash": "1f7ee3b029769879eaf0e4077e874e80",
     "semantic_hash": ""
   },
   "supabase/tests/books-migration.test.ts": {
@@ -3366,15 +3366,15 @@
     "semantic_hash": ""
   },
   "src/lib/lock/month-lock.test.ts": {
-    "mtime": 1795617747.8968627,
-    "seen": 1795617756.5931802,
-    "ast_hash": "b9b68038958453771399f7046f82bc63",
+    "mtime": 1795618060.6160448,
+    "seen": 1795618174.388026,
+    "ast_hash": "bbbbed22ffd84e15b4a83522085f9bda",
     "semantic_hash": ""
   },
   "src/lib/lock/month-lock.ts": {
-    "mtime": 1795617747.9011989,
-    "seen": 1795617756.5931828,
-    "ast_hash": "746f41e17c299d5d120ce1c5480b58be",
+    "mtime": 1795618045.8427088,
+    "seen": 1795618174.3880289,
+    "ast_hash": "e52b139ae8a38be07d4a6d4877a64945",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

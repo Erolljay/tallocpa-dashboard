@@ -7,7 +7,7 @@
  *                    reviewer / Owner: lock it
  *   Lock requested   reviewer / Owner: lock it
  *   Locked           reviewer: ask to unlock, with a reason
- *                    Owner: unlock, with a note (the Owner's own request unlocks at once)
+ *                    Owner or acting approver: unlock, with a note (unlocks at once)
  *   Unlock requested Owner / acting approver: approve or reject the request
  */
 import type { BooksMonthStatus } from "@/lib/books/periods";
@@ -73,7 +73,7 @@ export function lockActionFor(m: LockMonth, v: LockViewer, today: string): LockA
     case "lock_requested":
       return locker ? { kind: "lock" } : null;
     case "locked":
-      if (v.owner) return { kind: "unlock" };
+      if (v.owner || v.acting) return { kind: "unlock" };
       return v.reviewer ? { kind: "request_unlock" } : null;
     case "unlock_requested":
       return (v.owner || v.acting) && m.request_id ? { kind: "decide", requestId: m.request_id } : null;
