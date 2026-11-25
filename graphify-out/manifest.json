@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/page.tsx": {
-    "mtime": 1795571720.976415,
-    "seen": 1795571855.2870562,
-    "ast_hash": "b1eb847299123bb942c327aa35ba3c73",
+    "mtime": 1795577700.2706604,
+    "seen": 1795577872.519695,
+    "ast_hash": "c7af8e2f7f4224a79cfceaeafe62fe40",
     "semantic_hash": ""
   },
   "src/app/app/clients/actions.ts": {
@@ -576,9 +576,9 @@
     "semantic_hash": ""
   },
   "src/app/files/[id]/route.ts": {
-    "mtime": 1795556117.9014754,
-    "seen": 1795565923.2267003,
-    "ast_hash": "5a50640af31a09cf26b824d558a22c34",
+    "mtime": 1795577700.2713974,
+    "seen": 1795577872.5240045,
+    "ast_hash": "c5dca2fe477881a90b044508e454e502",
     "semantic_hash": ""
   },
   "src/app/portal/client-context.ts": {
@@ -2562,9 +2562,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/register/page.tsx": {
-    "mtime": 1795570500.2843819,
-    "seen": 1795570759.140618,
-    "ast_hash": "c6b721d183597e1c3713bba28bd568ba",
+    "mtime": 1795577700.2711236,
+    "seen": 1795577872.5204988,
+    "ast_hash": "a8aabc14a362a09126aada7692421cd1",
     "semantic_hash": ""
   },
   "src/lib/register/parts.test.ts": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795575818.7113988,
-    "seen": 1795575822.3362901,
-    "ast_hash": "8896755d884a3e4c4bee3aa2722116ad",
+    "mtime": 1795577860.8533034,
+    "seen": 1795577872.5365796,
+    "ast_hash": "f3fa6274dcb9055aa0903fd249ac171a",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2973,6 +2973,60 @@
     "mtime": 1795575648.043176,
     "seen": 1795575822.3352919,
     "ast_hash": "e29bd0476814b236349d842b95bab142",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/batch/actions.ts": {
+    "mtime": 1795577658.5286105,
+    "seen": 1795577872.519116,
+    "ast_hash": "731ea6d77a0432a50fa8dfa23ecccd26",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/batch/forms.tsx": {
+    "mtime": 1795577673.4206114,
+    "seen": 1795577872.5191188,
+    "ast_hash": "f3b244de82d5103d2d99b69d56a7a0f7",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/batch/page.tsx": {
+    "mtime": 1795577695.1886125,
+    "seen": 1795577872.5191205,
+    "ast_hash": "3cf833b7fb7ba028d0f3b02d6d470481",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/batch/template/route.ts": {
+    "mtime": 1795577677.2766116,
+    "seen": 1795577872.519122,
+    "ast_hash": "4d0eabd222dd27812da4b1fcd9a8c98d",
+    "semantic_hash": ""
+  },
+  "src/lib/batch/load.ts": {
+    "mtime": 1795577639.1926093,
+    "seen": 1795577872.5275283,
+    "ast_hash": "bbb073dbf633a7477525540acfb00bac",
+    "semantic_hash": ""
+  },
+  "src/lib/batch/register.test.ts": {
+    "mtime": 1795577730.9726148,
+    "seen": 1795577872.5275316,
+    "ast_hash": "fa296acbdadc0792e4bf7f9881d7f039",
+    "semantic_hash": ""
+  },
+  "src/lib/batch/register.ts": {
+    "mtime": 1795577736.344615,
+    "seen": 1795577872.5275335,
+    "ast_hash": "adf12b9ec6ba00f0613ca933e596806e",
+    "semantic_hash": ""
+  },
+  "src/lib/batch/xlsx.ts": {
+    "mtime": 1795577849.6446218,
+    "seen": 1795577872.5275357,
+    "ast_hash": "8f21ca83fb07c2956803e2db09f1dfaa",
+    "semantic_hash": ""
+  },
+  "supabase/tests/batch-upload.test.ts": {
+    "mtime": 1795577770.1737015,
+    "seen": 1795577872.5352159,
+    "ast_hash": "b6f35a47589cb64a9c5cf0f5271457fb",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
