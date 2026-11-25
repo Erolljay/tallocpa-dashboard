@@ -68,4 +68,11 @@ describe("opening balances workbook", () => {
     const r = await readOpeningFile(Buffer.from("not a workbook"));
     expect("error" in r).toBe(true);
   });
+
+  it("refuses income and expenses at a year-start cut-off, and takes them at a mid-year one", () => {
+    const sales: LedgerAccount = { ...acct("a5", "4010", "Sales"), type: "revenue", normalSide: "credit", fsLine: "revenue" };
+    const rows = [tb("1010", "150"), tb("3010", "", "100"), tb("4010", "", "50")];
+    expect(checkOpening(rows, [], [...accounts, sales], { atYearStart: true }).errors[0]).toMatch(/close 4010 into retained earnings or capital/);
+    expect(checkOpening(rows, [], [...accounts, sales], { atYearStart: false }).errors).toEqual([]);
+  });
 });

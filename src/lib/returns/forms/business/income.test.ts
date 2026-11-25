@@ -433,4 +433,17 @@ describe("income tax from the books", () => {
     expect(r.warnings.join(" ")).toMatch(/books start on 2026-04-01/);
     expect(form1702Q.manualInputs(ctx).map((i) => i.key)).toContain("cost_of_sales");
   });
+
+  it("uses the books for a mid-year cut-off whose opening carries the year to date", () => {
+    // Books from 1 April; the opening (31 March) carries Q1's income and expenses, read as the earlier quarter.
+    const ctx = ctxFor({
+      form: "1702Q", ...q(2), client: corp, inputs,
+      ledger: books([mv("sales", -200_000), mv("ded_rental", 50_000)], q1, { booksStart: "2026-04-01", openingYtd: true }),
+      documents: [],
+    });
+    const r = form1702Q.compute(ctx);
+    expect(r.errors).toEqual([]);
+    expect(amounts(r)).toMatchObject({ sales: 200_000, deductions: 50_000, taxable_income_quarter: 150_000, previous_quarters_income: 110_000 });
+    expect(form1702Q.manualInputs(ctx).map((i) => i.key)).not.toContain("cost_of_sales");
+  });
 });

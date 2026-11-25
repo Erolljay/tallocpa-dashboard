@@ -210,7 +210,10 @@ async function loadLedger(db: Supabase, clientId: string, yearStart: string, per
         return { periodBook: p.book, periodTax: p.tax, earlierBook: e.book, earlierTax: e.tax };
       })()
     : undefined;
-  return { booksStart: books.books_start as string, period, earlier, suggested: count ?? 0, ...(depreciation ? { depreciation } : {}) };
+  // A mid-year cut-off: the opening (dated the day before the books start) carries the year to date.
+  const booksStart = books.books_start as string;
+  const openingYtd = booksStart > yearStart && (await movements(yearStart, dayBefore(booksStart))).some((m) => m.net !== 0);
+  return { booksStart, period, earlier, suggested: count ?? 0, ...(openingYtd ? { openingYtd } : {}), ...(depreciation ? { depreciation } : {}) };
 }
 
 /** The year's financial statements at the period end, for an annual return's balance sheet schedule. */

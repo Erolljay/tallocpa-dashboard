@@ -6,6 +6,7 @@ import { AGING, aging } from "@/lib/ledger/arap";
 import { booksAccess, loadAccounts, loadAmendments, loadBooksMonths, loadEntries, loadOpenItems, loadOpening, loadTrialBalance, monthState, type AmendmentStatus } from "@/lib/ledger/data";
 import { BOOK_LOCK_FORMS, BOOKS, ENTRY_SOURCES, TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
 import { formatAmount } from "@/lib/returns/money";
+import { OpeningChecklist } from "./opening-checklist";
 import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, CloseYearForm, PermitForm, RelockForm, ReverseForm, SetupForm } from "./forms";
 
 export default function BooksPage(props: PageProps<"/app/clients/[id]/books">) {
@@ -321,13 +322,16 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
           </div>
         </Card>
 
+        <OpeningChecklist access={{ supabase, client, books, me }} accounts={accounts} balances={opening.balances} entered={Boolean(opening.entry)} />
+
+        <span id="opening" aria-hidden className="block" />
         <Card
           title={`Opening balances as of ${fmtDate(openingAsOf)}`}
           actions={opening.entry ? <Badge tone="done">Entered</Badge> : <Badge tone="waiting">Not entered</Badge>}
         >
           <div className="space-y-4">
             <p className="text-body-regular text-text-secondary">
-              Download the workbook (the chart is listed{opening.entry ? ", with the balances already saved" : ""}), enter each account&rsquo;s balance from Manager.io or the 2026 working papers, list the unpaid customer and supplier invoices behind Accounts Receivable and Accounts Payable, then upload it. Uploading again replaces the opening balances.
+              Download the workbook (the chart is listed{opening.entry ? ", with the balances already saved" : ""}), enter each account&rsquo;s balance as of {fmtDate(openingAsOf)} from the previous books or working papers (for a mid-year cut-off, income and expenses for the year to date too), list the unpaid customer and supplier invoices behind Accounts Receivable and Accounts Payable, then upload it. Uploading again replaces the opening balances.
             </p>
             <LinkButton href={`/app/clients/${id}/books/export?kind=opening`} variant="secondary" size="sm" prefetch={false}>Download workbook</LinkButton>
             <OpeningUpload clientId={id} />

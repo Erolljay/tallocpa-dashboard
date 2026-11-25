@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { obligationChanges, obligationsForTaxTypes, TaxTypeError } from "@/lib/clients/obligations";
 import { assignmentSchema, editClientSchema, engagementSchema, formToObject, newClientSchema } from "@/lib/clients/schema";
+import { taxableYearStart } from "@/lib/ledger/books";
 import { templatePayload } from "@/lib/ledger/coa";
 import { chartStart, TEMPLATE_FOR_TAXPAYER } from "@/lib/ledger/types";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -183,15 +184,18 @@ export async function setupMissingChartsAction(_: { ok?: string; error?: string 
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return { error: "Choose the first month of the books." };
   const supabase = await supabaseServer();
   const [{ data: clients }, { data: books }] = await Promise.all([
-    supabase.from("clients").select("id, name, taxpayer_type").neq("status", "archived"),
+    supabase.from("clients").select("id, name, taxpayer_type, fiscal_year_end_month").neq("status", "archived"),
     supabase.from("client_books").select("client_id"),
   ]);
   const have = new Set((books ?? []).map((b) => b.client_id));
   const todo = (clients ?? []).filter((c) => !have.has(c.id));
   const failed: string[] = [];
+  // Any cut-off: the same month for every client, or each client's own taxable year (fiscal-year clients).
+  const perYear = form.get("start_rule") === "taxable_year";
   for (const c of todo) {
     const template = TEMPLATE_FOR_TAXPAYER[c.taxpayer_type] ?? "stock_corporation";
-    const { error } = await supabase.rpc("setup_books", { p_client: c.id, p_template: template, p_books_start: `${month}-01`, p_accounts: templatePayload(template) });
+    const start = perYear ? taxableYearStart(`${month}-01`, c.fiscal_year_end_month ?? 12) : `${month}-01`;
+    const { error } = await supabase.rpc("setup_books", { p_client: c.id, p_template: template, p_books_start: start, p_accounts: templatePayload(template) });
     if (error) failed.push(`${c.name}: ${error.message}`);
   }
   revalidatePath("/app", "layout");

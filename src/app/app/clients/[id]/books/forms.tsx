@@ -25,6 +25,7 @@ import {
   type ArapState,
   deleteAccountAction,
   postEntryAction,
+  changeBooksStartAction,
   previewOpeningAction,
   reverseEntryAction,
   saveAccountAction,
@@ -528,6 +529,21 @@ export function CloseYearForm({ clientId, yearEnd, partners }: { clientId: strin
         ))}
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Closing…" : "Close the year"}</Button>
       {state.error && <span className="pb-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+/** Moves the cut-off while only the opening balances are in the books (they are removed; enter them again). */
+export function ChangeBooksStartForm({ clientId, current, hasOpening }: { clientId: string; current: string; hasOpening: boolean }) {
+  const [state, action, pending] = useActionState(changeBooksStartAction.bind(null, clientId), {} as FormState);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-2">
+      <Field label="Books start (cut-off)" htmlFor="books_start_change" hint={hasOpening ? "Changing it removes the opening balances; enter them again as of the new cut-off." : "Any month: the start of the calendar or fiscal year, or a later quarter."}>
+        <Input id="books_start_change" name="books_start" type="month" required defaultValue={current} className="w-44" />
+      </Field>
+      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Change books start"}</Button>
+      {state.error && <span role="alert" className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+      {state.ok && <span role="status" className="text-caption-1-regular text-status-lime-text">{state.ok}</span>}
     </form>
   );
 }

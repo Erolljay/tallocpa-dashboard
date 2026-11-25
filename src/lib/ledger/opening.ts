@@ -7,6 +7,7 @@
  */
 import { parseTin } from "@/lib/parties/tin";
 import { toCentavos, toDecimalString } from "@/lib/returns/money";
+import { PNL_TYPES } from "./cutoff";
 import type { Centavos, LedgerAccount } from "./types";
 
 export interface TbRow {
@@ -60,7 +61,12 @@ export interface CheckedOpening {
 const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const sheetOf = (k: ItemRow["kind"]) => (k === "receivable" ? "Receivables" : "Payables");
 
-export function checkOpening(tb: TbRow[], itemRows: ItemRow[], accounts: LedgerAccount[]): CheckedOpening {
+/**
+ * `atYearStart`: the books start on the first day of a taxable year, so the income and
+ * expense accounts were closed and the opening holds none. A mid-year cut-off carries the
+ * year to date's income and expenses (src/lib/ledger/cutoff.ts).
+ */
+export function checkOpening(tb: TbRow[], itemRows: ItemRow[], accounts: LedgerAccount[], opts: { atYearStart?: boolean } = {}): CheckedOpening {
   const errors: string[] = [];
   const byCode = new Map(accounts.map((a) => [a.code.toUpperCase(), a]));
   const lines: OpeningLine[] = [];
@@ -115,6 +121,11 @@ export function checkOpening(tb: TbRow[], itemRows: ItemRow[], accounts: LedgerA
   const arItems = sum(items.filter((i) => i.kind === "receivable").map((i) => i.amount));
   const apItems = sum(items.filter((i) => i.kind === "payable").map((i) => i.amount));
 
+  if (opts.atYearStart) {
+    const pnl = lines.filter((l) => PNL_TYPES.includes(accounts.find((a) => a.id === l.accountId)!.type));
+    if (pnl.length)
+      errors.push(`The books start at the beginning of a taxable year, so the opening holds no income or expenses: close ${pnl.map((l) => l.code).join(", ")} into retained earnings or capital first.`);
+  }
   if (lines.length < 2) errors.push("The trial balance has fewer than two accounts with a balance.");
   if (totalDebit !== totalCredit) errors.push(`The trial balance does not balance: debits ${fmt(totalDebit)}, credits ${fmt(totalCredit)} (difference ${fmt(totalDebit - totalCredit)}).`);
   if (arItems !== arBalance) errors.push(`The receivables listed (${fmt(arItems)}) do not add up to the Accounts Receivable balance (${fmt(arBalance)}).`);

@@ -102,6 +102,11 @@ export interface LedgerContext {
   /** Suggested entries dated in the taxable year to date, not yet posted. */
   suggested: number;
   /**
+   * A mid-year cut-off whose opening balances carry the taxable year to date's income and
+   * expenses: the books then cover the whole year (src/lib/ledger/cutoff.ts).
+   */
+  openingYtd?: boolean;
+  /**
    * The fixed asset register's depreciation (A1; Owner's decision 17): books and tax
    * columns for this period and the earlier part of the taxable year. The income tax
    * return deducts the tax column in place of the books' Depreciation line.
