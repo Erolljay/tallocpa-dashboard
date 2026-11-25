@@ -132,7 +132,7 @@ describe.skipIf(!url)("books: month lock, returns for locked periods, payslips",
     let request: string;
 
     it("is asked by the reviewer with a reason, not by the preparer", async () => {
-      await expect(unlock(PREPARER, "2026-01-01")).rejects.toThrow(/Only the client's reviewer or the Owner asks/);
+      await expect(unlock(PREPARER, "2026-01-01")).rejects.toThrow(/Only the client's reviewer, the Owner or the acting approver asks/);
       await expect(unlock(REVIEWER, "2026-01-01", " ")).rejects.toThrow(/reason/);
       await expect(unlock(REVIEWER, "2026-02-01")).rejects.toThrow(/not locked/);
       request = await unlock(REVIEWER, "2026-01-01");
@@ -159,6 +159,18 @@ describe.skipIf(!url)("books: month lock, returns for locked periods, payslips",
     it("unlocks at once when the Owner asks", async () => {
       await lock(REVIEWER, "2026-01-01");
       await unlock(OWNER, "2026-01-01", "Owner's correction");
+      expect(await status("2026-01-01")).toMatchObject({ status: "open" });
+    });
+
+    it("unlocks at once when the acting approver in office asks", async () => {
+      await lock(REVIEWER, "2026-01-01");
+      await unlock(ACTING, "2026-01-01", "Late supplier receipt");
+      expect(await status("2026-01-01")).toMatchObject({ status: "open" });
+      await db.query(`update public.acting_approver_delegations set ends_at = now() - interval '1 minute' where delegate_user_id = $1`, [ACTING]);
+      await lock(REVIEWER, "2026-01-01");
+      await expect(unlock(ACTING, "2026-01-01", "After office")).rejects.toThrow(/Client not found|Only the client's reviewer/);
+      // Leave January open, as the tests below expect.
+      await unlock(OWNER, "2026-01-01", "Reopen for the next tests");
       expect(await status("2026-01-01")).toMatchObject({ status: "open" });
     });
   });

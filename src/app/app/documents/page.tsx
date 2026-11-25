@@ -8,6 +8,8 @@ import { DOC_TYPES, docStatusTone, showMonth, STREAMS, streamOf, type DocType, t
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { pendingDocumentTaxCodes, type PendingTaxCodes } from "@/lib/books/actions";
+import { loadTaxCodes } from "@/lib/books/data";
 import { LOW_CONFIDENCE, normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
@@ -127,7 +129,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
     <>
       <PageHeader
         title="Inbox"
-        description={client ? `${client.name}: what came in and is waiting for approval.` : "Everything clients sent, by kind. OCR reads each receipt; check the figures, then approve it into the register or return it to the client."}
+        description={client ? `${client.name}: what came in and is waiting for approval.` : "Everything clients sent, by kind. OCR reads each receipt; check the figures, then approve it into the Books or return it to the client."}
         actions={
           <>
             <ClientSelect form={FORM_ID} value={clientId} clients={clients} />
@@ -288,10 +290,15 @@ async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string
   const supabase = await supabaseServer();
   const [{ data: books }, { data: accounts }, { data: suggestions }, { data: approved }] = await Promise.all([
     supabase.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
-    supabase.from("ledger_accounts").select("id, code, name, type, active").eq("client_id", clientId).eq("active", true).order("sort_order").order("code"),
+    supabase.from("ledger_accounts").select("id, code, name, type, active, control").eq("client_id", clientId).eq("active", true).order("sort_order").order("code"),
     supabase.rpc("pending_document_accounts", { p_client: clientId }),
     supabase.from("extractions").select("approved_fields, documents!inner(client_id)").eq("documents.client_id", clientId).not("approved_fields", "is", null).limit(5000),
   ]);
+  // Tax codes per document (rework): suggested from the party default or OCR; a client without books has none.
+  const [taxSuggestions, taxCodes] = books
+    ? await Promise.all([pendingDocumentTaxCodes(clientId, supabase).catch(() => [] as PendingTaxCodes[]), loadTaxCodes(supabase)])
+    : [[] as PendingTaxCodes[], []];
+  const codesOf = new Map(taxSuggestions.map((t) => [t.document_id, t]));
   const suggested = new Map(((suggestions ?? []) as { document_id: string; account_id: string | null; source: AccountSource }[]).map((x) => [x.document_id, x]));
   const dupes = new Set(
     (approved ?? []).map((a) => {
@@ -343,6 +350,10 @@ async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string
       booked,
       titled: r.doc_type === "sales_invoice" || r.doc_type === "purchase_receipt",
       account: booked ? { id: s?.account_id ?? null, source: s?.source ?? "choose" } : null,
+      invoiceKind: booked && r.doc_type === "sales_invoice" ? "sales" : booked && r.doc_type === "purchase_receipt" ? "purchase" : null,
+      codes: booked ? codesOf.get(r.id) ?? null : null,
+      terms: fields.payment_terms === "charge" ? "charge" : "cash",
+      cashAccountId: fields.payment_account ?? null,
     };
   });
   return (
@@ -350,6 +361,8 @@ async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string
       clientId={clientId}
       rows={pending}
       accounts={(accounts ?? []).map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type as keyof typeof ACCOUNT_TYPES] }))}
+      cashAccounts={(accounts ?? []).filter((a) => a.control === "cash" || a.control === "bank").map((a) => ({ id: a.id, label: `${a.code} · ${a.name}` }))}
+      taxCodes={taxCodes}
     />
   );
 }

@@ -101,7 +101,7 @@ export async function PayrollRuns({ supabase, clientId, month }: { supabase: Db;
                 </details>
                 {run.problems.length > 0 && <p role="alert" className="text-body-regular text-text-error-primary">{run.problems.join(" ")}</p>}
                 {posted ? (
-                  <p className="text-caption-1-regular text-text-tertiary">Posted. To post it again, reverse its entry on the <Link href={`/app/clients/${clientId}/books`} className="text-button-ghost-foreground hover:underline">Books</Link> page.</p>
+                  <p className="text-caption-1-regular text-text-tertiary">Posted. To post it again, reverse its entry on the <Link href={`/app/clients/${clientId}/books/tools#journal`} className="text-button-ghost-foreground hover:underline">Books</Link> page.</p>
                 ) : books && run.problems.length === 0 ? (
                   <PostPayrollButton clientId={clientId} month={month} periodEnd={period || null} label={periodLabel(month, period || null)} />
                 ) : null}

@@ -5,6 +5,8 @@ import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui
 import { activeFor, lastDay, type Delegation } from "@/lib/acting/period";
 import { requireStaff } from "@/lib/auth";
 import { showDate } from "@/lib/filings/labels";
+import { keepBooksReady } from "@/lib/filings/books-ready";
+import { filingsNeedingAmendment } from "@/lib/books/actions";
 import { reviewQueue, type QueueFiling } from "@/lib/filings/review-queue";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -49,7 +51,9 @@ async function Queue() {
     .in("status", ["prepared", "reviewed", "client_approved"])
     .order("due_date")
     .limit(500);
-  const filings = (data ?? []) as unknown as Omit<Row, "prepared_by">[];
+  // Returns appear only for locked periods (docs/REWORK.md, decision 10).
+  const filings = await keepBooksReady((data ?? []) as unknown as Omit<Row, "prepared_by">[], supabase);
+  const flagOf = new Map((await filingsNeedingAmendment()).map((f) => [f.filing_id, f.reason]));
 
   const ids = filings.map((f) => f.id);
   const [{ data: events }, { data: staff }] = await Promise.all([
@@ -72,23 +76,23 @@ async function Queue() {
   return (
     <div className="space-y-6">
       {owner && (
-        <Section title="Waiting for your final approval" hint="Client has approved. Check payment, then approve." rows={q.toApprove} today={today} nameOf={nameOf} empty="Nothing waiting for your approval." />
+        <Section title="Waiting for your final approval" hint="Client has approved. Check payment, then approve." rows={q.toApprove} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing waiting for your approval." />
       )}
       {acting && limit != null && (
         <>
           <Notice tone="waiting">
             You are the acting approver until the end of {showDate(lastDay(acting.ends_at))}. You can give the final approval on fully paid returns up to {peso.format(limit)} tax due. The rest waits for the Owner.
           </Notice>
-          <Section title="Waiting for the final approval" hint="You approve for the Owner. Check payment first." rows={q.toApprove} today={today} nameOf={nameOf} empty="Nothing waiting for the final approval." flag={leaveForOwner} />
+          <Section title="Waiting for the final approval" hint="You approve for the Owner. Check payment first." rows={q.toApprove} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing waiting for the final approval." flag={leaveForOwner} />
         </>
       )}
-      <Section title="Ready for review" hint={owner ? "Prepared by staff. You or the client's reviewer can review or send back." : "Prepared by staff on your clients. You cannot review your own work."} rows={q.toReview} today={today} nameOf={nameOf} empty="Nothing to review." />
-      <Section title="Waiting for the client" hint="Reviewed and with the client. A question from the client needs an answer from staff." rows={q.withClient} today={today} nameOf={nameOf} empty="Nothing with clients." />
+      <Section title="Ready for review" hint={owner ? "Prepared by staff. You or the client's reviewer can review or send back." : "Prepared by staff on your clients. You cannot review your own work."} rows={q.toReview} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing to review." />
+      <Section title="Waiting for the client" hint="Reviewed and with the client. A question from the client needs an answer from staff." rows={q.withClient} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing with clients." />
     </div>
   );
 }
 
-function Section({ title, hint, rows, today, nameOf, empty, flag }: { title: string; hint: string; rows: Row[]; today: string; nameOf: Map<string, string>; empty: string; flag?: (r: Row) => string | null }) {
+function Section({ title, hint, rows, today, nameOf, amended, empty, flag }: { title: string; hint: string; rows: Row[]; today: string; nameOf: Map<string, string>; amended: Map<string, string>; empty: string; flag?: (r: Row) => string | null }) {
   return (
     <Card title={`${title} (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">{hint}</span>}>
       {rows.length === 0 ? (
@@ -119,7 +123,7 @@ function Section({ title, hint, rows, today, nameOf, empty, flag }: { title: str
                     <td className="amount py-2 pr-4 text-end tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</td>
                     <td className="py-2 pr-4 text-text-secondary">{(r.prepared_by && nameOf.get(r.prepared_by)) ?? "—"}</td>
                     <td className="py-2 text-end">
-                      {overdue && <Badge tone="blocked">Overdue</Badge>} {r.open_query && <Badge tone="waiting">Client question</Badge>}{" "}
+                      {overdue && <Badge tone="blocked">Overdue</Badge>} {amended.has(r.id) && <Badge tone="blocked">Needs amended return</Badge>} {r.open_query && <Badge tone="waiting">Client question</Badge>}{" "}
                       {flag?.(r) && <Badge>{`${flag(r)}: waits for the Owner`}</Badge>}
                     </td>
                   </tr>

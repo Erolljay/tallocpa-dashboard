@@ -7,6 +7,11 @@ import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/d
 import type { Issue } from "@/lib/ocr/checks";
 import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PARTY_KINDS, PAYMENT_TERMS, SLP_CATEGORY_KEYS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { SLP_CATEGORIES } from "@/lib/register/parts";
+import { Pick } from "@/components/books/pick";
+import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
+import type { TaxCode } from "@/lib/books/tax-codes";
+import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices } from "@/lib/books/ui";
+import { formatAmount } from "@/lib/returns/money";
 import { approveDocumentAction } from "./actions";
 
 /** Which document types each slice 4 field applies to (others always show). */
@@ -54,6 +59,13 @@ export interface Booking {
   /** Whether cash / charge applies (sales and purchases). */
   terms: boolean;
   booksHref: string;
+  /** A sale or purchase: posted to the Books as an invoice (rework). */
+  invoiceKind: "sales" | "purchase" | null;
+  /** Suggested tax codes while the document waits. */
+  codes: PendingTaxCodes | null;
+  taxCodes: TaxCode[];
+  /** The invoice in the Books, once posted. */
+  inBooks: string | null;
 }
 
 /** The figures beside the image: low-confidence fields highlighted, check warnings inline. */
@@ -93,6 +105,8 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             if (only && !only.includes(props.docType)) return null;
             // The account fields need this client's chart.
             if ((f.kind === "account" || f.kind === "payment_account") && !props.booking) return null;
+            // Cash or charge and the cash account are chosen with the Books (BookingFields).
+            if ((f.kind === "terms" || f.kind === "payment_account") && props.booking?.invoiceKind) return null;
             const conf = props.confidence[f.key];
             const low = conf != null && conf < LOW_CONFIDENCE;
             const issue = issueFor(f.key);
@@ -165,7 +179,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             )}
           </div>
         )}
-        {props.booking && <BookingFields booking={props.booking} canAct={props.canAct} />}
+        {props.booking && <BookingFields booking={props.booking} canAct={props.canAct} mode={props.mode} terms={props.fields.payment_terms === "charge" ? "charge" : "cash"} cashAccountId={props.fields.payment_account ?? null} />}
         {props.issues.some((i) => !OCR_FIELDS.some((f) => f.key === i.field)) && (
           <Notice tone="waiting">{props.issues.filter((i) => !OCR_FIELDS.some((f) => f.key === i.field)).map((i) => i.message).join(" ")}</Notice>
         )}
@@ -201,20 +215,38 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
   );
 }
 
-const ENTRY_STATUS = { suggested: "Suggested entry waiting to be confirmed", posted: "Posted to the books", reversed: "Entry reversed" } as const;
+const ENTRY_STATUS = { suggested: "Suggested entry from the old flow, not posted", posted: "Posted to the books", reversed: "Entry reversed" } as const;
 
-/** Account title for the books, inside the approve form (field `ledger_account`). */
-function BookingFields({ booking, canAct }: { booking: Booking; canAct: boolean }) {
-  const locked = booking.entry?.status === "posted";
+/**
+ * The Books side of the approve form: the account title (field `ledger_account`) and,
+ * for a sale or purchase, a tax code per line portion and the withholding code (hidden
+ * field `books_codes`, JSON), what it goes to the Books as (`payment_terms`) and the
+ * cash or bank account when cash (`payment_account`). Green: the party default; amber:
+ * OCR's suggestion, to confirm (choosing it on purpose, or Confirm).
+ */
+function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccountId }: { booking: Booking; canAct: boolean; mode: "approve" | "edit"; terms: "cash" | "charge"; cashAccountId: string | null }) {
   const groups = [...new Set(booking.accounts.map((a) => a.group))];
+  const kind = booking.invoiceKind;
+  const sug = booking.codes;
+  const [lines, setLines] = useState<Record<string, string | null>>(() => Object.fromEntries((sug?.lines ?? []).map((l) => [l.portion, l.tax_code_id])));
+  const [wh, setWh] = useState<string | null>(sug?.withholding_code_id ?? null);
+  const [vw, setVw] = useState<string | null>(sug?.vat_withholding_code_id ?? null);
+  const [ok, setOk] = useState<Set<string>>(new Set());
+  const [terms, setTerms] = useState(initialTerms);
+  const [cash, setCash] = useState<string | null>(cashAccountId ?? booking.cashAccounts[0]?.id ?? null);
+  const confirm = (k: string) => setOk((s) => new Set(s).add(k));
+  const ocr = [...(sug?.lines ?? []).filter((l) => l.source === "ocr").map((l) => l.portion), ...(sug?.withholding_source === "ocr" ? ["wh"] : []), ...(sug?.vat_withholding_source === "ocr" ? ["vw"] : [])].filter((k) => !ok.has(k));
+  const codes: DocumentCodes | null = kind && sug
+    ? { lines: sug.lines.map((l) => ({ portion: l.portion, tax_code_id: lines[l.portion] ?? null })), withholding_code_id: wh, ...(kind === "sales" ? { vat_withholding_code_id: vw } : {}) }
+    : null;
+  const label = (k: string, source: "party" | "ocr" | null) => (ok.has(k) ? "Confirmed" : source ? CODE_SOURCE_LABELS[source] : "No suggestion");
+  const invoiceCodes = kind ? codesFor(booking.taxCodes, kind, "invoice", wh ?? vw) : [];
+  const disabled = !canAct;
+
   return (
-    <div className="space-y-2 rounded-xl bg-background-secondary-default p-3">
-      <Field
-        label="Account title (books)"
-        htmlFor="ledger_account"
-        hint={locked ? "Posted: reverse the entry on the Books page to change it." : booking.source}
-      >
-        <Select id="ledger_account" name="ledger_account" defaultValue={booking.accountId ?? ""} disabled={!canAct || locked}>
+    <div className="space-y-3 rounded-xl bg-background-secondary-default p-3">
+      <Field label="Account title (books)" htmlFor="ledger_account" hint={booking.source}>
+        <Select id="ledger_account" name="ledger_account" defaultValue={booking.accountId ?? ""} disabled={disabled}>
           <option value="">Choose…</option>
           {groups.map((g) => (
             <optgroup key={g} label={g}>
@@ -223,11 +255,96 @@ function BookingFields({ booking, canAct }: { booking: Booking; canAct: boolean 
           ))}
         </Select>
       </Field>
+
+      {kind && (
+        <>
+          {codes && <input type="hidden" name="books_codes" value={JSON.stringify(codes)} />}
+          <input type="hidden" name="books_unconfirmed" value={ocr.length} />
+          {sug && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {sug.lines.map((l) => (
+                <div key={l.portion} className="space-y-1">
+                  <Pick
+                    label={`Tax code${sug.lines.length > 1 ? ` · ${PORTION_LABELS[l.portion]} ${formatAmount(Math.round(Number(l.amount) * 100))}` : ""}`}
+                    value={lines[l.portion] ?? null}
+                    onChange={(x) => {
+                      setLines((s) => ({ ...s, [l.portion]: x }));
+                      confirm(l.portion);
+                    }}
+                    options={codesFor(booking.taxCodes, kind, "line", lines[l.portion]).map((c) => ({ id: c.id, label: c.name }))}
+                    noneLabel="No tax code"
+                    tone={codeTone(l.source, ok.has(l.portion))}
+                    isDisabled={disabled}
+                  />
+                  <p className="text-caption-1-regular text-text-tertiary">{label(l.portion, l.source)}</p>
+                </div>
+              ))}
+              <div className="space-y-1">
+                <Pick
+                  label={kind === "sales" ? "Withholding code (CWT)" : "Withholding code (EWT)"}
+                  value={wh}
+                  onChange={(x) => {
+                    setWh(x);
+                    confirm("wh");
+                  }}
+                  options={invoiceCodes.filter((c) => c.kind === "withholding").map((c) => ({ id: c.id, label: c.name }))}
+                  noneLabel="None"
+                  tone={codeTone(sug.withholding_source, ok.has("wh"))}
+                  isDisabled={disabled}
+                />
+                <p className="text-caption-1-regular text-text-tertiary">{label("wh", sug.withholding_source)}</p>
+              </div>
+              {kind === "sales" && (vw || sug.vat_withholding_source) && (
+                <div className="space-y-1">
+                  <Pick
+                    label="VAT withheld by a government customer"
+                    value={vw}
+                    onChange={(x) => {
+                      setVw(x);
+                      confirm("vw");
+                    }}
+                    options={invoiceCodes.filter((c) => c.kind === "govt_vat_withheld").map((c) => ({ id: c.id, label: c.name }))}
+                    noneLabel="None"
+                    tone={codeTone(sug.vat_withholding_source, ok.has("vw"))}
+                    isDisabled={disabled}
+                  />
+                  <p className="text-caption-1-regular text-text-tertiary">{label("vw", sug.vat_withholding_source)}</p>
+                </div>
+              )}
+            </div>
+          )}
+          {ocr.length > 0 && canAct && (
+            <button type="button" onClick={() => setOk((s) => new Set([...s, ...ocr]))} className="rounded-md text-body-medium text-button-ghost-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring">
+              Confirm tax codes ({ocr.length})
+            </button>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Pick label="Goes to the Books as" name="payment_terms" value={terms} onChange={(x) => setTerms(x === "charge" ? "charge" : "cash")} options={postingChoices(kind).map((c) => ({ id: c.value, label: c.label }))} isDisabled={disabled} />
+            {terms === "cash" && (
+              <Pick label={kind === "sales" ? "Deposited to" : "Paid from"} name="payment_account" value={cash} onChange={setCash} options={booking.cashAccounts} isDisabled={disabled} tone={cash ? "neutral" : "error"} />
+            )}
+          </div>
+          {/* Disabled selects do not submit: keep the values in the form. */}
+          {disabled && <input type="hidden" name="payment_terms" value={terms} />}
+        </>
+      )}
+
       <p className="text-caption-1-regular text-text-tertiary">
-        {booking.entry ? ENTRY_STATUS[booking.entry.status] : "Approving makes a suggested journal entry"}
-        {booking.terms ? "; a charge opens a receivable or payable for the customer or supplier." : "."}{" "}
+        {booking.inBooks ? (
+          <>
+            In the Books: <Link href={booking.inBooks} className="hover:underline">{kind === "sales" ? "Sales Invoice" : "Purchase Invoice"}</Link>
+            {mode === "edit" ? ". Saving changes voids it and posts it again with the corrected figures." : "."}
+          </>
+        ) : booking.entry ? (
+          ENTRY_STATUS[booking.entry.status]
+        ) : kind ? (
+          `Approving posts it to the Books as ${postingChoices(kind).find((c) => c.value === terms)?.label}.`
+        ) : (
+          "Approving posts it to the Books."
+        )}{" "}
         <Link href={booking.booksHref} className="hover:underline">Books</Link>
       </p>
+      {ocr.length > 0 && <p className="text-caption-1-regular text-status-yellow-text">Confirm the tax codes OCR suggested before approving.</p>}
     </div>
   );
 }

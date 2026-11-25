@@ -1,23 +1,35 @@
 import Link from "next/link";
 import { cx } from "@/utils/cx";
 
-export type ClientTab = "overview" | "onboarding" | "register" | "batch" | "workpapers" | "fixed-assets" | "books" | "payroll";
+/** Older tab names still passed by some pages; they light up the tab they now sit under. */
+export type ClientTab = "overview" | "inbox" | "books" | "returns" | "year-end" | "onboarding" | "register" | "batch" | "workpapers" | "fixed-assets" | "payroll";
+
+const UNDER: Partial<Record<ClientTab, ClientTab>> = {
+  onboarding: "overview",
+  register: "overview",
+  batch: "overview",
+  workpapers: "overview",
+  "fixed-assets": "books",
+  payroll: "books",
+};
 
 /**
- * The tabs across a client's pages. The work tabs show to the Owner and the staff
- * assigned to the client; Books only with an active bookkeeping engagement.
+ * The tabs across a client's pages (docs/REWORK.md, Navigation): Overview · Inbox ·
+ * Books · Returns · Year-end. The work tabs show to the Owner and the staff assigned
+ * to the client; Books and Year-end only with an active bookkeeping engagement.
+ * Onboarding, the register, batch upload and workpapers are reached from the
+ * Overview; payroll and fixed assets from the Books.
  */
-export function ClientTabs({ clientId, active, work, books, onboarding }: { clientId: string; active: ClientTab; work: boolean; books: boolean; onboarding?: { done: number; total: number } }) {
+export function ClientTabs({ clientId, active, work, books }: { clientId: string; active: ClientTab; work: boolean; books: boolean; onboarding?: { done: number; total: number } }) {
   const c = `/app/clients/${clientId}`;
+  const current = UNDER[active] ?? active;
   const tabs: [ClientTab, string, string, boolean][] = [
     ["overview", "Overview", c, true],
-    ["onboarding", onboarding ? `Onboarding ${onboarding.done}/${onboarding.total}` : "Onboarding", `${c}/onboarding`, true],
-    ["register", "Register", `${c}/register`, work],
-    ["batch", "Batch upload", `${c}/batch`, work],
-    ["workpapers", "Workpapers", `${c}/workpapers`, work],
-    ["fixed-assets", "Fixed assets", `${c}/fixed-assets`, work],
+    ["inbox", "Inbox", `/app/documents?client=${clientId}`, work],
     ["books", "Books", `${c}/books`, work && books],
-    ["payroll", "Payroll", `${c}/payroll`, work],
+    ["returns", "Returns", `${c}/returns`, work],
+    // Year-end closing lives with the Books tools until its own page (phase 5).
+    ["year-end", "Year-end", `${c}/books/tools#year-end`, work && books],
   ];
   return (
     <nav aria-label="Client" className="mb-6 flex gap-1 overflow-x-auto border-b border-separator-border">
@@ -25,10 +37,10 @@ export function ClientTabs({ clientId, active, work, books, onboarding }: { clie
         <Link
           key={key}
           href={href}
-          aria-current={key === active ? "page" : undefined}
+          aria-current={key === current ? "page" : undefined}
           className={cx(
             "-mb-px shrink-0 border-b-2 px-3 py-2 text-body-medium outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
-            key === active ? "border-accent-600 text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary",
+            key === current ? "border-accent-600 text-text-primary" : "border-transparent text-text-secondary hover:text-text-primary",
           )}
         >
           {label}

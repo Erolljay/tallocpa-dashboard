@@ -26,7 +26,7 @@ async function NewEntry({ params }: Pick<PageProps<"/app/clients/[id]/books/jour
       <PageHeader
         title="New journal entry"
         description={<>{client.name}: adjustments, depreciation, accruals and corrections, posted to the General Journal. Entries from documents come in from the review queue.</>}
-        actions={<LinkButton href={`/app/clients/${id}/books`} variant="ghost">Back to books</LinkButton>}
+        actions={<LinkButton href={`/app/clients/${id}/books/journal`} variant="ghost">Back to journal entries</LinkButton>}
       />
       <Card>
         <EntryForm clientId={id} accounts={accounts} minDate={books.booksStart} documents={documents} />

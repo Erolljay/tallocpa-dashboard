@@ -12,12 +12,15 @@ export const TAX_CODE_KINDS = [
   "output_vat",
   "vat_exempt_sales",
   "zero_rated_sales",
+  "non_vat_sales",
   "input_vat_capital",
   "input_vat_goods",
   "input_vat_services",
   "vat_exempt_purchases",
   "zero_rated_purchases",
+  "non_vat_purchases",
   "not_reported_purchases",
+  "non_deductible",
   "withholding",
   "govt_vat_withheld",
 ] as const;
@@ -27,11 +30,14 @@ export const TAX_CODE_KIND_LABELS: Record<TaxCodeKind, string> = {
   output_vat: "Output VAT",
   vat_exempt_sales: "VAT-exempt sales",
   zero_rated_sales: "Zero-rated sales",
+  non_vat_sales: "Non-VAT sales (percentage tax or 8%)",
   input_vat_capital: "Input VAT – capital goods",
   input_vat_goods: "Input VAT – goods other than capital goods",
   input_vat_services: "Input VAT – services",
   vat_exempt_purchases: "VAT-exempt purchases",
   zero_rated_purchases: "Zero-rated purchases",
+  non_vat_purchases: "Non-VAT purchases (no input VAT; deductible)",
+  non_deductible: "Non-deductible expense (added back for income tax)",
   not_reported_purchases: "No invoice – not reported (deductible expense)",
   withholding: "Withholding tax (EWT on purchases, CWT on sales)",
   govt_vat_withheld: "VAT withheld by a government customer",
@@ -57,7 +63,7 @@ export interface TaxCode {
 /** The invoices a kind goes on (as tax_codes.applies_to). */
 export function appliesTo(kind: TaxCodeKind): InvoiceKind[] {
   if (kind === "withholding") return ["sales", "purchase"];
-  if (kind === "output_vat" || kind === "vat_exempt_sales" || kind === "zero_rated_sales" || kind === "govt_vat_withheld") return ["sales"];
+  if (kind === "output_vat" || kind === "vat_exempt_sales" || kind === "zero_rated_sales" || kind === "non_vat_sales" || kind === "govt_vat_withheld") return ["sales"];
   return ["purchase"];
 }
 
@@ -70,7 +76,7 @@ export function canGoOn(kind: TaxCodeKind, invoice: InvoiceKind, place: TaxCodeP
   return placeOf(kind) === place && appliesTo(kind).includes(invoice);
 }
 
-export type ReturnForm = "2550Q" | "SLS" | "SLP" | "0619-E" | "1601-EQ" | "QAP" | "2307 issued" | "SAWT" | "2307 received" | "1701Q" | "1702Q";
+export type ReturnForm = "2550Q" | "2551Q" | "SLS" | "SLP" | "0619-E" | "1601-EQ" | "QAP" | "2307 issued" | "SAWT" | "2307 received" | "1701Q" | "1702Q";
 
 /** A return line or attachment column a tax code's amounts land on. */
 export interface ReturnLine {
@@ -103,6 +109,11 @@ export const RETURN_LINES: Record<TaxCodeKind, Partial<Record<InvoiceKind, Retur
   },
   vat_exempt_purchases: { purchase: [L("2550Q", "49A", "VAT-exempt purchases"), L("SLP", "exempt_purchases", "Exempt purchases")] },
   zero_rated_purchases: { purchase: [L("2550Q", "48A", "Zero-rated purchases"), L("SLP", "zero_rated_purchases", "Zero-rated purchases")] },
+  non_vat_sales: { sales: [L("2551Q", "taxable_amount", "Taxable amount (gross sales or receipts)"), L("1701Q", "sales", "Sales or receipts (8% option or graduated)")] },
+  // A non-VAT client files no summary list: its purchases feed only the income statement.
+  non_vat_purchases: { purchase: [] },
+  // Kept in the books, added back for income tax (itemized): on no VAT return or list.
+  non_deductible: { purchase: [L("1702Q", "non_deductible", "Not a deduction (added back)"), L("1701Q", "non_deductible", "Not a deduction (added back)")] },
   // Purchases with no invoice: in the income statement and deductible, but on no BIR list or return.
   not_reported_purchases: { purchase: [] },
   withholding: {
