@@ -17,7 +17,7 @@ describe("bookkeepingPart", () => {
     const e = bookkeepingPart(l);
     expect(e).toEqual([
       { account: "Cash", debit: 13320000, credit: 0 },
-      { account: "Creditable Withholding Tax – awaiting 2307", debit: 120000, credit: 0 },
+      { account: "Creditable Withholding Tax - Awaiting 2307", debit: 120000, credit: 0 },
       { account: "Sales", debit: 0, credit: 12000000 },
       { account: "Output VAT", debit: 0, credit: 1440000 },
     ]);
@@ -29,7 +29,7 @@ describe("bookkeepingPart", () => {
     const e = bookkeepingPart(l);
     expect(e).toEqual([
       { account: "Cash", debit: 200000, credit: 0 },
-      { account: "Sales Discount – SC/PWD", debit: 50000, credit: 0 },
+      { account: "Sales Discount - SC/PWD", debit: 50000, credit: 0 },
       { account: "Sales", debit: 0, credit: 250000 },
     ]);
     expect(isBalanced(e)).toBe(true);
@@ -37,7 +37,7 @@ describe("bookkeepingPart", () => {
 
   it("puts a charge sale to receivables at the invoice total", () => {
     const e = bookkeepingPart(line({ terms: "charge", vatable: "1000.00", vat: "120.00", total: "1120.00", net: "1120.00" }));
-    expect(e[0]).toEqual({ account: "Accounts Receivable", debit: 112000, credit: 0 });
+    expect(e[0]).toEqual({ account: "Accounts Receivable - Trade", debit: 112000, credit: 0 });
     expect(isBalanced(e)).toBe(true);
   });
 
@@ -48,7 +48,7 @@ describe("bookkeepingPart", () => {
       { account: "Rent", debit: 4500000, credit: 0 },
       { account: "Input VAT", debit: 540000, credit: 0 },
       { account: "Cash", debit: 0, credit: 4815000 },
-      { account: "Withholding Tax Payable – Expanded", debit: 0, credit: 225000 },
+      { account: "Withholding Tax Payable - Expanded", debit: 0, credit: 225000 },
     ]);
     expect(isBalanced(e)).toBe(true);
   });
@@ -64,8 +64,8 @@ describe("bookkeepingPart", () => {
   it("moves CWT from awaiting to received when the 2307 comes, without touching cash", () => {
     const e = bookkeepingPart(line({ kind: "cwt_received", withholding: "1200.00", ledger_accounts: null }));
     expect(e).toEqual([
-      { account: "Creditable Withholding Tax – 2307 received", debit: 120000, credit: 0 },
-      { account: "Creditable Withholding Tax – awaiting 2307", debit: 0, credit: 120000 },
+      { account: "Creditable Withholding Tax (BIR 2307)", debit: 120000, credit: 0 },
+      { account: "Creditable Withholding Tax - Awaiting 2307", debit: 0, credit: 120000 },
     ]);
     expect(e.some((x) => x.account === "Cash")).toBe(false);
   });
@@ -119,5 +119,17 @@ describe("totals", () => {
   it("adds up a register", () => {
     const t = totals([line({ vatable: "100.00", vat: "12.00", total: "112.00", net: "112.00" }), line({ vat_exempt: "50.00", total: "50.00", net: "50.00", discount: "10.00" })]);
     expect(t).toMatchObject({ count: 2, vatable: 10000, vatExempt: 5000, vat: 1200, total: 16200, net: 16200, discount: 1000 });
+  });
+});
+
+describe("payment account and other deductions (slice 4)", () => {
+  it("uses the cash or bank account chosen and names the other deduction's account", () => {
+    const l = line({
+      vatable: "10000.00", vat: "1200.00", total: "11200.00", other_deduction: "280.00", net: "10920.00",
+      payment: { name: "Cash in Bank" }, other: [{ name: "Bank Charges" }],
+    });
+    expect(bookkeepingPart(l).map((x) => x.account)).toEqual(["Cash in Bank", "Bank Charges", "Sales", "Output VAT"]);
+    expect(isBalanced(bookkeepingPart(l))).toBe(true);
+    expect(line({}).paymentAccount).toBeNull();
   });
 });

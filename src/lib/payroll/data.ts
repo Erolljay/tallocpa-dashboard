@@ -102,3 +102,9 @@ export async function monthLocked(supabase: SupabaseClient, clientId: string, mo
 export function employeesForMonth(employees: Employee[], month: string, paid: Set<string>): Employee[] {
   return employees.filter((e) => paid.has(e.id) || (e.active && (!e.hireDate || e.hireDate.slice(0, 7) <= month.slice(0, 7))) || (e.separationDate != null && e.separationDate.slice(0, 7) >= month.slice(0, 7) && (!e.hireDate || e.hireDate.slice(0, 7) <= month.slice(0, 7))));
 }
+
+/** Accounts an employee's pay can be booked to (payroll to the books): the client's active cost and expense accounts. */
+export async function payAccountsOf(supabase: SupabaseClient, clientId: string): Promise<{ id: string; label: string; group: string }[]> {
+  const { data } = await supabase.from("ledger_accounts").select("id, code, name, type").eq("client_id", clientId).eq("active", true).in("type", ["cost", "expense"]).order("sort_order");
+  return (data ?? []).map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: a.type === "cost" ? "Cost of sales or services" : "Operating expenses" }));
+}

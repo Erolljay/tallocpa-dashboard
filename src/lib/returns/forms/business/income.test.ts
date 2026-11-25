@@ -393,6 +393,24 @@ describe("income tax from the books", () => {
     expect(amounts(osd)).toMatchObject({ sales: 300_000, cost_of_sales: 0, osd: 120_000, net_income_quarter: 180_000, previous_quarters_income: 60_000 });
   });
 
+  it("deducts depreciation per the fixed asset register's tax column, in place of the books (decision 17)", () => {
+    const individual = { taxpayerType: "individual" as const };
+    const ledger = books([mv("sales", -300_000), mv("ded_rental", 50_000), mv("ded_depreciation", 10_000)], [mv("sales", -100_000), mv("ded_depreciation", 10_000)], {
+      depreciation: { periodBook: 1_000_000, periodTax: 500_000, earlierBook: 1_000_000, earlierTax: 500_000 }, // centavos
+    });
+    const r = form1701Q.compute(ctxFor({ form: "1701Q", ...q(2), client: individual, inputs: { regime: "graduated_itemized" }, ledger, documents: [] }));
+    expect(r.errors).toEqual([]);
+    expect(amounts(r)).toMatchObject({ itemized_deductions: 55_000, net_income_quarter: 245_000, previous_quarters_income: 95_000 });
+    expect(r.schedules[0].rows.map((x) => x.item)).toContain("Difference from the books (book–tax reconciliation)");
+    expect(r.warnings.some((w) => w.includes("differs from the fixed asset register"))).toBe(false);
+
+    // A month not run on the Fixed assets page shows as a warning.
+    const unrun = books([mv("sales", -300_000)], [], { depreciation: { periodBook: 1_000_000, periodTax: 1_000_000, earlierBook: 0, earlierTax: 0 } });
+    const w = form1701Q.compute(ctxFor({ form: "1701Q", ...q(2), client: individual, inputs: { regime: "graduated_itemized" }, ledger: unrun, documents: [] }));
+    expect(w.warnings.some((x) => x.includes("run the missing months"))).toBe(true);
+    expect(amounts(w)).toMatchObject({ itemized_deductions: 10_000 });
+  });
+
   it("blocks on accounts without a BIR line and warns about suggested entries not yet posted", () => {
     const r = form1702Q.compute(
       ctxFor({ form: "1702Q", ...q(1), client: corp, inputs, ledger: books([...q1, mv(null, 1_234, "expense", "6999")], [], { suggested: 3 }), documents: [] }),

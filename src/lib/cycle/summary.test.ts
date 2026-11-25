@@ -21,6 +21,10 @@ describe("submission", () => {
     expect(submission(y({ nothing_to_submit_at: "2026-12-02T00:00:00Z" }), 0, "2026-12-03")).toBe("nothing");
   });
 
+  it("is complete once the client confirms they sent everything", () => {
+    expect(submission(y({ client_confirmed_at: "2026-12-03T01:00:00Z" }), 12, "2026-12-03")).toBe("complete");
+  });
+
   it("is missed after the cutoff with nothing in, even before the nightly job records it", () => {
     expect(submission(y(), 0, "2026-12-06")).toBe("missed");
     expect(submission(y({ missed_cutoff: true }), 3, "2026-12-20")).toBe("missed");

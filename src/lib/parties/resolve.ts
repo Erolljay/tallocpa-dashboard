@@ -88,7 +88,17 @@ export function resolveParty(
  * are marked fully confident. When OCR read a different name, the TIN itself may
  * be misread, so nothing is replaced; the reviewer sees the warning instead.
  */
-export function fillFromDirectory<F extends { party_name?: string | null; party_tin?: string | null; party_address?: string | null }>(
+type PartyFields = {
+  party_name?: string | null;
+  party_tin?: string | null;
+  party_address?: string | null;
+  party_kind?: string | null;
+  party_last_name?: string | null;
+  party_first_name?: string | null;
+  party_middle_name?: string | null;
+};
+
+export function fillFromDirectory<F extends PartyFields>(
   fields: F,
   confidence: Record<string, number>,
   entry: Party | null | undefined,
@@ -96,9 +106,12 @@ export function fillFromDirectory<F extends { party_name?: string | null; party_
   if (!entry) return { fields, confidence, filled: false };
   const r = resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry);
   if (r.nameDiffers) return { fields, confidence, filled: false };
+  // The directory's kind and, for an individual, the name parts the BIR lists use.
+  const person = entry.kind === "individual";
+  const names = { party_kind: entry.kind, party_last_name: person ? entry.last_name : null, party_first_name: person ? entry.first_name : null, party_middle_name: person ? entry.middle_name : null };
   return {
-    fields: { ...fields, party_name: r.name, party_tin: r.tin, party_address: r.address },
-    confidence: { ...confidence, party_name: 1, party_tin: 1, ...(r.address ? { party_address: 1 } : {}) },
+    fields: { ...fields, party_name: r.name, party_tin: r.tin, party_address: r.address, ...names },
+    confidence: { ...confidence, party_name: 1, party_tin: 1, party_kind: 1, ...(person ? { party_last_name: 1, party_first_name: 1, party_middle_name: 1 } : {}), ...(r.address ? { party_address: 1 } : {}) },
     filled: true,
   };
 }

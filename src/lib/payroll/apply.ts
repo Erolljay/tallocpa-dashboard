@@ -41,14 +41,15 @@ export function previewOf(checked: CheckedRegister, employees: Employee[], items
  * Saves a checked register into the month (staff upload, or posting a client's
  * submission): adds the new employees if staff agreed (flagged "needs details"),
  * keeps each employee's existing adjustment and note, works out item 22 and saves
- * in one call (save_payroll_month, which also marks the submission posted).
+ * in one call (save_payroll_month, which also marks the submission posted). A run for
+ * part of the month (`periodEnd`) replaces only that period's figures.
  */
 export async function applyRegister(
   supabase: SupabaseClient,
   clientId: string,
   month: string,
   rows: RegisterRow[],
-  opts: { addNew: boolean; submissionId?: string },
+  opts: { addNew: boolean; submissionId?: string; periodEnd?: string | null },
 ): Promise<{ saved: number } | { error: string; preview?: RegisterPreview }> {
   const items = await loadItems(supabase, clientId);
   let employees = await loadEmployees(supabase, clientId);
@@ -69,13 +70,18 @@ export async function applyRegister(
   const current = new Map(stored.filter((s) => s.payMonth === month).map((s) => [s.employeeId, s]));
   const input = new Map<string, MonthInput>();
   for (const [id, lines] of checked.entries) {
+    // A run for part of the month (the 15th, the 30th) stands beside the month's other runs.
+    if (opts.periodEnd) {
+      input.set(id, { lines, adjustment: 0, note: null });
+      continue;
+    }
     const ex = current.get(id);
     const v = { lines, adjustment: ex?.adjustment ?? 0, note: ex?.note ?? null };
     if (!sameMonth(ex, v)) input.set(id, v);
   }
   if (input.size === 0 && !opts.submissionId) return { saved: 0 };
   const earlier = toEntries(stored.filter((s) => s.payMonth < month), items);
-  const payload = monthPayload(year, Number(month.slice(5, 7)) - 1, employees, items, earlier, input);
+  const payload = monthPayload(year, Number(month.slice(5, 7)) - 1, employees, items, earlier, input).map((e) => ({ ...e, pay_period_end: opts.periodEnd ?? null }));
   const { error } = await supabase.rpc("save_payroll_month", { p_client: clientId, p_month: month, p_entries: payload, p_submission: opts.submissionId ?? null });
   if (error) return { error: error.message };
   return { saved: input.size };

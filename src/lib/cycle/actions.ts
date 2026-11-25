@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { showMonth } from "@/lib/documents/labels";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
+import { sendEmail } from "./email";
 
 export type CycleState = { ok?: string; error?: string };
 
@@ -46,4 +49,49 @@ export async function decideExceptionAction(documentId: string, _: CycleState, f
   if (error) return { error: error.message };
   refresh();
   return { ok: "Decision recorded." };
+}
+
+/**
+ * The client confirms every document for the month is in (P1). `cancelled` lists the
+ * missing invoice numbers the client says were cancelled; the database refuses while
+ * any missing number is unanswered. The client's preparer gets an email, so work can
+ * start before the cutoff.
+ */
+export async function confirmMonthAction(clientId: string, period: string, cancelled: { prefix: string; num: number }[]): Promise<CycleState> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("confirm_month_complete", { p_client: clientId, p_period: period, p_cancelled: cancelled });
+  if (error) return { error: error.message };
+  refresh();
+  await tellPreparer(clientId, period, (data as { confirmed_documents: number | null } | null)?.confirmed_documents ?? null).catch(() => undefined);
+  return { ok: `${showMonth(period)} is complete. Thank you.` };
+}
+
+/** The client undoes the confirmation (until the cutoff), or staff reopen it. */
+export async function undoMonthAction(clientId: string, period: string): Promise<CycleState> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("undo_month_complete", { p_client: clientId, p_period: period });
+  if (error) return { error: error.message };
+  refresh();
+  return { ok: `${showMonth(period)} is open again.` };
+}
+
+/** Best effort: an email never blocks the confirmation. */
+async function tellPreparer(clientId: string, period: string, count: number | null) {
+  const admin = supabaseAdmin();
+  const [{ data: client }, { data: team }] = await Promise.all([
+    admin.from("clients").select("name").eq("id", clientId).maybeSingle(),
+    admin.from("staff_assignments").select("user_id").eq("client_id", clientId).eq("role", "preparer"),
+  ]);
+  const to: string[] = [];
+  for (const t of team ?? []) {
+    const { data: u } = await admin.auth.admin.getUserById(t.user_id);
+    if (u.user?.email) to.push(u.user.email);
+  }
+  if (!client || to.length === 0) return;
+  const month = showMonth(period);
+  await sendEmail(
+    to,
+    `${client.name}: ${month} documents are complete`,
+    `${client.name} confirmed they have sent everything for ${month}${count != null ? ` (${count} document${count === 1 ? "" : "s"})` : ""}. The documents step of their returns is done, so you can start now.\n\nAnything they send later for ${month} is marked late.`,
+  );
 }

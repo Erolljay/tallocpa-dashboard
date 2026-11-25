@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Badge, Button, Field, Input, Notice, Select } from "@/components/ui";
 import { showMonth } from "@/lib/documents/labels";
+import { PAY_PERIODS, type PayPeriod } from "@/lib/payroll/periods";
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import { previewPortalPayrollAction, submitPortalPayrollAction, type PortalPayrollState } from "./actions";
 
@@ -13,10 +14,12 @@ export function PortalPayrollUpload({ clients, months }: { clients: { id: string
   const [file, setFile] = useState<File | null>(null);
   const [preview, previewAction, previewing] = useActionState(previewPortalPayrollAction, {} as PortalPayrollState);
   const [sent, sendAction, sending] = useActionState(submitPortalPayrollAction, {} as PortalPayrollState);
+  const [period, setPeriod] = useState<PayPeriod>("month");
   const p = sent.preview ?? preview.preview;
   const withFields = (fd: FormData) => {
     fd.set("client_id", clientId);
     fd.set("month", month);
+    fd.set("pay_period", period);
     if (file) fd.set("file", file);
     return fd;
   };
@@ -30,6 +33,9 @@ export function PortalPayrollUpload({ clients, months }: { clients: { id: string
         )}
         <Field label="Payroll for the month of" htmlFor="pp_month">
           <Select id="pp_month" value={month} onChange={(e) => setMonth(e.target.value)}>{months.map((m) => <option key={m} value={m}>{showMonth(m)}</option>)}</Select>
+        </Field>
+        <Field label="Pay period" htmlFor="pp_period" hint="Paying twice a month? Send the 15th and the 30th separately.">
+          <Select id="pp_period" value={period} onChange={(e) => setPeriod(e.target.value as PayPeriod)}>{Object.entries(PAY_PERIODS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select>
         </Field>
       </div>
       <p className="text-body-regular">

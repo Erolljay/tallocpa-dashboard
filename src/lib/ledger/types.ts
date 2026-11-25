@@ -39,10 +39,14 @@ export const CONTROLS = {
   capital: "Capital",
   drawings: "Drawings",
   retained_earnings: "Retained earnings / fund balance",
+  cwt_awaiting: "Creditable withholding tax awaiting 2307",
+  vat_withheld: "Creditable VAT withheld",
+  sales_discount: "Sales discount – SC/PWD",
 } as const;
 export type Control = keyof typeof CONTROLS;
 export const SINGLE_CONTROLS: readonly Control[] = [
   "ar", "ap", "input_vat", "output_vat", "cwt", "ewt_payable", "percentage_tax_payable", "income_tax_payable", "inventory", "retained_earnings",
+  "cwt_awaiting", "vat_withheld", "sales_discount",
 ];
 
 /** The usual side of an account type (contra accounts set theirs explicitly). */
@@ -74,6 +78,19 @@ export const TEMPLATE_FOR_TAXPAYER: Record<string, TemplateCode> = {
   opc: "opc",
   non_stock: "non_stock",
 };
+
+/** The January 2027 cycle: the first month every client's books run from (Owner, 25 November 2026). */
+export const BOOKS_GO_LIVE = "2027-01-01";
+
+/**
+ * The first month of a new chart's books (Owner's decision 2: every client keeps
+ * account titles): January 2027, the go-live cycle, or the client's registration
+ * month when that is later.
+ */
+export function chartStart(registrationDate?: string | null): string {
+  const reg = registrationDate && /^\d{4}-\d{2}-\d{2}/.test(registrationDate) ? `${registrationDate.slice(0, 7)}-01` : null;
+  return reg && reg > BOOKS_GO_LIVE ? reg : BOOKS_GO_LIVE;
+}
 
 /** One account of a template (and of a client's chart, plus its id). */
 export interface AccountDef {

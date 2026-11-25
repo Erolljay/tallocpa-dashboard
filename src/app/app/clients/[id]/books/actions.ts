@@ -137,7 +137,16 @@ export async function postEntryAction(clientId: string, _: FormState, form: Form
   if (Object.keys(errs).length) return { error: "Check the highlighted fields.", fieldErrors: errs };
   if (lines.length < 2) return { error: "An entry needs at least two lines." };
   if (dr !== cr) return { error: `Debits (${toDecimalString(dr)}) and credits (${toDecimalString(cr)}) must be equal.` };
-  const { error } = await supabase.rpc("post_journal_entry", { p_client: clientId, p_date: v("date"), p_memo: v("memo"), p_reference: v("reference") || null, p_lines: lines });
+  // An adjustment is only ever a journal entry (Owner, 25 November 2026), with its kind, reason and support.
+  const isAdjustment = form.get("is_adjustment") === "on";
+  if (isAdjustment && !v("adjustment_kind")) return { error: "Choose the kind of adjustment.", fieldErrors: { adjustment_kind: "Required" } };
+  if (isAdjustment && !v("adjustment_reason")) return { error: "Give the reason for the adjustment.", fieldErrors: { adjustment_reason: "Required" } };
+  const { error } = isAdjustment
+    ? await supabase.rpc("post_adjustment", {
+        p_client: clientId, p_date: v("date"), p_memo: v("memo"), p_reference: v("reference") || null, p_lines: lines,
+        p_kind: v("adjustment_kind"), p_reason: v("adjustment_reason"), p_document: v("adjustment_document") || null,
+      })
+    : await supabase.rpc("post_journal_entry", { p_client: clientId, p_date: v("date"), p_memo: v("memo"), p_reference: v("reference") || null, p_lines: lines });
   if (error) return { error: `Could not post the entry: ${friendly(error.message)}` };
   revalidatePath(path(clientId), "layout");
   redirect(path(clientId));

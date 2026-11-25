@@ -201,6 +201,44 @@ describe.skipIf(!url)("parties directory database", () => {
     }
   });
 
+  it("records an individual from OCR with last, first and middle name for the BIR lists", async () => {
+    await db.query("begin");
+    try {
+      const sale = await addDocument(clientA, "sales_invoice", {});
+      await signIn(STAFF);
+      await approve(sale, { party_tin: "555-111-222", party_name: "JDC Hardware", party_kind: "individual", party_last_name: "Dela Cruz", party_first_name: "Juan", party_middle_name: "Santos", date: "2026-11-05" });
+      const p = (await db.query(`select id, kind, registered_name, last_name, first_name, middle_name, display_name from public.parties where tin = '555-111-222'`)).rows[0];
+      expect(p).toMatchObject({ kind: "individual", registered_name: null, last_name: "Dela Cruz", first_name: "Juan", middle_name: "Santos", display_name: "Dela Cruz, Juan Santos" });
+
+      // An OCR party first read as a business becomes an individual on a later approval; and back again.
+      const first = await addDocument(clientA, "purchase_receipt", {});
+      const later = await addDocument(clientA, "purchase_receipt", {});
+      const third = await addDocument(clientA, "purchase_receipt", {});
+      await signIn(STAFF);
+      await approve(first, { party_tin: "555-333-444", party_name: "Ana Lim", date: "2026-11-02" });
+      await approve(later, { party_tin: "555-333-444", party_name: "Ana Lim", party_kind: "individual", party_last_name: "Lim", party_first_name: "Ana", date: "2026-11-03" });
+      expect((await db.query(`select kind, registered_name, last_name, first_name, middle_name from public.parties where tin = '555-333-444'`)).rows[0]).toEqual({ kind: "individual", registered_name: null, last_name: "Lim", first_name: "Ana", middle_name: null });
+      await approve(third, { party_tin: "555-333-444", party_name: "Lim Trading Corp", party_kind: "non_individual", date: "2026-11-04" });
+      expect((await db.query(`select kind, registered_name, last_name from public.parties where tin = '555-333-444'`)).rows[0]).toEqual({ kind: "non_individual", registered_name: "Lim Trading Corp", last_name: null });
+
+      // An individual without a last and first name is not guessed into the directory.
+      const unnamed = await addDocument(clientA, "purchase_receipt", {});
+      await signIn(STAFF);
+      await approve(unnamed, { party_tin: "555-666-777", party_name: "Pedro", party_kind: "individual", date: "2026-11-05" });
+      expect((await db.query(`select count(*)::int as n from public.parties where tin = '555-666-777'`)).rows[0].n).toBe(0);
+
+      // A verified individual is never changed.
+      await signIn(OWNER);
+      await db.query(`update public.parties set verified_at = now() where id = $1`, [p.id]);
+      const again = await addDocument(clientA, "sales_invoice", {});
+      await signIn(STAFF);
+      await approve(again, { party_tin: "555-111-222", party_name: "JDC Hardware", party_kind: "non_individual", date: "2026-11-06" });
+      expect((await db.query(`select kind, last_name from public.parties where id = $1`, [p.id])).rows[0]).toEqual({ kind: "individual", last_name: "Dela Cruz" });
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
   it("keeps client links to staff who can see the client", async () => {
     await db.query("begin");
     try {

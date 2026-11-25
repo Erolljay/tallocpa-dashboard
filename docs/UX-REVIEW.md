@@ -123,15 +123,15 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 | Slice | Scope | When |
 |---|---|---|
-| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before the January 2027 go-live (decided) |
+| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before the January 2027 go-live (decided) · slices 1–4 built: register lines, worksheets from the register, books from the register, review fields (SC/PWD discount, VAT withheld, other deductions and their account, SLP category, payment account) and a chart for every client (migrations 20261125000001–03, 07) |
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
-| W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
-| A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |
-| P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live |
-| E1 | Email intake at invoices@tallocpa.com | During the first live cycle |
-| W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle |
+| W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live · built: Workpapers per client and month with the index (0, 0-2, 10, 20, 30, B-2, BB-2), tie-outs T-1 to T-8 computed from the register, the books and payroll, written explanations, and "Mark prepared" held while a tie-out a return needs is off by more than ₱1 and unexplained (migration 20261125000008). T-9 and T-10 come with A1; T-6 and T-7 inform the month close and do not hold up the 1601-C until payroll posts to the books. |
+| A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) | · built (migration 20261125000009): register E from the purchases register's capital goods, per-item setup with a tax life, straight-line run that posts the month's entry, opening assets, T-9 and T-10. The 1701Q still takes depreciation from the books; the tax-column adjustment comes with the book–tax reconciliation.
+| P1 | Portal "I've sent everything" with gap checks and what happens next; Documents per client with inline titles, approve-selected and confirmed firm suggestions | Before the January 2027 go-live · built (migration 20261125000006) |
+| E1 | Email intake at invoices@tallocpa.com | Later (Owner, 25 November 2026): after the rest of phase 1; design above (sender matching, invoices+CODE@, Unmatched list, n8n) |
+| W2 | Adjustments, per-schedule sign-off, gated "Mark prepared" | During the first live cycle | · built (migration 20261125000011): preparer and reviewer sign-off per workpaper, review notes (0-1) raised, answered and cleared, and "Mark reviewed" held until the workpapers a return draws on are reviewer-signed with no open note, from January 2027. Adjustments: only ever a journal entry ("Create journal entry", marked as an adjustment with kind, reason and supporting document); the reviewer ticks each one, and 0-2 cannot be reviewer-signed until they are (migration 20261125000012).
 | W3 | Review notes, My work | After cycle 1 |
-| B1 | Batch upload in the register layout, at onboarding | Later, with onboarding |
+| B1 | Batch upload in the register layout, at onboarding | Later (Owner, 25 November 2026), with onboarding; design above (Excel in the register layout, rows checked like the payroll preview, "Batch · no image") |
 | W4 | Approval memo, PDF binder, LOA ratios feed (Phase 4) | After cycle 1 |
 
 New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `workpaper_ticks`, `review_notes`. Schedules stay computed. Only sign-offs, ticks, adjustments and notes are stored. The file locks with the period's last return, the same way worksheets lock today.
@@ -148,7 +148,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 6 | Workpaper index | New audit-style index (below). |
 | 7 | Tie-out tolerance | ₱1. |
 | 8 | Reviewer sign-off | 10 sales, 20 purchases and 0-2 tie-outs always; others when they have activity. |
-| 9 | SC/PWD discount | Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010). |
+| 9 | SC/PWD discount | Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010), on the BIR line "Others" (confirmed). |
 | 10 | CWT without a 2307 at year end | Pending until the annual return, then decided per client. |
 | 11 | Cash account | General bookkeeping: one **Cash** account, no bank reconciliation. Subsidiary cash accounts (cash on hand, each bank) and bank reconciliation only for clients who opt for full bookkeeping. |
 | 12 | Capitalization threshold | ₱10,000 per item. |
@@ -163,6 +163,13 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 21 | Books close | By the 10th; the client's document cutoff stays the 5th. |
 | 22 | Financial statements | Monthly or quarterly, set per client. |
 | 23 | Registrations | Keep it in the sidebar. |
+| 24 | Quarterly step dates | A return covering more than one month is prepared by the 15th of the month it is due, then reviewed, client approved and Owner approved one working day apart, and filed the day the Owner approves. |
+| 25 | Individuals' names | OCR reads whether a supplier or customer is an individual and splits last, first and middle name for the SLS, SLP, QAP and SAWT; the reviewer confirms them and the parties directory keeps them. |
+| 26 | Books start | January 2027, the go-live cycle, for every client's chart (a client registered later starts in its registration month). |
+| 27 | Payroll to the books | Clients may send several payrolls a month (the 15th and the 30th, or one per cost section); staff review each run's totals and the dues to SSS, PhilHealth and Pag-IBIG, then post it to the books. T-6 and T-7 stay month-close checks; they do not hold up the 1601-C. |
+| 28 | Payroll accounts | An account title per employee for their pay; net pay to Cash; the employer share of cost-of-services staff to "SSS, PhilHealth and Pag-IBIG Contributions - Direct" (as taxify), of everyone else to the operating contributions account. |
+| 29 | Adjustments | Made only through "Create journal entry", marked as an adjustment with its kind, reason and supporting document; never as a typed figure in a worksheet. |
+| 30 | Email and batch intake | E1 and B1 come later, after the rest of phase 1. |
 
 ## Workpaper index
 

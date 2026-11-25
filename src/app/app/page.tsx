@@ -9,6 +9,7 @@ import { showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
+import { loadBoard, loadCoverage } from "@/lib/deadlines/safeguards-load";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
 import { DashboardStats } from "./dashboard-stats";
 import { OwnerSections } from "./owner-sections";
@@ -22,6 +23,9 @@ export default function DashboardPage() {
       </Suspense>
       <Suspense fallback={null}>
         <AmendmentNotice />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SafeguardsNotice />
       </Suspense>
       <Suspense fallback={<Skeleton rows={6} />}>
         <Summary />
@@ -90,6 +94,33 @@ async function AmendmentNotice() {
             <Link href={`/app/clients/${id}/books`} className="font-medium underline">{name}</Link>
           </span>
         ))}
+      </Notice>
+    </div>
+  );
+}
+
+/**
+ * Deadline safeguards (docs/UX-REVIEW.md, D1): the Owner sees critical and overdue
+ * filings and coverage gaps firm-wide; staff and reviewers see their own filings at risk.
+ */
+async function SafeguardsNotice() {
+  const me = await requireStaff();
+  const owner = me.staff.role === "owner";
+  const supabase = await supabaseServer();
+  const today = manilaToday();
+  const [board, gaps] = await Promise.all([loadBoard(supabase, today, owner ? {} : { userId: me.userId }), owner ? loadCoverage(supabase, today) : Promise.resolve([])]);
+  const urgent = board.filter((r) => r.risk.state === "overdue" || r.risk.state === "critical").length;
+  const atRisk = board.filter((r) => r.risk.state === "at_risk").length;
+  const parts = [
+    urgent ? `${urgent} filing${urgent === 1 ? " is" : "s are"} critical or overdue` : null,
+    !owner && atRisk ? `${atRisk} at risk` : null,
+    owner && gaps.length ? `${gaps.length} coverage gap${gaps.length === 1 ? "" : "s"} (a client with a tax type, payroll or EWT but no obligation, or no preparer or reviewer)` : null,
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <div className="mb-6">
+      <Notice tone={urgent ? "blocked" : "waiting"}>
+        {parts.join("; ")}. <Link href={owner ? "/app/deadlines?show=all" : "/app/deadlines"} className="font-medium underline">Open Deadlines</Link>
       </Notice>
     </div>
   );

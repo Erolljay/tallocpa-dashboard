@@ -105,6 +105,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
           )}
           <ReviewForm
             documentId={doc.id}
+            docType={doc.doc_type}
             fields={fields}
             confidence={confidence}
             issues={issues}
@@ -133,7 +134,7 @@ async function loadBooking(
   const { data: books } = await supabase.from("client_books").select("client_id").eq("client_id", doc.client_id).maybeSingle();
   if (!books) return null;
   const [{ data: accounts }, { data: def }, { data: entries }, history, preset] = await Promise.all([
-    supabase.from("ledger_accounts").select("id, code, name, type, active").eq("client_id", doc.client_id).order("sort_order").order("code"),
+    supabase.from("ledger_accounts").select("id, code, name, type, active, control").eq("client_id", doc.client_id).order("sort_order").order("code"),
     supabase.rpc("document_account_default", { p_document: doc.id }),
     supabase.from("journal_entries").select("status, created_at").eq("document_id", doc.id).order("created_at", { ascending: false }).limit(1),
     partyId ? supabase.from("client_party_accounts").select("account_id").eq("client_id", doc.client_id).eq("party_id", partyId).limit(1) : Promise.resolve({ data: [] }),
@@ -151,6 +152,7 @@ async function loadBooking(
     accounts: (accounts ?? [])
       .filter((a) => a.active || a.id === accountId)
       .map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type as keyof typeof ACCOUNT_TYPES] })),
+    cashAccounts: (accounts ?? []).filter((a) => a.active && (a.control === "cash" || a.control === "bank")).map((a) => ({ id: a.id, label: `${a.code} · ${a.name}` })),
     accountId,
     source,
     entry: entries?.[0] ? { status: entries[0].status as "suggested" | "posted" | "reversed" } : null,

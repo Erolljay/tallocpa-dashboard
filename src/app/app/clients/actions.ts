@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { obligationChanges, obligationsForTaxTypes, TaxTypeError } from "@/lib/clients/obligations";
 import { assignmentSchema, editClientSchema, engagementSchema, formToObject, newClientSchema } from "@/lib/clients/schema";
+import { templatePayload } from "@/lib/ledger/coa";
+import { chartStart, TEMPLATE_FOR_TAXPAYER } from "@/lib/ledger/types";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean };
@@ -55,6 +57,13 @@ export async function createClientAction(_: FormState, form: FormData): Promise<
   });
   if (error) return { error: `Could not save the client: ${error.message}` };
   const clientId = (data as { id: string }).id;
+  // Every client keeps account titles (decision 2). Best effort: the Books page can set it up later.
+  await supabase.rpc("setup_books", {
+    p_client: clientId,
+    p_template: TEMPLATE_FOR_TAXPAYER[v.taxpayer_type] ?? "stock_corporation",
+    p_books_start: chartStart(v.registration_date),
+    p_accounts: templatePayload(TEMPLATE_FOR_TAXPAYER[v.taxpayer_type] ?? "stock_corporation"),
+  });
 
   const team: { client_id: string; user_id: string; role: "preparer" | "reviewer" }[] = [];
   if (v.preparer_id) team.push({ client_id: clientId, user_id: v.preparer_id, role: "preparer" });
@@ -162,4 +171,31 @@ export async function setClientStatusAction(clientId: string, status: "active" |
   revalidatePath(`/app/clients/${clientId}`);
   revalidatePath("/app/clients");
   return { ok: true };
+}
+
+/**
+ * The Owner sets up account titles for every client that has none (decision 2), each
+ * from the template for its kind of taxpayer, books starting `month` (YYYY-MM).
+ */
+export async function setupMissingChartsAction(_: { ok?: string; error?: string }, form: FormData): Promise<{ ok?: string; error?: string }> {
+  await requireOwner();
+  const month = String(form.get("books_start") ?? "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return { error: "Choose the first month of the books." };
+  const supabase = await supabaseServer();
+  const [{ data: clients }, { data: books }] = await Promise.all([
+    supabase.from("clients").select("id, name, taxpayer_type").neq("status", "archived"),
+    supabase.from("client_books").select("client_id"),
+  ]);
+  const have = new Set((books ?? []).map((b) => b.client_id));
+  const todo = (clients ?? []).filter((c) => !have.has(c.id));
+  const failed: string[] = [];
+  for (const c of todo) {
+    const template = TEMPLATE_FOR_TAXPAYER[c.taxpayer_type] ?? "stock_corporation";
+    const { error } = await supabase.rpc("setup_books", { p_client: c.id, p_template: template, p_books_start: `${month}-01`, p_accounts: templatePayload(template) });
+    if (error) failed.push(`${c.name}: ${error.message}`);
+  }
+  revalidatePath("/app", "layout");
+  const done = todo.length - failed.length;
+  const ok = `Account titles set up for ${done} client${done === 1 ? "" : "s"}.`;
+  return failed.length ? { ok, error: `Not set up: ${failed.join("; ")}` } : { ok };
 }

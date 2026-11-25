@@ -16,7 +16,11 @@ async function NewEntry({ params }: Pick<PageProps<"/app/clients/[id]/books/jour
   const { id } = await params;
   const { supabase, client, books } = await booksAccess(id);
   if (!books) notFound();
-  const accounts = await loadAccounts(supabase, id);
+  const [accounts, { data: docs }] = await Promise.all([
+    loadAccounts(supabase, id),
+    supabase.from("documents").select("id, file_name, doc_type, document_month").eq("client_id", id).neq("status", "uploading").order("created_at", { ascending: false }).limit(200),
+  ]);
+  const documents = (docs ?? []).map((d) => ({ id: d.id, label: `${String(d.document_month).slice(0, 7)} · ${d.file_name}` }));
   return (
     <>
       <PageHeader
@@ -25,7 +29,7 @@ async function NewEntry({ params }: Pick<PageProps<"/app/clients/[id]/books/jour
         actions={<LinkButton href={`/app/clients/${id}/books`} variant="ghost">Back to books</LinkButton>}
       />
       <Card>
-        <EntryForm clientId={id} accounts={accounts} minDate={books.booksStart} />
+        <EntryForm clientId={id} accounts={accounts} minDate={books.booksStart} documents={documents} />
       </Card>
     </>
   );

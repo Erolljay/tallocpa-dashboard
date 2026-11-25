@@ -101,6 +101,12 @@ export interface LedgerContext {
   earlier: LedgerMovement[];
   /** Suggested entries dated in the taxable year to date, not yet posted. */
   suggested: number;
+  /**
+   * The fixed asset register's depreciation (A1; Owner's decision 17): books and tax
+   * columns for this period and the earlier part of the taxable year. The income tax
+   * return deducts the tax column in place of the books' Depreciation line.
+   */
+  depreciation?: { periodBook: Centavos; periodTax: Centavos; earlierBook: Centavos; earlierTax: Centavos };
   /** For annual forms: the financial statements at the period end (balance sheet schedule). */
   statements?: FinancialStatements;
 }

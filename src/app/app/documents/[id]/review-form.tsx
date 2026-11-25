@@ -5,8 +5,19 @@ import { useActionState, useRef, useState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/documents/actions";
 import type { Issue } from "@/lib/ocr/checks";
-import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PAYMENT_TERMS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
+import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PARTY_KINDS, PAYMENT_TERMS, SLP_CATEGORY_KEYS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
+import { SLP_CATEGORIES } from "@/lib/register/parts";
 import { approveDocumentAction } from "./actions";
+
+/** Which document types each slice 4 field applies to (others always show). */
+const ONLY_FOR: Partial<Record<string, readonly string[]>> = {
+  discount: ["sales_invoice"],
+  vat_withheld: ["sales_invoice"],
+  other_deduction: ["sales_invoice", "purchase_receipt"],
+  other_deduction_account: ["sales_invoice", "purchase_receipt"],
+  slp_category: ["purchase_receipt"],
+  payment_account: ["sales_invoice", "purchase_receipt"],
+};
 
 const typeLabel: Record<string, string> = {
   sales_invoice: "Sales invoice / OR",
@@ -33,6 +44,8 @@ export interface DirectoryParty {
  */
 export interface Booking {
   accounts: { id: string; label: string; group: string }[];
+  /** This client's cash and bank accounts, for "Paid from / deposited to". */
+  cashAccounts: { id: string; label: string }[];
   accountId: string | null;
   /** Where the default came from, for the hint. */
   source: string;
@@ -44,7 +57,7 @@ export interface Booking {
 }
 
 /** The figures beside the image: low-confidence fields highlighted, check warnings inline. */
-export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null; booking?: Booking | null }) {
+export function ReviewForm(props: { documentId: string; docType: string; mode: "approve" | "edit"; fields: OcrFields; confidence: OcrConfidence; issues: Issue[]; canAct: boolean; canRead: boolean; model: string | null; directory?: DirectoryParty | null; booking?: Booking | null }) {
   const [state, approve, pending] = useActionState(approveDocumentAction.bind(null, props.documentId, props.mode), {} as DocActionState);
   const [retState, ret, retPending] = useActionState(reviewDocumentAction.bind(null, props.documentId, "return"), {} as DocActionState);
   const [readState, read, readPending] = useActionState(async () => runOcrAction(props.documentId), {} as DocActionState);
@@ -53,6 +66,8 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
   const lowCount = Object.values(props.confidence).filter((c) => c < LOW_CONFIDENCE).length;
   const formRef = useRef<HTMLFormElement>(null);
   const [usedDirectory, setUsedDirectory] = useState(false);
+  // Last, first and middle name show only for an individual (the BIR lists need them).
+  const [partyKind, setPartyKind] = useState(props.fields.party_kind ?? "");
   const dir = props.directory;
   /** Copies the directory's registered name, TIN and address into the party fields. */
   const applyDirectory = () => {
@@ -73,6 +88,11 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {OCR_FIELDS.map((f) => {
+            if (f.kind === "person" && partyKind !== "individual") return null;
+            const only = ONLY_FOR[f.key];
+            if (only && !only.includes(props.docType)) return null;
+            // The account fields need this client's chart.
+            if ((f.kind === "account" || f.kind === "payment_account") && !props.booking) return null;
             const conf = props.confidence[f.key];
             const low = conf != null && conf < LOW_CONFIDENCE;
             const issue = issueFor(f.key);
@@ -85,6 +105,30 @@ export function ReviewForm(props: { documentId: string; mode: "approve" | "edit"
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">—</option>
                       {OCR_DOC_TYPES.map((t) => <option key={t} value={t}>{typeLabel[t]}</option>)}
+                    </Select>
+                  ) : f.kind === "party_kind" ? (
+                    <Select id={id} name={f.key} value={partyKind} onChange={(e) => setPartyKind(e.target.value)} disabled={!props.canAct}>
+                      <option value="">Not stated (business)</option>
+                      {Object.entries(PARTY_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                    </Select>
+                  ) : f.kind === "slp" ? (
+                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
+                      <option value="">From the account title</option>
+                      {SLP_CATEGORY_KEYS.map((k) => <option key={k} value={k}>{SLP_CATEGORIES[k]}</option>)}
+                    </Select>
+                  ) : f.kind === "payment_account" ? (
+                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
+                      <option value="">Cash (default)</option>
+                      {(props.booking?.cashAccounts ?? []).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                    </Select>
+                  ) : f.kind === "account" ? (
+                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
+                      <option value="">Choose if there is one…</option>
+                      {[...new Set((props.booking?.accounts ?? []).map((a) => a.group))].map((g) => (
+                        <optgroup key={g} label={g}>
+                          {(props.booking?.accounts ?? []).filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                        </optgroup>
+                      ))}
                     </Select>
                   ) : f.kind === "terms" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>

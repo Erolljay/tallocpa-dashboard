@@ -102,10 +102,14 @@ describe.skipIf(!url)("ledger database", () => {
 
   const setup = `select public.setup_books($1, 'stock_corporation', '2027-01-01', $2)`;
 
-  it("sets up books only for assigned staff of a bookkeeping client", async () => {
+  it("sets up books only for assigned staff; a client without a Bookkeeping engagement gets them too (decision 2)", async () => {
     const accounts = JSON.stringify(templatePayload("stock_corporation"));
     await expect(asCommit(OTHER_STAFF, setup, [clientA, accounts])).rejects.toThrow(/Only the Owner or staff assigned/);
-    await expect(asCommit(OWNER, setup, [clientB, accounts])).rejects.toThrow(/no active Bookkeeping engagement/);
+    // Every client keeps account titles, tax compliance only included (rolled back here).
+    await as(OWNER, async () => {
+      await db.query(setup, [clientB, accounts]);
+      expect((await db.query(`select count(*)::int as n from public.client_books where client_id = $1`, [clientB])).rows[0].n).toBe(1);
+    });
     await asCommit(STAFF, setup, [clientA, accounts]);
     await expect(asCommit(STAFF, setup, [clientA, accounts])).rejects.toThrow(/already set up/);
     const rows = (await db.query(`select id, template_key from public.ledger_accounts where client_id = $1`, [clientA])).rows;

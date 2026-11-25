@@ -4,12 +4,15 @@ import { RiArrowDownLine, RiArrowUpLine, RiCheckLine, RiLockLine } from "@remixi
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
-import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { DOC_TYPES, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
-import { LOW_CONFIDENCE } from "@/lib/ocr/fields";
+import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
+import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { LOW_CONFIDENCE, normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { ClientSelect, PeriodFilter } from "./filters";
+import { PendingReview, type PendingRow } from "./pending-review";
 import { periodRange } from "./period";
 
 export default function DocumentsPage(props: PageProps<"/app/documents">) {
@@ -39,7 +42,7 @@ interface Row {
   file_name: string;
   status: keyof typeof docStatusTone;
   created_at: string;
-  extractions: { status: string; confidence: Record<string, number> | null; error: string | null; approved_at: string | null; approved_fields: Record<string, string | null> | null } | null;
+  extractions: { status: string; fields: Record<string, string | null> | null; confidence: Record<string, number> | null; error: string | null; approved_at: string | null; approved_fields: Record<string, string | null> | null } | null;
 }
 
 async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "searchParams">) {
@@ -64,7 +67,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
 
   let query = supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, carried_from, file_name, status, created_at, extractions(status, confidence, error, approved_at, approved_fields)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, carried_from, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)")
     .not("doc_type", "in", "(filed_return,payment_proof)")
     .order("created_at", { ascending: tab === "pending" })
     .limit(1000);
@@ -135,9 +138,11 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
       </form>
 
       {!client ? (
-        <ClientList clients={clients} tab={tab} sort={sort} link={link} counts={tab === "pending" ? pendingCounts : countBy(rows)} />
+        <ClientList clients={clients} tab={tab} sort={sort} link={link} counts={tab === "pending" ? pendingCounts : countBy(rows)} complete={await confirmedMonths(supabase, clients.map((c) => c.id))} />
       ) : tab === "pending" ? (
-        <PendingTable rows={rows} />
+        <Suspense fallback={<Skeleton rows={6} />}>
+          <ClientPending rows={rows} clientId={clientId} />
+        </Suspense>
       ) : (
         <Suspense fallback={<Skeleton rows={6} />}>
           <ApprovedTable rows={rows} clientId={clientId} />
@@ -153,8 +158,17 @@ function countBy(rows: Row[]) {
   return m;
 }
 
+/** Open months each client confirmed as complete in the portal (P1): staff can start before the cutoff. */
+async function confirmedMonths(supabase: Awaited<ReturnType<typeof supabaseServer>>, ids: string[]): Promise<Map<string, string[]>> {
+  if (ids.length === 0) return new Map();
+  const { data } = await supabase.from("document_cycles").select("client_id, period").in("client_id", ids).not("client_confirmed_at", "is", null).is("closed_at", null).order("period");
+  const out = new Map<string, string[]>();
+  for (const y of data ?? []) out.set(y.client_id, [...(out.get(y.client_id) ?? []), showMonth(String(y.period))]);
+  return out;
+}
+
 /** The client list from the sketch: name, then the count waiting (or a check when none). */
-function ClientList({ clients, tab, sort, link, counts }: { clients: { id: string; name: string }[]; tab: Tab; sort: Sort; link: (o: Record<string, string>) => string; counts: Map<string, number> }) {
+function ClientList({ clients, tab, sort, link, counts, complete }: { clients: { id: string; name: string }[]; tab: Tab; sort: Sort; link: (o: Record<string, string>) => string; counts: Map<string, number>; complete: Map<string, string[]> }) {
   const n = (id: string) => counts.get(id) ?? 0;
   const sorted = [...clients].sort((a, b) => {
     if (sort === "count" || sort === "-count") {
@@ -192,6 +206,9 @@ function ClientList({ clients, tab, sort, link, counts }: { clients: { id: strin
                 <tr key={c.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
                   <td className="py-2.5 pe-4">
                     <Link href={link({ client: c.id })} className="font-medium text-button-ghost-foreground hover:underline">{c.name}</Link>
+                    {(complete.get(c.id) ?? []).map((m) => (
+                      <span key={m} className="ms-2 inline-block align-middle"><Badge tone="done">Sent everything for {m}</Badge></span>
+                    ))}
                   </td>
                   <td className="py-2.5 text-end tabular-nums">
                     {tab === "pending" && count === 0 ? (
@@ -229,45 +246,79 @@ function MonthCell({ r }: { r: Row }) {
   );
 }
 
-function PendingTable({ rows }: { rows: Row[] }) {
+const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
+
+/**
+ * One client's documents waiting for review (P1): titles from this client's chart,
+ * where each came from, and "Approve selected" for the ones OCR read cleanly.
+ */
+async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string }) {
+  const supabase = await supabaseServer();
+  const [{ data: books }, { data: accounts }, { data: suggestions }, { data: approved }] = await Promise.all([
+    supabase.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
+    supabase.from("ledger_accounts").select("id, code, name, type, active").eq("client_id", clientId).eq("active", true).order("sort_order").order("code"),
+    supabase.rpc("pending_document_accounts", { p_client: clientId }),
+    supabase.from("extractions").select("approved_fields, documents!inner(client_id)").eq("documents.client_id", clientId).not("approved_fields", "is", null).limit(5000),
+  ]);
+  const suggested = new Map(((suggestions ?? []) as { document_id: string; account_id: string | null; source: AccountSource }[]).map((x) => [x.document_id, x]));
+  const dupes = new Set(
+    (approved ?? []).map((a) => {
+      const f = a.approved_fields as Record<string, string | null> | null;
+      return f?.party_tin && f.number ? `${f.party_tin}|${f.number}` : "";
+    }).filter(Boolean),
+  );
+  const today = manilaToday();
+  const pending: PendingRow[] = rows.map((r) => {
+    const e = r.extractions;
+    const fields = normalizeFields((e?.fields ?? {}) as OcrFields);
+    const readiness = bulkReadiness(e && { status: e.status, fields, confidence: e.confidence as OcrConfidence | null }, {
+      today,
+      priorYear: r.prior_year,
+      duplicate: Boolean(fields.party_tin && fields.number && dupes.has(`${fields.party_tin}|${fields.number}`)),
+    });
+    const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
+    const ocr: PendingRow["ocr"] = !e
+      ? { label: "Not read yet", tone: "neutral" }
+      : e.status === "failed"
+        ? { label: "Failed", tone: "blocked" }
+        : e.status === "pending"
+          ? { label: "Reading…", tone: "progress" }
+          : low
+            ? { label: `${low} to check`, tone: "waiting" }
+            : readiness.ready
+              ? { label: "Ready", tone: "done" }
+              : { label: "Check", tone: "waiting" };
+    const total = fields.total != null && fields.total !== "" ? Number(fields.total) : null;
+    const booked = Boolean(books) && BOOKED_TYPES.includes(r.doc_type);
+    const s = suggested.get(r.id);
+    return {
+      id: r.id,
+      received: when(r.created_at),
+      typeLabel: DOC_TYPES[r.doc_type],
+      fileName: r.file_name,
+      month: showMonth(r.period),
+      flags: [
+        ...(r.late ? [{ label: "late", tone: "warn" as const }] : []),
+        ...(r.carried_from ? [{ label: "late-recorded", tone: "warn" as const }] : []),
+        ...(r.prior_year ? [{ label: "prior year", tone: "bad" as const }] : []),
+      ],
+      party: fields.party_name ?? null,
+      number: fields.number ?? null,
+      total: total == null || Number.isNaN(total) ? null : peso.format(total),
+      ocr,
+      ready: readiness.ready,
+      reason: readiness.reason,
+      booked,
+      titled: r.doc_type === "sales_invoice" || r.doc_type === "purchase_receipt",
+      account: booked ? { id: s?.account_id ?? null, source: s?.source ?? "choose" } : null,
+    };
+  });
   return (
-    <Card title={`Waiting for review (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Oldest first</span>}>
-      {rows.length === 0 ? (
-        <p className="text-body-regular text-text-secondary">Nothing waiting for this period. New uploads appear here.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-body-regular">
-            <thead className="text-start text-body-medium text-text-tertiary">
-              <tr>
-                <th scope="col" className="text-start pb-2">Received</th>
-                <th scope="col" className="text-start pb-2">Document</th>
-                <th scope="col" className="text-start pb-2">Month</th>
-                <th scope="col" className="text-start pb-2">OCR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const e = r.extractions;
-                const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
-                return (
-                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
-                    <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(r.created_at)}</td>
-                    <td className="py-2 pe-4">
-                      <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[r.doc_type]}</Link>
-                      <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.file_name}</p>
-                    </td>
-                    <MonthCell r={r} />
-                    <td className="py-2">
-                      {!e ? <Badge>Not read yet</Badge> : e.status === "failed" ? <Badge tone="blocked">Failed</Badge> : e.status === "pending" ? <Badge tone="progress">Reading…</Badge> : low ? <Badge tone="waiting">{low} to check</Badge> : <Badge tone={docStatusTone[r.status]}>{docStatusLabel[r.status]}</Badge>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Card>
+    <PendingReview
+      clientId={clientId}
+      rows={pending}
+      accounts={(accounts ?? []).map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type as keyof typeof ACCOUNT_TYPES] }))}
+    />
   );
 }
 

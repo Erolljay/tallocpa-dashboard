@@ -120,6 +120,22 @@ export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, for
       const b = prev.byLine[k] ?? 0;
       return { item: BIR_LINES[k].label, thisQ: a, prevQ: b, ytd: a + b };
     });
+    // Decision 17: depreciation is deducted per the fixed asset register's tax column, in place of the books.
+    let adjQ = 0;
+    let adjPrev = 0;
+    const dep = ctx.ledger.depreciation;
+    if (dep) {
+      const bookQ = q.byLine.ded_depreciation ?? 0;
+      const bookPrev = prev.byLine.ded_depreciation ?? 0;
+      adjQ = dep.periodTax - bookQ;
+      adjPrev = dep.earlierTax - bookPrev;
+      if (adjQ !== 0 || adjPrev !== 0) {
+        rows.push({ item: "Depreciation per the tax column, in place of the books", thisQ: dep.periodTax, prevQ: dep.earlierTax, ytd: dep.periodTax + dep.earlierTax });
+        rows.push({ item: "Difference from the books (book–tax reconciliation)", thisQ: adjQ, prevQ: adjPrev, ytd: adjQ + adjPrev });
+      }
+      if (dep.periodBook + dep.earlierBook !== bookQ + bookPrev)
+        warnings.push(`Depreciation in the books (₱${peso(bookQ + bookPrev)} to date) differs from the fixed asset register (₱${peso(dep.periodBook + dep.earlierBook)}): run the missing months on the Fixed assets page.`);
+    }
     rows.push({ item: "Creditable tax withheld (2307s on file)", thisQ: cwtQ, prevQ: cwtPrev, ytd: cwtQ + cwtPrev });
     return {
       fromBooks: true,
@@ -129,8 +145,8 @@ export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, for
       cosPrev: useCos ? prev.costOfSales : 0,
       otherQ: q.otherIncome,
       otherPrev: prev.otherIncome,
-      dedQ: q.deductions,
-      dedPrev: prev.deductions,
+      dedQ: q.deductions + adjQ,
+      dedPrev: prev.deductions + adjPrev,
       errors,
       warnings,
       detail: { title: "Year to date from the books, by BIR line", columns: COMPARISON_COLUMNS, rows },
@@ -138,7 +154,9 @@ export function incomeSource(ctx: WorksheetContext, p: Periods, inp: Inputs, for
         sales: "From the books: accounts on the sales line, net of returns and discounts, this quarter.",
         cos: useCos ? "From the books: cost of sales / services accounts this quarter." : "Not deducted under this regime.",
         other: "From the books: other taxable income accounts this quarter (income subject to final tax is left out).",
-        ded: "From the books: expense accounts by BIR deduction line this quarter (see the schedule below).",
+        ded: dep
+          ? "From the books: expense accounts by BIR deduction line this quarter, with depreciation per the fixed asset register's tax column (see the schedule below)."
+          : "From the books: expense accounts by BIR deduction line this quarter (see the schedule below).",
         prev: "From the books: the earlier quarters of the taxable year.",
       },
     };

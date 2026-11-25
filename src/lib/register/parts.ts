@@ -13,7 +13,11 @@
  *     it ties to the 0619-E and 1601-EQ;
  *   - the SC/PWD discount is its own debit, Sales Discount – SC/PWD (decision 9);
  *   - a client that is not VAT-registered carries VAT inside the amounts.
- * The books do not use these entries yet: book_document still posts as built.
+ *   - cash goes to the cash or bank account chosen on review, else Cash; bank or
+ *     card charges deducted from a receipt or payment go to the account chosen
+ *     for them (slice 4).
+ * book_document (migrations 20261125000003 and 20261125000007) posts the same
+ * entries; account names here are the chart template's.
  */
 import { BIR_LINES, type BirLineKey } from "@/lib/ledger/bir-lines";
 import { toCentavos } from "@/lib/returns/money";
@@ -63,6 +67,10 @@ export interface RegisterLine {
   slpCategory: SlpCategory | null;
   vatRegistered: boolean;
   account: { name: string; fsLine: string; birLine: string | null } | null;
+  /** The cash or bank account chosen on review; null means the client's Cash (decision 11). */
+  paymentAccount: string | null;
+  /** The account an other deduction (bank or card charges) goes to. */
+  otherAccount: string | null;
 }
 
 /** The database row (numeric columns arrive as strings). */
@@ -92,7 +100,11 @@ export interface RegisterRow {
   vat_registered: boolean;
   /** ledger_accounts embedded by PostgREST (object, one-item array or null). */
   ledger_accounts?: { name: string; fs_line: string; bir_line: string | null } | { name: string; fs_line: string; bir_line: string | null }[] | null;
+  payment?: { name: string } | { name: string }[] | null;
+  other?: { name: string } | { name: string }[] | null;
 }
+
+const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 const c = (v: string | number | null | undefined): Centavos => toCentavos(v ?? null) ?? 0;
 
@@ -126,6 +138,8 @@ export function toRegisterLine(r: RegisterRow): RegisterLine {
     slpCategory: r.slp_category,
     vatRegistered: r.vat_registered,
     account: a ? { name: a.name, fsLine: a.fs_line, birLine: a.bir_line } : null,
+    paymentAccount: one(r.payment)?.name ?? null,
+    otherAccount: one(r.other)?.name ?? null,
   };
 }
 
@@ -142,15 +156,15 @@ export interface EntryLine {
 
 export const ACCOUNTS = {
   cash: "Cash",
-  receivable: "Accounts Receivable",
-  payable: "Accounts Payable",
-  cwtAwaiting: "Creditable Withholding Tax – awaiting 2307",
-  cwtReceived: "Creditable Withholding Tax – 2307 received",
+  receivable: "Accounts Receivable - Trade",
+  payable: "Accounts Payable - Trade",
+  cwtAwaiting: "Creditable Withholding Tax - Awaiting 2307",
+  cwtReceived: "Creditable Withholding Tax (BIR 2307)",
   vatWithheld: "Creditable VAT Withheld",
   outputVat: "Output VAT",
   inputVat: "Input VAT",
-  ewtPayable: "Withholding Tax Payable – Expanded",
-  discount: "Sales Discount – SC/PWD",
+  ewtPayable: "Withholding Tax Payable - Expanded",
+  discount: "Sales Discount - SC/PWD",
   otherDeduction: "Other Deductions",
   sales: "Sales",
   expense: "Account title not chosen",
@@ -165,13 +179,15 @@ const cr = (account: string, amount: Centavos): EntryLine => ({ account, debit: 
  */
 export function bookkeepingPart(l: RegisterLine): EntryLine[] {
   const title = l.account?.name;
+  const cash = l.paymentAccount ?? ACCOUNTS.cash;
+  const other = l.otherAccount ?? ACCOUNTS.otherDeduction;
   let lines: EntryLine[] = [];
   if (l.kind === "sale") {
     const vat = l.vatRegistered ? l.vat : 0;
     const revenue = l.total - vat + l.discount;
     lines = [
-      l.terms === "charge" ? dr(ACCOUNTS.receivable, l.total) : dr(ACCOUNTS.cash, l.net),
-      ...(l.terms === "charge" ? [] : [dr(ACCOUNTS.cwtAwaiting, l.withholding), dr(ACCOUNTS.vatWithheld, l.vatWithheld), dr(ACCOUNTS.otherDeduction, l.otherDeduction)]),
+      l.terms === "charge" ? dr(ACCOUNTS.receivable, l.total) : dr(cash, l.net),
+      ...(l.terms === "charge" ? [] : [dr(ACCOUNTS.cwtAwaiting, l.withholding), dr(ACCOUNTS.vatWithheld, l.vatWithheld), dr(other, l.otherDeduction)]),
       dr(ACCOUNTS.discount, l.discount),
       cr(title ?? ACCOUNTS.sales, revenue),
       cr(ACCOUNTS.outputVat, vat),
@@ -181,9 +197,9 @@ export function bookkeepingPart(l: RegisterLine): EntryLine[] {
     lines = [
       dr(title ?? ACCOUNTS.expense, l.total - vat),
       dr(ACCOUNTS.inputVat, vat),
-      l.terms === "charge" ? cr(ACCOUNTS.payable, l.total - l.withholding) : cr(ACCOUNTS.cash, l.net),
+      l.terms === "charge" ? cr(ACCOUNTS.payable, l.total - l.withholding) : cr(cash, l.net),
       cr(ACCOUNTS.ewtPayable, l.withholding),
-      ...(l.terms === "charge" ? [] : [cr(ACCOUNTS.otherDeduction, l.vatWithheld + l.otherDeduction)]),
+      ...(l.terms === "charge" ? [] : [cr(other, l.vatWithheld + l.otherDeduction)]),
     ];
   } else if (l.kind === "cwt_received") {
     lines = [dr(ACCOUNTS.cwtReceived, l.withholding), cr(ACCOUNTS.cwtAwaiting, l.withholding)];
