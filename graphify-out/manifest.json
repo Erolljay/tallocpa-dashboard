@@ -102,9 +102,9 @@
     "semantic_hash": ""
   },
   "src/app/app/deadlines/page.tsx": {
-    "mtime": 1795556117.898142,
-    "seen": 1795565923.2266145,
-    "ast_hash": "28cac36b50a8afef03008ef4a4a8bc7e",
+    "mtime": 1795568431.5448976,
+    "seen": 1795568598.2992663,
+    "ast_hash": "7f3e32bb305ad2b18009ab442cfd9bd5",
     "semantic_hash": ""
   },
   "src/app/app/layout.tsx": {
@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "src/app/app/page.tsx": {
-    "mtime": 1795556117.8986995,
-    "seen": 1795565923.2266412,
-    "ast_hash": "9df2f01be823ae9345377932547980f3",
+    "mtime": 1795568443.3026435,
+    "seen": 1795568598.2997148,
+    "ast_hash": "e3ee690e37be5c402b6b1f5052383353",
     "semantic_hash": ""
   },
   "src/app/app/staff/actions.ts": {
@@ -402,10 +402,10 @@
     "semantic_hash": "ee17fd1c97c735e9f3564e3f5251f125"
   },
   "vercel.json": {
-    "mtime": 1795556117.9154902,
-    "seen": 1795565923.2271156,
-    "ast_hash": "d2a6f79da1e6ec1b4d4bd7878acb7c7d",
-    "semantic_hash": "d2a6f79da1e6ec1b4d4bd7878acb7c7d"
+    "mtime": 1795568496.7129014,
+    "seen": 1795568598.3077905,
+    "ast_hash": "dd79231d89cb1a825fc75fe1f18bc9a0",
+    "semantic_hash": ""
   },
   "vitest.config.mts": {
     "mtime": 1795556117.9154902,
@@ -2607,6 +2607,60 @@
     "mtime": 1795568125.0523,
     "seen": 1795568206.0407379,
     "ast_hash": "185bfffd6a9156f5f45dd0c03d12e640",
+    "semantic_hash": ""
+  },
+  "src/app/api/cron/morning/route.ts": {
+    "mtime": 1795568495.1049013,
+    "seen": 1795568598.2980595,
+    "ast_hash": "deeb075a164e036a59c84edd09ada0a5",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/coverage.test.ts": {
+    "mtime": 1795568356.9888933,
+    "seen": 1795568598.303642,
+    "ast_hash": "735c99cd14f5ed997843ae9721465ba4",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/coverage.ts": {
+    "mtime": 1795568366.4907045,
+    "seen": 1795568598.3036442,
+    "ast_hash": "3cb498db537e52a825e225d948312d85",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/morning.test.ts": {
+    "mtime": 1795568475.8089,
+    "seen": 1795568598.303755,
+    "ast_hash": "9294be965a9f54f97414e37301f54336",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/morning.ts": {
+    "mtime": 1795568465.8408997,
+    "seen": 1795568598.3037567,
+    "ast_hash": "a303ffc1b492b6ae40ee9c593fc1f133",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/run.ts": {
+    "mtime": 1795568504.2916045,
+    "seen": 1795568598.3037581,
+    "ast_hash": "fbd2e1296f4fe263bedf333456596bd7",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/safeguards-load.ts": {
+    "mtime": 1795568403.5488958,
+    "seen": 1795568598.303759,
+    "ast_hash": "aec6434912c6e806a188aee5a6c0a02b",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/safeguards.test.ts": {
+    "mtime": 1795568334.3288918,
+    "seen": 1795568598.30376,
+    "ast_hash": "439985b9fe10852499981a1f4282da23",
+    "semantic_hash": ""
+  },
+  "src/lib/deadlines/safeguards.ts": {
+    "mtime": 1795568315.2048907,
+    "seen": 1795568598.3037615,
+    "ast_hash": "2abc1eaa2aa72df57e90c8bf091ee768",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
