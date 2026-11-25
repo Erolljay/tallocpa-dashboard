@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/page.tsx": {
-    "mtime": 1795588210.3801918,
-    "seen": 1795590158.3240926,
-    "ast_hash": "04ec79783b1f10ea129ba454e4cb34e8",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2321196,
+    "ast_hash": "5b8e1c6d7d3263fbd257448af1196ca0",
     "semantic_hash": ""
   },
   "src/app/app/clients/actions.ts": {
@@ -660,27 +660,27 @@
     "semantic_hash": ""
   },
   "src/app/app/documents/[id]/actions.ts": {
-    "mtime": 1795590019.64553,
-    "seen": 1795590158.3241453,
-    "ast_hash": "83b412f3788d9081ecd45f2a6ccdf2e0",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2331257,
+    "ast_hash": "39fd7113581ca99ecb5c96c0137ada37",
     "semantic_hash": ""
   },
   "src/app/app/documents/[id]/page.tsx": {
-    "mtime": 1795589950.567644,
-    "seen": 1795590158.3241467,
-    "ast_hash": "931d95a23791dae4ab7f28489086dc20",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2331274,
+    "ast_hash": "9266b326a79d4bb9c2876612621cf6b8",
     "semantic_hash": ""
   },
   "src/app/app/documents/[id]/review-form.tsx": {
-    "mtime": 1795588210.3822749,
-    "seen": 1795590158.3241506,
-    "ast_hash": "c2c340335ff7841b5d95e2c70f3c4c82",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.233157,
+    "ast_hash": "51eba8989c2e126c1a6b84b96ea3b7e5",
     "semantic_hash": ""
   },
   "src/app/app/documents/page.tsx": {
-    "mtime": 1795590009.9163554,
-    "seen": 1795590158.3241549,
-    "ast_hash": "eea9c6ae12aade119b73fb71a979576b",
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2331815,
+    "ast_hash": "12a243dfb345b2e80663135945c4318f",
     "semantic_hash": ""
   },
   "src/lib/ocr/checks.test.ts": {
@@ -2172,15 +2172,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/journal/new/page.tsx": {
-    "mtime": 1795588210.3796093,
-    "seen": 1795590158.3240683,
-    "ast_hash": "27507e8f1b4ea5919ae650816dd63657",
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2316015,
+    "ast_hash": "4e71a4936748c5f477eafe17a3198bf3",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/page.tsx": {
-    "mtime": 1795588210.3796093,
-    "seen": 1795590158.324072,
-    "ast_hash": "6ae91d24e3ad29291704cc7e3d907d73",
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2317662,
+    "ast_hash": "40b68cdbe84e2bf10524ef86ce1d3d5f",
     "semantic_hash": ""
   },
   "src/lib/ledger/bir-lines.ts": {
@@ -2328,9 +2328,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/books/reports/page.tsx": {
-    "mtime": 1795588210.3798285,
-    "seen": 1795590158.3240762,
-    "ast_hash": "846b8bd00fe4ae79f7a468a702dd5904",
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.231845,
+    "ast_hash": "e44edd10a1cfa9924ba4ce034b5f5eaa",
     "semantic_hash": ""
   },
   "src/app/portal/reports/[id]/page.tsx": {
@@ -2676,15 +2676,15 @@
     "semantic_hash": ""
   },
   "src/app/app/documents/bulk-actions.ts": {
-    "mtime": 1795588210.3822749,
-    "seen": 1795590158.3241525,
-    "ast_hash": "6bdd33a0767577c9f3b8cf4f13749033",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2331586,
+    "ast_hash": "d1ba193f764f69c75c8e06dca63a0ae2",
     "semantic_hash": ""
   },
   "src/app/app/documents/pending-review.tsx": {
-    "mtime": 1795588210.3822749,
-    "seen": 1795590158.3241565,
-    "ast_hash": "50d7623792145ba55f290f0744faa988",
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2331834,
+    "ast_hash": "666a92999d03f9b6c4054e1846844353",
     "semantic_hash": ""
   },
   "src/app/portal/month-complete.tsx": {
@@ -2832,9 +2832,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/month/[month]/runs.tsx": {
-    "mtime": 1795588210.3808153,
-    "seen": 1795590158.3241045,
-    "ast_hash": "3c706bb981421b1c1c917fcc0e58b9b8",
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2323909,
+    "ast_hash": "65861ceba30c3420fcdb83e5fe7e453d",
     "semantic_hash": ""
   },
   "src/lib/payroll/periods.test.ts": {
@@ -2934,9 +2934,9 @@
     "semantic_hash": ""
   },
   "src/lib/work/load.ts": {
-    "mtime": 1795617747.9011989,
-    "seen": 1795617756.5965118,
-    "ast_hash": "a3829a46c5d75c71d94248ddbcc23892",
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2421963,
+    "ast_hash": "0a44ae9c11dae5504d221f20d1e7557e",
     "semantic_hash": ""
   },
   "src/lib/work/next-actions.test.ts": {
@@ -3030,9 +3030,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/client-tabs.tsx": {
-    "mtime": 1795617747.8968627,
-    "seen": 1795617756.5829954,
-    "ast_hash": "52547f775298300cf454b7836a4a5844",
+    "mtime": 1795618383.1249006,
+    "seen": 1795618395.2318637,
+    "ast_hash": "915ceb4f55ce25618a077b04b2e0d2a6",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/onboarding/actions.ts": {
@@ -3066,9 +3066,9 @@
     "semantic_hash": ""
   },
   "src/lib/onboarding/checklist.ts": {
-    "mtime": 1795588210.3925867,
-    "seen": 1795590158.3245652,
-    "ast_hash": "c6ebebc0367837fe0d8f3b30cf3f2be4",
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2400188,
+    "ast_hash": "02bd9781c9ba7c201902d2028683851c",
     "semantic_hash": ""
   },
   "src/lib/onboarding/files.ts": {
@@ -3375,6 +3375,264 @@
     "mtime": 1795618045.8427088,
     "seen": 1795618174.3880289,
     "ast_hash": "e52b139ae8a38be07d4a6d4877a64945",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/bank-accounts/page.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315295,
+    "ast_hash": "132d1f63a6d806156cd088739faa6a1f",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/books-context.ts": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.231532,
+    "ast_hash": "2aea87437bd494bc67065d200b83c18f",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/books-frame.tsx": {
+    "mtime": 1795618386.80948,
+    "seen": 1795618395.2315335,
+    "ast_hash": "8a8d92f58b044d70ae5f9a2647b2dece",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/books-list.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.231535,
+    "ast_hash": "ec7bb87a29df7de2cf7276fcac55af99",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/customers/page.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315364,
+    "ast_hash": "42336616b7e7210fe46b585de7d5b83a",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/employees/page.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315376,
+    "ast_hash": "402665490e29266a97e16708911a6953",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/invoice-form.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315955,
+    "ast_hash": "6c36fcbb2cfb1e3f6cec2587a051aaf3",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/invoice-pages.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315977,
+    "ast_hash": "e25abe18ee2977b5e81bf1f9637210ec",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/journal/[entryId]/page.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2315989,
+    "ast_hash": "26336e849ad0a3783665b4124725749a",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/journal/page.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2316027,
+    "ast_hash": "8ab81667ec40607d0a48d91a23a4d0c1",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/module-pages.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.2317085,
+    "ast_hash": "d4b6e4297d8259e7309cdce9800b5899",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/month-select.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.23171,
+    "ast_hash": "5d470e578250b5d798513387b042df99",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/party-pages.tsx": {
+    "mtime": 1795618371.5728998,
+    "seen": 1795618395.231768,
+    "ast_hash": "c3780b28f4a8ee2c65544115a92803e3",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/payments/[settlementId]/edit/page.tsx": {
+    "mtime": 1795618371.5754972,
+    "seen": 1795618395.2317693,
+    "ast_hash": "d0802c6b7031341044065162e531593f",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/payments/[settlementId]/page.tsx": {
+    "mtime": 1795618371.5754972,
+    "seen": 1795618395.2317712,
+    "ast_hash": "3b0ee2719b29cf6f3b01c2ddec8e4aa2",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/payments/new/page.tsx": {
+    "mtime": 1795618371.5754972,
+    "seen": 1795618395.2317724,
+    "ast_hash": "b968ad9a1b44c899336f0c08d4a68577",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/payments/page.tsx": {
+    "mtime": 1795618371.5754972,
+    "seen": 1795618395.231774,
+    "ast_hash": "c46e84ed470e400baec29010f4703756",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/payslips/page.tsx": {
+    "mtime": 1795618371.5754972,
+    "seen": 1795618395.2317755,
+    "ast_hash": "35d18973e975e810fc9cbe725f0ee5e4",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/purchase-invoices/[invoiceId]/edit/page.tsx": {
+    "mtime": 1795618371.5757596,
+    "seen": 1795618395.231832,
+    "ast_hash": "983f9f81de251ef855fc32a851db93df",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/purchase-invoices/[invoiceId]/page.tsx": {
+    "mtime": 1795618371.5757596,
+    "seen": 1795618395.2318335,
+    "ast_hash": "80ee7e8d2210fba598fb6478b05be7e8",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/purchase-invoices/new/page.tsx": {
+    "mtime": 1795618371.5757596,
+    "seen": 1795618395.2318347,
+    "ast_hash": "880d8ba216cf51ac33c0dedb4f355656",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/purchase-invoices/page.tsx": {
+    "mtime": 1795618371.5757596,
+    "seen": 1795618395.231836,
+    "ast_hash": "9e77e73d8efcc3aa2ad4554e0c4a9938",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/receipts/[settlementId]/edit/page.tsx": {
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.2318377,
+    "ast_hash": "2fb0b051485329cfa974202d8ae96423",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/receipts/[settlementId]/page.tsx": {
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.2318392,
+    "ast_hash": "6785f95835b57469cfe7888aea26e25e",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/receipts/new/page.tsx": {
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.2318406,
+    "ast_hash": "d719fb6d5a644143c5ce15aab666c25b",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/receipts/page.tsx": {
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.231842,
+    "ast_hash": "ebf048c0cd68456955cfd586f26603d8",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/reports/statements/page.tsx": {
+    "mtime": 1795618371.5759702,
+    "seen": 1795618395.2318463,
+    "ast_hash": "611fc1aa85ff72a821571bc6cfcc3c96",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/sales-invoices/[invoiceId]/edit/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318482,
+    "ast_hash": "48278b310b3da67f3f8b3d822878cc64",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/sales-invoices/[invoiceId]/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318494,
+    "ast_hash": "54ddfb4670d5fb260b9e4b75be12b07b",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/sales-invoices/new/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318509,
+    "ast_hash": "828d7b1687a44b7aea6505ee653f5263",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/sales-invoices/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318523,
+    "ast_hash": "dc92b576ff1672ee8676a7c5383e5ef9",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/settings/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318535,
+    "ast_hash": "c2b4b69fff61e2a16fd1e8e8bc174364",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/settlement-form.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318552,
+    "ast_hash": "8bfad276727d4cc775cc74f12b4c8a99",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/settlement-pages.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.231856,
+    "ast_hash": "ed4d93bf40ef755fe2ece7b2ecf58937",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/suppliers/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318573,
+    "ast_hash": "b6661a35eb10690d739a8964996cdb71",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/tools/page.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318585,
+    "ast_hash": "b56ad5466240ac85ae69d86b5637d7c3",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/transaction-journal.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318594,
+    "ast_hash": "e94bfe87204f9fe1a9ebeca450f516b3",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/transactions-actions.ts": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318606,
+    "ast_hash": "40417756c73902e40e2f95201a07fdb6",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/books/void-form.tsx": {
+    "mtime": 1795618371.5769053,
+    "seen": 1795618395.2318618,
+    "ast_hash": "209689ab3b31bdbda26d3a4c54f3083c",
+    "semantic_hash": ""
+  },
+  "src/components/books/pick.tsx": {
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2367158,
+    "ast_hash": "614af12d937de42581c9b533342340b1",
+    "semantic_hash": ""
+  },
+  "src/lib/books/data.ts": {
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2375455,
+    "ast_hash": "d0861b7246c7545f32f9afac3aafab26",
+    "semantic_hash": ""
+  },
+  "src/lib/books/ui.test.ts": {
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2376752,
+    "ast_hash": "97c1e376bc37c89dadfd60ba9724ffc9",
+    "semantic_hash": ""
+  },
+  "src/lib/books/ui.ts": {
+    "mtime": 1795618371.5809,
+    "seen": 1795618395.2376769,
+    "ast_hash": "7e84e5ef9ee88452b25004bff19c0b12",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
