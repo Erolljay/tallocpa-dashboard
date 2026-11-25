@@ -3168,9 +3168,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795642410.6993902,
-    "seen": 1795642414.2351122,
-    "ast_hash": "1dc518a253265a469433c3c33bf2ad05",
+    "mtime": 1795642491.742664,
+    "seen": 1795642766.6338387,
+    "ast_hash": "5438152c21661e35c14ee3ad595f0a74",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
@@ -3228,9 +3228,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/books.test.ts": {
-    "mtime": 1795618726.2850199,
-    "seen": 1795642156.3190393,
-    "ast_hash": "bc525775971befe97eab85be1240b619",
+    "mtime": 1795642700.5702603,
+    "seen": 1795642766.6326425,
+    "ast_hash": "331896776fdb7f0cc33ea2cc19616cdb",
     "semantic_hash": ""
   },
   "src/app/app/nav/sidebar-toggle.tsx": {

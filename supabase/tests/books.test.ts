@@ -105,10 +105,12 @@ describe.skipIf(!url)("books transactions", () => {
   describe("tax codes", () => {
     it("are seeded with their kinds, rates and ATCs", async () => {
       const rows = (await as(STAFF, `select code, kind, rate::text, atc, payee_type, applies_to from public.tax_codes order by sort_order`)).rows;
-      expect(rows).toHaveLength(22);
+      expect(rows).toHaveLength(24);
       expect(rows.find((r) => r.code === "OVAT12")).toMatchObject({ kind: "output_vat", rate: "0.1200", applies_to: "sales" });
       expect(rows.find((r) => r.code === "IVAT12-CG")).toMatchObject({ kind: "input_vat_capital", applies_to: "purchases" });
-      expect(rows.find((r) => r.code === "WI010")).toMatchObject({ kind: "withholding", rate: "0.1000", atc: "WI010", payee_type: "individual", applies_to: "both" });
+      expect(rows.find((r) => r.code === "WI010")).toMatchObject({ kind: "withholding", rate: "0.0500", atc: "WI010", payee_type: "individual", applies_to: "both" });
+      expect(rows.find((r) => r.code === "WI011")).toMatchObject({ kind: "withholding", rate: "0.1000", atc: "WI011", payee_type: "individual" });
+      expect(rows.find((r) => r.code === "WC011")).toMatchObject({ kind: "withholding", rate: "0.1500", atc: "WC011", payee_type: "corporate" });
       expect(rows.find((r) => r.code === "WV020")).toMatchObject({ kind: "govt_vat_withheld", rate: "0.0500", applies_to: "sales" });
     });
 

@@ -1,7 +1,7 @@
 # Graph Report - tallocpa-dashboard  (2026-11-25)
 
 ## Corpus Check
-- 717 files · ~560,244 words
+- 718 files · ~560,540 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 15 file(s) not represented in the graph (top: .css 7, (none) 4, .mdc 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `708b30f6`
+- Built from commit: `400e24c2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -832,16 +832,16 @@ Nodes (9): SearchParams, Column, ListRow, RowLink(), CustomersRoute(), KINDS, Pa
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `react` connect `Skeleton` to `form-2307.ts`, `pending-review.tsx`, `server-only`, `notification.tsx`, `checkbox.tsx`, `package.json`, `@remixicon/react`, `manilaToday`, `Textarea`, `registrations/[id]/page.tsx`, `onboarding/page.tsx`, `dependencies`, `sign-in-form.tsx`, `leads/[id]/page.tsx`, `manilaToday`, `register/page.tsx`, `filters.tsx`, `supabaseServer`, `proof-review.tsx`, `payroll/export/route.ts`, `scores/page.tsx`, `ui.ts`, `portal/layout.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `lib/books/actions.ts`, `payroll/forms.tsx`, `requests/actions.ts`, `ledger/data.ts`, `party-pages.tsx`, `Notice`, `payment-forms.tsx`, `quote/page.tsx`, `registrations/forms.tsx`, `workpapers/page.tsx`, `cx`, `select.tsx`, `items.ts`, `parties/[id]/page.tsx`, `books/forms.tsx`, `ledger/types.ts`, `stat-cards.tsx`, `Card`, `theme-toggle.tsx`, `requireOwner`, `button.tsx`, `cx.ts`, `registrations/actions.ts`, `portal/reports/page.tsx`, `input.tsx`, `document-scanner.tsx`, `app/app/layout.tsx`, `payroll/data.ts`, `social-button.tsx`, `print/page.tsx`, `leads/[id]/page.tsx`, `[month]/page.tsx`, `formatAmount`, `fixed-assets/forms.tsx`, `portal/page.tsx`, `ledger/data.ts`, `staff/page.tsx`, `brand/forms.tsx`, `module-pages.tsx`, `filings/[id]/page.tsx`, `2316/page.tsx`, `batch/register.ts`, `file-upload.tsx`, `cycle/page.tsx`?**
-  _High betweenness centrality (0.117) - this node is a cross-community bridge._
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _20 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `form-2307.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.0912568306010929 - nodes in this community are weakly interconnected._
 - **Why does `next` connect `supabaseServer` to `form-2307.ts`, `pending-review.tsx`, `server-only`, `arap.ts`, `package.json`, `@remixicon/react`, `manilaToday`, `Textarea`, `registrations/[id]/page.tsx`, `onboarding/page.tsx`, `proxy.ts`, `dependencies`, `brand/actions.ts`, `leads/[id]/page.tsx`, `manilaToday`, `register/page.tsx`, `payroll/export/route.ts`, `scores/page.tsx`, `ui.ts`, `portal/layout.tsx`, `clients/[id]/page.tsx`, `payroll/forms.tsx`, `lib/books/actions.ts`, `requests/actions.ts`, `ledger/data.ts`, `party-pages.tsx`, `Skeleton`, `payment-forms.tsx`, `quote/page.tsx`, `workpapers/page.tsx`, `select.tsx`, `parties/[id]/page.tsx`, `books/forms.tsx`, `formatAmount`, `ledger/types.ts`, `Card`, `requireOwner`, `sign-off.ts`, `button.tsx`, `registrations/actions.ts`, `portal/reports/page.tsx`, `app/app/layout.tsx`, `form-2316.tsx`, `payroll/data.ts`, `print/page.tsx`, `leads/[id]/page.tsx`, `[month]/page.tsx`, `formatAmount`, `portal/page.tsx`, `ledger/data.ts`, `staff/page.tsx`, `brand/forms.tsx`, `filings/[id]/page.tsx`, `2316/page.tsx`, `batch/register.ts`, `cycle/page.tsx`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
+  _High betweenness centrality (0.103) - this node is a cross-community bridge._
 - **Should `filings/run.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.1026827012025902 - nodes in this community are weakly interconnected._
 - **Why does `vitest` connect `returns/books.test.ts` to `form-2307.ts`, `filings/run.ts`, `server-only`, `pending-review.tsx`, `arap.ts`, `package.json`, `fields.ts`, `gemini.ts`, `manilaToday`, `work/page.tsx`, `tieouts.test.ts`, `ledger.test.ts`, `ref_node_fs`, `settings-schema.ts`, `onboarding/page.tsx`, `filed-returns.ts`, `gemini.ts`, `template.ts`, `statements.ts`, `db.test.ts`, `leads/[id]/page.tsx`, `manilaToday`, `safeguards.ts`, `quote.test.ts`, `filters.tsx`, `supabaseServer`, `BoardUI page patterns`, `money.ts`, `payroll/register.ts`, `scores/page.tsx`, `describe.ts`, `portal/layout.tsx`, `ui.ts`, `clients/[id]/page.tsx`, `requests/actions.ts`, `lib/books/actions.ts`, `index.ts`, `profile.ts`, `workpapers/load.ts`, `deadlines/page.tsx`, `month.ts`, `year.ts`, `money.ts`, `quote/page.tsx`, `registrations/forms.tsx`, `workpapers/page.tsx`, `party-pages.tsx`, `formatAmount`, `ledger/types.ts`, `parts.ts`, `requireOwner`, `sign-off.ts`, `portal/reports/page.tsx`, `portal-billing.test.ts`, `document-scanner.tsx`, `public.ts`, `ledger/types.ts`, `print/page.tsx`, `[month]/page.tsx`, `obligations.ts`, `rates.ts`, `parties/parties.test.ts`, `formatAmount`, `portal/page.tsx`, `acting-approver.test.ts`, `module-pages.tsx`, `filings/[id]/page.tsx`, `returns/load.ts`, `batch/register.ts`, `sign-off.ts`, `cycle/page.tsx`?**
-  _High betweenness centrality (0.095) - this node is a cross-community bridge._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Should `migrate.yml` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
