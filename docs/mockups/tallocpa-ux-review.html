@@ -280,7 +280,7 @@ textarea{resize:vertical;min-height:54px}
     <a href="#deadlines">5 · Deadlines</a>
     <a href="#final">6 · Final journeys</a>
     <a href="#mock">7 · Mock app</a>
-    <a href="#questions">8 · Decisions <span class="c">20</span></a>
+    <a href="#questions">8 · Decisions <span class="c">23</span></a>
   </nav>
 
   <!-- ================= JOURNEYS ================= -->
@@ -788,7 +788,7 @@ const FJ = [
   ["Apr 6–16","Works the Q1 workpapers, generated from the register","Registers 10 (sales: discount, CWT, VAT withheld, net receipt), 20 (purchases: SLP category, EWT, net paid; capital goods go to E) and 30 (payroll) are already filled. Each line shows its entry and where it goes on the returns.","warn","F1 · F12 · F13 · R1 · R9 · R10","preparer|file|B"],
   ["Apr 6–16","Fixed assets and depreciation","Office tables bought Mar 12 are now asset E-3; input VAT stays on the 2550Q in full; the depreciation schedule generates the monthly entry.","warn","R12","preparer|file|H"],
   ["Apr 6–16","Explains differences and records adjustments","Tie-outs T-1 to T-10; a difference needs a written reason. Disallowed input VAT is an adjustment with reason and support, not a typed figure.","warn","F2 · F3 · R2 · R3","preparer|file|T"],
-  ["Apr 7–8","Closes the March books","Month end › March books: documents reviewed, entries confirmed, payroll and depreciation posted, tie-outs clean, then close. Every return of the period builds on the closed month.","warn","F16 · R15","preparer|deadlines"],
+  ["Apr 7–10","Closes the March books","Month end › March books: documents reviewed, entries confirmed, payroll and depreciation posted, tie-outs clean, then close. Every return of the period builds on the closed month.","warn","F16 · R15","preparer|deadlines"],
   ["Apr 16","Answers review notes, marks the 2550Q prepared","Prepared only when tie-outs are clean, B and C are signed and their notes are cleared.","warn","F5 · R4","preparer|file|A"],
   ["Apr 23–26","Files, pays and records the proof","As built: filing reference and proof go to the client's Returns. The filing closes only with both.","ok","Safeguard 5","preparer|deadlines"],
  ]},
@@ -847,6 +847,11 @@ const QS = [
   ["Missing-invoice check","As in the mock: it blocks “I've sent everything” until answered."],
   ["Undo after confirming","Yes, until the cutoff; after that staff reopen the month."],
   ["Mailbox","Google Workspace, with invoices+CODE@tallocpa.com for people with several businesses."],
+ ]],
+ ["Sidebar and month end",[
+  ["When must the month's books be closed?","By the 10th. The client's cutoff stays the 5th."],
+  ["Financial statements: monthly or quarterly?","Monthly or quarterly, set per client."],
+  ["Registrations in the sidebar?","Keep it."],
  ]],
 ];
 let qn=0;
@@ -1066,7 +1071,7 @@ function viewMyWork(){
     ["Jaro Agri Supply · 1601-C March", "Prepared · Marco reviews today (target Apr 7)", "info", "Open filing", 'data-go="deadlines" data-dsel="0|c"'],
     ["Jaro Agri Supply · Q1 2027 workpapers", vt?`${vt} tie-out difference to explain before the 2550Q can be prepared`:"Tie-outs clean · ready to mark the 2550Q prepared", vt?"bad":"ok", "Open workpapers", 'data-open="T"'],
     ["Jaro Agri Supply · Q1 2027 workpapers", nb?`${nb} review note${nb>1?"s":""} from Marco to answer`:"No open review notes", nb?"warn":"ok", "Open notes", 'data-open="N"'],
-    ["Jaro Agri Supply · March books", S.marClosed?"Closed Apr 7":`Close by Apr 8: ${S.entDone?"":"3 entries to confirm, "}${S.depDone?"":"depreciation to run, "}then close`, S.marClosed?"ok":"info", "Open month end", 'data-go="deadlines" data-dsel="0|bk"'],
+    ["Jaro Agri Supply · March books", S.marClosed?"Closed Apr 7":`Close by Apr 10: ${S.entDone?"":"3 entries to confirm, "}${S.depDone?"":"depreciation to run, "}then close`, S.marClosed?"ok":"info", "Open month end", 'data-go="deadlines" data-dsel="0|bk"'],
     ["Mandurriao Print Shop · Q1 2027", "Workpapers not started · 2551Q prepared target Apr 16", "none", "Start workpapers", ""],
   ];
   const revItems = [
@@ -1091,7 +1096,7 @@ function viewDeadlines(){
   const head=`<div class="ph"><div><p class="crumb">Month end · as of Wed, Apr 7, 2027</p><h2>March books and April returns</h2><p class="muted">One grid for the whole month, because the books and the returns come from the same register: documents in, books closed, each return filed, financial statements released.</p></div>
     ${r==="preparer"?`<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="onlyMine" ${S.onlyMine?"checked":""} style="width:auto"> Only my clients</label>`:""}</div>
   <div class="strip">${[["Books closed",`${closedN} of ${DL.rows.length}`,""],["Critical",cnt("crit"),"bad"],["At risk",cnt("risk"),"warn"],["Coverage gaps",cnt("gap"),"bad"],["Returns filed",cnt("done"),"ok"]].map(([l,v,c])=>`<div><p class="k">${l}</p><p class="v" style="${c&&v?`color:var(--${c==="ok"?"ok":c==="warn"?"warn":"bad"})`:""}">${v}</p></div>`).join("")}</div>
-  <div class="card" style="padding:12px"><div class="tscroll"><table class="matrix"><thead><tr><th>Client</th><th>Preparer</th><th>March books<br><span class="faint" style="font-weight:400">close by Apr 8</span></th>${DL.forms.map(x=>`<th>${x.name}<br><span class="faint" style="font-weight:400">${x.per} · due ${x.due}</span></th>`).join("")}<th>Financial statements</th></tr></thead><tbody>
+  <div class="card" style="padding:12px"><div class="tscroll"><table class="matrix"><thead><tr><th>Client</th><th>Preparer</th><th>March books<br><span class="faint" style="font-weight:400">close by Apr 10</span></th>${DL.forms.map(x=>`<th>${x.name}<br><span class="faint" style="font-weight:400">${x.per} · due ${x.due}</span></th>`).join("")}<th>Financial statements</th></tr></thead><tbody>
     ${rows.map(([x,i])=>{const bs=bkStat(i), nxt=bkSteps(i).find(z=>z[1]!=="ok"); return `<tr><td><b style="font-weight:500">${x.c}</b></td><td style="white-space:nowrap">${x.prep??'<span class="chip bad">None</span>'}</td><td><button class="cell st-${bs==="risk"?"risk":bs}" data-cell="${i}|bk" aria-pressed="${S.dsel===i+"|bk"}"><span class="chip ${BST[bs][0]}">${BST[bs][1]}</span><small>${bs==="done"?`Closed ${BK[i].closed()}`:nxt?esc(nxt[2]):"Every step done"}</small></button></td>${DL.forms.map(fm=>{const c=x.cells[fm.k], s=cstat(c,fm.k); if(!c) return `<td><span class="faint">—</span></td>`; return `<td><button class="cell st-${s}" data-cell="${i}|${fm.k}" aria-pressed="${S.dsel===i+"|"+fm.k}"><span class="chip ${DST[s][0]}">${DST[s][1]}</span>${c.form?`<span class="faint" style="font-size:11.5px"> ${c.form}</span>`:""}<small>${esc(nextTxt(c,fm.k))}</small></button></td>`}).join("")}<td><span class="chip ${BK[i].fs()[0]}">${BK[i].fs()[1]}</span></td></tr>`}).join("")}
   </tbody></table></div></div>`;
   if (k==="bk"){
