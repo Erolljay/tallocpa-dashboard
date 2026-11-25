@@ -52,6 +52,8 @@ export interface TemplateInput {
   items: PayrollItem[];
   /** Item amounts already saved for the month, by employee id (staff downloads; empty for clients). */
   existing?: Map<string, Map<string, Centavos>>;
+  /** Rows for people not on the employee list, after the employees (a payroll read from the client's own file). */
+  newRows?: { name: string; amounts: Map<string, Centavos> }[];
 }
 
 const pesos = (c: Centavos) => c / 100;
@@ -126,6 +128,12 @@ export async function buildRegisterTemplate(input: TemplateInput): Promise<Buffe
     r.getCell(3).value = e.tin ?? "";
     const ex = input.existing?.get(e.id);
     if (ex) cols.forEach((c, j) => (r.getCell(firstAmountCol + j).value = ex.get(c.id) ? pesos(ex.get(c.id)!) : null));
+  });
+  // People not on the employee list yet (a payroll read from the client's file): name only, as "Last, First Middle".
+  (input.newRows ?? []).forEach((n, i) => {
+    const r = ws.getRow(FIRST_ROW + input.employees.length + i);
+    r.getCell(2).value = n.name;
+    cols.forEach((c, j) => (r.getCell(firstAmountCol + j).value = n.amounts.has(c.id) ? pesos(n.amounts.get(c.id)!) : null));
   });
 
   const L = colLetter;
@@ -202,7 +210,7 @@ export async function buildRegisterTemplate(input: TemplateInput): Promise<Buffe
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
-function cellText(v: ExcelJS.CellValue | undefined): string {
+export function cellText(v: ExcelJS.CellValue | undefined): string {
   if (v == null) return "";
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   if (typeof v === "string") return v;

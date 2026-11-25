@@ -53,38 +53,41 @@ class GeminiError extends Error {
   }
 }
 
-export function geminiProvider(opts: {
+/** One part of a Gemini request: text, or a file sent inline. */
+export type GeminiPart = { text: string } | { inline_data: { mime_type: string; data: string } };
+
+export interface GeminiOptions {
   apiKey: string;
   model?: string;
   fallbackModel?: string;
   fetch?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
-}): OcrProvider {
+}
+
+/**
+ * A JSON-only Gemini call shared by every reader (documents, payroll): the reply
+ * is constrained to `schema`; busy errors are retried (2 s, then 6 s) on the main
+ * model, then on the fallback model; other errors stop at once. `check` validates
+ * the parsed reply and throws if it has the wrong shape (not retried).
+ */
+export function geminiJson(opts: GeminiOptions) {
   const model = opts.model || DEFAULT_GEMINI_MODEL;
   const fallback = opts.fallbackModel === undefined ? DEFAULT_FALLBACK_MODEL : opts.fallbackModel;
   const models = [model, ...(fallback && fallback !== model ? [fallback] : [])];
   const doFetch = opts.fetch ?? fetch;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
 
-  async function call(name: string, input: OcrInput): Promise<OcrOutput> {
+  async function call<T>(name: string, parts: GeminiPart[], schema: object, highRes: boolean, check: (json: unknown) => T): Promise<T> {
     const res = await doFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(name)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": opts.apiKey },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: `${PROMPT}\n\nThe uploader says this is: ${input.docTypeHint}.` },
-              { inline_data: { mime_type: input.mimeType, data: base64(input.bytes) } },
-            ],
-          },
-        ],
+        contents: [{ role: "user", parts }],
         generationConfig: {
           temperature: 0,
           responseMimeType: "application/json",
-          responseSchema,
-          mediaResolution: "MEDIA_RESOLUTION_HIGH",
+          responseSchema: schema,
+          ...(highRes ? { mediaResolution: "MEDIA_RESOLUTION_HIGH" } : {}),
         },
       }),
     });
@@ -97,25 +100,18 @@ export function geminiProvider(opts: {
     } catch {
       throw new Error("Gemini did not return JSON");
     }
-    const out = ocrOutputSchema.safeParse(parsed);
-    if (!out.success) throw new Error(`Gemini returned an unexpected shape: ${out.error.issues[0]?.message}`);
-    return { fields: normalizeFields(out.data.fields), confidence: out.data.confidence, model: name };
+    return check(parsed);
   }
 
   return {
-    name: "gemini",
     model,
-    /**
-     * Tries the main model up to three times when Gemini is busy (waiting 2 s, then
-     * 6 s), then the fallback model the same way. Other errors stop at once.
-     */
-    async extract(input: OcrInput): Promise<OcrOutput> {
+    async generate<T>(parts: GeminiPart[], schema: object, check: (json: unknown) => T, { highRes = false }: { highRes?: boolean } = {}): Promise<{ data: T; model: string }> {
       let last: unknown;
       for (const name of models) {
         for (let attempt = 0; attempt <= BACKOFF.length; attempt++) {
           if (attempt > 0) await sleep(BACKOFF[attempt - 1]);
           try {
-            return await call(name, input);
+            return { data: await call(name, parts, schema, highRes, check), model: name };
           } catch (e) {
             last = e;
             if (!(e instanceof GeminiError && RETRYABLE.has(e.status))) throw e;
@@ -123,6 +119,34 @@ export function geminiProvider(opts: {
         }
       }
       throw last;
+    },
+  };
+}
+
+export const inlineFile = (mimeType: string, bytes: Uint8Array): GeminiPart => ({ inline_data: { mime_type: mimeType, data: base64(bytes) } });
+
+export function geminiProvider(opts: GeminiOptions): OcrProvider {
+  const gemini = geminiJson(opts);
+  const check = (parsed: unknown) => {
+    const out = ocrOutputSchema.safeParse(parsed);
+    if (!out.success) throw new Error(`Gemini returned an unexpected shape: ${out.error.issues[0]?.message}`);
+    return out.data;
+  };
+  return {
+    name: "gemini",
+    model: gemini.model,
+    /**
+     * Tries the main model up to three times when Gemini is busy (waiting 2 s, then
+     * 6 s), then the fallback model the same way. Other errors stop at once.
+     */
+    async extract(input: OcrInput): Promise<OcrOutput> {
+      const { data, model } = await gemini.generate(
+        [{ text: `${PROMPT}\n\nThe uploader says this is: ${input.docTypeHint}.` }, inlineFile(input.mimeType, input.bytes)],
+        responseSchema,
+        check,
+        { highRes: true },
+      );
+      return { fields: normalizeFields(data.fields), confidence: data.confidence, model };
     },
   };
 }
