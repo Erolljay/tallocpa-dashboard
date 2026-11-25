@@ -1,5 +1,10 @@
 @import "../styles/globals.css";
 
+/* Staff sidebar collapsed to its icon rail: <html data-sidebar="collapsed">,
+ * set before paint from the tallo-sidebar cookie (src/lib/sidebar-state.ts).
+ * `:is` (not `:where`) so it outranks the expanded classes it overrides. */
+@custom-variant sidebar-collapsed (&:is([data-sidebar="collapsed"] *));
+
 /*
  * Tallo CPA app layer, on top of BoardUI (src/styles/globals.css, imported
  * above as the single Tailwind entry). BoardUI owns the tokens, the type scale and dark

@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "src/app/app/layout.tsx": {
-    "mtime": 1795589842.719447,
-    "seen": 1795590158.324175,
-    "ast_hash": "e201b668bed7bf7e0c4be727afd0fc79",
+    "mtime": 1795616868.3808105,
+    "seen": 1795616876.7378695,
+    "ast_hash": "67ffe1b84ce8b6c4d9b17f2cf3e849f6",
     "semantic_hash": ""
   },
   "src/app/app/page.tsx": {
@@ -156,9 +156,9 @@
     "semantic_hash": "f2d845a278dabaec66cfae148922d786"
   },
   "src/app/layout.tsx": {
-    "mtime": 1795588210.3854055,
-    "seen": 1795590158.3242493,
-    "ast_hash": "ac165c31ae1069876eb601ef5a0752c0",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.739049,
+    "ast_hash": "ee1235b947ccf0b95bc64453c343e990",
     "semantic_hash": ""
   },
   "src/app/login/actions.ts": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "src/components/brand/lockup.tsx": {
-    "mtime": 1795588210.388149,
-    "seen": 1795590158.3243804,
-    "ast_hash": "8e92883faab525a5efba77b2d84cb57c",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.7407143,
+    "ast_hash": "885923d5c86d645280f528fb8120b81c",
     "semantic_hash": ""
   },
   "src/components/ui.tsx": {
@@ -912,9 +912,9 @@
     "semantic_hash": ""
   },
   "src/app/app/nav/app-nav.tsx": {
-    "mtime": 1795589838.3653665,
-    "seen": 1795590158.324182,
-    "ast_hash": "0dd15f31380a3661e8a967a45ea16e27",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.7379622,
+    "ast_hash": "e125e932a9049b4760aa93914f63df8f",
     "semantic_hash": ""
   },
   "src/app/app/owner-sections.tsx": {
@@ -3273,6 +3273,18 @@
     "mtime": 1795616097.9756804,
     "seen": 1795616728.0431736,
     "ast_hash": "2f8f9985fb86ffe0b74d8bbcd011be15",
+    "semantic_hash": ""
+  },
+  "src/app/app/nav/sidebar-toggle.tsx": {
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.737986,
+    "ast_hash": "8f987714b36f4d15fd3449c6b0097cf7",
+    "semantic_hash": ""
+  },
+  "src/lib/sidebar-state.ts": {
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.74602,
+    "ast_hash": "7cc3e63d80e7476ea8ca82ebe068774c",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
