@@ -108,9 +108,9 @@
     "semantic_hash": ""
   },
   "src/app/app/layout.tsx": {
-    "mtime": 1795589842.719447,
-    "seen": 1795590158.324175,
-    "ast_hash": "e201b668bed7bf7e0c4be727afd0fc79",
+    "mtime": 1795616868.3808105,
+    "seen": 1795616876.7378695,
+    "ast_hash": "67ffe1b84ce8b6c4d9b17f2cf3e849f6",
     "semantic_hash": ""
   },
   "src/app/app/page.tsx": {
@@ -156,9 +156,9 @@
     "semantic_hash": "f2d845a278dabaec66cfae148922d786"
   },
   "src/app/layout.tsx": {
-    "mtime": 1795588210.3854055,
-    "seen": 1795590158.3242493,
-    "ast_hash": "ac165c31ae1069876eb601ef5a0752c0",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.739049,
+    "ast_hash": "ee1235b947ccf0b95bc64453c343e990",
     "semantic_hash": ""
   },
   "src/app/login/actions.ts": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "src/components/brand/lockup.tsx": {
-    "mtime": 1795588210.388149,
-    "seen": 1795590158.3243804,
-    "ast_hash": "8e92883faab525a5efba77b2d84cb57c",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.7407143,
+    "ast_hash": "885923d5c86d645280f528fb8120b81c",
     "semantic_hash": ""
   },
   "src/components/ui.tsx": {
@@ -912,9 +912,9 @@
     "semantic_hash": ""
   },
   "src/app/app/nav/app-nav.tsx": {
-    "mtime": 1795589838.3653665,
-    "seen": 1795590158.324182,
-    "ast_hash": "0dd15f31380a3661e8a967a45ea16e27",
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.7379622,
+    "ast_hash": "e125e932a9049b4760aa93914f63df8f",
     "semantic_hash": ""
   },
   "src/app/app/owner-sections.tsx": {
@@ -2232,9 +2232,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/types.ts": {
-    "mtime": 1795588210.39158,
-    "seen": 1795590158.3245525,
-    "ast_hash": "e18af76ccda7d858d9cd2f660e8a283a",
+    "mtime": 1795616387.903381,
+    "seen": 1795616728.0405943,
+    "ast_hash": "d308b795a314318a3caa8e48d34847b9",
     "semantic_hash": ""
   },
   "supabase/tests/ledger.test.ts": {
@@ -3210,9 +3210,81 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795590153.7293777,
-    "seen": 1795590158.3247645,
-    "ast_hash": "2e322b8f7f59312bd4be3bef69bb48a0",
+    "mtime": 1795617559.1579971,
+    "seen": 1795617562.618234,
+    "ast_hash": "07e70651f69327190f741e08191a896c",
+    "semantic_hash": ""
+  },
+  "src/lib/books/actions.ts": {
+    "mtime": 1795616364.5167806,
+    "seen": 1795616728.0385683,
+    "ast_hash": "6080768820a9f3acb45b29fb5d58cc31",
+    "semantic_hash": ""
+  },
+  "src/lib/books/periods.test.ts": {
+    "mtime": 1795616387.888782,
+    "seen": 1795616728.0385702,
+    "ast_hash": "719744aeabb4df71969892d974b77a59",
+    "semantic_hash": ""
+  },
+  "src/lib/books/periods.ts": {
+    "mtime": 1795616330.2847786,
+    "seen": 1795616728.0385718,
+    "ast_hash": "ebf85e1896cdfe0bd0abceadd15f1244",
+    "semantic_hash": ""
+  },
+  "src/lib/books/status.test.ts": {
+    "mtime": 1795616387.8887534,
+    "seen": 1795616728.038573,
+    "ast_hash": "c3ab0901589d622484716812bf23ab18",
+    "semantic_hash": ""
+  },
+  "src/lib/books/status.ts": {
+    "mtime": 1795616322.9327781,
+    "seen": 1795616728.0385742,
+    "ast_hash": "9840c028f684688bc489be2d2ff59109",
+    "semantic_hash": ""
+  },
+  "src/lib/books/tax-codes.test.ts": {
+    "mtime": 1795617476.716783,
+    "seen": 1795617562.6085339,
+    "ast_hash": "4d33ff322edd853bc78e51f6dbb0dbb0",
+    "semantic_hash": ""
+  },
+  "src/lib/books/tax-codes.ts": {
+    "mtime": 1795617465.881529,
+    "seen": 1795617562.6085365,
+    "ast_hash": "04cab445de1d58097eb9db1336cb138a",
+    "semantic_hash": ""
+  },
+  "supabase/tests/books-lock.test.ts": {
+    "mtime": 1795616216.896772,
+    "seen": 1795616728.0431702,
+    "ast_hash": "9cd5ea72aa49544a7e2299869ee33b44",
+    "semantic_hash": ""
+  },
+  "supabase/tests/books-migration.test.ts": {
+    "mtime": 1795616150.9211144,
+    "seen": 1795616728.0431724,
+    "ast_hash": "9bf346edb78e525842770f810cf388fc",
+    "semantic_hash": ""
+  },
+  "supabase/tests/books.test.ts": {
+    "mtime": 1795617493.6087956,
+    "seen": 1795617562.6174989,
+    "ast_hash": "1fa05e934f05c4442c39d336b08dceb4",
+    "semantic_hash": ""
+  },
+  "src/app/app/nav/sidebar-toggle.tsx": {
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.737986,
+    "ast_hash": "8f987714b36f4d15fd3449c6b0097cf7",
+    "semantic_hash": ""
+  },
+  "src/lib/sidebar-state.ts": {
+    "mtime": 1795616868.3848107,
+    "seen": 1795616876.74602,
+    "ast_hash": "7cc3e63d80e7476ea8ca82ebe068774c",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

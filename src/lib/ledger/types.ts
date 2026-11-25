@@ -133,6 +133,8 @@ export const ENTRY_SOURCES = {
   arap_update: "AR/AP update",
   reversal: "Reversal",
   closing: "Closing entry",
+  invoice: "Sales or purchase invoice",
+  settlement: "Receipt or payment",
 } as const;
 export type EntrySource = keyof typeof ENTRY_SOURCES;
 
