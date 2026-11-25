@@ -2597,6 +2597,12 @@
     "ast_hash": "cda916ecf4191601bf540ac95a0800cb",
     "semantic_hash": ""
   },
+  "supabase/tests/register-upgrade.test.ts": {
+    "mtime": 1795566417.126657,
+    "seen": 1795566469.9052033,
+    "ast_hash": "8dc169b7076001865085c6d332814b06",
+    "semantic_hash": ""
+  },
   "pnpm-lock.yaml": {
     "mtime": 1795556117.8884802,
     "seen": 1795565923.2271402,
