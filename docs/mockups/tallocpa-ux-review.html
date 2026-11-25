@@ -269,7 +269,7 @@ textarea{resize:vertical;min-height:54px}
   <header class="top">
     <span class="eyebrow">Tallo CPA · TalloCPA OS Phase 1</span>
     <h1>Staff and Owner journey review</h1>
-    <p class="lede">How a preparer, a reviewer and the Owner move through the app today, where each journey breaks, and the proposed design: one register from intake to returns, workpapers, deadline safeguards and a clearer client portal. See <b>Final journeys</b> for how each person will work, and <b>Questions</b> for the decisions waiting on you. Reviewed against the code on <code>main</code> (commit 2f2a2ec, 24 Nov 2026). Screens were read from the source; this has not yet been tested with your staff on real client data.</p>
+    <p class="lede">How a preparer, a reviewer and the Owner move through the app today, where each journey breaks, and the proposed design: one register from intake to returns, workpapers, deadline safeguards and a clearer client portal. See <b>Final journeys</b> for how each person will work, and <b>Decisions</b> for your answers. Reviewed against the code on <code>main</code> (commit 2f2a2ec, 24 Nov 2026). Screens were read from the source; this has not yet been tested with your staff on real client data.</p>
   </header>
 
   <nav class="tabs" aria-label="Review sections" id="tabs">
@@ -280,7 +280,7 @@ textarea{resize:vertical;min-height:54px}
     <a href="#deadlines">5 · Deadlines</a>
     <a href="#final">6 · Final journeys</a>
     <a href="#mock">7 · Mock app</a>
-    <a href="#questions">8 · Questions <span class="c">20</span></a>
+    <a href="#questions">8 · Decisions <span class="c">20</span></a>
   </nav>
 
   <!-- ================= JOURNEYS ================= -->
@@ -345,24 +345,51 @@ textarea{resize:vertical;min-height:54px}
     </div>
 
     <div class="card">
-      <div class="card-h"><div><h2>Your worksheet columns, and where each comes from</h2><p class="muted">The registers in the workpapers follow the sales, purchases and payroll worksheets you use now.</p></div></div>
+      <div class="card-h"><div><h2>Workpaper index</h2><p class="muted">In the style of an audit index, for bookkeeping and tax workpapers: 0 for the lead, letters for the balance sheet (single for assets, double for liabilities and equity), numbers for the income statement. Each balance-sheet letter is a lead schedule of the trial balance accounts on that FS line, with its supporting register.</p></div></div>
       <div class="tscroll"><table>
-        <thead><tr><th>Worksheet</th><th>Column</th><th>In the app today</th><th>Change</th></tr></thead>
+        <thead><tr><th>Ref</th><th>Workpaper</th><th>Source</th><th>Feeds</th></tr></thead>
         <tbody>
-          <tr><td rowspan="6"><b>Sales</b></td><td>Date, invoice no., customer, TIN</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
-          <tr><td>VATable, VAT-exempt, zero-rated, output VAT, invoice total</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
-          <tr><td>SC/PWD discount</td><td><span class="chip bad">Missing</span></td><td class="muted">New OCR field, with the kind (senior citizen, PWD, other). Checked: exempt sale = gross − 20%.</td></tr>
-          <tr><td>Gross sales</td><td><span class="chip warn">Worked out</span></td><td class="muted">VATable + exempt + discount.</td></tr>
-          <tr><td>CWT deducted (2307)</td><td><span class="chip warn">On the 2307 only</span></td><td class="muted">Per invoice from the collection receipt, or spread from the customer's 2307 by invoice. Register CWT vs 2307s received becomes tie-out T-3.</td></tr>
-          <tr><td>Net receipt</td><td><span class="chip bad">Missing</span></td><td class="muted">Worked out: invoice total − CWT. This is the amount debited to Cash in bank or Cash on hand (see F13 and R10).</td></tr>
-          <tr><td rowspan="4"><b>Purchases and expenses</b></td><td>Date, receipt no., supplier, TIN, account title</td><td><span class="chip ok">OCR + review</span></td><td class="muted">None</td></tr>
-          <tr><td>VATable, non-VAT, input VAT, gross</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
-          <tr><td>EWT withheld</td><td><span class="chip bad">Missing</span></td><td class="muted">Each supplier's ATC kept in the parties directory; EWT = base × the ATC rate. Ties to 0619-E, 1601-EQ and the QAP.</td></tr>
-          <tr><td>Net paid</td><td><span class="chip bad">Missing</span></td><td class="muted">Worked out: gross − EWT.</td></tr>
-          <tr><td rowspan="2"><b>Payroll</b></td><td>Basic, OT, holiday, de minimis, 13th month, contributions, taxable, tax withheld, net pay</td><td><span class="chip ok">Payroll register</span></td><td class="muted">None. The monthly register already has these as payslip items.</td></tr>
-          <tr><td>Quarter and year summary</td><td><span class="chip warn">Per month</span></td><td class="muted">Register F rolls the months up and ties tax withheld to the 1601-C (T-6) and gross pay to the books (T-7).</td></tr>
+          <tr><td><b>0</b></td><td>Lead: returns of the period</td><td>All registers</td><td>Sign-off, approval memo</td></tr>
+          <tr><td>0-1</td><td>Review notes</td><td>Reviewer</td><td>—</td></tr>
+          <tr><td>0-2</td><td>Tie-outs T-1 to T-10</td><td>Registers vs books vs returns</td><td>“Mark prepared”</td></tr>
+          <tr><td><b>A</b></td><td>Cash</td><td>Books</td><td>FS</td></tr>
+          <tr><td><b>B</b></td><td>Receivables · B-1 customers · B-2 creditable withholding tax (2307s)</td><td>Register 10, 2307s</td><td>SAWT, 1701Q/1702Q</td></tr>
+          <tr><td><b>C</b></td><td>Inventories</td><td>Books, inventory list</td><td>FS, Inventory List</td></tr>
+          <tr><td><b>D</b></td><td>Prepayments and input VAT</td><td>Register 20</td><td>2550Q</td></tr>
+          <tr><td><b>E</b></td><td>Property and equipment · fixed asset register and depreciation</td><td>Register 20 (capital goods)</td><td>FS, 1701Q depreciation, SLP</td></tr>
+          <tr><td><b>AA</b></td><td>Payables</td><td>Register 20</td><td>FS</td></tr>
+          <tr><td><b>BB</b></td><td>Taxes payable · BB-1 output VAT · BB-2 withholding on payments · BB-3 withholding on compensation and contributions</td><td>Registers 10, 20, 30</td><td>2550Q, 0619-E, 1601-EQ, QAP, 1601-C</td></tr>
+          <tr><td><b>CC</b></td><td>Loans</td><td>Books</td><td>FS</td></tr>
+          <tr><td><b>DD</b></td><td>Equity</td><td>Books</td><td>FS</td></tr>
+          <tr><td><b>10</b></td><td>Revenue · sales register</td><td>Documents, batch</td><td>2550Q, SLS, 1701Q</td></tr>
+          <tr><td><b>20</b></td><td>Cost of sales and operating expenses · purchases and expenses register</td><td>Documents, batch</td><td>2550Q, SLP, QAP, 1701Q</td></tr>
+          <tr><td><b>30</b></td><td>Payroll register</td><td>Payroll register upload</td><td>1601-C, 1604-C, alphalist, 2316</td></tr>
+          <tr><td><b>40</b></td><td>Other income and expenses</td><td>Books</td><td>1701Q</td></tr>
+          <tr><td><b>50</b></td><td>Income tax</td><td>Books, B-2</td><td>1701Q/1702Q, annual</td></tr>
         </tbody></table></div>
-      <p class="muted" style="margin-top:10px">Each register downloads to Excel in the same layout, so staff can keep working the way they do now while the figures stay tied to the documents.</p>
+      <p class="muted" style="margin-top:10px">The mock shows the workpapers with activity for Jaro Agri Supply in Q1: 0, 0-1, 0-2, B-2, E, BB-2, 10, 20, 30 and 50. Adjustments are numbered ADJ 1, ADJ 2.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>Register columns, from your taxify batch templates</h2><p class="muted">The batch upload and the registers use the same columns as taxify's sales, purchases and payroll templates. Every customer and supplier also carries its registered name for the SLS, SLP, SAWT and QAP.</p></div></div>
+      <div class="tscroll"><table>
+        <thead><tr><th>Register</th><th>Columns</th><th>In the app today</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="6"><b>10 Sales</b></td><td>Date, customer, reference, revenue account</td><td><span class="chip ok">OCR + review</span></td><td class="muted">None</td></tr>
+          <tr><td>VATable, VAT-exempt and zero-rated sales (tax-inclusive per category)</td><td><span class="chip ok">OCR</span></td><td class="muted">None</td></tr>
+          <tr><td>CWT: account, ATC, amount</td><td><span class="chip warn">On the 2307 only</span></td><td class="muted">Per invoice from the collection receipt or the customer's 2307; register vs 2307s received is tie-out T-3.</td></tr>
+          <tr><td>VAT withheld (WV): account, ATC, amount, for government payors</td><td><span class="chip bad">Missing</span></td><td class="muted">New column and field; feeds the 2550Q's VAT withheld credit.</td></tr>
+          <tr><td>Other deductions: account, amount (SC/PWD discount, bank charges)</td><td><span class="chip bad">Missing</span></td><td class="muted">SC/PWD discount goes to Sales Discount – SC/PWD, a deduction (decided).</td></tr>
+          <tr><td>Paid same day, paid amount (the net receipt), payment account</td><td><span class="chip bad">Missing</span></td><td class="muted">Net receipt debited to Cash; charge sales go to receivables.</td></tr>
+          <tr><td rowspan="5"><b>20 Purchases and expenses</b></td><td>Date, supplier, reference, account</td><td><span class="chip ok">OCR + review</span></td><td class="muted">None</td></tr>
+          <tr><td>Amounts by SLP category: capital goods, other goods, services, zero-rated, exempt</td><td><span class="chip warn">VATable / exempt only</span></td><td class="muted">Category per line; capital goods also go to E, property and equipment.</td></tr>
+          <tr><td>Withholding tax: account, ATC, amount</td><td><span class="chip bad">Missing</span></td><td class="muted">From the supplier's ATC in the parties directory; ties to 0619-E, 1601-EQ and QAP.</td></tr>
+          <tr><td>Paid same day, paid amount (the net paid), payment account</td><td><span class="chip bad">Missing</span></td><td class="muted">Net paid credited to Cash; charge purchases go to payables.</td></tr>
+          <tr><td>Supplier's registered name, TIN, branch code, address, ZIP</td><td><span class="chip ok">Parties directory</span></td><td class="muted">OCR fills from the TIN; company name, or last, first and middle name for individuals.</td></tr>
+          <tr><td rowspan="2"><b>30 Payroll</b></td><td>Pay period end, employee, reference, one column per payslip item (earnings, deductions, employer contributions), payment account, gross, deductions, net pay</td><td><span class="chip ok">Payroll register</span></td><td class="muted">None. Net pay credited to Cash.</td></tr>
+          <tr><td>Quarter and year summary</td><td><span class="chip warn">Per month</span></td><td class="muted">Register 30 rolls up the months; ties to the 1601-C (T-6) and the books (T-7).</td></tr>
+        </tbody></table></div>
+      <p class="muted" style="margin-top:10px">Each register downloads to Excel in the same layout, so a register and its batch template are the same sheet.</p>
     </div>
 
     <div class="grid2">
@@ -371,9 +398,9 @@ textarea{resize:vertical;min-height:54px}
         <div class="tscroll" style="margin-top:10px"><table>
           <thead><tr><th>Slice</th><th>What</th><th>When</th></tr></thead>
           <tbody>
-            <tr><td><b>R1</b></td><td>One register: approved documents become register lines with sales, bookkeeping and tax parts; the books and the worksheets read the register. W1 builds on it.</td><td><span class="chip warn">Before go-live if the January cycle allows</span></td></tr>
+            <tr><td><b>R1</b></td><td>One register: approved documents become register lines with sales, bookkeeping and tax parts; the books and the worksheets read the register. W1 builds on it.</td><td><span class="chip warn">Before Jan 2027 go-live (decided)</span></td></tr>
             <tr><td><b>D1</b></td><td>Deadline safeguards: nightly coverage check, milestones per form, risk status, the Deadlines tracker, staff reminders and your Critical alerts.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
-            <tr><td><b>W1</b></td><td>Period file with registers B–F in your worksheet columns (adds the SC/PWD discount OCR field and each supplier's ATC), read from approved documents and the ledger, plus the T tie-outs.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
+            <tr><td><b>W1</b></td><td>Period file with the registers (10 sales, 20 purchases and expenses, 30 payroll) in your worksheet columns (adds the SC/PWD discount OCR field and each supplier's ATC), read from approved documents and the ledger, plus the T tie-outs.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>A1</b></td><td>Fixed asset register and depreciation schedule from purchases lines with asset account titles; monthly depreciation entry; opening assets from the opening balances.</td><td><span class="chip info">Before the first 1701Q, May 2027</span></td></tr>
             <tr><td><b>P1</b></td><td>Portal: “I've sent everything”, missing-invoice and 2307 checks, what happens next. Documents per client with inline titles and approve-selected; firm suggestions must be confirmed.</td><td><span class="chip warn">Before Jan 2027 go-live</span></td></tr>
             <tr><td><b>E1</b></td><td>Email intake at invoices@tallocpa.com: sender matching, Unmatched list, receipt reply, n8n mailbox watch.</td><td><span class="chip info">During the first live cycle</span></td></tr>
@@ -382,7 +409,7 @@ textarea{resize:vertical;min-height:54px}
             <tr><td><b>B1</b></td><td>Batch upload in the register layout, offered at onboarding.</td><td><span class="chip neutral">Later, with onboarding</span></td></tr>
             <tr><td><b>W4</b></td><td>Owner approval memo on the filing page; print the period file as a PDF binder; feed LOA ratios (Phase 4).</td><td><span class="chip neutral">After cycle 1</span></td></tr>
           </tbody></table></div>
-        <p class="muted" style="margin-top:10px">If R1 can't land before January, W1's tie-outs catch the two-source differences until it does. Why D1 and W1 first: D1 adds checks on top of the deadline engine you already have, so it is small and protects the first live cycle. the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
+        <p class="muted" style="margin-top:10px">You decided R1, D1, P1 and W1 all go before the January cycle; R1 comes first because W1 is built on it. Why D1 and W1 first: D1 adds checks on top of the deadline engine you already have, so it is small and protects the first live cycle. the tie-outs cost little (they only read data you already have) and they catch the ledger-versus-documents mismatch before the first live 2550Q and 1701Q go out.</p>
       </div>
       <div class="card">
         <h3>New tables (for the developer)</h3>
@@ -398,7 +425,7 @@ textarea{resize:vertical;min-height:54px}
         <ul class="muted" style="padding-left:18px;margin:8px 0 0">
           <li>W/P reference letters: keep A–T as drafted, or match the index of your audit working papers?</li>
           <li>Tie-out tolerance before “Mark prepared” is blocked (₱1 rounding? ₱100?)</li>
-          <li>Must every schedule be reviewer-signed, or only B, C and T?</li>
+          <li>Reviewer signs 10, 20 and 0-2 (tie-outs) always; the others when they have activity (decided).</li>
         </ul>
       </div>
     </div>
@@ -424,7 +451,7 @@ textarea{resize:vertical;min-height:54px}
         </div>
         <div class="col"><p>4 · Generated from it</p>
           <div class="box"><b>Books</b><small>Entries, the six books, fixed asset register and depreciation, trial balance, FS</small></div>
-          <div class="box"><b>Workpapers</b><small>Registers B–F, tie-outs, lead schedule</small></div>
+          <div class="box"><b>Workpapers</b><small>Registers 10–30, lead schedules, tie-outs</small></div>
           <div class="box"><b>Returns and attachments</b><small>2550Q/2551Q + SLSP, 0619-E, 1601-EQ + QAP, 1601-C, 1701Q/1702Q + SAWT</small></div>
           <div class="box"><b>Client portal</b><small>Released reports, 2307 requests</small></div>
         </div>
@@ -436,9 +463,9 @@ textarea{resize:vertical;min-height:54px}
       <div class="anat">
         <div class="card flat"><h4>Sales part</h4><dl>
           <dt>VATable sales</dt><dd>120,000.00</dd><dt>Output VAT</dt><dd>14,400.00</dd><dt>Invoice total</dt><dd>134,400.00</dd>
-          <dt>Terms</dt><dd>Cash</dd><dt>CWT (WC158, 1%)</dt><dd>1,200.00</dd><dt><b>Net receipt</b></dt><dd><b>133,200.00</b></dd><dt>Deposited to</dt><dd>Cash in bank – BPI</dd></dl></div>
+          <dt>Terms</dt><dd>Cash</dd><dt>CWT (WC158, 1%)</dt><dd>1,200.00</dd><dt><b>Net receipt</b></dt><dd><b>133,200.00</b></dd><dt>Deposited to</dt><dd>Cash</dd></dl></div>
         <div class="card flat"><h4>Bookkeeping part</h4><dl>
-          <dt>Book</dt><dd>Cash receipts</dd><dt>Dr Cash in bank – BPI</dt><dd>133,200.00</dd><dt>Dr CWT – awaiting 2307</dt><dd>1,200.00</dd>
+          <dt>Book</dt><dd>Cash receipts</dd><dt>Dr Cash</dt><dd>133,200.00</dd><dt>Dr CWT – awaiting 2307</dt><dd>1,200.00</dd>
           <dt>Cr Sales – VATable</dt><dd>120,000.00</dd><dt>Cr Output VAT</dt><dd>14,400.00</dd><dt>FS line</dt><dd>Revenue</dd></dl></div>
         <div class="card flat"><h4>Tax part</h4><dl>
           <dt>2550Q · VATable sales</dt><dd>120,000.00</dd><dt>2550Q · Output tax</dt><dd>14,400.00</dd><dt>SLSP · Bacolod Feeds</dt><dd>120,000.00</dd>
@@ -557,8 +584,8 @@ textarea{resize:vertical;min-height:54px}
   <!-- ================= QUESTIONS ================= -->
   <section id="v-questions" class="stack" hidden>
     <div class="card">
-      <h2>Questions for you</h2>
-      <p class="lede" style="margin-top:6px">Numbered so you can answer one by one. Each has my suggestion; “yes” to a suggestion is a complete answer.</p>
+      <h2>Your decisions</h2>
+      <p class="lede" style="margin-top:6px">Your answers of November 25, 2026, in the order asked. The mock and the review follow them.</p>
     </div>
     <div id="q-list" class="stack"></div>
   </section>
@@ -585,7 +612,7 @@ textarea{resize:vertical;min-height:54px}
       </aside>
       <main class="main" id="mmain"></main>
     </div>
-    <p class="muted" style="margin-top:10px;font-size:13px">Try it: switch to <b>Client</b> and confirm March is complete, then back to <b>Preparer</b> › <b>Documents</b> to see it and review per client. Open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers B, C and F use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
+    <p class="muted" style="margin-top:10px;font-size:13px">Try it: switch to <b>Client</b> and confirm March is complete, then back to <b>Preparer</b> › <b>Documents</b> to see it and review per client. Open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers 10, 20 and 30 use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -676,16 +703,16 @@ const R = [
   ["Coverage: a nightly check that every COR tax type, every payroll and every withholding in the books has an obligation, and that every filing has a preparer and a reviewer.","Steps back-scheduled from each due date in working days, set per form in Settings.","Each filing is On track, At risk, Critical, Overdue or Filed; risk goes to the reviewer, then to you.","A filing closes only with its filing reference and proof; a late one is tagged client-caused or staff-caused from the step that slipped."],
   "The BIR date is never the surprise. What slips is a register that never came in or an approval nobody chased. Watching the steps gives three to five working days of warning instead of none."],
  ["Registers in your worksheet format","Fixes F12",
-  ["Registers B, C and F show one line per invoice, receipt or employee with your columns, totalled by month.","Add an OCR field for the SC/PWD discount; take EWT from each supplier's ATC in the parties directory; take CWT from the collection receipt or the customer's 2307.","Each register downloads to Excel in the same layout."],
+  ["Registers 10 (sales), 20 (purchases and expenses) and 30 (payroll) show one line per invoice, receipt or employee with your columns, totalled by month.","Add an OCR field for the SC/PWD discount; take EWT from each supplier's ATC in the parties directory; take CWT from the collection receipt or the customer's 2307.","Each register downloads to Excel in the same layout."],
   "Staff already think in these worksheets. If the app shows the same columns, there is nothing to re-learn and nothing to rebuild in Excel, and checks like CWT per register vs 2307s received come from the data you already have."],
  ["Post each register line as its entry, with the net receipt in cash","Fixes F13",
-  ["Sales: Dr Cash in bank or Cash on hand (net receipt), Dr CWT awaiting 2307 (CWT), Dr Sales discount SC/PWD (discount); Cr Sales VATable, Cr Sales VAT-exempt (before discount), Cr Output VAT.","When the 2307 arrives it moves the amount from CWT awaiting 2307 to CWT supported (2307 on file) and touches no cash. Only supported CWT is claimed on the 1701Q/1702Q. What is still unsupported at year end goes to you to decide.","Purchases: Dr expense or purchases, Dr Input VAT; Cr Cash in bank or on hand (net paid), Cr EWT payable (at payment, so it ties to the 0619-E and 1601-EQ).","Payroll: the monthly register posts Dr Salaries and wages, Dr de minimis; Cr Cash in bank (net pay), Cr Withholding tax on compensation payable, Cr SSS, PhilHealth and Pag-IBIG payable. The employer share goes in a second entry.","Each line names the cash account it went to (a client default, changeable per line), so cash in bank can be reconciled to the bank statement."],
+  ["Sales: Dr Cash (net receipt), Dr CWT awaiting 2307 (CWT), Dr Sales discount SC/PWD (discount); Cr Sales VATable, Cr Sales VAT-exempt (before discount), Cr Output VAT.","When the 2307 arrives it moves the amount from CWT awaiting 2307 to CWT supported (2307 on file) and touches no cash. Only supported CWT is claimed on the 1701Q/1702Q. What is still unsupported at year end goes to you to decide.","Purchases: Dr expense or purchases, Dr Input VAT; Cr Cash (net paid), Cr EWT payable (at payment, so it ties to the 0619-E and 1601-EQ).","Payroll: the monthly register posts Dr Salaries and wages, Dr de minimis; Cr Cash (net pay), Cr Withholding tax on compensation payable, Cr SSS, PhilHealth and Pag-IBIG payable. The employer share goes in a second entry.","General bookkeeping (the default): one Cash account, no bank reconciliation. A client who opts for full bookkeeping gets subsidiary cash accounts (cash on hand, each bank) chosen per line, and bank reconciliation."],
   "The net receipt is what reaches the bank. If the books debit anything else, cash never reconciles, and every CWT and EWT balance in the trial balance depends on when paper arrives instead of when the money moved."],
  ["One register: bookkeeping and tax compliance as one","Fixes F2 by construction",
   ["Every intake channel (portal, staff, email to invoices@tallocpa.com, batch upload at onboarding) ends in the same review queue and becomes a register line.","Each line has a sales part, a bookkeeping part (account title, cash account, the entry) and a tax part (return lines, ATC, SLSP, SAWT and QAP rows).","Books, workpapers and returns are all generated from the register. Every client gets account titles; the engagement only decides which outputs you deliver.","See the Data flow tab."],
   "The data is the same for both services, so there should be one place it lives. Two consumers of one document is how the 2550Q and the 1701Q came to disagree."],
  ["Capital expenditure goes to a fixed asset register with straight-line depreciation","New",
-  ["The account title on a purchases line routes it: an expense or purchases account stays in operating expenses; an asset account (furniture and fixtures, equipment, vehicles, building) also creates an asset in register H.","Its input VAT stays on the 2550Q in full in the quarter of purchase, and the SLP lists it as capital goods.","Register H holds cost, residual value, useful life and start month for each asset; the depreciation schedule generates the monthly entry (Dr Depreciation Expense / Cr Accumulated Depreciation) and feeds the 1701Q Depreciation line.","A capitalization threshold sends small items to expense; opening assets come in with the opening balances."],
+  ["The account title on a purchases line routes it: an expense or purchases account stays in operating expenses; an asset account (furniture and fixtures, equipment, vehicles, building) also creates an asset in E, property and equipment.","Its input VAT stays on the 2550Q in full in the quarter of purchase, and the SLP lists it as capital goods.","E holds cost, residual value, useful life and start month for each asset; the depreciation schedule generates the monthly entry (Dr Depreciation Expense / Cr Accumulated Depreciation) and feeds the 1701Q Depreciation line.","A capitalization threshold sends small items to expense; opening assets come in with the opening balances."],
   "The capex never touches operating expenses or the 1701Q directly, only through depreciation, while VAT still sees the whole purchase. One register line does both, so the books and the returns stay consistent."],
  ["Documents reviewed per client, with each client's own supplier titles","Fixes F14",
   ["Documents opens on the client list (as now) and works inside one client: a table of that client's pending documents with the account title chosen inline from that client's chart, and approve-selected for lines that are ready.","Where the suggestion came from is shown on every line: this client's history (green), a firm suggestion to confirm (amber), or a new supplier or a preset not in this chart (choose).","A title chosen or confirmed is saved for that client and supplier only. The client page lists its suppliers and their titles."],
@@ -722,9 +749,9 @@ const FJ = [
   ["Apr 1–5","Documents arrive by portal, email to invoices@tallocpa.com, or staff upload","Reviews them inside Jaro Agri Supply's own list: figures checked, account title chosen from this client's chart, approve selected. Firm suggestions for a new supplier must be confirmed.","info","F14 · R13 · R11","preparer|docs"],
   ["Apr 3","The client confirms “I've sent everything for March”","A notice shows the month is complete; the 1601-C's first step is done, so preparing starts before the cutoff.","warn","F15 · R14","preparer|docs"],
   ["Every morning","Opens My work","Own filings and workpapers ordered by the next step's date, red first: a Critical 1601-C at Molo Bakeshop, a review today at Jaro.","warn","F6 · F11 · R5","preparer|mywork"],
-  ["Apr 6","Prepares the March 1601-C","From payroll register F; tie-out T-6 checks tax withheld against the 1601-C; marks it prepared. Net pay posts to cash in bank.","info","R9 · R10","preparer|file|F"],
-  ["Apr 6–16","Works the Q1 workpapers, generated from the register","Registers B (sales: discount, CWT, net receipt), C (purchases: EWT, net paid; asset titles go to H) and D–F are already filled. Each line shows its entry and where it goes on the returns.","warn","F1 · F12 · F13 · R1 · R9 · R10","preparer|file|B"],
-  ["Apr 6–16","Fixed assets and depreciation","Office tables bought Mar 12 are now asset H-3; input VAT stays on the 2550Q in full; the depreciation schedule generates the monthly entry.","warn","R12","preparer|file|H"],
+  ["Apr 6","Prepares the March 1601-C","From payroll register 30; tie-out T-6 checks tax withheld against the 1601-C; marks it prepared. Net pay posts to cash in bank.","info","R9 · R10","preparer|file|F"],
+  ["Apr 6–16","Works the Q1 workpapers, generated from the register","Registers 10 (sales: discount, CWT, VAT withheld, net receipt), 20 (purchases: SLP category, EWT, net paid; capital goods go to E) and 30 (payroll) are already filled. Each line shows its entry and where it goes on the returns.","warn","F1 · F12 · F13 · R1 · R9 · R10","preparer|file|B"],
+  ["Apr 6–16","Fixed assets and depreciation","Office tables bought Mar 12 are now asset E-3; input VAT stays on the 2550Q in full; the depreciation schedule generates the monthly entry.","warn","R12","preparer|file|H"],
   ["Apr 6–16","Explains differences and records adjustments","Tie-outs T-1 to T-10; a difference needs a written reason. Disallowed input VAT is an adjustment with reason and support, not a typed figure.","warn","F2 · F3 · R2 · R3","preparer|file|T"],
   ["Apr 16","Answers review notes, marks the 2550Q prepared","Prepared only when tie-outs are clean, B and C are signed and their notes are cleared.","warn","F5 · R4","preparer|file|A"],
   ["Apr 23–26","Files, pays and records the proof","As built: filing reference and proof go to the client's Returns. The filing closes only with both.","ok","Safeguard 5","preparer|deadlines"],
@@ -740,7 +767,7 @@ const FJ = [
   ["Every morning","Opens the Deadlines tracker for the month","Every client × form in one grid: Critical, At risk, coverage gaps, filed. Assigns a preparer to Arevalo, adds Oton's missing 1601-C obligation.","warn","F11 · R8","owner|deadlines"],
   ["As returns arrive","Gives the final approval with the approval memo","Tax due against the last period, rate on sales, adjustments, tie-outs, review notes, who prepared and reviewed, then the payment check you already have.","info","F7 · R6","owner|approval"],
   ["Monthly","Watches money, people and clients","Collections, staff load, scores, amendments and the acting approver: as built.","ok","Q21–Q41","owner|deadlines"],
-  ["Once, then rarely","Sets the policies","Deadline step targets, tie-out tolerance, capitalization threshold, useful lives, the SC/PWD account: the Questions tab.","warn","Questions","owner|deadlines"],
+  ["Once, then rarely","Sets the policies","Deadline step targets, tie-out tolerance, capitalization threshold, useful lives, the SC/PWD account: the Decisions tab.","warn","Decisions","owner|deadlines"],
   ["Quarter end","Releases reports, keeps the binder","Reports released to the portal (as built); the period's workpapers print as a binder for an LOA.","info","R1 · W4","owner|approval"],
  ]},
  {who:"Client",name:"The client (for reference)",steps:[
@@ -754,40 +781,40 @@ document.getElementById("final-list").innerHTML = FJ.map(j=>`<div class="card"><
 
 const QS = [
  ["Before go-live",[
-  ["Which slices should be ready for the January 2027 cycle?","D1 deadline safeguards, P1 portal completion and per-client documents, and W1 registers with tie-outs. R1 (one register) too if it fits; otherwise W1's tie-outs cover the gap until it lands."],
-  ["Is it right that every client, tax-only included, gets an account title on every register line, with the engagement deciding only which outputs you deliver and bill?","Yes. The 1701Q/1702Q needs the titles anyway."],
-  ["Can you share a blank sales, purchases and payroll worksheet you use now?","So the registers copy your exact column order and names."],
+  ["Which slices should be ready for the January 2027 cycle?","All: deadline safeguards (D1), portal completion and per-client documents (P1), registers with tie-outs (W1) and the one register (R1)."],
+  ["Does every client, tax-only included, get an account title on every line?","Yes. Every client gets account titles; the firm does general bookkeeping for all."],
+  ["Which worksheet columns should the registers use?","The taxify batch templates for sales, purchases and expenses, and payroll, with each party's registered name for the SAWT, SLS, SLP and QAP."],
  ]],
  ["Deadlines",[
-  ["Are the 1601-C step dates right (register Apr 5, prepared 6, reviewed 7, client approval 8, your approval and filing 9, proof 12), or do you work to an earlier internal deadline?","As shown, with the last internal target one working day before the BIR date."],
-  ["What time should the morning email go out?","7:00 am Manila."],
+  ["1601-C step dates","As shown: register Apr 5, prepared 6, reviewed 7, client approval 8, Owner approval and filing 9, proof 12."],
+  ["Morning email","7:00 am Manila."],
  ]],
  ["Workpapers",[
-  ["W/P reference letters: keep A–T as drafted, or match your audit working-paper index?","Match your audit index if you have one in use, so staff see one system."],
-  ["How large a tie-out difference blocks “Mark prepared”?","₱1, for rounding only."],
-  ["Must the reviewer sign every register, or only sales (B), purchases (C) and tie-outs (T)?","B, C and T always; the others when they have activity."],
+  ["Reference letters","A new audit-style index: 0 lead, letters for the balance sheet, numbers for the income statement (see Recommendations)."],
+  ["Tie-out tolerance","₱1."],
+  ["Reviewer sign-off","Sales (10), purchases (20) and tie-outs (0-2) always; the others when they have activity."],
  ]],
  ["Entries and cash",[
-  ["Which account and BIR line for the SC/PWD discount? My understanding is RR 7-2010 lets the seller deduct it from gross income.","Its own account, Sales Discount – SC/PWD, mapped to a deduction line. Please confirm your treatment."],
-  ["CWT still without a 2307 at year end: charge it to expense, or keep it pending another request?","Keep pending until the annual return is prepared, then you decide per client."],
-  ["Client default cash account: cash sales to the bank, or Cash on Hand until deposited?","Set per client at onboarding: bank for clients who deposit daily, cash on hand otherwise."],
+  ["SC/PWD discount","Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010)."],
+  ["CWT without a 2307 at year end","Pending until the annual return, then decided per client."],
+  ["Cash account","General bookkeeping: one Cash account and no bank reconciliation. Subsidiary cash accounts and bank reconciliation only for clients who opt for full bookkeeping."],
  ]],
  ["Fixed assets",[
-  ["Capitalization threshold?","₱10,000 per item, as in the mock."],
-  ["Default useful life per class?","Furniture and fixtures 60 months, office and transportation equipment 60, IT equipment 36, building 240; changeable per asset."],
-  ["Residual value?","Zero unless set per asset."],
-  ["Does depreciation start in the month of purchase or the month after?","The month after, as in the mock."],
-  ["Confirm that input VAT on capital goods is claimed in full in the quarter of purchase since 2022 (TRAIN law, RR 13-2018).","Yes; only purchases before 2022 were spread over 60 months."],
-  ["Vehicles: track book and tax depreciation separately for the RR 12-2012 limits?","Flag vehicles over the limit and keep a tax column only for those."],
+  ["Capitalization threshold","₱10,000 per item."],
+  ["Useful life","Set per item when its depreciation is set up; no class defaults."],
+  ["Residual value","₱1."],
+  ["Depreciation start","The month after purchase."],
+  ["Input VAT on capital goods","Claimed in full in the quarter of purchase (since 2022)."],
+  ["Tax depreciation","A tax column for every asset, not only vehicles; the 1701Q uses it."],
  ]],
  ["Client portal and intake",[
-  ["Should the missing-invoice check block “I've sent everything” until answered, or only warn?","Block, as in the mock. The answer takes one tap."],
-  ["After confirming, can the client undo it before the cutoff, or must they ask you to reopen the month?","They can undo it themselves until the cutoff; after that, staff reopen it."],
-  ["Which mailbox hosts invoices@tallocpa.com, and is invoices+CODE@tallocpa.com acceptable for people who handle several businesses?","Google Workspace if that's your mail; plus-addressing works there."],
+  ["Missing-invoice check","As in the mock: it blocks “I've sent everything” until answered."],
+  ["Undo after confirming","Yes, until the cutoff; after that staff reopen the month."],
+  ["Mailbox","Google Workspace, with invoices+CODE@tallocpa.com for people with several businesses."],
  ]],
 ];
 let qn=0;
-document.getElementById("q-list").innerHTML = QS.map(([g,qs])=>`<div class="card qgrp"><h3>${g}</h3>${qs.map(([q,sug])=>{qn++;return `<div class="q"><span class="qn">${qn}</span><div style="min-width:0"><p>${q}</p><p class="sug"><b>My suggestion:</b> ${sug}</p></div></div>`;}).join("")}</div>`).join("");
+document.getElementById("q-list").innerHTML = QS.map(([g,qs])=>`<div class="card qgrp"><h3>${g}</h3>${qs.map(([q,ans])=>{qn++;return `<div class="q"><span class="qn">${qn}</span><div style="min-width:0"><p>${q}</p><p class="sug"><span class="chip ok">Decided</span> ${ans}</p></div></div>`;}).join("")}</div>`).join("");
 
 /* ---------------- mock state ---------------- */
 const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"},client:{i:"AR",n:"Ana R.",r:"Client · Jaro Agri Supply"}};
@@ -804,9 +831,9 @@ const S = {
     {id:"T-5",what:"Input VAT: purchases register after adjustments vs Input VAT account",a:null,b:326862},
     {id:"T-6",what:"Tax withheld on compensation: payroll register vs 1601-C (Jan, Feb filed + Mar)",a:483.9,b:483.9},
     {id:"T-7",what:"Gross compensation: payroll register vs salaries, wages and benefits in books",a:236500,b:236500},
-    {id:"T-8",what:"Net receipts: sales register vs debits to cash and bank from sales",a:4121624.5,b:4121624.5},
+    {id:"T-8",what:"Net receipts: sales register vs debits to Cash from sales",a:4121624.5,b:4121624.5},
     {id:"T-9",what:"Asset additions: fixed asset register vs property and equipment accounts in books",a:139000,b:139000},
-    {id:"T-10",what:"Depreciation: schedule vs Depreciation Expense in books",a:63000,b:63000},
+    {id:"T-10",what:"Depreciation: schedule vs Depreciation Expense in books",a:62999.88,b:62999.88},
   ],
   notes:[
     {id:1,on:"B",row:"March",body:"March sales are 19% above February. Check that no April invoices were dated in March.",by:"MR",status:"cleared",reply:"Checked SI 0601–0631: all dated Apr 1 onward. March is the harvest-season peak, same as 2026.",rby:"RS"},
@@ -818,10 +845,11 @@ const S = {
 const BM = [["January",212,1252500,2400,1240500,9600,148860,1398960,3450,1395510],["February",188,1114800,1800,1105800,7200,132696,1245696,3015.5,1242680.5],["March",231,1332200,2800,1318200,11200,158184,1487584,4150,1483434]];
 const BD = [["Mar 2","SI 0412","Bacolod Feeds Corp.",120000,0,120000,0,14400,134400,1200,133200,""],["Mar 4","SI 0415","Walk-in · senior citizen",2500,500,0,2000,0,2000,0,2000,""],["Mar 9","SI 0421","Panay Mills Inc.",51500,0,51500,0,6180,57680,515,57165,""],["Mar 15","SI 0433","Iloilo Grains Inc.",70000,0,70000,0,8400,78400,700,77700,"No 2307 yet"],["Mar 22","SI 0447","Walk-in · PWD",1250,250,0,1000,0,1000,0,1000,""],["Mar 30","SI 0457","Cash sale",6800,0,6800,0,816,7616,0,7616,"In books only · no image · not in totals"]];
 const CM = [["January",142,1030432,903600,18400,108432,2250,1028182],["February",131,966388,848650,15900,101838,2250,964138],["March",145,1109492,971600,21300,116592,2250,1107242]];
-const CD = [["Mar 1","OR 2201","Sta. Barbara Realty Corp.","Rent",50400,45000,0,5400,2250,48150,"EWT WC100 5%"],["Mar 3","SI 88123","Panay Feedmill Supply","Purchases",347200,310000,0,37200,0,347200,""],["Mar 12","SI 7734","Iloilo Office Depot","Furniture and Fixtures",95200,85000,0,10200,0,95200,"Capital · asset H-3"],["Mar 14","OR 22817","Hardware store (issued to “Cash”)","Repairs",20384,18200,0,2184,0,20384,"Input VAT disallowed · C-1"],["Mar 18","OR 5512","Petron Jaro","Fuel and oil",2310,2062.5,0,247.5,0,2310,""],["Mar 20","—","Market vendor (non-VAT)","Supplies",4500,0,4500,0,0,4500,""],["Mar 25","OR 1189","Iloilo Office Depot","Office Supplies",3500,3125,0,375,0,3500,"Under ₱10,000 · expensed"]];
+const CD = [["Mar 1","OR 2201","Sta. Barbara Realty Corp.","Rent",50400,45000,0,5400,2250,48150,"EWT WC100 5%"],["Mar 3","SI 88123","Panay Feedmill Supply","Purchases",347200,310000,0,37200,0,347200,""],["Mar 12","SI 7734","Iloilo Office Depot","Furniture and Fixtures",95200,85000,0,10200,0,95200,"Capital · asset E-3"],["Mar 14","OR 22817","Hardware store (issued to “Cash”)","Repairs",20384,18200,0,2184,0,20384,"Input VAT disallowed · ADJ 1"],["Mar 18","OR 5512","Petron Jaro","Fuel and oil",2310,2062.5,0,247.5,0,2310,""],["Mar 20","—","Market vendor (non-VAT)","Supplies",4500,0,4500,0,0,4500,""],["Mar 25","OR 1189","Iloilo Office Depot","Office Supplies",3500,3125,0,375,0,3500,"Under ₱10,000 · expensed"]];
 const BSRC = ["Email","Portal","Email","Portal","Portal",null];
-const BCASH = ["Cash in bank – BPI","Cash on hand","Cash in bank – BPI","Cash in bank – BPI","Cash on hand",null];
-const CCASH = ["Cash in bank – BPI","Cash in bank – BPI","Cash in bank – BPI","Cash on hand","Cash on hand","Cash on hand","Cash on hand"];
+const BCASH = ["Cash","Cash","Cash","Cash","Cash",null];
+const CCAT = ["Services","Other goods","Capital goods","Other goods","Other goods","Exempt","Other goods"];
+const CCASH = ["Cash","Cash","Cash","Cash","Cash","Cash","Cash"];
 function je(title,lines,note){
   const dr=lines.filter(l=>l[1]>0).reduce((a,l)=>a+l[1],0), cr=lines.filter(l=>l[2]>0).reduce((a,l)=>a+l[2],0);
   return `<div class="card"><h4>${title}</h4><div class="tscroll" style="margin-top:6px"><table><thead><tr><th>Account</th><th class="r">Debit</th><th class="r">Credit</th></tr></thead><tbody>${lines.map(l=>`<tr class="${l[2]>0?"cr":""}"><td>${l[0]}</td><td class="r">${l[1]>0?amt(l[1]):""}</td><td class="r">${l[2]>0?amt(l[2]):""}</td></tr>`).join("")}</tbody><tfoot><tr><td>Total</td><td class="r">${amt(dr)}</td><td class="r">${amt(cr)}</td></tr></tfoot></table></div>${note?`<p class="muted" style="font-size:12.5px;margin-top:6px">${note}</p>`:""}</div>`;
@@ -835,7 +863,7 @@ function salesEntries(i){
   if(exempt) tax.push(["2550Q · VAT-exempt sales",exempt,0]);
   tax.push(["1701Q · Sales (BIR line)",vatable+exempt+disc,0]); if(disc) tax.push(["1701Q · SC/PWD discount deduction",disc,0]); if(cwt) tax.push(["SAWT · WC158, once the 2307 arrives",cwt,0]);
   const taxCard=`<div class="card"><h4>Tax part · where this line goes</h4><div class="tscroll" style="margin-top:6px"><table><tbody>${tax.map(t=>`<tr><td>${t[0]}</td><td class="r">${amt(t[1])}</td></tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:12.5px;margin-top:6px">From the same line as the entry, so the return and the books can't disagree.</p></div>`;
-  return `<div class="je">${je(`Bookkeeping part · ${x[1]} on ${x[0]}`,now,`Cash debited at the net receipt, ${peso(net)}: what reached ${BCASH[i]==="Cash on hand"?"the cash box":"the bank"}.${cwt?" When the 2307 arrives it moves the CWT to “CWT – supported (2307 on file)”; no cash entry.":""}${disc?" The discount shows on its own line and stays visible as a deduction (check the account and its BIR line with the Owner).":""}`)}${taxCard}
+  return `<div class="je">${je(`Bookkeeping part · ${x[1]} on ${x[0]}`,now,`Cash debited at the net receipt, ${peso(net)}, what was actually received.${cwt?" When the 2307 arrives it moves the CWT to “CWT – supported (2307 on file)”; no cash entry.":""}${disc?" The discount shows on its own line and stays visible as a deduction (check the account and its BIR line with the Owner).":""}`)}${taxCard}
   <div class="old">${je("As built today",old,`Cash on hand debited at the invoice total${cwt?`, ${peso(cwt)} more than was received. A second entry follows only when the 2307 is approved, months later: Dr CWT / Cr Cash on hand ${peso(cwt)}.`:"."}${disc?` The ${peso(disc)} discount is never recorded; sales show net.`:""}`)}</div></div>`;
 }
 function purchEntries(i){
@@ -844,15 +872,15 @@ function purchEntries(i){
   const now=disallowed?[[acct,gross,0]]:[[acct,vatable+nonvat,0]]; if(vat&&!disallowed) now.push(["Input VAT",vat,0]);
   now.push([CCASH[i],0,net]); if(ewt) now.push(["EWT payable",0,ewt]);
   const old=[[acct,vatable+nonvat,0]]; if(vat) old.push(["Input VAT",vat,0]); old.push(["Cash on hand",0,gross]);
-  return `<div class="je">${je(`Proposed · ${x[1]} on ${x[0]}`,now,`Cash credited at the net paid, ${peso(net)}.${ewt?" EWT payable is booked at payment, so it ties to the 0619-E and 1601-EQ.":""}${disallowed?" Input VAT disallowed by adjustment C-1 goes to the expense.":""}${capital?" Furniture and Fixtures is an asset account, so the line also goes to the fixed asset register as H-3 for depreciation. Its input VAT stays on the 2550Q in full this quarter, and the SLP lists it as capital goods.":""}${under?" Below the ₱10,000 capitalization threshold, so it stays an expense even though it is furniture.":""}`)}
+  return `<div class="je">${je(`Proposed · ${x[1]} on ${x[0]}`,now,`Cash credited at the net paid, ${peso(net)}.${ewt?" EWT payable is booked at payment, so it ties to the 0619-E and 1601-EQ.":""}${disallowed?" Input VAT disallowed by adjustment ADJ 1 goes to the expense.":""}${capital?" Its SLP category is capital goods and Furniture and Fixtures is an asset account, so the line also goes to E, property and equipment, as asset E-3. Its input VAT stays on the 2550Q in full this quarter, and the SLP lists it as capital goods.":""}${under?" Below the ₱10,000 capitalization threshold, so it stays an expense even though it is furniture.":""}`)}
   <div class="old">${je("As built today",old,`Cash on hand credited at the gross${ewt?`; EWT payable appears only when the 2307 is issued: Dr Cash on hand / Cr EWT payable ${peso(ewt)}.`:"."}`)}</div></div>`;
 }
 const FA = [
-  ["H-1","Jun 15, 2025","Isuzu delivery truck","Transportation equipment","Opening balance, Dec 31, 2026",1200000,null,60,"Jul 2025",20000,420000],
-  ["H-2","Jan 20, 2027","Laptop","IT equipment","PC Express · SI 5521",54000,6480,36,"Feb 2027",1500,3000],
-  ["H-3","Mar 12, 2027","Office tables and chairs","Furniture and fixtures","Iloilo Office Depot · SI 7734",85000,10200,60,"Apr 2027",1416.67,0],
+  ["E-1","Jun 15, 2025","Isuzu delivery truck","Transportation equipment","Opening balance, Dec 31, 2026",1200000,null,60,"Jul 2025",19999.98,419999.58],
+  ["E-2","Jan 20, 2027","Laptop","IT equipment","PC Express · SI 5521",54000,6480,36,"Feb 2027",1499.97,2999.94],
+  ["E-3","Mar 12, 2027","Office tables and chairs","Furniture and fixtures","Iloilo Office Depot · SI 7734",85000,10200,60,"Apr 2027",1416.65,0],
 ];
-const FD = [["H-1 Isuzu delivery truck",20000,20000,20000],["H-2 Laptop",0,1500,1500],["H-3 Office tables and chairs",0,0,0]];
+const FD = [["E-1 Isuzu delivery truck",19999.98,19999.98,19999.98],["E-2 Laptop",0,1499.97,1499.97],["E-3 Office tables and chairs",0,0,0]];
 const FM = [["January",4,72000,6000,78000,6200,65800,36.3,71763.7,"Filed Feb 10"],["February",4,72000,6000,78000,6200,65800,36.3,71763.7,"Filed Mar 10"],["March",4,74500,6000,80500,6325,68175,411.3,73763.7,"due"]];
 const D = [["Bacolod Feeds Corp.","WC158",412000,4120,true],["Western Visayas Coop","WC158",288050,2880.5,true],["Panay Mills Inc.","WC158",151500,1515,true],["Iloilo Grains Inc.","WC158",210000,null,false]];
 const E = [["January","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Feb 10"],["February","Sta. Barbara Realty Corp.","WC100",45000,2250,"0619-E · filed Mar 10"],["March","Sta. Barbara Realty Corp.","WC100",45000,2250,"1601-EQ · to file"]];
@@ -880,17 +908,18 @@ const openTies = () => tieRows().filter(t=>tieState(t).k==="bad");
 const vatTies = () => openTies().filter(t=>VAT_TIES.includes(t.id));
 const openNotes = on => S.notes.filter(n=>n.status==="open" && (!on || n.on===on));
 
+const WPREF = {A:"0",N:"0-1",T:"0-2",D:"B-2",H:"E",E:"BB-2",B:"10",C:"20",F:"30",G:"50"};
 const SCHED = [
   ["A","Lead: returns of the period","2550Q · 1601-EQ · 1601-C · 1701Q"],
-  ["B","Sales register","631 invoices · CWT · net receipt"],
-  ["C","Purchases & expenses register","418 receipts · EWT · net paid"],
-  ["D","Creditable withholding received","2307s → SAWT"],
-  ["E","Withholding on payments","0619-E · 1601-EQ · QAP"],
-  ["F","Payroll register","4 employees · 1601-C"],
-  ["H","Fixed assets and depreciation","3 assets · straight line"],
-  ["G","Income tax (1701Q)","from the books"],
-  ["T","Tie-outs","across registers, returns and books"],
   ["N","Review notes","raised and cleared"],
+  ["T","Tie-outs","across registers, returns and books"],
+  ["D","Creditable withholding tax","2307s received → SAWT"],
+  ["H","Property and equipment","fixed asset register · depreciation"],
+  ["E","Withholding tax payable","0619-E · 1601-EQ · QAP"],
+  ["B","Revenue · sales register","631 invoices · CWT · net receipt"],
+  ["C","Purchases and expenses register","418 receipts · EWT · net paid"],
+  ["F","Payroll register","4 employees · 1601-C"],
+  ["G","Income tax (1701Q)","from the books"],
 ];
 function schedState(r){
   const s = S.sign[r]||{};
@@ -975,7 +1004,7 @@ function viewMyWork(){
   const revItems = [
     ["Jaro Agri Supply · 1601-C March", "Prepared by Rhea · review today (target Apr 7)", "info", "Open filing", 'data-go="deadlines" data-dsel="0|c"'],
     ["Lapaz Hardware · 2550Q Q1", "At risk: March purchases not in by the Apr 5 cutoff", "warn", "Open filing", 'data-go="deadlines" data-dsel="4|v"'],
-    ["Jaro Agri Supply · Q1 2027 workpapers", "Registers B and D prepared, waiting for your review", "info", "Review registers", 'data-open="B"'],
+    ["Jaro Agri Supply · Q1 2027 workpapers", "Registers 10 and B-2 prepared, waiting for your review", "info", "Review registers", 'data-open="B"'],
     ["Jaro Agri Supply · Q1 2027 workpapers", nb?`${nb} open note${nb>1?"s":""} you raised`:"All your notes are cleared", nb?"warn":"ok", "See notes", 'data-open="N"'],
   ];
   const items = r==="reviewer"?revItems:prepItems;
@@ -1067,7 +1096,7 @@ function viewPortal(){
   const gapOpen = S.gap===null;
   return `<div class="phone">
     <div><p class="crumb">Jaro Agri Supply · Saturday, Apr 3</p><h2>March 2027 documents</h2><p class="muted">Due Monday, Apr 5 · 2 days left</p></div>
-    ${S.portalDone?`<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">March is complete. Thank you.</b><p class="muted">You confirmed 380 documents on Apr 3. Found something else? You can still upload it; it will be marked late.</p></div>`:""}
+    ${S.portalDone?`<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">March is complete. Thank you.</b><p class="muted">You confirmed 380 documents on Apr 3. Found something else? You can still upload it; it will be marked late.</p><div><button class="btn sm" data-pundo>Undo, until the cutoff on Apr 5</button></div></div>`:""}
     <div class="card"><h3>What you've sent for March</h3><div class="tscroll" style="margin-top:6px"><table><tbody>
       <tr><td>Sales invoices</td><td class="r">231</td><td><span class="chip ok">220 checked</span></td></tr>
       <tr><td>Receipts for purchases and expenses</td><td class="r">145</td><td><span class="chip info">11 being checked</span></td></tr>
@@ -1109,7 +1138,7 @@ function noteHTML(n){
   const canClear = S.role!=="preparer" && n.status==="open" && n.reply;
   const canReply = S.role==="preparer" && n.status==="open" && !n.reply;
   return `<div class="note ${n.status==="open"?"open":""}">
-    <div class="meta"><span class="ref">${n.on}</span><span>${esc(n.row)}</span><span>· ${n.by}</span><span class="chip ${n.status==="open"?"warn":"ok"}">${n.status==="open"?(n.reply?"Answered · waiting for reviewer":"Open"):"Cleared"}</span></div>
+    <div class="meta"><span class="ref">${WPREF[n.on]}</span><span>${esc(n.row)}</span><span>· ${n.by}</span><span class="chip ${n.status==="open"?"warn":"ok"}">${n.status==="open"?(n.reply?"Answered · waiting for reviewer":"Open"):"Cleared"}</span></div>
     <p>${esc(n.body)}</p>
     ${n.reply?`<p class="muted"><b style="color:var(--fg);font-weight:500">${n.rby}:</b> ${esc(n.reply)}</p>`:""}
     ${canReply?`<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="reply-${n.id}" placeholder="Your answer" aria-label="Answer to note ${n.id}" style="flex:1;min-width:180px"><button class="btn sm pri" data-reply="${n.id}">Answer</button></div>`:""}
@@ -1120,7 +1149,7 @@ function addNoteBtn(r,row){ return S.role!=="preparer" ? `<button class="btn sm 
 function noteForm(){
   if(!S.showNote) return "";
   const [r,row]=S.showNote.split("|");
-  return `<form class="inline-form" id="noteForm"><label style="grid-column:1/-1">Review note on ${r} · ${esc(row)}<textarea id="noteBody" required placeholder="What should the preparer check?"></textarea></label><div style="display:flex;gap:8px"><button class="btn sm pri" type="submit">Add note</button><button class="btn sm" type="button" data-cancelnote>Cancel</button></div></form>`;
+  return `<form class="inline-form" id="noteForm"><label style="grid-column:1/-1">Review note on ${WPREF[r]} · ${esc(row)}<textarea id="noteBody" required placeholder="What should the preparer check?"></textarea></label><div style="display:flex;gap:8px"><button class="btn sm pri" type="submit">Add note</button><button class="btn sm" type="button" data-cancelnote>Cancel</button></div></form>`;
 }
 const hdr = cols => `<thead><tr>${cols.map(c=>c.startsWith(">")?`<th class="r">${c.slice(1)}</th>`:`<th>${c}</th>`).join("")}</tr></thead>`;
 
@@ -1129,12 +1158,12 @@ function schedBody(r){
     const ready = gate();
     return `<p class="muted">Every return of the period, where its figures come from, and whether it can move on.</p>
     <div class="tscroll"><table><thead><tr><th>Return</th><th>From</th><th class="r">Amount</th><th>State</th></tr></thead><tbody>
-      <tr><td>0619-E Jan, Feb</td><td>E</td><td class="r">${amt(4500)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
-      <tr><td>1601-C Jan, Feb</td><td>F</td><td class="r">${amt(72.6)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
-      <tr><td>1601-C Mar 2027</td><td>F, T-6</td><td class="r">${amt(411.3)}</td><td><button class="btn sm" data-go="deadlines" data-dsel="0|c">Prepared · due Apr 12</button></td></tr>
-      <tr><td><b>2550Q Q1 2027</b></td><td>B, C, T-1, T-2, T-5</td><td class="r">${amt(vatDue())}</td><td>${ready.ok?'<span class="chip info">Ready to prepare</span>':'<span class="chip bad">Blocked</span>'}</td></tr>
-      <tr><td>1601-EQ Q1 2027 + QAP</td><td>E, T-4</td><td class="r">${amt(2250)}</td><td><span class="chip info">Ready to prepare</span></td></tr>
-      <tr><td>1701Q Q1 2027 + SAWT</td><td>G, D, T-1, T-3</td><td class="r">—</td><td>${openTies().some(t=>t.id==="T-1")?'<span class="chip bad">Waits for T-1</span>':'<span class="chip neutral">Not started</span>'}</td></tr>
+      <tr><td>0619-E Jan, Feb</td><td>BB-2</td><td class="r">${amt(4500)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
+      <tr><td>1601-C Jan, Feb</td><td>30</td><td class="r">${amt(72.6)}</td><td><span class="chip ok">Filed · locked</span></td></tr>
+      <tr><td>1601-C Mar 2027</td><td>30, T-6</td><td class="r">${amt(411.3)}</td><td><button class="btn sm" data-go="deadlines" data-dsel="0|c">Prepared · due Apr 12</button></td></tr>
+      <tr><td><b>2550Q Q1 2027</b></td><td>10, 20, T-1, T-2, T-5</td><td class="r">${amt(vatDue())}</td><td>${ready.ok?'<span class="chip info">Ready to prepare</span>':'<span class="chip bad">Blocked</span>'}</td></tr>
+      <tr><td>1601-EQ Q1 2027 + QAP</td><td>BB-2, T-4</td><td class="r">${amt(2250)}</td><td><span class="chip info">Ready to prepare</span></td></tr>
+      <tr><td>1701Q Q1 2027 + SAWT</td><td>50, B-2, T-1, T-3</td><td class="r">—</td><td>${openTies().some(t=>t.id==="T-1")?'<span class="chip bad">Waits for T-1</span>':'<span class="chip neutral">Not started</span>'}</td></tr>
     </tbody></table></div>
     ${gateHTML(ready)}`;
   }
@@ -1158,9 +1187,9 @@ function schedBody(r){
     ${CM.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td>${[2,3,4,5,6,7].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td>${addNoteBtn("C",x[0])}</td></tr>`).join("")}
     </tbody><tfoot><tr><td>Quarter</td><td class="r">${col(CM,1)}</td>${[2,3,4,5,6,7].map(i=>`<td class="r">${amt(col(CM,i))}</td>`).join("")}<td></td></tr></tfoot></table></div>
     <h4>March, by receipt <span class="faint" style="font-weight:400">· 7 of 145 lines</span></h4>
-    <div class="tscroll"><table>${hdr(["Date","No.","Supplier","Account",">Gross",">VATable",">Non-VAT",">Input VAT",">EWT",">Net paid","Paid from",""])}<tbody>
-    ${CD.map((x,i)=>`<tr><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td>${[4,5,6,7,8,9].map(j=>`<td class="r">${cellAmt(x[j])}</td>`).join("")}<td style="white-space:nowrap;font-size:12.5px">${CCASH[i]}</td><td style="white-space:nowrap">${x[10]?`<span class="chip ${x[10].startsWith("Input")?"warn":x[10].startsWith("Capital")?"info":"neutral"}">${x[10]}</span> `:""}<button class="btn sm ${S.csel===i?"pri":""}" data-csel="${i}">Entry</button></td></tr>`).join("")}
-    <tr><td colspan="12" class="faint">… 138 more March receipts</td></tr></tbody></table></div>
+    <div class="tscroll"><table>${hdr(["Date","No.","Supplier","Account","SLP category",">Gross",">VATable",">Non-VAT",">Input VAT",">EWT",">Net paid","Paid from",""])}<tbody>
+    ${CD.map((x,i)=>`<tr><td style="white-space:nowrap">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td><td style="white-space:nowrap">${CCAT[i]}</td>${[4,5,6,7,8,9].map(j=>`<td class="r">${cellAmt(x[j])}</td>`).join("")}<td style="white-space:nowrap;font-size:12.5px">${CCASH[i]}</td><td style="white-space:nowrap">${x[10]?`<span class="chip ${x[10].startsWith("Input")?"warn":x[10].startsWith("Capital")?"info":"neutral"}">${x[10]}</span> `:""}<button class="btn sm ${S.csel===i?"pri":""}" data-csel="${i}">Entry</button></td></tr>`).join("")}
+    <tr><td colspan="13" class="faint">… 138 more March receipts</td></tr></tbody></table></div>
     ${purchEntries(S.csel)}
     <p class="muted" style="font-size:12.5px">The account title routes each line: an expense or purchases account stays in operating expenses; an asset account (furniture and fixtures, equipment, vehicles) is also added to the fixed asset register, H. Either way the input VAT counts on the 2550Q. EWT is worked out from each supplier's ATC kept in the parties directory (a new field); net paid = gross − EWT. The account title is the one chosen on document review.</p>
     <div class="card flat" style="padding:14px">
@@ -1172,7 +1201,7 @@ function schedBody(r){
         <label>Support<input id="adjSupport" value="Doc C-31 · image"></label>
         <div><button class="btn sm pri" type="submit">Add adjustment</button></div></form>`:""}
       <div class="tscroll"><table><thead><tr><th>#</th><th>Kind and reason</th><th>Support</th><th class="r">Input VAT</th><th>Reviewer</th></tr></thead><tbody>
-      ${S.adj.map(a=>`<tr><td class="num" style="white-space:nowrap">C-${a.id}</td><td><b style="font-weight:500">${esc(a.kind)}</b><p class="muted" style="font-size:12.5px">${esc(a.reason)}</p></td><td style="font-size:12.5px">${esc(a.support)}</td><td class="r">${amt(a.amt)}</td><td>${a.ok?'<span class="chip ok">Ticked</span>':(S.role!=="preparer"?`<button class="btn sm" data-okadj="${a.id}">Tick</button>`:'<span class="chip neutral">Waiting</span>')}</td></tr>`).join("")}
+      ${S.adj.map(a=>`<tr><td class="num" style="white-space:nowrap">ADJ ${a.id}</td><td><b style="font-weight:500">${esc(a.kind)}</b><p class="muted" style="font-size:12.5px">${esc(a.reason)}</p></td><td style="font-size:12.5px">${esc(a.support)}</td><td class="r">${amt(a.amt)}</td><td>${a.ok?'<span class="chip ok">Ticked</span>':(S.role!=="preparer"?`<button class="btn sm" data-okadj="${a.id}">Tick</button>`:'<span class="chip neutral">Waiting</span>')}</td></tr>`).join("")}
       </tbody></table></div>
       <div class="memo" style="margin-top:10px"><dl><dt>Input VAT per register</dt><dd>${peso(inGross)}</dd><dt>Adjustments</dt><dd>${peso(adjTotal())}</dd><dt><b>Allowable input VAT</b></dt><dd><b>${peso(inNet())}</b></dd></dl></div>
       <p class="muted" style="font-size:12.5px;margin-top:6px">These replace “figures typed in”: each peso has a reason and a support, and the reviewer ticks it.</p>
@@ -1198,22 +1227,22 @@ function schedBody(r){
     ${FM.map(x=>`<tr><td>${x[0]}</td><td class="r">${x[1]}</td>${[2,3,4,5,6,7,8].map(i=>`<td class="r">${amt(x[i])}</td>`).join("")}<td>${x[9]==="due"?`<button class="btn sm" data-go="deadlines" data-dsel="0|c">Due Apr 12</button>`:`<span class="chip ok">${x[9]}</span>`}</td></tr>`).join("")}
     </tbody><tfoot><tr><td>Quarter</td><td></td>${[2,3,4,5,6,7,8].map(i=>`<td class="r">${amt(col(FM,i))}</td>`).join("")}<td></td></tr></tfoot></table></div>
     <p class="muted" style="font-size:12.5px">Each month opens to the employee lines of the register (payslip items mapped to BIR categories, as built today). Employer shares are on the register's second tab.</p>
-    <div class="je">${je("Proposed · March payroll",[["Salaries and wages",74500,0],["De minimis benefits",6000,0],["Cash in bank – BPI",0,73763.7],["Withholding tax on compensation payable",0,411.3],["SSS, PhilHealth, Pag-IBIG payable",0,6325]],"Cash credited at the net pay. The employer share is a second entry (Dr contributions expense / Cr the same payables). The payables then tie to the 1601-C and the agencies' remittances.")}
+    <div class="je">${je("Proposed · March payroll",[["Salaries and wages",74500,0],["De minimis benefits",6000,0],["Cash",0,73763.7],["Withholding tax on compensation payable",0,411.3],["SSS, PhilHealth, Pag-IBIG payable",0,6325]],"Cash credited at the net pay. The employer share is a second entry (Dr contributions expense / Cr the same payables). The payables then tie to the 1601-C and the agencies' remittances.")}
     <div class="old"><div class="card"><h4>As built today</h4><p class="muted" style="margin-top:6px">The payroll register feeds the 1601-C, 1604-C, alphalist and 2316s, but posts nothing to the books. Staff type a manual journal entry, so T-7 is the only check that the two agree.</p></div></div></div>`;
   }
   if (r==="H"){
     return `${feeds(["Books · monthly depreciation entry","1701Q · Depreciation (BIR line)","2550Q · Input tax","SLP · capital goods","T-9","T-10"])}
-    <p class="muted" style="font-size:13px">Built from the purchases register: every line with an asset account title becomes an asset here. Straight line: cost less residual value, divided by the useful life in months.</p>
+    <p class="muted" style="font-size:13px">Built from the purchases register: every capital goods line becomes an asset here. When the line is approved, staff set up its depreciation: useful life for that item, residual value ₱1. Straight line: (cost − ₱1) ÷ useful life in months.</p>
     <div class="tscroll"><table>${hdr(["No.","Acquired","Asset","Class","Source",">Cost",">Input VAT (2550Q)",">Life (months)","Starts",">Monthly",">Accumulated, Mar 31",">Net book value"])}<tbody>
     ${FA.map(x=>`<tr><td class="num">${x[0]}</td><td style="white-space:nowrap">${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td><td style="font-size:12.5px">${x[4]}</td><td class="r">${amt(x[5])}</td><td class="r">${x[6]==null?"—":amt(x[6])}</td><td class="r">${x[7]}</td><td style="white-space:nowrap">${x[8]}</td><td class="r">${amt(x[9])}</td><td class="r">${cellAmt(x[10])}</td><td class="r">${amt(x[5]-x[10])}</td></tr>`).join("")}
     </tbody><tfoot><tr><td>Total</td><td></td><td></td><td></td><td></td><td class="r">${amt(col(FA,5))}</td><td class="r">${amt(col(FA,6))}</td><td></td><td></td><td class="r">${amt(col(FA,9))}</td><td class="r">${amt(col(FA,10))}</td><td class="r">${amt(col(FA,5)-col(FA,10))}</td></tr></tfoot></table></div>
     <h4>Depreciation schedule, Q1 2027</h4>
-    <div class="tscroll"><table>${hdr(["Asset",">January",">February",">March",">Quarter"])}<tbody>
-    ${FD.map(x=>`<tr><td>${x[0]}</td>${[1,2,3].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td class="r">${amt(x[1]+x[2]+x[3])}</td></tr>`).join("")}
-    </tbody><tfoot><tr><td>Total</td>${[1,2,3].map(i=>`<td class="r">${amt(col(FD,i))}</td>`).join("")}<td class="r">${amt(col(FD,1)+col(FD,2)+col(FD,3))}</td></tr></tfoot></table></div>
-    <div class="je">${je("Generated entry · March depreciation",[["Depreciation Expense",21500,0],["Accumulated Depreciation – Transportation Equipment",0,20000],["Accumulated Depreciation – IT Equipment and Software",0,1500]],"Posted with each month from this schedule. The 1701Q takes it from the Depreciation BIR line; the FS shows property and equipment net.")}
+    <div class="tscroll"><table>${hdr(["Asset",">January",">February",">March",">Quarter (books)",">Quarter (tax)"])}<tbody>
+    ${FD.map(x=>`<tr><td>${x[0]}</td>${[1,2,3].map(i=>`<td class="r">${cellAmt(x[i])}</td>`).join("")}<td class="r">${amt(x[1]+x[2]+x[3])}</td><td class="r">${amt(x[1]+x[2]+x[3])}</td></tr>`).join("")}
+    </tbody><tfoot><tr><td>Total</td>${[1,2,3].map(i=>`<td class="r">${amt(col(FD,i))}</td>`).join("")}<td class="r">${amt(col(FD,1)+col(FD,2)+col(FD,3))}</td><td class="r">${amt(col(FD,1)+col(FD,2)+col(FD,3))}</td></tr></tfoot></table></div>
+    <div class="je">${je("Generated entry · March depreciation",[["Depreciation Expense",21499.95,0],["Accumulated Depreciation – Transportation Equipment",0,19999.98],["Accumulated Depreciation – IT Equipment and Software",0,1499.97]],"Posted with each month from this schedule. The 1701Q takes it from the Depreciation BIR line; the FS shows property and equipment net.")}
     <div class="old"><div class="card"><h4>As built today</h4><p class="muted" style="margin-top:6px">The chart of accounts already has these accounts and maps Depreciation Expense to the BIR line, but there is no asset register or schedule. Staff type depreciation as a manual journal entry each month.</p></div></div></div>
-    <p class="muted" style="font-size:12.5px">H-3 starts in April, the month after it was bought (your policy to confirm); 85,000 ÷ 60 = 1,416.67 a month, with the last month taking the rounding. Its ₱10,200 input VAT is claimed in full on the Q1 2550Q: since 2022 (TRAIN law) input VAT on capital goods is no longer spread over 60 months. For vehicles, check the RR 12-2012 limits before claiming depreciation for income tax. Sample figures.</p>`;
+    <p class="muted" style="font-size:12.5px">E-3 starts in April, the month after it was bought; (85,000 − 1) ÷ 60 = 1,416.65 a month, the last month taking the rounding so ₱1 stays on the books. Its ₱10,200 input VAT is claimed in full on the Q1 2550Q: since 2022 (TRAIN law) input VAT on capital goods is no longer spread over 60 months. Every asset keeps a tax column beside the books; the 1701Q uses the tax column, and any difference (e.g. vehicles over the RR 12-2012 limits) shows in the reconciliation of book and taxable income. Sample figures.</p>`;
   }
   if (r==="G"){
     const blocked = openTies().some(t=>t.id==="T-1");
@@ -1224,7 +1253,7 @@ function schedBody(r){
       <tr><td>Gross income</td><td class="r">${amt(1161450)}</td></tr>
       <tr><td>Itemized deductions by BIR line</td><td class="r">(${amt(514920)})</td></tr>
       <tr><td><b>Taxable income, quarter</b></td><td class="r"><b>${amt(646530)}</b></td></tr>
-      <tr><td>Creditable tax withheld (2307s received, from D)</td><td class="r">${amt(8515.5)}</td></tr>
+      <tr><td>Creditable tax withheld (2307s received, from B-2)</td><td class="r">${amt(8515.5)}</td></tr>
     </tbody></table></div>
     <p class="muted" style="font-size:12.5px">Gross profit rate ${(1161450/3699300*100).toFixed(1)}%. In Phase 4 this is compared with the industry benchmark you set.</p>`;
   }
@@ -1247,13 +1276,13 @@ function gate(){
   const why=[];
   const vt=vatTies();
   if (vt.length) why.push(`${vt.length} tie-out difference not explained (${vt.map(t=>t.id).join(", ")})`);
-  for (const r of ["B","C"]) { if(!S.sign[r].p) why.push(`Register ${r} not signed by the preparer`); }
-  for (const r of ["B","C"]) { const n=openNotes(r).length; if(n) why.push(`Register ${r} has ${n} open review note${n>1?"s":""}`); }
+  for (const r of ["B","C"]) { if(!S.sign[r].p) why.push(`Register ${WPREF[r]} not signed by the preparer`); }
+  for (const r of ["B","C"]) { const n=openNotes(r).length; if(n) why.push(`Register ${WPREF[r]} has ${n} open review note${n>1?"s":""}`); }
   return {ok:!why.length,why};
 }
 function gateHTML(g){
   return g.ok
-   ? `<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">2550Q can be marked prepared</b><p class="muted">Worksheet figures will be read from B and C after adjustments: VAT payable ${peso(vatDue())}.</p><div><button class="btn pri" data-prepare ${S.role!=="preparer"?"disabled":""}>Mark 2550Q prepared</button></div></div>`
+   ? `<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">2550Q can be marked prepared</b><p class="muted">Worksheet figures will be read from 10 and 20 after adjustments: VAT payable ${peso(vatDue())}.</p><div><button class="btn pri" data-prepare ${S.role!=="preparer"?"disabled":""}>Mark 2550Q prepared</button></div></div>`
    : `<div class="gate" style="border-color:var(--bad);background:var(--bad-bg)"><b style="color:var(--bad)">2550Q can't be marked prepared yet</b><ul>${g.why.map(w=>`<li>${w}</li>`).join("")}</ul></div>`;
 }
 
@@ -1271,9 +1300,9 @@ function viewFile(){
     <div><p class="k">Filed</p><p class="v">0619-E × 2 · 1601-C × 2</p></div>
   </div>
   <div class="wp">
-    <div class="index" role="list">${SCHED.map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${s[0]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
+    <div class="index" role="list">${SCHED.map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${WPREF[s[0]]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
     <div class="sched">
-      <div class="sh"><div><p class="ref">W/P ${cur[0]}</p><h3>${cur[1]}</h3><p class="faint" style="font-size:12.5px">${stateTxt[schedState(cur[0])]}</p></div>${["A","T","N"].includes(cur[0])?"":signBlock(cur[0])}</div>
+      <div class="sh"><div><p class="ref">W/P ${WPREF[cur[0]]}</p><h3>${cur[1]}</h3><p class="faint" style="font-size:12.5px">${stateTxt[schedState(cur[0])]}</p></div>${["A","T","N"].includes(cur[0])?"":signBlock(cur[0])}</div>
       ${schedBody(cur[0])}
       ${noteForm()}
       ${["N","A"].includes(cur[0])?"":notesFor(cur[0])}
@@ -1361,13 +1390,14 @@ document.getElementById("v-mock").addEventListener("click",e=>{
   else if ("pdone" in d){ S.portalAsk=true; }
   else if ("pyes" in d){ S.portalDone=true; S.portalAsk=false; toast("March confirmed complete · your accountant has been told"); }
   else if ("pno" in d){ S.portalAsk=false; }
+  else if ("pundo" in d){ S.portalDone=false; toast("March is open again until the cutoff"); }
   else if (d.bsel){ S.bsel=+d.bsel; }
   else if (d.csel){ S.csel=+d.csel; }
   else if ("remind" in d){ dcell.reminded=true; toast(`Reminder sent to ${DL.rows[+ri].c} (portal and email)`); }
   else if ("assign" in d){ const row=DL.rows[+ri]; row.prep=$("#assignSel").value; row.mine=row.prep==="Rhea S."; delete dcell.gap; toast(`${row.prep} assigned to ${row.c}`); }
   else if ("addob" in d){ delete dcell.gap; delete dcell.noFiling; dcell.done=1; toast("Obligation added · filing created from last night's rules"); }
   else if (d.sched){ S.sched=d.sched; S.showAdj=false; S.showNote=null; }
-  else if (d.sign){ S.sign[S.sched][d.sign]=today(); toast(`${S.sched} signed as ${d.sign==="p"?"preparer":"reviewer"}`); }
+  else if (d.sign){ S.sign[S.sched][d.sign]=today(); toast(`${WPREF[S.sched]} signed as ${d.sign==="p"?"preparer":"reviewer"}`); }
   else if (d.tick){ S.ticks[d.tick]=!S.ticks[d.tick]; }
   else if (d.explain){ const i=$("#ex-"+d.explain); const v=(i&&i.value.trim())||""; if(!v){toast("Write the reason first");return;} const x=S.tie.find(z=>z.id===d.explain); x.status="explained"; x.note=v; toast(`${x.id} explained`); }
   else if ("toggleadj" in d){ S.showAdj=!S.showAdj; }

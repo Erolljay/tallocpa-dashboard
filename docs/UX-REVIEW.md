@@ -105,7 +105,7 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 | Slice | Scope | When |
 |---|---|---|
-| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before go-live if the January cycle allows; otherwise W1's tie-outs cover the gap |
+| R1 | One register: approved documents become register lines; books and worksheets read the register. W1 builds on it. | Before the January 2027 go-live (decided) |
 | D1 | Deadline safeguards: coverage check, milestones, risk status, tracker, staff reminders, Owner alerts | Before the January 2027 go-live |
 | W1 | Period file, registers B–F in the worksheet format (adds SC/PWD discount OCR field, supplier ATC), T tie-outs | Before the January 2027 go-live |
 | A1 | Fixed asset register (H), straight-line depreciation schedule and monthly entry, from purchases lines with asset account titles; opening assets from the opening balances | Before the first 1701Q (May 2027) |
@@ -118,38 +118,53 @@ Example, 1601-C March 2027, due Mon Apr 12 (Apr 10 is a Saturday): register in A
 
 New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `workpaper_ticks`, `review_notes`. Schedules stay computed. Only sign-offs, ticks, adjustments and notes are stored. The file locks with the period's last return, the same way worksheets lock today.
 
-## Questions for the Owner
+## Owner's decisions (25 November 2026)
 
-Numbered as in the mock's Questions tab, each with the suggested answer.
+| # | Topic | Decision |
+|---|---|---|
+| 1 | Go-live scope | All before the January 2027 cycle: R1 one register, D1 deadline safeguards, P1 portal completion and per-client documents, W1 registers with tie-outs. R1 first; W1 builds on it. |
+| 2 | Account titles | Every client, tax-only included, gets an account title on every line. The firm does general bookkeeping for all. |
+| 3 | Register columns | The taxify batch templates (taxify.ph `batch/batch-import.js`). **Sales:** date, customer, reference, revenue account; VATable, VAT-exempt, zero-rated (tax-inclusive); CWT account, ATC, amount; **VAT withheld (WV)** account, ATC, amount; other deductions account, amount (SC/PWD discount); paid same day, paid amount (net receipt), payment account. **Purchases:** date, supplier, reference, account; amounts by **SLP category** (capital goods, other goods, services, zero-rated, exempt); withholding account, ATC, amount; paid same day, paid amount (net paid), payment account. **Payroll:** pay period end, employee, reference, one column per payslip item, payment account, gross, deductions, net pay. Every party keeps its registered name (company, or last / first / middle), TIN, branch code, address and ZIP for the SLS, SLP, SAWT and QAP. |
+| 4 | 1601-C steps | As proposed: register Apr 5, prepared 6, reviewed 7, client 8, Owner and filing 9, proof 12. |
+| 5 | Morning email | 7:00 am Manila. |
+| 6 | Workpaper index | New audit-style index (below). |
+| 7 | Tie-out tolerance | ₱1. |
+| 8 | Reviewer sign-off | 10 sales, 20 purchases and 0-2 tie-outs always; others when they have activity. |
+| 9 | SC/PWD discount | Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010). |
+| 10 | CWT without a 2307 at year end | Pending until the annual return, then decided per client. |
+| 11 | Cash account | General bookkeeping: one **Cash** account, no bank reconciliation. Subsidiary cash accounts (cash on hand, each bank) and bank reconciliation only for clients who opt for full bookkeeping. |
+| 12 | Capitalization threshold | ₱10,000 per item. |
+| 13 | Useful life | Set per item when its depreciation is set up (at approval of the capital goods line); no class defaults. |
+| 14 | Residual value | ₱1: straight line is (cost − ₱1) ÷ useful life in months; the last month takes the rounding. |
+| 15 | Depreciation start | The month after purchase. |
+| 16 | Input VAT on capital goods | Claimed in full in the quarter of purchase (since 2022). |
+| 17 | Tax depreciation | A tax column for every asset (not only vehicles); the 1701Q uses it, and differences show in the reconciliation of book and taxable income. |
+| 18 | Missing-invoice check | Blocks "I've sent everything" until answered, as in the mock. |
+| 19 | Undo after confirming | Allowed until the cutoff; after that staff reopen the month. |
+| 20 | Mailbox | Google Workspace; invoices+CODE@tallocpa.com for people with several businesses. |
 
-**Before go-live**
-1. Which slices are ready for the January 2027 cycle? *Suggested: D1, P1 and W1; R1 too if it fits.*
-2. Every client, tax-only included, gets an account title on every register line; the engagement decides only which outputs are delivered? *Suggested: yes.*
-3. Share a blank sales, purchases and payroll worksheet, to copy the exact columns.
+## Workpaper index
 
-**Deadlines**
-4. 1601-C steps: register Apr 5, prepared 6, reviewed 7, client 8, Owner and filing 9, proof 12 — right, or an earlier internal deadline? *Suggested: as shown.*
-5. Time of the morning email? *Suggested: 7:00 am Manila.*
+Audit-style, for bookkeeping and tax workpapers: 0 for the lead, letters for the balance sheet (single for assets, double for liabilities and equity), numbers for the income statement. Each balance-sheet letter is a lead schedule of the trial balance accounts on that FS line, with its supporting register.
 
-**Workpapers**
-6. W/P reference letters A–T, or the firm's audit index? *Suggested: the audit index if one is in use.*
-7. Tie-out difference that blocks "Mark prepared"? *Suggested: ₱1.*
-8. Reviewer signs every register, or only B, C and T? *Suggested: B, C and T always; others when active.*
+| Ref | Workpaper | Source | Feeds |
+|---|---|---|---|
+| 0 | Lead: returns of the period | All registers | Sign-off, approval memo |
+| 0-1 | Review notes | Reviewer | — |
+| 0-2 | Tie-outs T-1 to T-10 | Registers vs books vs returns | "Mark prepared" |
+| A | Cash | Books | FS |
+| B | Receivables · B-1 customers · B-2 creditable withholding tax (2307s) | Register 10, 2307s | SAWT, 1701Q/1702Q |
+| C | Inventories | Books, inventory list | FS, Inventory List |
+| D | Prepayments and input VAT | Register 20 | 2550Q |
+| E | Property and equipment · fixed asset register and depreciation | Register 20 (capital goods) | FS, 1701Q depreciation, SLP |
+| AA | Payables | Register 20 | FS |
+| BB | Taxes payable · BB-1 output VAT · BB-2 withholding on payments · BB-3 withholding on compensation and contributions | Registers 10, 20, 30 | 2550Q, 0619-E, 1601-EQ, QAP, 1601-C |
+| CC | Loans | Books | FS |
+| DD | Equity | Books | FS |
+| 10 | Revenue · sales register | Documents, batch | 2550Q, SLS, 1701Q |
+| 20 | Cost of sales and operating expenses · purchases and expenses register | Documents, batch | 2550Q, SLP, QAP, 1701Q |
+| 30 | Payroll register | Payroll register upload | 1601-C, 1604-C, alphalist, 2316 |
+| 40 | Other income and expenses | Books | 1701Q |
+| 50 | Income tax | Books, B-2 | 1701Q/1702Q, annual |
 
-**Entries and cash**
-9. Account and BIR line for the SC/PWD discount (RR 7-2010)? *Suggested: Sales Discount – SC/PWD, a deduction line; confirm.*
-10. CWT without a 2307 at year end? *Suggested: pending until the annual return, then decided per client.*
-11. Default cash account for cash sales? *Suggested: set per client at onboarding.*
-
-**Fixed assets**
-12. Capitalization threshold? *Suggested: ₱10,000 per item.*
-13. Useful lives? *Suggested: furniture, office and transportation equipment 60 months; IT 36; building 240.*
-14. Residual value? *Suggested: zero unless set per asset.*
-15. Depreciation starts the month of purchase or the month after? *Suggested: the month after.*
-16. Input VAT on capital goods claimed in full since 2022 (TRAIN, RR 13-2018)? *Suggested: yes.*
-17. Vehicles and the RR 12-2012 limits? *Suggested: flag those over the limit; tax column only for them.*
-
-**Client portal and intake**
-18. Missing-invoice check blocks "I've sent everything", or only warns? *Suggested: blocks; one tap to answer.*
-19. Can the client undo the confirmation before the cutoff? *Suggested: yes; after the cutoff staff reopen.*
-20. Mailbox for invoices@tallocpa.com, and plus-addressing (invoices+CODE@) for people with several businesses? *Suggested: Google Workspace; plus-addressing works there.*
+Earlier sections of this summary use the draft letters; they map as A → 0, N → 0-1, T → 0-2, B → 10, C → 20, D → B-2, E → BB-2, F → 30, H → E, G → 50. Adjustments are numbered ADJ 1, ADJ 2.
