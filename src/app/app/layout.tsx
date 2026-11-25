@@ -8,7 +8,7 @@ import { getIdentity } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { NavLinks, NavLinksFallback, type NavKey } from "./nav/app-nav";
 
-const nav = ["dashboard", "clients", "deadlines", "documents", "cycle", "registrations", "requests"] as const satisfies readonly NavKey[];
+const nav = ["dashboard", "work", "clients", "deadlines", "documents", "cycle", "registrations", "requests"] as const satisfies readonly NavKey[];
 /** Shown to the Owner and to anyone who reviews a client's returns. */
 const reviewNav = ["review"] as const satisfies readonly NavKey[];
 /** Shown only to the Owner. */
