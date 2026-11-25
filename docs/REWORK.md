@@ -26,7 +26,7 @@ Lead → Prospect → Won → Onboarding → Client
 
 ### Intake and Inbox
 1. Four streams: **Sales, Purchases & Expenses** (one stream, as on the SLP), **Payroll**, **Other**.
-2. Payroll comes in the client's own format (Excel, PDF or a photo). Staff copy it into the Tallo template and load it.
+2. Payroll comes in the client's own format (Excel, PDF or a photo). Staff copy it into the Tallo template and load it. The portal has no payroll register upload or template download (Owner, 25 November 2026).
 3. The monthly cutoff and "I've sent everything" stay.
 4. Approving a document posts it to the Books as the entry chosen on the row: a cash sale is a Sales Invoice **and** its Receipt; a sale on account is a Sales Invoice only, and its balance waits under the Customer; purchases the same with Purchase Invoices and Payments; a customer's 2307 is the CWT line of its Receipt.
 
