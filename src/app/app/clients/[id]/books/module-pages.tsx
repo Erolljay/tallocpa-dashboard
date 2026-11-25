@@ -218,6 +218,7 @@ export async function ReportsIndex({ params, searchParams }: Props) {
     { title: "Financial statements", text: "Monthly, quarterly or annual, with notes; release to the client's portal.", href: booksHref(c.id, "reports", c.month, {}, "/statements") },
     { title: "Trial Balance", text: "As of the end of any month.", href: `${b}/tools?to=${c.month}#trial-balance` },
     { title: "General Ledger", text: `Every account's entries for ${fmtMonth(c.month)}.`, href: book("general_ledger"), extra: { label: "Excel", href: xlsx("general_ledger") } },
+    { title: "BIR 2307 to suppliers", text: "Certificates for the EWT on Purchase Invoices, per quarter, month or transaction; print one or all.", href: booksHref(c.id, "reports", c.month, {}, "/2307") },
     { title: "Books of account (loose-leaf / manual)", text: "Sales, Purchase, Cash Receipts, Cash Disbursements and General Journals, printed on ruled pages.", href: `${b}/tools#books-of-account` },
   ];
   return (
