@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cx } from "@/utils/cx";
 
-export type ClientTab = "overview" | "onboarding" | "register" | "batch" | "workpapers" | "fixed-assets" | "books" | "payroll";
+export type ClientTab = "overview" | "returns" | "onboarding" | "register" | "batch" | "workpapers" | "fixed-assets" | "books" | "payroll";
 
 /**
  * The tabs across a client's pages. The work tabs show to the Owner and the staff
@@ -12,6 +12,7 @@ export function ClientTabs({ clientId, active, work, books, onboarding }: { clie
   const tabs: [ClientTab, string, string, boolean][] = [
     ["overview", "Overview", c, true],
     ["onboarding", onboarding ? `Onboarding ${onboarding.done}/${onboarding.total}` : "Onboarding", `${c}/onboarding`, true],
+    ["returns", "Returns", `${c}/returns`, work],
     ["register", "Register", `${c}/register`, work],
     ["batch", "Batch upload", `${c}/batch`, work],
     ["workpapers", "Workpapers", `${c}/workpapers`, work],

@@ -9,6 +9,7 @@ import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/lab
 import { activeFor, type Delegation } from "@/lib/acting/period";
 import { availableActions, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
 import { supabaseServer } from "@/lib/supabase/server";
+import { filingsBooksReady, filingsNeedingAmendment } from "@/lib/books/actions";
 import { DocumentUpload } from "@/components/document-upload";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
@@ -75,6 +76,12 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
     // The original return of the period and its amended returns.
     supabase.from("filing_instances").select("id, period_label, status, amendment_no").eq("obligation_id", f.obligation_id).eq("period_end", f.period_end).order("amendment_no"),
   ]);
+  // Month lock (docs/REWORK.md, decisions 9 and 10): a filed return whose month was unlocked
+  // needs an amended return; an unfiled one waits until the Books of its period are locked.
+  const [amendment, ready] = await Promise.all([
+    filingsNeedingAmendment(f.client_id).then((rows) => rows.find((r) => r.filing_id === f.id) ?? null),
+    filingsBooksReady([f.id]).then((m) => m.get(f.id) ?? true),
+  ]);
   const later = (versions ?? []).some((v) => v.amendment_no > f.amendment_no);
   const canAmend =
     ["filed", "paid", "proof_uploaded"].includes(f.status) && !later &&
@@ -113,8 +120,28 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             {f.due_date !== f.statutory_due_date ? ` (moved from ${showDate(f.statutory_due_date)})` : ""}
           </span>
         }
-        actions={<Badge tone={filingStatusTone[status]}>{filingStatusLabel[status]}</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {amendment && <Badge tone="blocked">Needs amended return</Badge>}
+            <Badge tone={filingStatusTone[status]}>{filingStatusLabel[status]}</Badge>
+          </div>
+        }
       />
+      {amendment && (
+        <div className="mb-6">
+          <Notice tone="blocked">
+            The Books of this period were unlocked{amendment.unlocked_at ? ` on ${showDate(amendment.unlocked_at.slice(0, 10))}` : ""}: {amendment.reason}. File an amended return once the month is locked again.
+          </Notice>
+        </div>
+      )}
+      {!ready && !["filed", "paid", "proof_uploaded"].includes(status) && (
+        <div className="mb-6">
+          <Notice tone="waiting">
+            The Books for this return&rsquo;s period are still open. It shows in the Filings lists once the reviewer locks every month of the period.{" "}
+            <Link href={`/app/clients/${client.id}/books/months?year=${f.period_end.slice(0, 4)}`} className="font-medium underline">Month locks</Link>
+          </Notice>
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-6">

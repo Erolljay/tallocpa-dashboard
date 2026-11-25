@@ -9,6 +9,7 @@ import { monthTotals } from "@/lib/assets/schedule";
 import { loadAssets } from "@/lib/assets/load";
 import { addDays, type IsoDate } from "@/lib/deadlines/dates";
 import { loadBoard } from "@/lib/deadlines/safeguards-load";
+import { keepBooksReady } from "@/lib/filings/books-ready";
 import { showMonth } from "@/lib/documents/labels";
 import { periodLabel } from "@/lib/payroll/periods";
 import { filingItem, type Role, type WorkItem } from "./next-actions";
@@ -68,8 +69,9 @@ export async function loadMyWork(db: SupabaseClient, me: { userId: string; role:
     db.from("adjustments").select("client_id, entry_date, journal_entries(status)").in("client_id", ids).is("ticked_at", null),
   ]);
 
-  // Returns: each one's next sign-off step.
-  for (const r of board) {
+  // Returns: each one's next sign-off step, only once the Books of its period are locked
+  // (docs/REWORK.md, decision 10); until then the month's Inbox and lock are the work.
+  for (const r of await keepBooksReady(board, db)) {
     if (!ids.includes(r.clientId)) continue;
     const i = filingItem(r);
     if (i) push(i.clientId, i.period, i.role, i.label, i.href, i.urgency, i.due);
