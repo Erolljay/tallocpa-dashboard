@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 built (PR #51). Phases 1–5 to build. |
+| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 built and merged (PR #51). Phases 1–5 to build. |
 | **Screens** | Clickable mockup per user (Owner, Reviewer, Preparer, Client), shared as a claude.ai artifact |
 | **Target** | Monthly work and the client portal live before 31 December 2026; year-end and the annual returns ready before their January deadlines |
 
@@ -58,9 +58,10 @@ Lead → Prospect → Won → Onboarding → Client
 
 ### Firm, leads, calendar, year-end
 20. Leads pipeline: **Lead → Prospect → Won → Onboarding | Lost** (with a reason). **The Owner assigns a reviewer**, who holds the **discovery call** and writes its notes; quote and proposal follow. When won, the client's preparer and reviewer are picked separately at onboarding.
-21. **Team calendar** for all staff from each person's **Google Calendar** (personal events as Busy, Tallo events in full) and a public **booking page** that offers the assigned reviewer's free times and books the call with a Meet link.
-22. Year-end: close the books (December locked, adjustments, bank reconciliation, trial balance, **closing entry by the Owner**), annual payroll (13th month, annualization, 2316), annual returns (1604-C and 1604-E with eSubmission, inventory list, loose-leaf binding, AFS, 1702-RT), and the client's decisions.
-23. The sidebar collapses to icons.
+21. **Onboarding keeps the full checklist** (14 items in 6 groups: engagement, registration, client access, books, payroll, kickoff). The **website inquiry answers** become the lead's notes, and with the discovery-call notes and **every onboarding answer and note** they land in the client's **Notes** on the Overview.
+22. **Team calendar** for all staff from each person's **Google Calendar** (personal events as Busy, Tallo events in full) and a public **booking page** that offers the assigned reviewer's free times and books the call with a Meet link.
+23. Year-end: close the books (December locked, adjustments, bank reconciliation, trial balance, **closing entry by the Owner**), annual payroll (13th month, annualization, 2316), annual returns (1604-C and 1604-E with eSubmission, inventory list, loose-leaf binding, AFS, 1702-RT), and the client's decisions.
+24. The sidebar collapses to icons.
 
 ## Navigation
 
@@ -91,19 +92,18 @@ Existing data moves across in a migration: every approved document and register 
 
 | Phase | Dates | Scope |
 |---|---|---|
-| 0 · Week 1 | Done | Five-place sidebar, Inbox by stream, payroll intake (PR #51). **Merge first.** |
+| 0 · Week 1 | Merged Nov 25 | Five-place sidebar, Inbox by stream, payroll intake (PR #51). |
 | 1 · Books | Nov 26 – Dec 6 | Tax codes; Sales Invoices, Receipts, Purchase Invoices, Payments with AR/AP per party; Inbox approval posts to the Books; Manager-style modules, lists, Transaction Journal view, Summary; migration from the register; collapsible sidebar |
 | 2 · Lock and payroll | Dec 7 – Dec 13 | Payslips in the Books; reviewer lock, unlock requests, amended-return flag; returns appear only for locked periods; Filings by due date with books still open |
 | 3 · Returns | Dec 14 – Dec 20 | Worksheets (2550Q, 0619-E, 1601-EQ, 1601-C, 1702Q) from tax codes; SLS/SLP/SAWT/QAP DAT; income tax method per client; 5-step sign-off with per-item payment check; filed copy; eSubmission through the firm's Gmail with the validation report |
 | 4 · Collections and portal | Dec 21 – Dec 31 | Items ticked on verification, cash for remittance, payment statuses; portal Home, Upload, Reports (filed returns, 2307 and 2316 generators, loose-leaf books), Billing (channel QR, previous statements) |
-| 5 · Year-end, leads, calendar | Jan 2 – Jan 15 | Year-end page and closing entry, 1604-C/1604-E with eSubmission, 2316 final; Leads pipeline with discovery calls; Google Calendar team calendar and booking page |
+| 5 · Year-end, leads, calendar | Jan 2 – Jan 15 | Year-end page and closing entry, 1604-C/1604-E with eSubmission, 2316 final; Leads pipeline with discovery calls; inquiry, discovery-call and onboarding answers into client Notes; Google Calendar team calendar and booking page |
 
 Each phase ships as its own pull request, with database tests for every new rule (posting, lock, tax-code totals, sign-off, payment allocation) and a check against the old figures before the old screens are retired.
 
 ## Needed from the Owner
 
-1. **Merge PR #51** (Week 1) so Phase 1 builds on it.
-2. **Google:** if tallocpa.com is on Google Workspace, one internal Google Cloud app covers Calendar and Gmail with no Google review. Otherwise Gmail sending and reading needs Google's verification, which takes weeks; Phase 3 would then send eSubmission through the firm's mail server instead. Which is it?
-3. **Payment channels:** each bank or e-wallet you accept, with its QR image, account name and number (Settings).
-4. **Tax codes:** the full list from your Manager.io (the screenshot started at "Input VAT 12% (Capital Goods)"), so the codes and their form lines match yours.
-5. **Loose-leaf details per client:** permit number and registered address, if not already on the COR.
+1. **Google:** if tallocpa.com is on Google Workspace, one internal Google Cloud app covers Calendar and Gmail with no Google review. Otherwise Gmail sending and reading needs Google's verification, which takes weeks; Phase 3 would then send eSubmission through the firm's mail server instead. Which is it?
+2. **Payment channels:** each bank or e-wallet you accept, with its QR image, account name and number (Settings).
+3. **Tax codes:** the full list from your Manager.io (the screenshot started at "Input VAT 12% (Capital Goods)"), so the codes and their form lines match yours.
+4. **Loose-leaf details per client:** permit number and registered address, if not already on the COR.
