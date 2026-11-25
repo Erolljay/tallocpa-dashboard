@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/page.tsx": {
-    "mtime": 1795577700.2706604,
-    "seen": 1795577872.519695,
-    "ast_hash": "c7af8e2f7f4224a79cfceaeafe62fe40",
+    "mtime": 1795577963.8601367,
+    "seen": 1795578241.0095296,
+    "ast_hash": "04ec79783b1f10ea129ba454e4cb34e8",
     "semantic_hash": ""
   },
   "src/app/app/clients/actions.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795556117.7900877,
-    "seen": 1795565923.2271326,
-    "ast_hash": "cb1f41ae1115e7ae2f6a11db0a4f4e0d",
+    "mtime": 1795578216.094152,
+    "seen": 1795578241.0234911,
+    "ast_hash": "4ad2b1a20fe52db292500127904d1eb7",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/edit/page.tsx": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795577860.8533034,
-    "seen": 1795577872.5365796,
-    "ast_hash": "f3fa6274dcb9055aa0903fd249ac171a",
+    "mtime": 1795578216.0933526,
+    "seen": 1795578241.023494,
+    "ast_hash": "16850d14ee276b6c503fb6531fc661b8",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -3027,6 +3027,66 @@
     "mtime": 1795577770.1737015,
     "seen": 1795577872.5352159,
     "ast_hash": "b6f35a47589cb64a9c5cf0f5271457fb",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/client-tabs.tsx": {
+    "mtime": 1795577963.8406286,
+    "seen": 1795578241.0092103,
+    "ast_hash": "1459f0abc2354f274b6b56142ccbfb1f",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/onboarding/actions.ts": {
+    "mtime": 1795577988.7097993,
+    "seen": 1795578241.0095222,
+    "ast_hash": "eab820273bee6bb56a40cda494122ae3",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/onboarding/forms.tsx": {
+    "mtime": 1795578003.7783453,
+    "seen": 1795578241.009525,
+    "ast_hash": "1e81f47c27bca281953976a7bb1c88f8",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/onboarding/page.tsx": {
+    "mtime": 1795578037.7366328,
+    "seen": 1795578241.009527,
+    "ast_hash": "d4f8b58e86d8c2570625975ddc1ae04a",
+    "semantic_hash": ""
+  },
+  "src/app/client-files/[id]/route.ts": {
+    "mtime": 1795577981.4423516,
+    "seen": 1795578241.0137815,
+    "ast_hash": "764aa65b07a17db4bd434fcad9e784ad",
+    "semantic_hash": ""
+  },
+  "src/lib/onboarding/checklist.test.ts": {
+    "mtime": 1795578053.37007,
+    "seen": 1795578241.020032,
+    "ast_hash": "b521ff5017967042488b12a106627fe5",
+    "semantic_hash": ""
+  },
+  "src/lib/onboarding/checklist.ts": {
+    "mtime": 1795577952.132628,
+    "seen": 1795578241.020034,
+    "ast_hash": "c6ebebc0367837fe0d8f3b30cf3f2be4",
+    "semantic_hash": ""
+  },
+  "src/lib/onboarding/files.ts": {
+    "mtime": 1795577988.6975474,
+    "seen": 1795578241.0200357,
+    "ast_hash": "d53453221ba19cf128a0dd32514c0149",
+    "semantic_hash": ""
+  },
+  "src/lib/onboarding/load.ts": {
+    "mtime": 1795578016.6326318,
+    "seen": 1795578241.0200374,
+    "ast_hash": "363cad9d5724cb05c74377746abe88e3",
+    "semantic_hash": ""
+  },
+  "supabase/tests/onboarding.test.ts": {
+    "mtime": 1795578133.0006385,
+    "seen": 1795578241.0228894,
+    "ast_hash": "37958ba9e14e4734e2b90ad1493f4f2b",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

@@ -170,6 +170,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 28 | Payroll accounts | An account title per employee for their pay; net pay to Cash; the employer share of cost-of-services staff to "SSS, PhilHealth and Pag-IBIG Contributions - Direct" (as taxify), of everyone else to the operating contributions account. |
 | 29 | Adjustments | Made only through "Create journal entry", marked as an adjustment with its kind, reason and supporting document; never as a typed figure in a worksheet. |
 | 30 | Email and batch intake | E1 and B1 come later, after the rest of phase 1. |
+| 31 | Onboarding tab | Every client has an Onboarding tab: a checklist (engagement, registration, client access, books, payroll, kickoff) and the client's file with the proposal and the signed contract. Phase 2 attaches the proposal it generates and the e-signed contract to the same list. |
 
 ## Workpaper index
 
