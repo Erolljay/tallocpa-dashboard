@@ -7,8 +7,12 @@ import { useCallback, useRef, useState } from "react";
 import { DocumentScanner } from "@/components/document-scanner";
 import { Field, Select } from "@/components/ui";
 import { finishUpload, startUpload } from "@/lib/documents/actions";
-import { DOC_TYPES, showMonth, type DocType } from "@/lib/documents/labels";
+import { DOC_TYPES, showMonth, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
 import { shrinkImage } from "@/lib/documents/shrink";
+
+/** Some browsers send spreadsheets without a type: take it from the extension. */
+const typeFromName = (name: string) =>
+  ({ xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xls: "application/vnd.ms-excel", csv: "text/csv" })[name.split(".").pop()?.toLowerCase() ?? ""] ?? "application/octet-stream";
 
 type Item = { key: string; name: string; state: "waiting" | "sending" | "done" | "failed"; error?: string };
 
@@ -38,6 +42,15 @@ export function DocumentUpload(props: {
   // Uploads run one after another, even when scans arrive while one is sending.
   const queue = useRef<Promise<void>>(Promise.resolve());
 
+  // The "What is it?" list, grouped by intake stream (Sales, Purchases & Expenses, Payroll, Other).
+  const groups: [Stream | null, DocType[]][] = [];
+  for (const t of props.docTypes) {
+    const st = streamOf(t);
+    const g = groups.find(([x]) => x === st);
+    if (g) g[1].push(t);
+    else groups.push([st, [t]]);
+  }
+  const payroll = docType === "payroll";
   const fieldCount = [props.clients.length > 1, props.docTypes.length > 1, props.months.length > 1].filter(Boolean).length;
   const set = (key: string, patch: Partial<Item>) => setItems((cur) => cur.map((i) => (i.key === key ? { ...i, ...patch } : i)));
 
@@ -65,12 +78,12 @@ export function DocumentUpload(props: {
           docType,
           month,
           fileName: file.name || `photo-${Date.now()}.jpg`,
-          mimeType: file.type || "application/octet-stream",
+          mimeType: file.type || typeFromName(file.name),
           size: file.size,
           filingId: props.filingId,
         });
         if ("error" in started) throw new Error(started.error);
-        const { error } = await storage.uploadToSignedUrl(started.path, started.token, file, { contentType: file.type });
+        const { error } = await storage.uploadToSignedUrl(started.path, started.token, file, { contentType: file.type || typeFromName(file.name) });
         if (error) throw new Error(error.message);
         const done = await finishUpload(started.documentId);
         if ("error" in done) throw new Error(done.error);
@@ -106,7 +119,15 @@ export function DocumentUpload(props: {
         {props.docTypes.length > 1 && (
           <Field label="What is it?" htmlFor="up_type">
             <Select id="up_type" value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
-              {props.docTypes.map((t) => <option key={t} value={t}>{DOC_TYPES[t]}</option>)}
+              {groups.map(([stream, types]) =>
+                stream ? (
+                  <optgroup key={stream} label={STREAMS[stream].label}>
+                    {types.map((t) => <option key={t} value={t}>{DOC_TYPES[t]}</option>)}
+                  </optgroup>
+                ) : (
+                  types.map((t) => <option key={t} value={t}>{DOC_TYPES[t]}</option>)
+                ),
+              )}
             </Select>
           </Field>
         )}
@@ -134,10 +155,10 @@ export function DocumentUpload(props: {
           onClick={() => files.current?.click()}
           className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-border-button-default bg-background-primary-default px-4 py-3 text-headline-medium text-text-primary hover:bg-background-tertiary-default disabled:opacity-60"
         >
-          <RiFileUploadLine aria-hidden className="size-5" /> Choose photos or PDFs
+          <RiFileUploadLine aria-hidden className="size-5" /> {payroll ? "Choose Excel, PDF or photos" : "Choose photos or PDFs"}
         </button>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
-        <input ref={files} type="file" accept="image/*,application/pdf" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
+        <input ref={files} type="file" accept={payroll ? "image/*,application/pdf,.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" : "image/*,application/pdf"} multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
       </div>
 
       {items.length > 0 && (

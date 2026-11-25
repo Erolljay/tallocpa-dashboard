@@ -13,6 +13,7 @@ import { resolveParty } from "@/lib/parties/resolve";
 import { partyKey } from "@/lib/parties/tin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
+import { PayrollIntake } from "./payroll-intake";
 import { ReviewForm, type Booking } from "./review-form";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
@@ -42,6 +43,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       : Promise.resolve({ data: [] as LockFiling[] }),
   ]);
   const canAct = me.staff.role === "owner" || (team ?? []).length > 0;
+  if (doc.doc_type === "payroll") return <PayrollDocument doc={doc} canAct={canAct} />;
   // An approved document stays editable until a return covering its month is filed.
   const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[]) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
@@ -123,6 +125,55 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
 }
 
 const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
+
+/** Payroll in the client's own format: the file, and the steps to load it (no OCR, no register line). */
+function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; file_name: string; mime_type: string; status: string; source: string; clients: unknown }; canAct: boolean }) {
+  const client = doc.clients as { name: string } | null;
+  const ym = doc.period.slice(0, 7);
+  const isPdf = doc.mime_type === "application/pdf";
+  const isImage = doc.mime_type.startsWith("image/");
+  return (
+    <>
+      <PageHeader
+        title={`Payroll · ${showMonth(doc.period)}`}
+        description={
+          <span>
+            <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link>
+            {doc.late ? " · late" : ""} · {doc.source === "staff" ? "staff upload" : "from client"}
+          </span>
+        }
+        actions={<Badge tone={docStatusTone[doc.status as keyof typeof docStatusTone]}>{doc.status === "posted" ? "Loaded" : docStatusLabel[doc.status]}</Badge>}
+      />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={doc.file_name}>
+          {isPdf ? (
+            <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
+          ) : isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed link, not an optimisable asset
+            <img src={`/files/${doc.id}`} alt={`Payroll for ${showMonth(doc.period)} sent by the client`} className="max-h-[75vh] w-full rounded-lg border border-separator-border object-contain" />
+          ) : (
+            <p className="text-body-regular text-text-secondary">The client&apos;s own spreadsheet. Download it to open in Excel.</p>
+          )}
+          <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">
+            {isPdf || isImage ? "Open full size" : "Download the client's file"}
+          </a>
+        </Card>
+        <Card title="Load into payroll">
+          {canAct ? (
+            <PayrollIntake
+              documentId={doc.id}
+              open={["received", "under_review"].includes(doc.status)}
+              templateHref={`/app/clients/${doc.client_id}/payroll/export?kind=template&month=${ym}`}
+              monthHref={`/app/clients/${doc.client_id}/payroll/month/${ym}`}
+            />
+          ) : (
+            <p className="text-body-regular text-text-secondary">Only the Owner and the staff assigned to this client can load its payroll.</p>
+          )}
+        </Card>
+      </div>
+    </>
+  );
+}
 
 /** The books side of the review: only for clients whose books are set up, and document types that are booked. */
 async function loadBooking(

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { RiArrowDownLine, RiArrowUpLine, RiCheckLine, RiLockLine } from "@remixicon/react";
-import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
+import { Badge, Card, LinkButton, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
-import { DOC_TYPES, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { DOC_TYPES, docStatusTone, showMonth, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
@@ -17,7 +17,7 @@ import { periodRange } from "./period";
 
 export default function DocumentsPage(props: PageProps<"/app/documents">) {
   return (
-    <Suspense fallback={<><PageHeader title="Documents" /><Skeleton rows={8} /></>}>
+    <Suspense fallback={<><PageHeader title="Inbox" /><Skeleton rows={8} /></>}>
       <Documents searchParams={props.searchParams} />
     </Suspense>
   );
@@ -27,7 +27,8 @@ const FORM_ID = "doc-filters";
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" }).format(new Date(iso));
 
-type Tab = "pending" | "approved";
+type Tab = Stream | "approved";
+const STREAM_KEYS = Object.keys(STREAMS) as Stream[];
 type Sort = "name" | "-name" | "count" | "-count";
 
 interface Row {
@@ -45,11 +46,23 @@ interface Row {
   extractions: { status: string; fields: Record<string, string | null> | null; confidence: Record<string, number> | null; error: string | null; approved_at: string | null; approved_fields: Record<string, string | null> | null } | null;
 }
 
+interface Submission {
+  id: string;
+  client_id: string;
+  pay_month: string;
+  file_name: string;
+  row_count: number;
+  late: boolean;
+  created_at: string;
+}
+
 async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "searchParams">) {
   const me = await requireStaff();
   const owner = me.staff.role === "owner";
   const sp = await searchParams;
-  const tab: Tab = one(sp.tab) === "approved" ? "approved" : "pending";
+  // Inbox tabs: one per intake stream (Sales, Purchases & Expenses, Payroll, Other), then Approved.
+  const tabParam = one(sp.tab);
+  const tab: Tab = tabParam === "approved" ? "approved" : (STREAM_KEYS.find((k) => k === tabParam) ?? "sales");
   const sortParam = one(sp.sort);
   const sort: Sort = (["name", "-name", "count", "-count"] as const).find((s) => s === sortParam) ?? "name";
   const range = periodRange(one(sp.period), manilaToday(), one(sp.from), one(sp.to));
@@ -65,36 +78,47 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const clientId = clients.some((c) => c.id === one(sp.client)) ? one(sp.client) : "";
   const client = clients.find((c) => c.id === clientId);
 
-  let query = supabase
-    .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, carried_from, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)")
-    .not("doc_type", "in", "(filed_return,payment_proof)")
-    .order("created_at", { ascending: tab === "pending" })
-    .limit(1000);
-  query = tab === "pending" ? query.in("status", ["received", "under_review"]) : query.eq("status", "posted");
-  if (clientId) query = query.eq("client_id", clientId);
-  if (range) query = query.gte("period", range.from).lte("period", range.to);
-  const { data, error } = await query;
-  if (error) throw error;
-  const ids = new Set(clients.map((c) => c.id));
-  const rows = ((data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id));
-
-  // Pending count per client, for the tab label and the client list.
-  const pendingCounts = new Map<string, number>();
-  if (tab === "pending") {
-    for (const r of rows) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
-  } else {
-    let pq = supabase.from("documents").select("client_id").in("status", ["received", "under_review"]).not("doc_type", "in", "(filed_return,payment_proof)").limit(1000);
-    if (clientId) pq = pq.eq("client_id", clientId);
-    if (range) pq = pq.gte("period", range.from).lte("period", range.to);
-    for (const r of (await pq).data ?? []) if (ids.has(r.client_id)) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
+  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
+  // Everything waiting, across the streams: the tab counts need all of it.
+  let pendingQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").in("status", ["received", "under_review"]).order("created_at").limit(1000);
+  // Payroll registers clients sent in the Tallo template (portal Payroll tab) wait in the Payroll tab too.
+  let subQuery = supabase.from("payroll_submissions").select("id, client_id, pay_month, file_name, row_count, late, created_at").eq("status", "pending").order("created_at").limit(500);
+  if (clientId) {
+    pendingQuery = pendingQuery.eq("client_id", clientId);
+    subQuery = subQuery.eq("client_id", clientId);
   }
-  const pendingTotal = [...pendingCounts.values()].reduce((a, b) => a + b, 0);
+  if (range) {
+    pendingQuery = pendingQuery.gte("period", range.from).lte("period", range.to);
+    subQuery = subQuery.gte("pay_month", range.from).lte("pay_month", range.to);
+  }
+  let approvedQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").eq("status", "posted").order("created_at", { ascending: false }).limit(1000);
+  if (clientId) approvedQuery = approvedQuery.eq("client_id", clientId);
+  if (range) approvedQuery = approvedQuery.gte("period", range.from).lte("period", range.to);
+  const [pendingRes, subRes, approvedRes] = await Promise.all([pendingQuery, subQuery, tab === "approved" ? approvedQuery : Promise.resolve({ data: [], error: null })]);
+  if (pendingRes.error) throw pendingRes.error;
+  if (approvedRes.error) throw approvedRes.error;
+  const ids = new Set(clients.map((c) => c.id));
+  const pendingAll = ((pendingRes.data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id));
+  const submissions = ((subRes.data ?? []) as Submission[]).filter((r) => ids.has(r.client_id));
+  const rows = tab === "approved"
+    ? ((approvedRes.data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id))
+    : pendingAll.filter((r) => streamOf(r.doc_type) === tab);
+
+  // Waiting per stream (the tab counts) and per client in the open tab (the client list).
+  const streamCounts = new Map<Stream, number>(STREAM_KEYS.map((k) => [k, 0]));
+  for (const r of pendingAll) {
+    const st = streamOf(r.doc_type);
+    if (st) streamCounts.set(st, streamCounts.get(st)! + 1);
+  }
+  streamCounts.set("payroll", streamCounts.get("payroll")! + submissions.length);
+  const pendingCounts = new Map<string, number>();
+  for (const r of tab === "approved" ? pendingAll : rows) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
+  if (tab === "payroll" || tab === "approved") for (const r of submissions) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
 
   const link = (over: Record<string, string>) => {
     const p = new URLSearchParams();
     const base: Record<string, string> = { client: clientId, tab, period: range?.key ?? "", from: one(sp.from), to: one(sp.to), sort: sort === "name" ? "" : sort };
-    for (const [k, v] of Object.entries({ ...base, ...over })) if (v && !(k === "tab" && v === "pending") && !((k === "from" || k === "to") && (over.period ?? base.period) !== "custom")) p.set(k, v);
+    for (const [k, v] of Object.entries({ ...base, ...over })) if (v && !(k === "tab" && v === "sales") && !((k === "from" || k === "to") && (over.period ?? base.period) !== "custom")) p.set(k, v);
     const s = p.toString();
     return s ? `/app/documents?${s}` : "/app/documents";
   };
@@ -102,14 +126,19 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   return (
     <>
       <PageHeader
-        title="Documents"
-        description={client ? `${client.name}: uploaded receipts and invoices.` : "Uploaded receipts and invoices. OCR reads each one; check the figures, then approve or return it to the client."}
-        actions={<ClientSelect form={FORM_ID} value={clientId} clients={clients} />}
+        title="Inbox"
+        description={client ? `${client.name}: what came in and is waiting for approval.` : "Everything clients sent, by kind. OCR reads each receipt; check the figures, then approve it into the register or return it to the client."}
+        actions={
+          <>
+            <ClientSelect form={FORM_ID} value={clientId} clients={clients} />
+            <LinkButton href="/app/cycle" variant="secondary">Month status</LinkButton>
+          </>
+        }
       />
 
       {/* BoardUI underline tabs (components/base/tabs), as links so each list has its own URL. */}
-      <nav aria-label="Document lists" className="mb-5 flex gap-1 border-b border-separator-border">
-        {([["pending", "Pending review", pendingTotal], ["approved", "Approved history", null]] as const).map(([t, label, count]) => (
+      <nav aria-label="Inbox" className="mb-5 flex gap-1 overflow-x-auto border-b border-separator-border">
+        {([...STREAM_KEYS.map((k) => [k, STREAMS[k].label, streamCounts.get(k) ?? 0] as const), ["approved", "Approved", null] as const] as const).map(([t, label, count]) => (
           <Link
             key={t}
             href={link({ tab: t })}
@@ -131,15 +160,17 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
       </nav>
 
       <form id={FORM_ID} role="search" className="mb-6">
-        {tab === "approved" && <input type="hidden" name="tab" value="approved" />}
+        {tab !== "sales" && <input type="hidden" name="tab" value={tab} />}
         {sort !== "name" && <input type="hidden" name="sort" value={sort} />}
         <PeriodFilter period={range?.key ?? "all"} from={range ? range.from.slice(0, 7) : ""} to={range ? range.to.slice(0, 7) : ""} />
         {tab === "approved" && <p className="mt-2 text-caption-1-regular text-text-tertiary">Approved figures can be corrected until the return for their month is filed. After that the month is locked.</p>}
       </form>
 
       {!client ? (
-        <ClientList clients={clients} tab={tab} sort={sort} link={link} counts={tab === "pending" ? pendingCounts : countBy(rows)} complete={await confirmedMonths(supabase, clients.map((c) => c.id))} />
-      ) : tab === "pending" ? (
+        <ClientList clients={clients} tab={tab} sort={sort} link={link} counts={tab === "approved" ? countBy(rows) : pendingCounts} complete={await confirmedMonths(supabase, clients.map((c) => c.id))} />
+      ) : tab === "payroll" ? (
+        <PayrollPending rows={rows} submissions={submissions} clientId={clientId} />
+      ) : tab !== "approved" ? (
         <Suspense fallback={<Skeleton rows={6} />}>
           <ClientPending rows={rows} clientId={clientId} />
         </Suspense>
@@ -177,7 +208,8 @@ function ClientList({ clients, tab, sort, link, counts, complete }: { clients: {
     }
     return sort === "-name" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
   });
-  const countLabel = tab === "pending" ? "Pending" : "Approved";
+  const waiting = tab !== "approved";
+  const countLabel = waiting ? "Waiting" : "Approved";
 
   return (
     <Card>
@@ -211,13 +243,13 @@ function ClientList({ clients, tab, sort, link, counts, complete }: { clients: {
                     ))}
                   </td>
                   <td className="py-2.5 text-end tabular-nums">
-                    {tab === "pending" && count === 0 ? (
+                    {waiting && count === 0 ? (
                       <span className="inline-flex items-center gap-1 text-status-lime-text" title="Nothing waiting for review">
                         <RiCheckLine aria-hidden className="size-4" />
                         <span className="sr-only">Nothing waiting</span>
                       </span>
                     ) : (
-                      <span className={tab === "pending" ? "font-semibold text-text-primary" : "text-text-secondary"}>({count})</span>
+                      <span className={waiting ? "font-semibold text-text-primary" : "text-text-secondary"}>({count})</span>
                     )}
                   </td>
                 </tr>
@@ -375,6 +407,57 @@ async function ApprovedTable({ rows, clientId }: { rows: Row[]; clientId: string
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * One client's payroll waiting to be loaded (rework): files in the client's own
+ * format (Excel, PDF or a photo), which staff put into the Tallo template, and
+ * registers the client already sent in the template from the portal.
+ */
+function PayrollPending({ rows, submissions, clientId }: { rows: Row[]; submissions: Submission[]; clientId: string }) {
+  const subs = submissions.filter((s) => s.client_id === clientId);
+  const total = rows.length + subs.length;
+  return (
+    <Card title={`Payroll waiting (${total})`}>
+      {total === 0 ? (
+        <p className="text-body-regular text-text-secondary">No payroll waiting for this client.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-body-regular">
+            <thead className="text-start text-body-medium text-text-tertiary">
+              <tr>
+                <th scope="col" className="text-start pb-2">Received</th>
+                <th scope="col" className="text-start pb-2">File</th>
+                <th scope="col" className="text-start pb-2">Month</th>
+                <th scope="col" className="text-start pb-2">Format</th>
+                <th scope="col" className="pb-2 text-end"><span className="sr-only">Open</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                  <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(r.created_at)}</td>
+                  <td className="max-w-64 truncate py-2 pe-4 text-text-primary">{r.file_name}</td>
+                  <MonthCell r={r} />
+                  <td className="py-2 pe-4"><Badge tone="waiting">Client&apos;s format</Badge></td>
+                  <td className="py-2 text-end"><Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">Load</Link></td>
+                </tr>
+              ))}
+              {subs.map((s) => (
+                <tr key={s.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                  <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(s.created_at)}</td>
+                  <td className="max-w-64 truncate py-2 pe-4 text-text-primary">{s.file_name} <span className="text-text-tertiary">· {s.row_count} row{s.row_count === 1 ? "" : "s"}</span></td>
+                  <td className="py-2 pe-4 text-text-secondary">{showMonth(s.pay_month)}{s.late && <span className="ms-1 text-caption-1-regular text-status-yellow-text">late</span>}</td>
+                  <td className="py-2 pe-4"><Badge tone="done">Tallo template</Badge></td>
+                  <td className="py-2 text-end"><Link href={`/app/clients/${clientId}/payroll/month/${s.pay_month.slice(0, 7)}`} className="font-medium text-button-ghost-foreground hover:underline">Review &amp; post</Link></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

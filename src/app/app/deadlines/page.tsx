@@ -9,14 +9,16 @@ import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { GenerateButton } from "./generate-button";
+import { FilingsTabs } from "@/app/app/nav/section-tabs";
 
 export default function DeadlinesPage(props: PageProps<"/app/deadlines">) {
   return (
     <>
       <PageHeader
-        title="Deadlines"
+        title="Filings"
         description="Every BIR filing due in the next 60 days, and any overdue, with the person on it, its steps and a status. A filing is done once its proof is recorded."
       />
+      <FilingsTabs active="deadlines" />
       <Suspense fallback={<Skeleton rows={8} />}>
         <Deadlines searchParams={props.searchParams} />
       </Suspense>

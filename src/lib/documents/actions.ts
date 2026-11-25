@@ -6,7 +6,7 @@ import { runOcr } from "@/lib/ocr/run";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getIdentity } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
-import type { DocType } from "./labels";
+import { SPREADSHEET_TYPES, type DocType } from "./labels";
 
 export type StartUpload = { documentId: string; path: string; token: string } | { error: string };
 
@@ -28,7 +28,9 @@ export async function startUpload(input: {
   filingId?: string;
 }): Promise<StartUpload> {
   await getIdentity();
-  if (!ALLOWED.includes(input.mimeType)) return { error: `${input.fileName}: only photos (JPEG, PNG, HEIC) and PDF files can be uploaded.` };
+  const sheet = SPREADSHEET_TYPES.includes(input.mimeType);
+  if (sheet && input.docType !== "payroll") return { error: `${input.fileName}: an Excel or CSV file can only be sent as payroll. Send receipts and invoices as photos or PDFs.` };
+  if (!sheet && !ALLOWED.includes(input.mimeType)) return { error: `${input.fileName}: only photos (JPEG, PNG, HEIC), PDF files, and Excel for payroll can be uploaded.` };
   if (input.size > MAX_BYTES) return { error: `${input.fileName} is over 20 MB.` };
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc("register_document", {

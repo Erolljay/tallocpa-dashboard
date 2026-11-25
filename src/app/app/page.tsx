@@ -13,11 +13,13 @@ import { loadBoard, loadCoverage } from "@/lib/deadlines/safeguards-load";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
 import { DashboardStats } from "./dashboard-stats";
 import { OwnerSections } from "./owner-sections";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function DashboardPage() {
   return (
     <>
-      <PageHeader title="Dashboard" description="What needs attention across your clients." />
+      <PageHeader title="Home" description="What needs attention across your clients." />
+      <SectionTabs section="home" active="overview" />
       <Suspense fallback={null}>
         <ActingNotice />
       </Suspense>

@@ -11,6 +11,7 @@ import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CloseCycleButton, DecideExceptionForm, NothingToSubmitButton } from "@/components/cycle-forms";
+import { SectionTabs } from "@/app/app/nav/section-tabs";
 
 export default function CyclePage(props: PageProps<"/app/cycle">) {
   return (
@@ -19,6 +20,7 @@ export default function CyclePage(props: PageProps<"/app/cycle">) {
         title="Monthly cycle"
         description="Each client's documents for the month: requested on the 1st, reminded the day before the cutoff, due on the cutoff day. Closing a month moves anything not yet posted to the next month of the same taxable year."
       />
+      <SectionTabs section="inbox" active="cycle" />
       <Suspense fallback={<Skeleton rows={8} />}>
         <Cycle searchParams={props.searchParams} />
       </Suspense>
