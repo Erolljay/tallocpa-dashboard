@@ -62,7 +62,8 @@ export function ageOpenItems(items: { due_on: string; open_amount: number | stri
 }
 
 /** Why an item is in Ready to bill (public.ready_to_bill, decision 16c). */
-export type ReadyReason = "retainer" | "client_approved" | "due_soon" | "charge";
+/** "retainer_unbilled": an earlier month's retainer never billed; every such month is billed on the next run. */
+export type ReadyReason = "retainer" | "retainer_unbilled" | "client_approved" | "due_soon" | "charge";
 
 /** One item a billing run would put on the client's statement now. */
 export interface ReadyItem {
@@ -92,6 +93,8 @@ export function readyReasonLabel(item: Pick<ReadyItem, "reason" | "days_to_due">
     }
     case "retainer":
       return "This month's retainer";
+    case "retainer_unbilled":
+      return "Not billed";
     case "charge":
       return "Not yet billed";
   }
