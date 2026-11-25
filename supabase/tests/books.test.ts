@@ -105,7 +105,7 @@ describe.skipIf(!url)("books transactions", () => {
   describe("tax codes", () => {
     it("are seeded with their kinds, rates and ATCs", async () => {
       const rows = (await as(STAFF, `select code, kind, rate::text, atc, payee_type, applies_to from public.tax_codes order by sort_order`)).rows;
-      expect(rows).toHaveLength(19);
+      expect(rows).toHaveLength(21);
       expect(rows.find((r) => r.code === "OVAT12")).toMatchObject({ kind: "output_vat", rate: "0.1200", applies_to: "sales" });
       expect(rows.find((r) => r.code === "IVAT12-CG")).toMatchObject({ kind: "input_vat_capital", applies_to: "purchases" });
       expect(rows.find((r) => r.code === "WI010")).toMatchObject({ kind: "withholding", rate: "0.1000", atc: "WI010", payee_type: "individual", applies_to: "both" });
@@ -156,6 +156,16 @@ describe.skipIf(!url)("books transactions", () => {
         ["accounts_payable", "0.00", "48150.00"],
         ["ewt_payable", "0.00", "2250.00"],
       ]);
+    });
+
+    it("codes a non-VAT client's documents Non-VAT Sales and Non-VAT Purchases", async () => {
+      const sug = async (kind: string) =>
+        (await db.query(`select private.document_tax_suggestion($1, $2, null, false, null, 0, 0, 0, 0, 1000, 0, null, 0, 0) as s`, [client, kind])).rows[0].s;
+      const codeOf = async (id: string) => (await db.query(`select code from public.tax_codes where id = $1`, [id])).rows[0].code;
+      expect(await codeOf((await sug("sale")).lines[0].tax_code_id)).toBe("NVS");
+      expect(await codeOf((await sug("purchase")).lines[0].tax_code_id)).toBe("NVP");
+      const nvs = (await db.query(`select applies_to from public.tax_codes where code = 'NVS'`)).rows[0];
+      expect(nvs.applies_to).toBe("sales");
     });
 
     it("books a purchase with no invoice in full to its expense, with no input VAT and on no BIR list", async () => {

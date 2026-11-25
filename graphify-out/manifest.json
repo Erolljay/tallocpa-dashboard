@@ -3210,9 +3210,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795617559.1579971,
-    "seen": 1795617562.618234,
-    "ast_hash": "07e70651f69327190f741e08191a896c",
+    "mtime": 1795617740.6248624,
+    "seen": 1795617743.9472594,
+    "ast_hash": "ef2c4166930b7c53e652dbdff067ee24",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
@@ -3246,15 +3246,15 @@
     "semantic_hash": ""
   },
   "src/lib/books/tax-codes.test.ts": {
-    "mtime": 1795617476.716783,
-    "seen": 1795617562.6085339,
-    "ast_hash": "4d33ff322edd853bc78e51f6dbb0dbb0",
+    "mtime": 1795617682.898688,
+    "seen": 1795617743.9400444,
+    "ast_hash": "cb2352a9cd4fe37dbde5c51526084e16",
     "semantic_hash": ""
   },
   "src/lib/books/tax-codes.ts": {
-    "mtime": 1795617465.881529,
-    "seen": 1795617562.6085365,
-    "ast_hash": "04cab445de1d58097eb9db1336cb138a",
+    "mtime": 1795617686.8740115,
+    "seen": 1795617743.9400475,
+    "ast_hash": "3d1bc72ef76dd1cc429015c801d14059",
     "semantic_hash": ""
   },
   "supabase/tests/books-lock.test.ts": {
@@ -3270,9 +3270,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/books.test.ts": {
-    "mtime": 1795617493.6087956,
-    "seen": 1795617562.6174989,
-    "ast_hash": "1fa05e934f05c4442c39d336b08dceb4",
+    "mtime": 1795617682.8993292,
+    "seen": 1795617743.9462504,
+    "ast_hash": "766e211b72147c918f70ad41e5f6f43e",
     "semantic_hash": ""
   },
   "src/app/app/nav/sidebar-toggle.tsx": {
