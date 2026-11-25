@@ -148,7 +148,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 6 | Workpaper index | New audit-style index (below). |
 | 7 | Tie-out tolerance | ₱1. |
 | 8 | Reviewer sign-off | 10 sales, 20 purchases and 0-2 tie-outs always; others when they have activity. |
-| 9 | SC/PWD discount | Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010). |
+| 9 | SC/PWD discount | Sales Discount – SC/PWD, a deduction from gross income (RR 7-2010), on the BIR line "Others" (confirmed). |
 | 10 | CWT without a 2307 at year end | Pending until the annual return, then decided per client. |
 | 11 | Cash account | General bookkeeping: one **Cash** account, no bank reconciliation. Subsidiary cash accounts (cash on hand, each bank) and bank reconciliation only for clients who opt for full bookkeeping. |
 | 12 | Capitalization threshold | ₱10,000 per item. |
@@ -163,6 +163,7 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 21 | Books close | By the 10th; the client's document cutoff stays the 5th. |
 | 22 | Financial statements | Monthly or quarterly, set per client. |
 | 23 | Registrations | Keep it in the sidebar. |
+| 24 | Quarterly step dates | A return covering more than one month is prepared by the 15th of the month it is due, then reviewed, client approved and Owner approved one working day apart, and filed the day the Owner approves. |
 
 ## Workpaper index
 

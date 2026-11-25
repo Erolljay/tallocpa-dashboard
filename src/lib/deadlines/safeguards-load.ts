@@ -33,6 +33,7 @@ interface FilingRow {
   client_id: string;
   form: string;
   period_label: string;
+  period_start: string | null;
   period_end: string;
   due_date: string;
   status: FilingStatus;
@@ -56,7 +57,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
   const [{ data: filings, error }, holidays] = await Promise.all([
     db
       .from("filing_instances")
-      .select("id, client_id, form, period_label, period_end, due_date, status, clients(name, code, submission_cutoff_day)")
+      .select("id, client_id, form, period_label, period_start, period_end, due_date, status, clients(name, code, submission_cutoff_day)")
       .neq("status", "proof_uploaded")
       .lte("due_date", until)
       .gte("due_date", addDays(today, -120))
@@ -91,7 +92,7 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
     const preparer = member(f.client_id, "preparer");
     const reviewer = member(f.client_id, "reviewer");
     if (opts.userId && preparer?.userId !== opts.userId && reviewer?.userId !== opts.userId) continue;
-    const steps = stepsFor({ dueDate: f.due_date, periodEnd: f.period_end, cutoffDay: f.clients?.submission_cutoff_day ?? 5, holidays });
+    const steps = stepsFor({ dueDate: f.due_date, periodEnd: f.period_end, periodStart: f.period_start ?? undefined, cutoffDay: f.clients?.submission_cutoff_day ?? 5, holidays });
     // Documents for the period are in when its last month's cycle says so: nothing to submit,
     // something came in by the cutoff, or the month was closed.
     const y = cycleOf.get(`${f.client_id}|${monthStart(f.period_end)}`);

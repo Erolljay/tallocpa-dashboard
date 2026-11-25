@@ -26,6 +26,14 @@ describe("steps", () => {
   it("gives a quarterly return room after the cutoff and never puts a step before the one ahead of it", () => {
     const steps = stepsFor({ dueDate: "2027-04-26", periodEnd: "2027-03-31", cutoffDay: 5, holidays: none });
     expect(steps.map((s) => s.target)).toEqual(["2027-04-05", "2027-04-20", "2027-04-21", "2027-04-22", "2027-04-23", "2027-04-23", "2027-04-26"]);
+    // A quarterly return is prepared by the 15th of the month it is due (decision 24).
+    const q = stepsFor({ dueDate: "2027-04-26", periodStart: "2027-01-01", periodEnd: "2027-03-31", cutoffDay: 5, holidays: none });
+    expect(q.map((s) => s.target)).toEqual(["2027-04-05", "2027-04-15", "2027-04-16", "2027-04-19", "2027-04-20", "2027-04-20", "2027-04-26"]);
+    // A 15th on a Sunday moves to the Friday before; an annual return due on the 15th keeps the monthly pattern.
+    const sunday = stepsFor({ dueDate: "2027-08-25", periodStart: "2027-04-01", periodEnd: "2027-06-30", cutoffDay: 5, holidays: none });
+    expect(sunday[1].target).toBe("2027-08-13");
+    const annual = stepsFor({ dueDate: "2027-04-15", periodStart: "2026-01-01", periodEnd: "2026-12-31", cutoffDay: 5, holidays: none });
+    expect(annual.slice(1, 6).map((s) => s.target)).toEqual(["2027-04-09", "2027-04-12", "2027-04-13", "2027-04-14", "2027-04-14"]);
     const tight = stepsFor({ dueDate: "2027-04-07", periodEnd: "2027-03-31", cutoffDay: 5, holidays: none });
     const targets = tight.map((s) => s.target);
     expect([...targets].sort()).toEqual(targets);

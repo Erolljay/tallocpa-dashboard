@@ -17,6 +17,13 @@
  * For a 1601-C due Monday 12 April with a cutoff on the 5th this gives Apr 5, 6,
  * 7, 8, 9, 9 and 12 (decision 4). A target is never earlier than the step before it.
  *
+ * A return covering more than one month (2550Q, 1601-EQ, 1701Q, 1702Q, 2551Q) is
+ * prepared earlier (Owner's decision 24): by the 15th of the month it is due, then
+ * reviewed, client approved and Owner approved one working day apart, and filed the
+ * day the Owner approves. A 2550Q due Monday 26 April gives Apr 5, 15, 16, 19, 20,
+ * 20 and 26. The monthly pattern still applies when it is earlier (an annual return
+ * due on the 15th).
+ *
  * Status: filed (proof recorded) · on track · at risk (one step late) · critical
  * (two steps late, or one working day or less left and not filed) · overdue
  * (the BIR date has passed and it is not filed). A late filing is client-caused
@@ -95,16 +102,25 @@ export function documentCutoff(periodEnd: IsoDate, cutoffDay: number): IsoDate {
 }
 
 /** The filing's steps and their target dates. */
-export function stepsFor(opts: { dueDate: IsoDate; periodEnd: IsoDate; cutoffDay: number; holidays: ReadonlySet<IsoDate> }): Step[] {
+export function stepsFor(opts: { dueDate: IsoDate; periodEnd: IsoDate; periodStart?: IsoDate; cutoffDay: number; holidays: ReadonlySet<IsoDate> }): Step[] {
   const { dueDate, holidays } = opts;
   const docs = documentCutoff(opts.periodEnd, opts.cutoffDay);
+  const monthly: IsoDate[] = [4, 3, 2, 1, 1].map((n) => workingDaysBefore(dueDate, n, holidays));
+  let middle = monthly;
+  if (opts.periodStart && opts.periodStart.slice(0, 7) !== opts.periodEnd.slice(0, 7)) {
+    // Prepared by the 15th of the due month (the working day before when it is not one).
+    let prep: IsoDate = `${dueDate.slice(0, 7)}-15`;
+    if (!isWorkingDay(prep, holidays)) prep = workingDaysBefore(prep, 1, holidays);
+    const early = [0, 1, 2, 3, 3].map((n) => (n === 0 ? prep : workingDaysBefore(prep, -n, holidays)));
+    middle = monthly.map((m, i) => (early[i] < m ? early[i] : m));
+  }
   const raw: [StepKey, IsoDate][] = [
     ["documents", docs],
-    ["prepared", workingDaysBefore(dueDate, 4, holidays)],
-    ["reviewed", workingDaysBefore(dueDate, 3, holidays)],
-    ["client_approved", workingDaysBefore(dueDate, 2, holidays)],
-    ["owner_approved", workingDaysBefore(dueDate, 1, holidays)],
-    ["filed", workingDaysBefore(dueDate, 1, holidays)],
+    ["prepared", middle[0]],
+    ["reviewed", middle[1]],
+    ["client_approved", middle[2]],
+    ["owner_approved", middle[3]],
+    ["filed", middle[4]],
     ["proof", dueDate],
   ];
   // Never earlier than the step before (a short window after the cutoff squeezes them together),
