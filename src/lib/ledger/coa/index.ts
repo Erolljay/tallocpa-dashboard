@@ -97,6 +97,8 @@ const COST: Spec[] = [
   ["freight_in", "5020", "Freight In", "cost", "cost_of_sales", "cost_of_sales"],
   ["purchase_returns", "5030", "Purchase Returns and Discounts", "cost", "cost_of_sales", "cost_of_sales", CONTRA],
   ["direct_labor", "5100", "Direct Labor", "cost", "cost_of_services", "cost_of_services"],
+  // Employer share of cost-of-services staff (as taxify; payroll to the books).
+  ["contributions_direct", "5105", "SSS, PhilHealth and Pag-IBIG Contributions - Direct", "cost", "cost_of_services", "cost_of_services"],
   ["direct_materials", "5110", "Direct Materials and Supplies", "cost", "cost_of_services", "cost_of_services"],
   ["depreciation_direct", "5120", "Depreciation - Direct", "cost", "cost_of_services", "cost_of_services"],
   ["other_direct_costs", "5190", "Other Direct Costs", "cost", "cost_of_services", "cost_of_services"],

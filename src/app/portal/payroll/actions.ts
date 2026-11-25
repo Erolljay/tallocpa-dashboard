@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { periodEnd } from "@/lib/payroll/periods";
 import { getIdentity } from "@/lib/auth";
 import { previewOf, type RegisterPreview } from "@/lib/payroll/apply";
 import { checkRegister } from "@/lib/payroll/register";
@@ -61,6 +62,7 @@ export async function submitPortalPayrollAction(_: PortalPayrollState, form: For
     file_name: r.file.name.slice(0, 200),
     storage_path: path,
     rows: r.rows,
+    pay_period_end: periodEnd(r.month, String(form.get("pay_period") ?? "month")),
   });
   if (error) return { error: `Could not send the register: ${error.message}` };
   revalidatePath("/portal", "layout");

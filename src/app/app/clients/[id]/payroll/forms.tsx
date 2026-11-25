@@ -1,5 +1,7 @@
 "use client";
 
+import { PAY_PERIODS } from "@/lib/payroll/periods";
+
 import { useActionState, useMemo, useState } from "react";
 import { Badge, Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { computeEmployeeYear, enteredNet, suggestWithholding, type PriorAmounts } from "@/lib/payroll/compute";
@@ -31,7 +33,7 @@ import {
 // ---------------------------------------------------------------------------
 // Employee form (add, edit, separate).
 // ---------------------------------------------------------------------------
-export function EmployeeForm({ clientId, employee }: { clientId: string; employee: Employee | null }) {
+export function EmployeeForm({ clientId, employee, payAccounts }: { clientId: string; employee: Employee | null; payAccounts?: { id: string; label: string; group: string }[] }) {
   const [state, action, pending] = useActionState(saveEmployeeAction.bind(null, clientId, employee?.id ?? null), {} as FormState);
   const [mwe, setMwe] = useState(employee?.isMwe ?? false);
   const e = state.fieldErrors ?? {};
@@ -39,6 +41,16 @@ export function EmployeeForm({ clientId, employee }: { clientId: string; employe
   const tin = v?.tin ? `${v.tin}${v.tinBranch && v.tinBranch !== "0000" ? `-${v.tinBranch}` : ""}` : "";
   return (
     <form action={action} className="space-y-6">
+      {payAccounts && payAccounts.length > 0 && (
+        <Field label="Pay account (books)" htmlFor="pay_account_id" hint="Where this employee's pay is booked. Cost-of-services staff (Direct Labor) also take the direct contributions account.">
+          <Select id="pay_account_id" name="pay_account_id" defaultValue={v?.payAccountId ?? ""} className="sm:max-w-md">
+            <option value="">Salaries and Wages (default)</option>
+            {[...new Set(payAccounts.map((a) => a.group))].map((g) => (
+              <optgroup key={g} label={g}>{payAccounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}</optgroup>
+            ))}
+          </Select>
+        </Field>
+      )}
       <fieldset className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <legend className="mb-2 text-body-medium text-text-primary">Name and TIN</legend>
         <Field label="Last name" htmlFor="last_name" error={e.last_name}><Input id="last_name" name="last_name" defaultValue={v?.lastName} required /></Field>
@@ -320,6 +332,12 @@ export function RegisterUpload({ clientId, month }: { clientId: string; month: s
               <input type="checkbox" name="add_new" className="size-4" /> Add them as new employees ({preview.preview.newEmployees}); complete their details afterwards
             </label>
           )}
+            <label className="flex items-center gap-2 text-body-regular text-text-primary" htmlFor="register_period">
+            Pay period
+            <Select id="register_period" name="pay_period" defaultValue="month" className="w-auto">
+              {Object.entries(PAY_PERIODS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </Select>
+          </label>
           <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save into the month"}</Button>
         </form>
       )}

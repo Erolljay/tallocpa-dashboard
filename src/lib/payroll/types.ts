@@ -27,6 +27,8 @@ export type SeparationReason = keyof typeof SEPARATION_REASONS;
 
 export interface Employee {
   id: string;
+  /** The account title their pay is booked to (Salaries and Wages when not set; payroll to the books). */
+  payAccountId?: string | null;
   employeeNo: string | null;
   lastName: string;
   firstName: string;

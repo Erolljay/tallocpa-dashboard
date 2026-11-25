@@ -7,6 +7,7 @@ import { loadEmployees, loadItems, loadStored, payrollAccess } from "@/lib/payro
 import { checkEmployeeImport, readEmployeeFile, type CheckedEmployees } from "@/lib/payroll/employees-xlsx";
 import { CATEGORIES, type BirCategory, type ItemKind } from "@/lib/payroll/items";
 import { checkRegister, type RegisterRow } from "@/lib/payroll/register";
+import { periodEnd } from "@/lib/payroll/periods";
 import { readRegister } from "@/lib/payroll/register-xlsx";
 import { categoryToDb, monthPayload, sameMonth, toEntries, type MonthInput } from "@/lib/payroll/rows";
 import { employeeSchema, payrollSettingsSchema, priorEmployerSchema } from "@/lib/payroll/schema";
@@ -35,9 +36,11 @@ export async function saveEmployeeAction(clientId: string, employeeId: string | 
   const { supabase } = await payrollAccess(clientId);
   const parsed = employeeSchema.safeParse(Object.fromEntries(form.entries()));
   if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+  // The pay account (books) is on the form only when the client has account titles.
+  const payAccount = form.has("pay_account_id") ? { pay_account_id: String(form.get("pay_account_id") ?? "") || null } : {};
   const { error } = employeeId
-    ? await supabase.from("employees").update(parsed.data).eq("id", employeeId).eq("client_id", clientId)
-    : await supabase.from("employees").insert({ ...parsed.data, client_id: clientId });
+    ? await supabase.from("employees").update({ ...parsed.data, ...payAccount }).eq("id", employeeId).eq("client_id", clientId)
+    : await supabase.from("employees").insert({ ...parsed.data, ...payAccount, client_id: clientId });
   if (error) return { error: `Could not save the employee: ${friendly(error.message)}` };
   revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
   redirect(`/app/clients/${clientId}/payroll`);
@@ -112,7 +115,7 @@ export async function saveRegisterAction(clientId: string, month: string, _: Reg
   if ("error" in f) return { error: f.error };
   const read = await readRegister(await f.file.arrayBuffer(), await loadItems(supabase, clientId));
   if ("error" in read) return { error: read.error };
-  const r = await applyRegister(supabase, clientId, month, read.rows, { addNew: form.get("add_new") === "on" });
+  const r = await applyRegister(supabase, clientId, month, read.rows, { addNew: form.get("add_new") === "on", periodEnd: periodEnd(month, String(form.get("pay_period") ?? "month")) });
   if ("error" in r) return { error: r.error, preview: r.preview };
   revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
   return { ok: r.saved ? `Saved the register: ${r.saved} employee${r.saved === 1 ? "" : "s"} changed.` : "Saved: nothing had changed." };
@@ -121,10 +124,10 @@ export async function saveRegisterAction(clientId: string, month: string, _: Reg
 /** Post a client's submitted register into the month. */
 export async function postSubmissionAction(clientId: string, submissionId: string, _: RegisterState, form: FormData): Promise<RegisterState> {
   const { supabase } = await payrollAccess(clientId);
-  const { data: sub } = await supabase.from("payroll_submissions").select("id, pay_month, rows, status").eq("id", submissionId).eq("client_id", clientId).maybeSingle();
+  const { data: sub } = await supabase.from("payroll_submissions").select("id, pay_month, pay_period_end, rows, status").eq("id", submissionId).eq("client_id", clientId).maybeSingle();
   if (!sub) return { error: "Submission not found." };
   if (sub.status !== "pending") return { error: `This register was already ${sub.status}.` };
-  const r = await applyRegister(supabase, clientId, String(sub.pay_month).slice(0, 10), sub.rows as RegisterRow[], { addNew: form.get("add_new") === "on", submissionId });
+  const r = await applyRegister(supabase, clientId, String(sub.pay_month).slice(0, 10), sub.rows as RegisterRow[], { addNew: form.get("add_new") === "on", submissionId, periodEnd: sub.pay_period_end ? String(sub.pay_period_end).slice(0, 10) : null });
   if ("error" in r) return { error: r.error, preview: r.preview };
   revalidatePath(`/app/clients/${clientId}/payroll`, "layout");
   revalidatePath("/portal", "layout");

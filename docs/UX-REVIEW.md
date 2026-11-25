@@ -166,6 +166,8 @@ New tables: `workpaper_files`, `workpaper_schedules`, `workpaper_adjustments`, `
 | 24 | Quarterly step dates | A return covering more than one month is prepared by the 15th of the month it is due, then reviewed, client approved and Owner approved one working day apart, and filed the day the Owner approves. |
 | 25 | Individuals' names | OCR reads whether a supplier or customer is an individual and splits last, first and middle name for the SLS, SLP, QAP and SAWT; the reviewer confirms them and the parties directory keeps them. |
 | 26 | Books start | January 2027, the go-live cycle, for every client's chart (a client registered later starts in its registration month). |
+| 27 | Payroll to the books | Clients may send several payrolls a month (the 15th and the 30th, or one per cost section); staff review each run's totals and the dues to SSS, PhilHealth and Pag-IBIG, then post it to the books. T-6 and T-7 stay month-close checks; they do not hold up the 1601-C. |
+| 28 | Payroll accounts | An account title per employee for their pay; net pay to Cash; the employer share of cost-of-services staff to "SSS, PhilHealth and Pag-IBIG Contributions - Direct" (as taxify), of everyone else to the operating contributions account. |
 
 ## Workpaper index
 

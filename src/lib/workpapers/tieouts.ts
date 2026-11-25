@@ -52,7 +52,7 @@ export interface LedgerTotals {
   inputVat: Centavos;
   ewtPayable: Centavos;
   wtcPayable: Centavos;
-  /** Net debit to Salaries and Wages and to 13th Month Pay and Employee Benefits. */
+  /** Net debit to Salaries and Wages, Employee Benefits, Direct Labor and employees' pay accounts. */
   compensation: Centavos;
   /** Debits to cash and bank accounts in the posted entries of the month's cash sales. */
   cashFromSales: Centavos;
@@ -139,10 +139,10 @@ export function tieOuts(input: TieInputs): TieOut[] {
       ["Purchases register", sum(p, (l) => (l.vatRegistered ? l.vat : 0))], ["Input VAT account", ledger?.inputVat ?? null], ledger ? null : noBooks, unconfirmed),
     tie("T-6", "Tax withheld on compensation: payroll register vs Withholding Tax Payable – Compensation", ["30", "BB-3"],
       ["Payroll register", payroll?.taxWithheld ?? null], ["WTC payable account", ledger?.wtcPayable ?? null], !ledger ? noBooks : !payroll ? noPayroll : null,
-      "Payroll does not post to the books yet: record the month's payroll entry."),
+      "Post each payroll run to the books from the client's Payroll page."),
     tie("T-7", "Gross compensation: payroll register vs salaries, wages and benefits in the books", ["30"],
       ["Payroll register", payroll?.gross ?? null], ["Salaries and benefits", ledger?.compensation ?? null], !ledger ? noBooks : !payroll ? noPayroll : null,
-      "Payroll does not post to the books yet: record the month's payroll entry."),
+      "Post each payroll run to the books from the client's Payroll page; employer costs other than SSS, PhilHealth and Pag-IBIG (an HMO) also land in benefits."),
     tie("T-8", "Net receipts: sales register vs cash and bank debits from those sales", ["10", "A"],
       ["Net receipts, cash sales", cashSalesNet], ["Cash and bank debits", ledger?.cashFromSales ?? null], ledger ? null : noBooks, unconfirmed),
     tie("T-9", "Asset additions: fixed asset register vs property and equipment in the books", ["E"],
@@ -157,8 +157,9 @@ export function tieOuts(input: TieInputs): TieOut[] {
 /**
  * The tie-outs each return needs clean or explained before it is marked prepared
  * (workpaper 0, the lead). Forms not listed have none. T-6 and T-7 tie payroll to
- * the books, which payroll does not post to yet: they belong to closing the month
- * and do not hold up the 1601-C, which reads the payroll register itself.
+ * the books (each payroll run posted from the Payroll page): they belong to closing
+ * the month and do not hold up the 1601-C, which reads the payroll register itself
+ * (Owner, 25 November 2026).
  */
 export const TIES_FOR_FORM: Record<string, TieId[]> = {
   "2550M": ["T-1", "T-2", "T-5"],

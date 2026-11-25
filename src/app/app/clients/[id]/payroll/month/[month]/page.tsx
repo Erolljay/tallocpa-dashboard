@@ -8,6 +8,8 @@ import { checkRegister, type RegisterRow } from "@/lib/payroll/register";
 import { toEntries } from "@/lib/payroll/rows";
 import { byName } from "@/lib/payroll/year";
 import { MonthGrid, RegisterUpload, SubmissionReview, type GridRow } from "../../forms";
+import { periodLabel } from "@/lib/payroll/periods";
+import { PayrollRuns } from "./runs";
 
 export default function PayrollMonthPage(props: PageProps<"/app/clients/[id]/payroll/month/[month]">) {
   return (
@@ -31,7 +33,7 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
     loadEmployees(supabase, id),
     loadStored(supabase, id, `${year}-01-01`, month),
     monthLocked(supabase, id, month),
-    supabase.from("payroll_submissions").select("id, file_name, rows, late, created_at").eq("client_id", id).eq("pay_month", month).eq("status", "pending").order("created_at"),
+    supabase.from("payroll_submissions").select("id, file_name, rows, late, created_at, pay_period_end").eq("client_id", id).eq("pay_month", month).eq("status", "pending").order("created_at"),
     loadPriorEmployers(supabase, id, year),
   ]);
   const earlier = toEntries(stored.filter((s) => s.payMonth < month), items);
@@ -66,9 +68,9 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
         {locked && <Notice tone="done">The 1601-C for {showMonth(month)} is filed: this month&rsquo;s payroll is locked.</Notice>}
 
         {(submissions.data ?? []).map((s) => (
-          <Card key={s.id} title={`Sent by the client · ${when(s.created_at)}${s.late ? " · late" : ""}`}>
+          <Card key={s.id} title={`Sent by the client · ${periodLabel(month, s.pay_period_end ? String(s.pay_period_end).slice(0, 10) : null)} · ${when(s.created_at)}${s.late ? " · late" : ""}`}>
             <p className="mb-3 text-body-regular text-text-secondary">
-              {s.file_name} · <a href={`/app/clients/${id}/payroll/export?kind=submission&id=${s.id}`} className="text-button-ghost-foreground underline">download the file</a>. Posting replaces this month&rsquo;s figures for the employees in it; tax adjustments and notes are kept.
+              {s.file_name} · <a href={`/app/clients/${id}/payroll/export?kind=submission&id=${s.id}`} className="text-button-ghost-foreground underline">download the file</a>. Posting replaces the figures of this pay period for the employees in it (a whole-month register replaces their month); tax adjustments and notes are kept.
             </p>
             <SubmissionReview clientId={id} submissionId={s.id} preview={previewOf(checkRegister(s.rows as RegisterRow[], employees, items, month), employees, items)} />
           </Card>
@@ -83,6 +85,8 @@ async function PayrollMonth({ params }: Pick<PageProps<"/app/clients/[id]/payrol
             <RegisterUpload clientId={id} month={month} />
           </Card>
         )}
+
+        <PayrollRuns supabase={supabase} clientId={id} month={month} />
 
         <Card title="Monthly payroll">
           {rows.length === 0 ? (

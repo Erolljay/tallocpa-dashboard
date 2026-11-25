@@ -35,7 +35,8 @@ create policy workpaper_explanations_delete on public.workpaper_explanations for
  *   input_vat        net debit to Input VAT
  *   ewt_payable      net credit to Withholding Tax Payable – Expanded
  *   wtc_payable      net credit to Withholding Tax Payable – Compensation
- *   compensation     net debit to Salaries and Wages, and 13th Month Pay and Employee Benefits
+ *   compensation     net debit to Salaries and Wages, 13th Month Pay and Employee Benefits,
+ *                    and Direct Labor (and employees' pay accounts, migration 20261125000010)
  *   cash_from_sales  debits to cash and bank accounts in the posted entries of the
  *                    period's cash sales (register lines of the period)
  *   ppe_additions    net debit to property and equipment accounts other than land (A1, T-9)
@@ -46,7 +47,7 @@ create policy workpaper_explanations_delete on public.workpaper_explanations for
 create or replace function public.workpaper_ledger(p_client uuid, p_from date, p_to date) returns jsonb
 language sql stable security invoker set search_path = '' as $$
   with lines as (
-    select a.type, a.control, a.template_key, a.fs_line, a.normal_side, l.debit, l.credit
+    select a.id as account_id, a.type, a.control, a.template_key, a.fs_line, a.normal_side, l.debit, l.credit
     from public.journal_lines l
     join public.journal_entries e on e.id = l.entry_id
     join public.ledger_accounts a on a.id = l.account_id
@@ -59,7 +60,7 @@ language sql stable security invoker set search_path = '' as $$
     'input_vat', coalesce((select sum(debit - credit) from lines where control = 'input_vat'), 0),
     'ewt_payable', coalesce((select sum(credit - debit) from lines where control = 'ewt_payable'), 0),
     'wtc_payable', coalesce((select sum(credit - debit) from lines where template_key = 'wtc_payable'), 0),
-    'compensation', coalesce((select sum(debit - credit) from lines where template_key in ('salaries', 'employee_benefits')), 0),
+    'compensation', coalesce((select sum(debit - credit) from lines where template_key in ('salaries', 'employee_benefits', 'direct_labor')), 0),
     'cash_from_sales', coalesce((
       select sum(l.debit)
       from public.register_lines r

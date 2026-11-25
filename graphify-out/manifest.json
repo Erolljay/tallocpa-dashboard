@@ -762,21 +762,21 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/actions.ts": {
-    "mtime": 1795556117.896388,
-    "seen": 1795565923.2265775,
-    "ast_hash": "74d3dcb74bc19cc02f27acd307727f46",
+    "mtime": 1795573027.23656,
+    "seen": 1795573196.310685,
+    "ast_hash": "32c2cfa6dcf3caf26021edf14985105d",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/employees/[employeeId]/page.tsx": {
-    "mtime": 1795556117.89688,
-    "seen": 1795565923.2265792,
-    "ast_hash": "23726f581e1572af9e01a00297196cad",
+    "mtime": 1795573034.4681432,
+    "seen": 1795573196.3106885,
+    "ast_hash": "c3211d844d7215141d82c05f01564a0d",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/employees/new/page.tsx": {
-    "mtime": 1795556117.89688,
-    "seen": 1795565923.2265806,
-    "ast_hash": "adbde05eae1a897e2f9f613c06134b89",
+    "mtime": 1795573034.4684052,
+    "seen": 1795573196.3106909,
+    "ast_hash": "77986065bfd6735ed21d6e4bbe1a4d13",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/export/route.ts": {
@@ -786,15 +786,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/forms.tsx": {
-    "mtime": 1795556117.89688,
-    "seen": 1795565923.2265835,
-    "ast_hash": "8bd0e009767b48e978adf4ab6a8eed20",
+    "mtime": 1795573027.2369554,
+    "seen": 1795573196.3107383,
+    "ast_hash": "5c1618b41b717d5a62a7461b8397905f",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/month/[month]/page.tsx": {
-    "mtime": 1795556117.8971705,
-    "seen": 1795565923.226585,
-    "ast_hash": "ea539032d7b408680dc08552901d4a89",
+    "mtime": 1795573106.6345887,
+    "seen": 1795573196.3107402,
+    "ast_hash": "61990b55dff4277576686470a55f2f7f",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/payroll/page.tsx": {
@@ -1038,9 +1038,9 @@
     "semantic_hash": ""
   },
   "src/app/portal/payroll/actions.ts": {
-    "mtime": 1795556117.9020002,
-    "seen": 1795565923.2267172,
-    "ast_hash": "b0b4ca6204c59e75f360b164ac10263b",
+    "mtime": 1795572976.6839871,
+    "seen": 1795573196.314702,
+    "ast_hash": "6a05540a8457cd41be00d68bbec9b7f9",
     "semantic_hash": ""
   },
   "src/app/portal/payroll/page.tsx": {
@@ -1056,9 +1056,9 @@
     "semantic_hash": ""
   },
   "src/app/portal/payroll/upload.tsx": {
-    "mtime": 1795556117.9020002,
-    "seen": 1795565923.226721,
-    "ast_hash": "090618797330e717305fee4f1d950d30",
+    "mtime": 1795572992.6962717,
+    "seen": 1795573196.3147755,
+    "ast_hash": "c0ff6654aec2f0105f5a549eb63358be",
     "semantic_hash": ""
   },
   "src/app/portal/statement/[id]/page.tsx": {
@@ -1332,9 +1332,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/apply.ts": {
-    "mtime": 1795556117.9088738,
-    "seen": 1795565923.226985,
-    "ast_hash": "03eab4d34d240d0b9e6c6482a38465cf",
+    "mtime": 1795572976.6837223,
+    "seen": 1795573196.3213048,
+    "ast_hash": "856bac1276db8fdfe24f0254ec5991ea",
     "semantic_hash": ""
   },
   "src/lib/payroll/certificate.test.ts": {
@@ -1356,9 +1356,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/data.ts": {
-    "mtime": 1795556117.9088738,
-    "seen": 1795565923.22699,
-    "ast_hash": "3221d75b539ed38f9f186a93665652e2",
+    "mtime": 1795573034.4686284,
+    "seen": 1795573196.3214018,
+    "ast_hash": "3a4d1165e5533dd106bf07f5e27a0704",
     "semantic_hash": ""
   },
   "src/lib/payroll/employees-xlsx.ts": {
@@ -1398,9 +1398,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/rows.ts": {
-    "mtime": 1795556117.9088738,
-    "seen": 1795565923.226999,
-    "ast_hash": "e1a33ec61846a96a7c52e2426f9b48e8",
+    "mtime": 1795573027.236202,
+    "seen": 1795573196.3215969,
+    "ast_hash": "e12becbaca842e577f512913457f9ba1",
     "semantic_hash": ""
   },
   "src/lib/payroll/schema.ts": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/types.ts": {
-    "mtime": 1795556117.9088738,
-    "seen": 1795565923.2270017,
-    "ast_hash": "141cc838fb069871b22c8f49968ede41",
+    "mtime": 1795573027.2358966,
+    "seen": 1795573196.3216305,
+    "ast_hash": "59022e4c75b7e39403e398d9ef14b4f1",
     "semantic_hash": ""
   },
   "src/lib/payroll/year.ts": {
@@ -2196,9 +2196,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/coa/index.ts": {
-    "mtime": 1795567980.1891224,
-    "seen": 1795568206.0372162,
-    "ast_hash": "f876d1e49d64a4348068951850322f01",
+    "mtime": 1795572849.452472,
+    "seen": 1795573196.3203802,
+    "ast_hash": "a28088597e72e26d3dce8a26aba0e7b6",
     "semantic_hash": ""
   },
   "src/lib/ledger/data.ts": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795571851.8746533,
-    "seen": 1795571855.2966437,
-    "ast_hash": "87ea2c7b036ad5cc34ffc86ff749a520",
+    "mtime": 1795573192.2220259,
+    "seen": 1795573196.3255062,
+    "ast_hash": "737b1b219432a54c0ef4303da233f51e",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2766,9 +2766,9 @@
     "semantic_hash": ""
   },
   "src/lib/workpapers/tieouts.ts": {
-    "mtime": 1795571591.027006,
-    "seen": 1795571855.295882,
-    "ast_hash": "eb221ff0cd05f7d9fa2fa157a05c5f50",
+    "mtime": 1795572852.4692597,
+    "seen": 1795573196.3241117,
+    "ast_hash": "6a121db45533bda79a164b7a29d29bc0",
     "semantic_hash": ""
   },
   "supabase/tests/workpapers.test.ts": {
@@ -2817,6 +2817,42 @@
     "mtime": 1795571641.253474,
     "seen": 1795571855.2960613,
     "ast_hash": "4880d533a430b7cc98d9303bec44b996",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/payroll/month/[month]/post-action.ts": {
+    "mtime": 1795573078.8958738,
+    "seen": 1795573196.3107426,
+    "ast_hash": "41e8ba2caf0b63f8743cb1901dc11a63",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/payroll/month/[month]/post-button.tsx": {
+    "mtime": 1795573078.8943002,
+    "seen": 1795573196.310745,
+    "ast_hash": "02bed4a1cc5917fe4eec106ec4617f19",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/payroll/month/[month]/runs.tsx": {
+    "mtime": 1795573106.6342874,
+    "seen": 1795573196.3107471,
+    "ast_hash": "31b4de9961589e502860f96a52b49498",
+    "semantic_hash": ""
+  },
+  "src/lib/payroll/periods.test.ts": {
+    "mtime": 1795572976.670868,
+    "seen": 1795573196.3215275,
+    "ast_hash": "d570d59021c9daaac90e045992e9b67b",
+    "semantic_hash": ""
+  },
+  "src/lib/payroll/periods.ts": {
+    "mtime": 1795572976.6690075,
+    "seen": 1795573196.3215303,
+    "ast_hash": "24000abc99191fadfee6f96f9e993cf2",
+    "semantic_hash": ""
+  },
+  "supabase/tests/payroll-books.test.ts": {
+    "mtime": 1795572929.7608483,
+    "seen": 1795573196.3246431,
+    "ast_hash": "0a0582087a223f8556ed8209d3b09e38",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

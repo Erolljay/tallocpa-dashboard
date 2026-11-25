@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
-import { loadPriorEmployers, payrollAccess } from "@/lib/payroll/data";
+import { loadPriorEmployers, payAccountsOf, payrollAccess } from "@/lib/payroll/data";
 import { EMPLOYEE_COLUMNS, employeeFromRow } from "@/lib/payroll/rows";
 import { displayName } from "@/lib/payroll/year";
 import { manilaToday } from "@/lib/filings/run";
@@ -33,7 +33,7 @@ async function EmployeeDetail({ params, searchParams }: Pick<PageProps<"/app/cli
       />
       {employee.needsDetails && <div className="mb-6"><Notice tone="waiting">Added from an uploaded register: complete the TIN, dates and status, then save.</Notice></div>}
       <div className="space-y-6">
-        <Card><EmployeeForm clientId={id} employee={employee} /></Card>
+        <Card><EmployeeForm clientId={id} employee={employee} payAccounts={await payAccountsOf(supabase, id)} /></Card>
         <Card
           title={`Previous employer in ${year}`}
           actions={
@@ -54,3 +54,4 @@ async function EmployeeDetail({ params, searchParams }: Pick<PageProps<"/app/cli
     </>
   );
 }
+
