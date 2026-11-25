@@ -99,6 +99,14 @@ language sql stable security definer set search_path = '' as $$
   )
 $$;
 
+/** The last day of the client's taxable year that p_date falls in. */
+create or replace function private.taxable_year_end(p_client uuid, p_date date) returns date
+language sql stable security definer set search_path = '' as $$
+  select (make_date(extract(year from p_date)::int + case when extract(month from p_date) > c.fiscal_year_end_month then 1 else 0 end,
+                    c.fiscal_year_end_month, 1) + interval '1 month' - interval '1 day')::date
+  from public.clients c where c.id = p_client
+$$;
+
 /** The client (or the Owner for them) decides whether to keep claiming the CWT of a Sales Invoice whose 2307 never came. */
 create or replace function public.decide_missing_2307(p_invoice uuid, p_keep boolean) returns void
 language plpgsql security definer set search_path = '' as $$
@@ -115,8 +123,15 @@ begin
   if inv.kind <> 'sales' or inv.withholding <= 0 or inv.voided_at is not null or inv.cwt_document_id is not null then
     raise exception 'Only a Sales Invoice with tax withheld and no 2307 waits for this decision' using errcode = '22023';
   end if;
+  if not exists (select 1 from public.journal_entries j where j.id = inv.journal_entry_id and j.status = 'posted') then
+    raise exception 'Only a posted Sales Invoice waits for this decision' using errcode = '22023';
+  end if;
   if private.books_locked_by(inv.client_id, inv.issue_date) is null then
     raise exception 'The month of this invoice is still open' using errcode = '22023';
+  end if;
+  -- Decision 12: asked at year end, not before.
+  if private.taxable_year_end(inv.client_id, inv.issue_date) >= (now() at time zone 'Asia/Manila')::date then
+    raise exception 'The taxable year of this invoice has not ended yet' using errcode = '22023';
   end if;
   if private.annual_itr_filed(inv.client_id, inv.issue_date) then
     raise exception 'The annual income tax return of that year is filed; the decision can no longer change' using errcode = '22023';
@@ -141,12 +156,7 @@ language sql stable security definer set search_path = '' as $$
          ye.d < (now() at time zone 'Asia/Manila')::date
   from public.book_invoices i
   join public.journal_entries j on j.id = i.journal_entry_id and j.status = 'posted'
-  join public.clients c on c.id = i.client_id
-  -- The last day of the taxable year the invoice falls in.
-  cross join lateral (
-    select (make_date(extract(year from i.issue_date)::int + case when extract(month from i.issue_date) > c.fiscal_year_end_month then 1 else 0 end,
-                      c.fiscal_year_end_month, 1) + interval '1 month' - interval '1 day')::date as d
-  ) ye
+  cross join lateral (select private.taxable_year_end(i.client_id, i.issue_date) as d) ye
   left join public.tax_codes w on w.id = i.withholding_code_id
   where i.client_id = p_client and i.kind = 'sales' and i.withholding > 0 and i.voided_at is null and i.cwt_document_id is null
     and private.books_locked_by(i.client_id, i.issue_date) is not null
@@ -155,6 +165,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 revoke execute on function private.annual_itr_filed(uuid, date) from public, anon, authenticated;
+revoke execute on function private.taxable_year_end(uuid, date) from public, anon, authenticated;
 revoke execute on function public.decide_missing_2307(uuid, boolean) from public, anon;
 revoke execute on function public.missing_2307s(uuid) from public, anon;
 grant execute on function public.decide_missing_2307(uuid, boolean) to authenticated;

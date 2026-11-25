@@ -11,17 +11,20 @@ export function parseKey(b64: string): Buffer {
   return key;
 }
 
-export function sealToken(plain: string, key: Buffer): string {
+/** `owner` (the staff member's user id) is bound to the ciphertext: a token copied to another row will not open. */
+export function sealToken(plain: string, key: Buffer, owner: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
+  cipher.setAAD(Buffer.from(owner, "utf8"));
   const body = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   return [iv, body, cipher.getAuthTag()].map((b) => b.toString("base64")).join(".");
 }
 
-export function openToken(sealed: string, key: Buffer): string {
+export function openToken(sealed: string, key: Buffer, owner: string): string {
   const [iv, body, tag] = sealed.split(".").map((p) => Buffer.from(p, "base64"));
   if (!iv || !body || !tag || iv.length !== 12 || tag.length !== 16) throw new Error("Stored token is not in the expected form.");
   const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAAD(Buffer.from(owner, "utf8"));
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(body), decipher.final()]).toString("utf8");
 }

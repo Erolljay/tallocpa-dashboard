@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       await revoke(account.refreshToken);
       return back("error=account");
     }
-    const { error } = await supabaseAdmin().rpc("calendar_link_save", { p_user: me.userId, p_email: account.email, p_token: sealToken(account.refreshToken, parseKey(env.tokenKey)) });
+    const { error } = await supabaseAdmin().rpc("calendar_link_save", { p_user: me.userId, p_email: account.email, p_token: sealToken(account.refreshToken, parseKey(env.tokenKey), me.userId) });
     if (error) throw new Error(error.message);
   } catch (e) {
     console.error("Calendar connect failed:", e instanceof Error ? e.message : e);

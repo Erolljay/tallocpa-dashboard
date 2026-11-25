@@ -244,7 +244,7 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
                     {closedOn.has(end) ? (
                       <Badge tone="done">Closed {fmtDate(closedOn.get(end)!.slice(0, 10))}</Badge>
                     ) : (
-                      <Link href={`/app/clients/${id}/year-end?year=${end}`} className="text-body-regular text-button-ghost-foreground hover:underline">
+                      <Link href={`/app/clients/${id}/year-end?year=${end}`} className="text-body-regular text-button-ghost-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring">
                         {isOwner ? "Close on the Year-end page" : "On the Year-end page (the Owner closes)"}
                       </Link>
                     )}

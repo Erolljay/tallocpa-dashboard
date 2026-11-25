@@ -36,12 +36,8 @@ const BADGE: Record<StepState, { tone: "done" | "waiting" | "blocked" | "neutral
 };
 
 const fmtYear = (yearEnd: string) => (yearEnd.slice(5) === "12-31" ? yearEnd.slice(0, 4) : `FY ending ${monthName(yearEnd)}`);
-const yearStartOf = (yearEnd: string) => {
-  const d = new Date(`${yearEnd}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() - 1);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-};
+/** The first day of the month after the year-end month, a year earlier (2025-02-28 → 2024-03-01). */
+const yearStartOf = (yearEnd: string) => new Date(Date.UTC(Number(yearEnd.slice(0, 4)) - 1, Number(yearEnd.slice(5, 7)), 1)).toISOString().slice(0, 10);
 
 async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[id]/year-end">, "params" | "searchParams">) {
   const { id } = await params;
@@ -87,7 +83,8 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
 
   const inYear = (d: string) => d >= yearStart && d <= yearEnd;
   const openMonths = (monthRows as { month: string; status: string; in_books: boolean }[])
-    .filter((m) => inYear(String(m.month).slice(0, 10)) && m.in_books && m.status !== "locked")
+    // A month waiting on an unlock request is still locked; one waiting on a lock request is not yet.
+    .filter((m) => inYear(String(m.month).slice(0, 10)) && m.in_books && m.status !== "locked" && m.status !== "unlock_requested")
     .map((m) => monthName(String(m.month)));
   const tbRows = (tb ?? []) as { closing: string | number }[];
   const tbDifference = tbRows.reduce((s, r) => s + (toCentavos(String(r.closing)) ?? 0), 0);
@@ -194,7 +191,7 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
 
         <Notice tone="waiting">
           The closing entry brings income and expenses to nil against retained earnings (or capital) on {yearEnd}. The year&rsquo;s statements and returns still read the year before closing. To redo it, the Owner reverses it in the{" "}
-          <Link href={`/app/clients/${id}/books/journal`} className="underline">journal</Link>.
+          <Link href={`/app/clients/${id}/books/journal`} className="underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">journal</Link>.
         </Notice>
       </div>
     </>

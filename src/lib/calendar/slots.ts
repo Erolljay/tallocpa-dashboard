@@ -76,3 +76,21 @@ export function byDay(slots: Interval[]): { date: string; slots: Interval[] }[] 
   }
   return [...map.entries()].map(([date, list]) => ({ date, slots: list }));
 }
+
+export interface LabelledDay {
+  date: string;
+  label: string;
+  slots: (Interval & { label: string })[];
+}
+
+const DAY_LABEL = new Intl.DateTimeFormat("en-PH", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Manila" });
+const TIME_LABEL = new Intl.DateTimeFormat("en-PH", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" });
+
+/** Slots by Manila day with their labels, formatted once on the server so the page and the browser show the same text. */
+export function labelledDays(slots: Interval[]): LabelledDay[] {
+  return byDay(slots).map((d) => ({
+    date: d.date,
+    label: DAY_LABEL.format(new Date(d.slots[0].start)),
+    slots: d.slots.map((s) => ({ ...s, label: TIME_LABEL.format(new Date(s.start)) })),
+  }));
+}

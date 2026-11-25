@@ -5,7 +5,7 @@ import { Lockup } from "@/components/brand/lockup";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import { Notice, Skeleton } from "@/components/ui";
 import { slotsFor } from "@/lib/calendar/booking";
-import { byDay, DISCOVERY_CALL } from "@/lib/calendar/slots";
+import { labelledDays, DISCOVERY_CALL } from "@/lib/calendar/slots";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { bookDiscoveryCallAction } from "./actions";
 
@@ -68,7 +68,7 @@ async function Booking({ params }: Pick<PageProps<"/book/[token]">, "params">) {
       {intro}
       <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-6">
         {free ? (
-          <SlotPicker days={byDay(free.slots)} action={bookDiscoveryCallAction.bind(null, token)} submitLabel="Book the call" />
+          <SlotPicker days={labelledDays(free.slots)} action={bookDiscoveryCallAction.bind(null, token)} submitLabel="Book the call" />
         ) : (
           <Notice tone="waiting">Online booking is not available right now. Please reply to our email and we will arrange the call.</Notice>
         )}

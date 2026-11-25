@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import { Notice, Skeleton } from "@/components/ui";
 import { slotsFor } from "@/lib/calendar/booking";
-import { byDay, CLIENT_MEETING } from "@/lib/calendar/slots";
+import { labelledDays, CLIENT_MEETING } from "@/lib/calendar/slots";
 import { portalContext } from "../client-context";
 import { bookClientMeetingAction } from "./actions";
 
@@ -47,7 +47,7 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
             {upcoming.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-body-regular">
                 <span className="text-text-primary">{when.format(new Date(m.starts_at))}{m.topic ? ` · ${m.topic}` : ""}</span>
-                {m.meet_url?.startsWith("https://") && <a href={m.meet_url} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline">Join on Meet</a>}
+                {m.meet_url?.startsWith("https://") && <a href={m.meet_url} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Join on Meet</a>}
               </li>
             ))}
           </ul>
@@ -59,7 +59,7 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
         ) : !free ? (
           <Notice tone="waiting">Online booking with {host.full_name} is not available right now. Please email them from your <Link href="/portal" className="underline">Home</Link> page.</Notice>
         ) : (
-          <SlotPicker days={byDay(free.slots)} action={bookClientMeetingAction.bind(null, business.id)} topic={{ label: "What would you like to talk about?", hint: "Optional." }} submitLabel="Book the meeting" />
+          <SlotPicker days={labelledDays(free.slots)} action={bookClientMeetingAction.bind(null, business.id)} topic={{ label: "What would you like to talk about?", hint: "Optional." }} submitLabel="Book the meeting" />
         )}
       </div>
     </div>

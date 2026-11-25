@@ -153,7 +153,13 @@ export function BookingLink({ leadId }: { leadId: string }) {
         <p className="break-all rounded-xl bg-background-secondary-default px-3 py-2 font-mono text-caption-1-regular text-text-primary">{url}</p>
         <p className="text-body-regular text-text-secondary">
           {state.ok}{" "}
-          <button type="button" className="underline" onClick={() => navigator.clipboard.writeText(url).then(() => setCopied(true))}>{copied ? "Link copied" : "Copy the link"}</button>
+          <button
+            type="button"
+            className="underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+            onClick={() => navigator.clipboard?.writeText(url).then(() => setCopied(true), () => setCopied(false))}
+          >
+            {copied ? "Link copied" : "Copy the link"}
+          </button>
         </p>
       </div>
     );

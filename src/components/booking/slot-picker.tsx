@@ -2,12 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { Button, Field, Notice, Textarea } from "@/components/ui";
+import type { LabelledDay } from "@/lib/calendar/slots";
 import { cx } from "@/utils/cx";
 
 export type BookingState = { error?: string; ok?: string; meetUrl?: string | null };
-
-const dayFmt = new Intl.DateTimeFormat("en-PH", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Manila" });
-const timeFmt = new Intl.DateTimeFormat("en-PH", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" });
 
 /** Free times by day; pick one and book. Times are shown in Manila time. */
 export function SlotPicker({
@@ -16,7 +14,7 @@ export function SlotPicker({
   topic,
   submitLabel = "Book this time",
 }: {
-  days: { date: string; slots: { start: string; end: string }[] }[];
+  days: LabelledDay[];
   action: (start: string, topic: string) => Promise<BookingState>;
   topic?: { label: string; hint?: string };
   submitLabel?: string;
@@ -45,11 +43,11 @@ export function SlotPicker({
 
   return (
     <form action={submit} className="space-y-5">
-      <fieldset className="space-y-4">
-        <legend className="sr-only">Choose a time (Manila time)</legend>
+      <div className="space-y-4">
+        <p className="sr-only">Times are Manila time.</p>
         {days.map((d) => (
-          <div key={d.date} className="space-y-2">
-            <p className="text-body-medium text-text-primary">{dayFmt.format(new Date(d.slots[0].start))}</p>
+          <fieldset key={d.date} className="space-y-2">
+            <legend className="text-body-medium text-text-primary">{d.label}</legend>
             <div className="flex flex-wrap gap-2">
               {d.slots.map((s) => (
                 <label
@@ -60,13 +58,13 @@ export function SlotPicker({
                   )}
                 >
                   <input type="radio" name="start" value={s.start} className="sr-only" onChange={() => setChosen(s.start)} checked={chosen === s.start} />
-                  {timeFmt.format(new Date(s.start))}
+                  {s.label}
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
         ))}
-      </fieldset>
+      </div>
       {topic && (
         <Field label={topic.label} htmlFor="booking-topic" hint={topic.hint}>
           <Textarea id="booking-topic" name="topic" rows={3} maxLength={1000} />

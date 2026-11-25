@@ -136,6 +136,13 @@ describe.skipIf(!url)("year-end", () => {
       expect(await list(CLIENT_USER)).toEqual([{ reference: "SI-1", claim: "keep", closed: true }, { reference: "SI-2", claim: null, closed: true }]);
       await expect(as(CLIENT_USER, `select public.decide_missing_2307($1, false)`, [inv.nov])).rejects.toThrow(/can no longer change/);
     });
+
+    it("is asked only once the taxable year has ended", async () => {
+      const dec26 = await invoice({ kind: "sales", party_name: "Arevalo Builders", party_tin: "111-222-333-00000", reference: "SI-9", issue_date: "2026-01-10", withholding_code_id: code.WC158, lines: [{ account_id: acct.sales, amount: "100", tax_code_id: code.OVAT12 }] });
+      await lock("2026-01-01");
+      await expect(as(CLIENT_USER, `select public.decide_missing_2307($1, false)`, [dec26])).rejects.toThrow(/has not ended yet/);
+      expect((await as(CLIENT_USER, `select reference, year_ended from public.missing_2307s($1) where reference = 'SI-9'`, [client])).rows).toEqual([{ reference: "SI-9", year_ended: false }]);
+    });
   });
 
   describe("a final 2316", () => {

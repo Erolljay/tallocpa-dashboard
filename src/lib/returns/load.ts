@@ -175,7 +175,8 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   // Decision 12: CWT whose 2307 never came and that the client chose to stop claiming.
   const cwtIds = [...new Set(bookSources.filter((s) => s.docType === "bir_2307_received" && s.cwtSupported === false).map((s) => s.id))];
   if (cwtIds.length) {
-    const { data: stopped } = await db.from("book_invoices").select("id").in("id", cwtIds).eq("cwt_claim", "stop");
+    const { data: stopped, error: stopError } = await db.from("book_invoices").select("id").eq("client_id", f.client_id).eq("cwt_claim", "stop").gte("issue_date", docsFrom).lte("issue_date", f.period_end);
+    if (stopError) throw new Error(`Could not read the client's missing-2307 decisions: ${stopError.message}`);
     const ids = new Set(((stopped ?? []) as { id: string }[]).map((r) => r.id));
     for (const s of bookSources) if (ids.has(s.id) && s.docType === "bir_2307_received" && !(s.taxCode ?? "").startsWith("WV")) s.cwtStopped = true;
   }

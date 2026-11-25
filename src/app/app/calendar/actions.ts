@@ -19,7 +19,7 @@ export async function disconnectCalendarAction(): Promise<FormState> {
     const sealed = ((data ?? []) as { refresh_token: string }[])[0]?.refresh_token;
     if (sealed) {
       try {
-        await revoke(openToken(sealed, parseKey(env.tokenKey)));
+        await revoke(openToken(sealed, parseKey(env.tokenKey), me.userId));
       } catch {
         // The token could not be read (key changed); removing the link is still right.
       }

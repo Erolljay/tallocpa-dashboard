@@ -60,6 +60,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     checks,
     summaries,
     { data: team },
+    decisions,
   ] = await Promise.all([
     supabase.from("document_cycles").select("client_id, period, cutoff_date, nothing_to_submit_at, closed_at, client_confirmed_at, confirmed_documents").in("client_id", ids).in("period", periods),
     supabase.from("documents").select("client_id, document_month, doc_type, status").in("client_id", ids).in("document_month", periods).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof)").limit(5000),
@@ -73,8 +74,8 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     Promise.all(months.map((m) => supabase.rpc("month_check", { p_client: m.client.id, p_period: m.month }))),
     Promise.all(clients.map((c) => supabase.rpc("portal_books_summary", { p_client: c.id, p_from: from, p_to: today }))),
     supabase.rpc("portal_client_team", { p_client: business.id }),
+    Promise.all(clients.map((c) => supabase.rpc("missing_2307s", { p_client: c.id }))),
   ]);
-  const decisions = await Promise.all(clients.map((c) => supabase.rpc("missing_2307s", { p_client: c.id })));
   const undecided = decisions.flatMap((d) => (d.data ?? []) as { claim: string | null; closed: boolean; year_ended: boolean }[]).filter((r) => r.year_ended && !r.closed && !r.claim).length;
 
   const summaryOf = new Map(clients.map((c, i) => [c.id, (summaries[i].data ?? null) as BooksSummaryRaw | null]));

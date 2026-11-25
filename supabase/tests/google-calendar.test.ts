@@ -73,7 +73,7 @@ describe.skipIf(!url)("Google Calendar", () => {
     it("are saved and read only by the server", async () => {
       await expect(as(REVIEWER, `select public.calendar_link_save($1, 'rhea@tallocpa.com', 'sealed')`, [REVIEWER])).rejects.toThrow(/permission denied/);
       await server(`select public.calendar_link_save($1, 'Rhea@TalloCPA.com', 'iv.body.tag')`, [REVIEWER]);
-      expect((await server(`select google_email, refresh_token from public.calendar_tokens($1)`, [[REVIEWER]])).rows).toEqual([{ google_email: "rhea@tallocpa.com", refresh_token: "iv.body.tag" }]);
+      expect((await server(`select google_email, refresh_token, last_error from public.calendar_tokens($1)`, [[REVIEWER]])).rows).toEqual([{ google_email: "rhea@tallocpa.com", refresh_token: "iv.body.tag", last_error: null }]);
       await expect(as(OWNER, `select * from public.calendar_tokens($1)`, [[REVIEWER]])).rejects.toThrow(/permission denied/);
       await expect(as(OWNER, `select * from private.google_calendar_tokens`)).rejects.toThrow(/permission denied/);
     });
@@ -110,20 +110,25 @@ describe.skipIf(!url)("Google Calendar", () => {
       expect((await server(`select business_name, reviewer_name, open, booked_at from public.booking_lead($1)`, [token])).rows).toEqual([
         { business_name: "Arevalo Bakery", reviewer_name: "Rhea Reviewer", open: true, booked_at: null },
       ]);
-      const call = (await server(`select public.booking_claim($1, '2026-11-20T02:00:00Z') as id`, [lead])).rows[0].id;
-      await expect(server(`select public.booking_claim($1, '2026-12-04T03:00:00Z')`, [lead])).rejects.toThrow(/already booked/);
+      const call = (await server(`select public.booking_claim($1, '2026-11-20T02:00:00Z', '2026-11-20T02:45:00Z') as id`, [lead])).rows[0].id;
+      await expect(server(`select public.booking_claim($1, '2026-12-04T03:00:00Z', '2026-12-04T03:45:00Z')`, [lead])).rejects.toThrow(/already booked/);
       await server(`select public.booking_confirm($1, 'evt-1', 'https://meet.google.com/abc-defg-hij')`, [call]);
       expect((await server(`select meet_url from public.booking_lead($1)`, [token])).rows[0].meet_url).toBe("https://meet.google.com/abc-defg-hij");
       // The booked call is not a note until it is held.
       expect((await as(REVIEWER, `select source from public.lead_notes where lead_id = $1`, [lead])).rows.map((r) => r.source)).toEqual(["inquiry"]);
     });
 
-    it("releases a claim whose event could not be made", async () => {
-      const call = (await db.query(`select id from public.discovery_calls where lead_id = $1`, [lead])).rows[0].id;
-      await server(`select public.booking_confirm($1, null, null)`, [call]);
+    it("releases a claim whose event could not be made, never a confirmed one", async () => {
+      const confirmed = (await db.query(`select id from public.discovery_calls where lead_id = $1`, [lead])).rows[0].id;
+      await server(`select public.booking_confirm($1, null, null)`, [confirmed]);
       expect((await db.query(`select count(*)::int as n from public.discovery_calls where lead_id = $1`, [lead])).rows[0].n).toBe(1);
-      const other = (await server(`select public.booking_claim($1, '2026-12-05T02:00:00Z') as id`, [lead]).catch(() => null));
-      expect(other).toBeNull();
+      // An unconfirmed claim (the calendar event failed) is released and the lead can book again.
+      await db.query(`delete from public.discovery_calls where id = $1`, [confirmed]);
+      const failed = (await server(`select public.booking_claim($1, '2026-11-20T02:00:00Z', '2026-11-20T02:45:00Z') as id`, [lead])).rows[0].id;
+      await server(`select public.booking_confirm($1, null, null)`, [failed]);
+      expect((await db.query(`select count(*)::int as n from public.discovery_calls where lead_id = $1`, [lead])).rows[0].n).toBe(0);
+      const again = (await server(`select public.booking_claim($1, '2026-11-20T02:00:00Z', '2026-11-20T02:45:00Z') as id`, [lead])).rows[0].id;
+      await server(`select public.booking_confirm($1, 'evt-1', 'https://meet.google.com/abc-defg-hij')`, [again]);
     });
 
     it("fills the booked call with the notes after it is held", async () => {
@@ -131,13 +136,16 @@ describe.skipIf(!url)("Google Calendar", () => {
       const calls = (await db.query(`select scheduled_at is not null as booked, held_at is not null as held, notes, calendar_event_id from public.discovery_calls where lead_id = $1`, [lead])).rows;
       expect(calls).toEqual([{ booked: true, held: true, notes: "Wants monthly bookkeeping", calendar_event_id: "evt-1" }]);
       expect((await db.query(`select stage from public.leads where id = $1`, [lead])).rows[0].stage).toBe("prospect");
-      // Held: a new booking can be claimed.
-      await server(`select public.booking_claim($1, '2026-12-10T02:00:00Z')`, [lead]);
+      // Held: the link is closed; a new call needs a new link.
+      expect((await db.query(`select booking_token from public.leads where id = $1`, [lead])).rows[0].booking_token).toBeNull();
+      await expect(server(`select public.booking_claim($1, '2026-12-10T02:00:00Z', '2026-12-10T02:45:00Z')`, [lead])).rejects.toThrow(/closed/);
+      await as(REVIEWER, `select public.lead_booking_token($1)`, [lead]);
+      await server(`select public.booking_claim($1, '2026-12-10T02:00:00Z', '2026-12-10T02:45:00Z')`, [lead]);
     });
 
     it("closes once the lead is won or lost", async () => {
       await as(REVIEWER, `select public.mark_lead_lost($1, 'Went elsewhere')`, [lead]);
-      await expect(server(`select public.booking_claim($1, '2026-12-11T02:00:00Z')`, [lead])).rejects.toThrow(/closed/);
+      await expect(server(`select public.booking_claim($1, '2026-12-11T02:00:00Z', '2026-12-11T02:45:00Z')`, [lead])).rejects.toThrow(/closed/);
       await expect(as(REVIEWER, `select public.lead_booking_token($1)`, [lead])).rejects.toThrow(/Lead or Prospect/);
     });
   });
@@ -146,7 +154,35 @@ describe.skipIf(!url)("Google Calendar", () => {
     it("is with the client's reviewer, for the client's own users", async () => {
       expect((await as(CLIENT_USER, `select full_name, role, connected from public.portal_meeting_host($1)`, [client])).rows).toEqual([{ full_name: "Rhea Reviewer", role: "reviewer", connected: true }]);
       await expect(as(OTHER, `select * from public.portal_meeting_host($1)`, [client])).resolves.toBeTruthy();
+      await expect(as(CLIENT_USER, `select public.client_meeting_claim($1, $2, '2027-01-04T02:00:00Z', '2027-01-04T02:30:00Z', null, $3)`, [client, REVIEWER, CLIENT_USER])).rejects.toThrow(/permission denied/);
       await expect(as(CLIENT_USER, `insert into public.client_meetings (client_id, staff_user_id, starts_at, ends_at, calendar_event_id, booked_by) values ($1, $2, now(), now() + interval '30 minutes', 'e', $3)`, [client, REVIEWER, CLIENT_USER])).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  describe("claiming a host's time", () => {
+    const claimMeeting = (start: string, end: string, staff = REVIEWER, by = CLIENT_USER) =>
+      server(`select public.client_meeting_claim($1, $2, $3, $4, 'Year-end', $5) as id`, [client, staff, start, end, by]);
+
+    it("keeps client meetings off the host's booked discovery call, and each other", async () => {
+      // The lead's call booked on 10 December 02:00–02:45 (UTC) with the same reviewer.
+      await expect(claimMeeting("2026-12-10T02:30:00Z", "2026-12-10T03:00:00Z")).rejects.toThrow(/just taken/);
+      const m = (await claimMeeting("2027-01-04T02:00:00Z", "2027-01-04T02:30:00Z")).rows[0].id;
+      await expect(claimMeeting("2027-01-04T02:00:00Z", "2027-01-04T02:30:00Z")).rejects.toThrow(/just taken/);
+      await server(`select public.client_meeting_confirm($1, 'evt-m1', 'https://meet.google.com/x')`, [m]);
+      expect((await as(CLIENT_USER, `select topic, calendar_event_id from public.client_meetings`)).rows).toEqual([{ topic: "Year-end", calendar_event_id: "evt-m1" }]);
+    });
+
+    it("allows at most two upcoming meetings per client, only with its own team, only for its own users", async () => {
+      await claimMeeting("2027-01-05T02:00:00Z", "2027-01-05T02:30:00Z");
+      await expect(claimMeeting("2027-01-06T02:00:00Z", "2027-01-06T02:30:00Z")).rejects.toThrow(/2 meetings coming up/);
+      await expect(claimMeeting("2027-01-06T02:00:00Z", "2027-01-06T02:30:00Z", OWNER)).rejects.toThrow(/own team/);
+      await expect(claimMeeting("2027-01-06T02:00:00Z", "2027-01-06T02:30:00Z", REVIEWER, OTHER)).rejects.toThrow(/Business not found/);
+    });
+
+    it("releases a meeting whose event could not be made", async () => {
+      const pending = (await db.query(`select id from public.client_meetings where calendar_event_id is null`)).rows[0].id;
+      await server(`select public.client_meeting_confirm($1, null, null)`, [pending]);
+      await claimMeeting("2027-01-06T02:00:00Z", "2027-01-06T02:30:00Z");
     });
   });
 });

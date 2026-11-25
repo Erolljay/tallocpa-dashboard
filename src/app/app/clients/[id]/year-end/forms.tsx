@@ -7,8 +7,13 @@ import { setYearEndCheckAction, type FormState } from "./actions";
 
 /** Tick a step (with an optional note), or clear a ticked one. */
 export function TickForm({ clientId, yearEnd, item, done }: { clientId: string; yearEnd: string; item: CheckItem; done: boolean }) {
-  const [state, action, pending] = useActionState(setYearEndCheckAction.bind(null, clientId, yearEnd, item, !done), {} as FormState);
   const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState(async (prev: FormState, form: FormData) => {
+    const r = await setYearEndCheckAction(clientId, yearEnd, item, !done, prev, form);
+    // Done: the note form closes, so clearing it later shows "Mark done" again.
+    if (r.ok) setOpen(false);
+    return r;
+  }, {} as FormState);
   if (done) {
     return (
       <form action={action} className="flex items-center gap-2">

@@ -52,9 +52,9 @@ $$;
 
 /** The encrypted refresh tokens of these staff members (server only). */
 create or replace function public.calendar_tokens(p_users uuid[])
-returns table (user_id uuid, google_email text, refresh_token text)
+returns table (user_id uuid, google_email text, refresh_token text, last_error text)
 language sql stable security definer set search_path = '' as $$
-  select l.user_id, l.google_email, t.refresh_token
+  select l.user_id, l.google_email, t.refresh_token, l.last_error
   from public.google_calendar_links l join private.google_calendar_tokens t on t.user_id = l.user_id
   where l.user_id = any (p_users)
 $$;
@@ -124,7 +124,8 @@ create table public.client_meetings (
   starts_at timestamptz not null,
   ends_at timestamptz not null check (ends_at > starts_at),
   topic text,
-  calendar_event_id text not null,
+  -- Null while the slot is claimed and the calendar event is being made.
+  calendar_event_id text,
   meet_url text,
   booked_by uuid not null references auth.users (id),
   cancelled_at timestamptz,
@@ -142,10 +143,14 @@ revoke insert, update, delete on public.client_meetings from anon, authenticated
 -- Discovery calls booked from the booking page.
 -- ---------------------------------------------------------------------------
 
--- One booked call waiting to be held per lead.
+-- One booked call waiting to be held per lead; the host and end of a booked slot.
 create unique index discovery_calls_one_booked on public.discovery_calls (lead_id) where held_at is null;
+alter table public.discovery_calls
+  add column host_user_id uuid references public.staff_profiles (user_id),
+  add column scheduled_until timestamptz,
+  add constraint discovery_calls_slot check (scheduled_until is null or scheduled_until > scheduled_at);
 
-/** Recording the call's notes fills the booked call, if there is one; otherwise a new call. Unchanged otherwise. */
+/** Recording the call's notes fills the booked call, if there is one; otherwise a new call. Holding a call closes the booking link. */
 create or replace function public.record_discovery_call(p_lead uuid, p_held_at timestamptz, p_notes text) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -167,8 +172,31 @@ begin
     values (l.id, p_held_at, left(btrim(p_notes), 8000), auth.uid())
     returning id into v_id;
   end if;
+  -- The link was for this call; another needs a new link.
+  update public.leads set booking_token = null where id = l.id;
   if l.stage = 'lead' then update public.leads set stage = 'prospect' where id = l.id; end if;
   return v_id;
+end;
+$$;
+
+/**
+ * Claims [p_start, p_end) on a staff member's calendar against every booking the app has
+ * made for them (discovery calls and client meetings), one at a time per staff member, so
+ * two bookings cannot take overlapping times before either calendar event exists.
+ */
+create or replace function private.check_host_free(p_staff uuid, p_start timestamptz, p_end timestamptz) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform pg_advisory_xact_lock(hashtextextended('calendar-host:' || p_staff::text, 0));
+  if exists (
+    select 1 from public.discovery_calls c
+    where c.host_user_id = p_staff and c.held_at is null and c.scheduled_at < p_end and c.scheduled_until > p_start
+  ) or exists (
+    select 1 from public.client_meetings m
+    where m.staff_user_id = p_staff and m.cancelled_at is null and m.starts_at < p_end and m.ends_at > p_start
+  ) then
+    raise exception 'That time was just taken' using errcode = '23P01';
+  end if;
 end;
 $$;
 
@@ -188,16 +216,24 @@ language sql stable security definer set search_path = '' as $$
   where l.booking_token = p_token
 $$;
 
-/** Claims the slot for the lead (server only), before the calendar event is made. Fails if a call is already booked. */
-create or replace function public.booking_claim(p_lead uuid, p_at timestamptz) returns uuid
+/** Claims the slot for the lead with its reviewer (server only), before the calendar event is made. */
+create or replace function public.booking_claim(p_lead uuid, p_at timestamptz, p_until timestamptz) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
+  l public.leads;
   v_id uuid;
 begin
-  if not exists (select 1 from public.leads where id = p_lead and stage in ('lead', 'prospect')) then
+  select * into l from public.leads where id = p_lead;
+  if l.id is null or l.stage not in ('lead', 'prospect') or l.reviewer_id is null or l.booking_token is null then
     raise exception 'This booking link is closed' using errcode = '22023';
   end if;
-  insert into public.discovery_calls (lead_id, scheduled_at, booked_via) values (p_lead, p_at, 'booking_page') returning id into v_id;
+  if p_until is null or p_until <= p_at then raise exception 'Give the slot''s end' using errcode = '22023'; end if;
+  if exists (select 1 from public.discovery_calls where lead_id = p_lead and held_at is null) then
+    raise exception 'A call is already booked' using errcode = '22023';
+  end if;
+  perform private.check_host_free(l.reviewer_id, p_at, p_until);
+  insert into public.discovery_calls (lead_id, scheduled_at, scheduled_until, host_user_id, booked_via)
+  values (p_lead, p_at, p_until, l.reviewer_id, 'booking_page') returning id into v_id;
   return v_id;
 exception when unique_violation then
   raise exception 'A call is already booked' using errcode = '22023';
@@ -217,10 +253,11 @@ end;
 $$;
 
 revoke execute on function public.booking_lead(text) from public, anon, authenticated;
-revoke execute on function public.booking_claim(uuid, timestamptz) from public, anon, authenticated;
+revoke execute on function public.booking_claim(uuid, timestamptz, timestamptz) from public, anon, authenticated;
+revoke execute on function private.check_host_free(uuid, timestamptz, timestamptz) from public, anon, authenticated;
 revoke execute on function public.booking_confirm(uuid, text, text) from public, anon, authenticated;
 grant execute on function public.booking_lead(text) to service_role;
-grant execute on function public.booking_claim(uuid, timestamptz) to service_role;
+grant execute on function public.booking_claim(uuid, timestamptz, timestamptz) to service_role;
 grant execute on function public.booking_confirm(uuid, text, text) to service_role;
 
 -- ---------------------------------------------------------------------------
@@ -247,3 +284,54 @@ $$;
 
 revoke execute on function public.portal_meeting_host(uuid) from public, anon;
 grant execute on function public.portal_meeting_host(uuid) to authenticated;
+
+/** At most this many upcoming meetings per client from the portal. */
+create or replace function private.client_meeting_limit() returns integer language sql immutable as $$ select 2 $$;
+
+/**
+ * Claims a portal meeting slot (server only, after it checks the signed-in client user):
+ * the host must be the client's reviewer or preparer, the client may have at most two
+ * upcoming meetings, and the time must not overlap another booking of the host.
+ */
+create or replace function public.client_meeting_claim(p_client uuid, p_staff uuid, p_start timestamptz, p_end timestamptz, p_topic text, p_booked_by uuid)
+returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+begin
+  if not exists (select 1 from public.client_users where client_id = p_client and user_id = p_booked_by) then
+    raise exception 'Business not found' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.staff_assignments where client_id = p_client and user_id = p_staff and role in ('reviewer', 'preparer')) then
+    raise exception 'Book with your own team' using errcode = '42501';
+  end if;
+  if p_end <= p_start or p_start < now() then raise exception 'Choose a time ahead' using errcode = '22023'; end if;
+  perform pg_advisory_xact_lock(hashtextextended('client-meetings:' || p_client::text, 0));
+  if (select count(*) from public.client_meetings where client_id = p_client and cancelled_at is null and ends_at > now()) >= private.client_meeting_limit() then
+    raise exception 'You already have % meetings coming up; book another after them', private.client_meeting_limit() using errcode = '22023';
+  end if;
+  perform private.check_host_free(p_staff, p_start, p_end);
+  insert into public.client_meetings (client_id, staff_user_id, starts_at, ends_at, topic, booked_by)
+  values (p_client, p_staff, p_start, p_end, nullif(left(btrim(coalesce(p_topic, '')), 1000), ''), p_booked_by)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+/** Saves the calendar event of a claimed meeting, or releases the claim when the event could not be made (server only). */
+create or replace function public.client_meeting_confirm(p_meeting uuid, p_event text, p_meet text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if p_event is null then
+    delete from public.client_meetings where id = p_meeting and calendar_event_id is null;
+  else
+    update public.client_meetings set calendar_event_id = p_event, meet_url = p_meet where id = p_meeting;
+  end if;
+end;
+$$;
+
+revoke execute on function private.client_meeting_limit() from public, anon, authenticated;
+revoke execute on function public.client_meeting_claim(uuid, uuid, timestamptz, timestamptz, text, uuid) from public, anon, authenticated;
+revoke execute on function public.client_meeting_confirm(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.client_meeting_claim(uuid, uuid, timestamptz, timestamptz, text, uuid) to service_role;
+grant execute on function public.client_meeting_confirm(uuid, text, text) to service_role;

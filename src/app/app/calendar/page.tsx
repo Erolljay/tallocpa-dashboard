@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
+import { AnchorButton, Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { SectionTabs } from "@/app/app/nav/section-tabs";
 import { requireStaff } from "@/lib/auth";
-import { teamWeek } from "@/lib/calendar/staff";
+import { appBookedEvents, teamWeek, type PersonWeek } from "@/lib/calendar/staff";
 import { manilaTime, mondayOf, weekCells, weekDays, weekRange } from "@/lib/calendar/week";
 import { googleCalendarEnv } from "@/lib/env";
 import { manilaToday } from "@/lib/filings/run";
@@ -38,7 +38,9 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
   const me = await requireStaff();
   const sp = await searchParams;
   const today = manilaToday();
-  const asked = typeof sp.week === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.week) ? sp.week : today;
+  // A real date only: 2025-13-01 or 2025-02-30 fall back to this week.
+  const validDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)) && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+  const asked = validDate(sp.week) ? sp.week : today;
   const monday = mondayOf(asked);
   const days = weekDays(monday);
   const { from, to } = weekRange(monday);
@@ -51,7 +53,21 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
   ]);
   const staff = (people ?? []) as { user_id: string; full_name: string; role: string }[];
   const linkOf = new Map(((links ?? []) as { user_id: string; google_email: string; last_error: string | null }[]).map((l) => [l.user_id, l]));
-  const weeks = env ? await teamWeek(staff.filter((p) => linkOf.has(p.user_id)).map((p) => p.user_id), from, to) : new Map();
+  const weeks = env ? await teamWeek(staff.filter((p) => linkOf.has(p.user_id)).map((p) => p.user_id), from, to) : new Map<string, PersonWeek>();
+  // Meetings the app booked for a client or a lead: in full only for staff who can see that client or lead.
+  const eventIds = [...weeks.values()].flatMap((w) => w.events.map((e) => e.id));
+  const booked = await appBookedEvents(eventIds);
+  if (booked.size) {
+    const ids = [...booked];
+    const [{ data: m }, { data: d }] = await Promise.all([
+      supabase.from("client_meetings").select("calendar_event_id").in("calendar_event_id", ids),
+      supabase.from("discovery_calls").select("calendar_event_id").in("calendar_event_id", ids),
+    ]);
+    const visible = new Set([...(m ?? []), ...(d ?? [])].map((r) => (r as { calendar_event_id: string }).calendar_event_id));
+    for (const w of weeks.values()) {
+      w.events = w.events.map((e) => (booked.has(e.id) && !visible.has(e.id) ? { ...e, private: true, summary: null, meetUrl: null, htmlLink: null } : e));
+    }
+  }
   const mine = linkOf.get(me.userId);
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
 
@@ -67,7 +83,7 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
               <DisconnectButton />
             </div>
           ) : env ? (
-            <LinkButton href="/app/calendar/connect" prefetch={false}>Connect my Google Calendar</LinkButton>
+            <AnchorButton href="/app/calendar/connect">Connect my Google Calendar</AnchorButton>
           ) : null
         }
       />
@@ -94,7 +110,7 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
                 <tr>
                   <th scope="col" className="w-40 pb-2 text-start">Staff</th>
                   {days.map((d) => (
-                    <th key={d} scope="col" className={cx("pb-2 text-start", d === today && "text-accent-600")}>{dayLabel(d)}</th>
+                    <th key={d} scope="col" className={cx("pb-2 text-start", d === today && "text-button-ghost-foreground")}>{dayLabel(d)}</th>
                   ))}
                 </tr>
               </thead>
@@ -121,19 +137,19 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
                                 key={j}
                                 className={cx(
                                   "rounded-md px-1.5 py-1 text-caption-1-regular",
-                                  e.title ? "bg-accent-50 text-text-primary" : "bg-background-tertiary-default text-text-secondary",
+                                  e.title ? "bg-accent-500/10 text-text-primary" : "bg-background-tertiary-default text-text-secondary",
                                 )}
                               >
                                 <span className="tabular-nums">{e.allDay ? "All day" : `${manilaTime(e.start)}–${manilaTime(e.end)}`}</span>{" "}
                                 {e.title ? (
-                                  e.htmlLink?.startsWith("https://") ? <a href={e.htmlLink} target="_blank" rel="noreferrer" className="hover:underline">{e.title}</a> : e.title
+                                  e.htmlLink?.startsWith("https://") ? <a href={e.htmlLink} target="_blank" rel="noreferrer" className="outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring">{e.title}</a> : e.title
                                 ) : (
                                   "Busy"
                                 )}
                                 {e.meetUrl?.startsWith("https://") && (
                                   <>
                                     {" · "}
-                                    <a href={e.meetUrl} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline">Meet</a>
+                                    <a href={e.meetUrl} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Meet</a>
                                   </>
                                 )}
                               </li>

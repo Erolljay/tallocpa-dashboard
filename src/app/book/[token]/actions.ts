@@ -23,8 +23,12 @@ export async function bookDiscoveryCallAction(token: string, start: string): Pro
   const slot = free.slots.find((s) => Date.parse(s.start) === Date.parse(start));
   if (!slot) return { error: "That time was just taken. Please choose another." };
 
-  const claim = await admin.rpc("booking_claim", { p_lead: lead.lead_id, p_at: slot.start });
-  if (claim.error) return { error: claim.error.message.includes("already booked") ? "Your call is already booked." : "That time could not be booked. Please choose another." };
+  const claim = await admin.rpc("booking_claim", { p_lead: lead.lead_id, p_at: slot.start, p_until: slot.end });
+  if (claim.error) {
+    if (claim.error.message.includes("already booked")) return { error: "Your call is already booked." };
+    if (claim.error.message.includes("closed")) return { error: "This booking link is closed. Please reply to our email and we will arrange the call." };
+    return { error: "That time was just taken. Please choose another." };
+  }
   const callId = claim.data as string;
   try {
     const event = await bookOn(lead.reviewer_id, {

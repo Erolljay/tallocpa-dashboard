@@ -27,13 +27,22 @@ async function connect(env: GoogleCalendarEnv, admin: Admin, userIds: string[]):
   if (error) throw new Error(`Could not read the calendar connections: ${error.message}`);
   const key = parseKey(env.tokenKey);
   await Promise.all(
-    ((data ?? []) as { user_id: string; google_email: string; refresh_token: string }[]).map(async (r) => {
+    ((data ?? []) as { user_id: string; google_email: string; refresh_token: string; last_error: string | null }[]).map(async (r) => {
+      let refresh: string;
       try {
-        const access = await accessToken(env, openToken(r.refresh_token, key));
+        refresh = openToken(r.refresh_token, key, r.user_id);
+      } catch {
+        await admin.rpc("calendar_link_error", { p_user: r.user_id, p_error: "The stored connection can no longer be read; connect the calendar again." });
+        return;
+      }
+      try {
+        const access = await accessToken(env, refresh);
         out.set(r.user_id, { userId: r.user_id, email: r.google_email, access });
+        if (r.last_error) await admin.rpc("calendar_link_error", { p_user: r.user_id, p_error: "" });
       } catch (e) {
-        const msg = e instanceof GoogleAuthError ? "Google refused the connection; connect the calendar again." : e instanceof Error ? e.message : String(e);
-        await admin.rpc("calendar_link_error", { p_user: r.user_id, p_error: msg });
+        // Only a refused grant means the person must connect again; a network or Google error is passing.
+        if (e instanceof GoogleAuthError) await admin.rpc("calendar_link_error", { p_user: r.user_id, p_error: "Google refused the connection; connect the calendar again." });
+        else console.error("Calendar token refresh failed:", e instanceof Error ? e.message : e);
       }
     }),
   );
@@ -99,4 +108,19 @@ export async function bookOn(userId: string, event: NewEvent): Promise<{ id: str
 export async function holidaysBetween(admin: Admin, from: string, to: string): Promise<Set<string>> {
   const { data } = await admin.from("holidays").select("date").gte("date", from).lte("date", to).in("kind", ["regular", "special"]);
   return new Set(((data ?? []) as { date: string }[]).map((h) => String(h.date).slice(0, 10)));
+}
+
+/**
+ * Of these calendar events, the ones the app booked for a client or a lead (client meetings,
+ * discovery calls). The team calendar shows those in full only to staff who can see that
+ * client or lead; to others they are Busy.
+ */
+export async function appBookedEvents(eventIds: string[]): Promise<Set<string>> {
+  if (!eventIds.length) return new Set();
+  const admin = supabaseAdmin();
+  const [{ data: m }, { data: d }] = await Promise.all([
+    admin.from("client_meetings").select("calendar_event_id").in("calendar_event_id", eventIds),
+    admin.from("discovery_calls").select("calendar_event_id").in("calendar_event_id", eventIds),
+  ]);
+  return new Set([...(m ?? []), ...(d ?? [])].map((r) => (r as { calendar_event_id: string }).calendar_event_id));
 }
