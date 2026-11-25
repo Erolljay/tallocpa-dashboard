@@ -45,11 +45,10 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
   const ids = clients.map((c) => c.id);
   const months = clients.map((x) => ({ client: x, ...nextCutoff(today, x.submission_cutoff_day) }));
   const periods = [...new Set(months.map((m) => m.month))];
-  const [{ data: cycles }, { data: sent }, { count: returned }, { count: payrollReady }] = await Promise.all([
+  const [{ data: cycles }, { data: sent }, { count: returned }] = await Promise.all([
     supabase.from("document_cycles").select("client_id, period, closed_at, nothing_to_submit_at, client_confirmed_at").in("client_id", ids).in("period", periods),
     supabase.from("documents").select("client_id, document_month").in("client_id", ids).in("document_month", periods).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof)").limit(2000),
     supabase.from("documents").select("id", { count: "exact", head: true }).in("client_id", ids).eq("status", "returned"),
-    supabase.from("payroll_items").select("id", { count: "exact", head: true }).in("client_id", ids).eq("active", true),
   ]);
   const status = months.map(({ client, month, cutoff, daysLeft }) => {
     const y = (cycles ?? []).find((r) => r.client_id === client.id && r.period === month);
@@ -113,12 +112,6 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
           months={monthChoices(today, 6)}
           defaultMonth={main.month}
         />
-        {stream === "payroll" && (payrollReady ?? 0) > 0 && (
-          <p className="mt-4 text-body-regular text-text-secondary">
-            Using our payroll register?{" "}
-            <Link href="/portal/payroll" className="text-button-ghost-foreground underline">Download and send it on the Payroll page</Link>, where it is checked before it is sent.
-          </p>
-        )}
       </Card>
 
       <Card title="This month">

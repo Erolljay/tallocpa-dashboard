@@ -2,10 +2,10 @@ import { RiBankCardLine, RiBarChartBoxLine, RiFileTextLine, RiFileTransferLine, 
 
 export type Tab = { href: string; label: string; icon: typeof RiHome5Line; /** Other paths that belong to this tab. */ also?: readonly string[] };
 
-/** Rework decision 18: Home · Upload · Billing · Returns · Reports. Documents and Payroll open from Upload. */
+/** Rework decision 18: Home · Upload · Billing · Returns · Reports. Documents opens from Upload; the old Payroll pages redirect to Reports. */
 export const mainTabs: readonly Tab[] = [
   { href: "/portal", label: "Home", icon: RiHome5Line },
-  { href: "/portal/upload", label: "Upload", icon: RiUploadCloud2Line, also: ["/portal/documents", "/portal/payroll"] },
+  { href: "/portal/upload", label: "Upload", icon: RiUploadCloud2Line, also: ["/portal/documents"] },
   { href: "/portal/billing", label: "Billing", icon: RiBankCardLine },
   { href: "/portal/returns", label: "Returns", icon: RiFileTextLine },
   { href: "/portal/reports", label: "Reports", icon: RiBarChartBoxLine },
