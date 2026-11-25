@@ -66,6 +66,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
             {(isOwner || (team.data ?? []).some((a) => a.user_id === me.userId)) && (
               <>
                 <LinkButton href={`/app/clients/${id}/register`} variant="secondary">Register</LinkButton>
+                <LinkButton href={`/app/clients/${id}/workpapers`} variant="secondary">Workpapers</LinkButton>
                 {(engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active") && <LinkButton href={`/app/clients/${id}/books`} variant="secondary">Books</LinkButton>}
                 <LinkButton href={`/app/clients/${id}/payroll`} variant="secondary">Payroll</LinkButton>
               </>

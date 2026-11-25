@@ -60,15 +60,15 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/page.tsx": {
-    "mtime": 1795565858.5906239,
-    "seen": 1795565923.2265754,
-    "ast_hash": "9acd2021ad817eebb34c76aee37aa7a0",
+    "mtime": 1795571099.0977366,
+    "seen": 1795571240.5280523,
+    "ast_hash": "6ae4ab3b1b492af392ea58c883a50ac6",
     "semantic_hash": ""
   },
   "src/app/app/clients/actions.ts": {
-    "mtime": 1795570587.9980612,
-    "seen": 1795570759.1406198,
-    "ast_hash": "8be2f5cd92bfce6946cb372c6e0125a0",
+    "mtime": 1795570847.6320503,
+    "seen": 1795571240.5284505,
+    "ast_hash": "21f8d9e709eeebb9d02ce8e859f88fbe",
     "semantic_hash": ""
   },
   "src/app/app/clients/new/page.tsx": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/page.tsx": {
-    "mtime": 1795570605.5241842,
-    "seen": 1795570759.1406977,
-    "ast_hash": "37e98b7e8b92c0847ebf9825d1f08420",
+    "mtime": 1795570847.6323898,
+    "seen": 1795571240.528502,
+    "ast_hash": "264ebf387d19075112fcf62c61605b32",
     "semantic_hash": ""
   },
   "src/app/app/deadlines/actions.ts": {
@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   "src/app/app/filings/actions.ts": {
-    "mtime": 1795556117.8986995,
-    "seen": 1795565923.226633,
-    "ast_hash": "3c8c1c75140e97c6cde96515556a7071",
+    "mtime": 1795571099.0981715,
+    "seen": 1795571240.529183,
+    "ast_hash": "113886a433c7f7ed67ac552fac132bfd",
     "semantic_hash": ""
   },
   "src/app/app/filings/sign-off-actions.tsx": {
@@ -2232,9 +2232,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/types.ts": {
-    "mtime": 1795570576.4717972,
-    "seen": 1795570759.1464968,
-    "ast_hash": "935abb59332ddcac79fb62ca1d9fe7ce",
+    "mtime": 1795570847.6313677,
+    "seen": 1795571240.5350642,
+    "ast_hash": "e18af76ccda7d858d9cd2f660e8a283a",
     "semantic_hash": ""
   },
   "supabase/tests/ledger.test.ts": {
@@ -2586,9 +2586,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795570755.550517,
-    "seen": 1795570759.149424,
-    "ast_hash": "e2dc7a29e0028cae9561e1ba3c5e54d7",
+    "mtime": 1795571230.0326884,
+    "seen": 1795571240.538467,
+    "ast_hash": "02d5a64ad76291974c95f0f6f1004526",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2730,9 +2730,51 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/chart-start.test.ts": {
-    "mtime": 1795570594.2837982,
-    "seen": 1795570759.1462727,
-    "ast_hash": "0d650e69bd11a4095145e769926c5a06",
+    "mtime": 1795570847.631607,
+    "seen": 1795571240.5346491,
+    "ast_hash": "f7b2c5344d087afa80dc389e6c9143de",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/workpapers/actions.ts": {
+    "mtime": 1795571051.6364005,
+    "seen": 1795571240.528445,
+    "ast_hash": "cee170a01f659b7dfa7e7419ce318e04",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/workpapers/explain-form.tsx": {
+    "mtime": 1795571051.6378968,
+    "seen": 1795571240.5284467,
+    "ast_hash": "a828b76e16ebade5f8cf8a7ce85d7642",
+    "semantic_hash": ""
+  },
+  "src/app/app/clients/[id]/workpapers/page.tsx": {
+    "mtime": 1795571087.7238276,
+    "seen": 1795571240.5284486,
+    "ast_hash": "ef8bb3ebd062f38e42f7574aab4e7d2f",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/load.ts": {
+    "mtime": 1795571038.2398245,
+    "seen": 1795571240.5376399,
+    "ast_hash": "a0c6988c5aa6b21c152ad0d47eda8d67",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/tieouts.test.ts": {
+    "mtime": 1795570996.852645,
+    "seen": 1795571240.5376425,
+    "ast_hash": "0a625139bc91790d37dffc91960d1dbf",
+    "semantic_hash": ""
+  },
+  "src/lib/workpapers/tieouts.ts": {
+    "mtime": 1795571147.1887412,
+    "seen": 1795571240.5376441,
+    "ast_hash": "8db765283b545bb4548ee3ffb96734e8",
+    "semantic_hash": ""
+  },
+  "supabase/tests/workpapers.test.ts": {
+    "mtime": 1795571174.5078328,
+    "seen": 1795571240.5380945,
+    "ast_hash": "6598e970b6a1cbe6edb9614efa45fee6",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

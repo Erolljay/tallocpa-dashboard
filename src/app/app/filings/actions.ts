@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getIdentity } from "@/lib/auth";
 import type { SignOffAction } from "@/lib/filings/sign-off";
+import { showMonth } from "@/lib/documents/labels";
 import { supabaseServer } from "@/lib/supabase/server";
+import { loadPeriodFile } from "@/lib/workpapers/load";
+import { blockingTies, monthsOf, TIES_FOR_FORM } from "@/lib/workpapers/tieouts";
 
 export type SignOffState = { ok?: string; error?: string };
 
@@ -37,6 +40,10 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   const parsed = stepData(action, form);
   if ("error" in parsed) return { error: parsed.error };
   const supabase = await supabaseServer();
+  if (action === "prepare") {
+    const blocked = await tieOutsBlocking(supabase, filingId);
+    if (blocked) return { error: blocked };
+  }
   const { error } = await supabase.rpc("advance_filing", {
     p_filing: filingId,
     p_action: action,
@@ -62,4 +69,22 @@ export async function amendFilingAction(filingId: string, _: SignOffState, form:
   if (error) return { error: error.message };
   revalidatePath("/app", "layout");
   redirect(`/app/filings/${data as string}`);
+}
+
+/**
+ * W1, recommendation 3: a return cannot be marked prepared while a tie-out it needs
+ * (src/lib/workpapers/tieouts.ts) differs by more than ₱1 without a written
+ * explanation, in any month it covers. Returns what to do, or null.
+ */
+async function tieOutsBlocking(supabase: Awaited<ReturnType<typeof supabaseServer>>, filingId: string): Promise<string | null> {
+  const { data: f } = await supabase.from("filing_instances").select("client_id, form, period_start, period_end").eq("id", filingId).maybeSingle();
+  if (!f || !(TIES_FOR_FORM[f.form] ?? []).length) return null;
+  const open: string[] = [];
+  for (const m of monthsOf(f.period_start, f.period_end)) {
+    const file = await loadPeriodFile(supabase, f.client_id, m);
+    for (const t of blockingTies(file.ties, f.form)) open.push(`${t.id} (${showMonth(m)})`);
+  }
+  return open.length
+    ? `Explain ${open.join(", ")} in the client's Workpapers (0-2 tie-outs) before marking this return prepared: the difference is over ₱1.`
+    : null;
 }
