@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
-import { parseBillingDays } from "@/lib/collections/collections";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -15,11 +14,15 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a date.");
 
 function refresh(clientId?: string) {
   revalidatePath("/app/collections");
+  revalidatePath("/app");
   if (clientId) revalidatePath(`/app/collections/${clientId}`);
   revalidatePath("/portal/billing", "layout");
 }
 
-/** Runs billing for a date: every client scheduled that day, or one client. */
+/**
+ * Runs billing (decision 16c: only the Owner bills, nothing runs by itself): one
+ * client, or every client in Ready to bill. The date defaults to today in Manila.
+ */
 export async function runBillingAction(clientId: string | null, _: MoneyState, form: FormData): Promise<MoneyState> {
   await requireOwner();
   const d = date.safeParse(text(form.get("billing_date")) || manilaToday());
@@ -29,8 +32,8 @@ export async function runBillingAction(clientId: string | null, _: MoneyState, f
   if (error) return { error: error.message };
   refresh(clientId ?? undefined);
   const n = Number(data ?? 0);
-  if (clientId) return { ok: n ? "Statement issued." : "Nothing new to bill." };
-  return { ok: n === 0 ? "Nothing new to bill for that day." : `${n} statement${n === 1 ? "" : "s"} issued or updated.` };
+  if (clientId) return { ok: n ? "Statement issued." : "Nothing ready to bill." };
+  return { ok: n === 0 ? "Nothing ready to bill." : `${n} statement${n === 1 ? "" : "s"} issued or updated.` };
 }
 
 const depositSchema = z.object({
@@ -140,15 +143,4 @@ export async function clearRemittedAction(clientId: string, dueId: string): Prom
   if (error) return { error: error.message };
   refresh(clientId);
   return { ok: "Remittance undone; the money is held again." };
-}
-
-export async function setBillingDaysAction(clientId: string, _: MoneyState, form: FormData): Promise<MoneyState> {
-  await requireOwner();
-  const parsed = parseBillingDays(text(form.get("billing_days")));
-  if ("error" in parsed) return { error: parsed.error };
-  const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("set_billing_days", { p_client: clientId, p_days: parsed.days });
-  if (error) return { error: error.message };
-  refresh(clientId);
-  return { ok: "Billing days saved." };
 }

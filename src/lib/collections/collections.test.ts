@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOpenItems, agingBucket, describeBillingDays, groupPaidItems, nextBillingDate, parseBillingDays, suggestTicks, tickedSplit, totalHeld } from "./collections";
+import { ageOpenItems, agingBucket, groupPaidItems, groupReady, readyReasonLabel, suggestTicks, tickedSplit, totalHeld, type ReadyItem } from "./collections";
 
 describe("agingBucket", () => {
   it("puts amounts not yet due in current, then 30/60/90-day buckets", () => {
@@ -28,25 +28,35 @@ describe("agingBucket", () => {
   });
 });
 
-describe("nextBillingDate", () => {
-  it("finds the next billing day this month, or the first one next month", () => {
-    expect(nextBillingDate([10, 20], "2026-11-05")).toBe("2026-11-10");
-    expect(nextBillingDate([10, 20], "2026-11-10")).toBe("2026-11-10");
-    expect(nextBillingDate([10, 20], "2026-11-11")).toBe("2026-11-20");
-    expect(nextBillingDate([20, 10], "2026-11-23")).toBe("2026-12-10");
-    expect(nextBillingDate([10], "2026-12-15")).toBe("2027-01-10");
-    expect(nextBillingDate([], "2026-12-15")).toBeNull();
+describe("ready to bill", () => {
+  const row = (client: string, amount: string, over: Partial<ReadyItem> = {}): ReadyItem => ({
+    client_id: client,
+    client_code: `TC-${client}`,
+    client_name: `Client ${client}`,
+    kind: "tax",
+    description: "Tax due",
+    amount,
+    reason: "client_approved",
+    days_to_due: 10,
+    filing_instance_id: null,
+    due_id: null,
+    ...over,
   });
-});
 
-describe("billing days", () => {
-  it("reads and parses the days a client is billed", () => {
-    expect(describeBillingDays([20, 10])).toBe("10th and 20th");
-    expect(describeBillingDays([1, 2, 3])).toBe("1st, 2nd and 3rd");
-    expect(parseBillingDays("10, 20")).toEqual({ days: [10, 20] });
-    expect(parseBillingDays("20 10 10")).toEqual({ days: [10, 20] });
-    expect(parseBillingDays("31")).toHaveProperty("error");
-    expect(parseBillingDays("")).toHaveProperty("error");
+  it("says why each item is ready", () => {
+    expect(readyReasonLabel({ reason: "client_approved", days_to_due: 12 })).toBe("Client approved");
+    expect(readyReasonLabel({ reason: "due_soon", days_to_due: 2 })).toBe("Due in 2 days");
+    expect(readyReasonLabel({ reason: "due_soon", days_to_due: 1 })).toBe("Due in 1 day");
+    expect(readyReasonLabel({ reason: "due_soon", days_to_due: 0 })).toBe("Due today");
+    expect(readyReasonLabel({ reason: "due_soon", days_to_due: -3 })).toBe("Past due");
+    expect(readyReasonLabel({ reason: "retainer", days_to_due: null })).toBe("This month's retainer");
+    expect(readyReasonLabel({ reason: "charge", days_to_due: null })).toBe("Not yet billed");
+  });
+
+  it("groups the rows by client in order and totals without drift", () => {
+    const groups = groupReady([row("A", "0.10"), row("A", "0.20", { kind: "retainer", reason: "retainer" }), row("B", "1450")]);
+    expect(groups.map((g) => [g.id, g.items.length, g.total])).toEqual([["A", 2, 0.3], ["B", 1, 1450]]);
+    expect(groupReady([])).toEqual([]);
   });
 });
 

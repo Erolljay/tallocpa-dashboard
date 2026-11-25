@@ -328,7 +328,7 @@ describe.skipIf(!url)("database", () => {
     ) {
       await db.query("begin");
       try {
-        await db.query(`update public.clients set payment_mode = 'firm_remits', billing_days = '{10,20}' where id = $1`, [clientA]);
+        await db.query(`update public.clients set payment_mode = 'firm_remits' where id = $1`, [clientA]);
         await db.query(`insert into public.engagements (client_id, service_line, monthly_retainer, start_date) values ($1, 'tax_compliance', 3000, '2027-01-01')`, [clientA]);
         const ob = async (form: string, frequency: string) =>
           (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, $2, $3, '2027-01-17') returning id`, [clientA, form, frequency])).rows[0].id;
@@ -379,8 +379,19 @@ describe.skipIf(!url)("database", () => {
 
     const open = `select kind, description, amount::text, open_amount::text from public.due_balances where client_id = $1 order by due_on, kind`;
 
-    it("bills on the billing days: retainer on the month's first statement, returns once reviewed", async () => {
+    const ready = `select kind, description, amount::text, reason, days_to_due from public.ready_to_bill($1) where client_id = $2`;
+
+    it("bills only when the Owner runs it: retainer on the same statement, a reviewed return from two days before its deadline", async () => {
       await money(async ({ as, admin, vat }) => {
+        // The nightly job issues nothing (decision 16c).
+        expect(await admin(`select public.run_scheduled_billing('2027-02-10') as n`)).toEqual([{ n: 0 }]);
+        expect(await admin(`select count(*)::int as n from public.soas`)).toEqual([{ n: 0 }]);
+
+        // Ready to bill on the 10th: the withholding return is reviewed and due that day; the month's retainer.
+        expect(await as(OWNER, ready, ["2027-02-10", clientA])).toEqual([
+          { kind: "retainer", description: "Monthly retainer, February 2027", amount: "3000.00", reason: "retainer", days_to_due: null },
+          { kind: "tax", description: "Tax due, 1601-C Jan 2027", amount: "5000.00", reason: "due_soon", days_to_due: 0 },
+        ]);
         expect(await as(OWNER, `select public.run_billing('2027-02-10') as n`)).toEqual([{ n: 1 }]);
         const soas = await as(OWNER, `select reference, billing_date::text, due_on::text from public.soas where client_id = $1`, [clientA]);
         expect(soas).toEqual([{ reference: "TC-9001-2027-02-10", billing_date: "2027-02-10", due_on: "2027-02-15" }]);
@@ -388,23 +399,55 @@ describe.skipIf(!url)("database", () => {
           { kind: "tax", description: "Tax due, 1601-C Jan 2027", amount: "5000.00", open_amount: "5000.00" },
           { kind: "retainer", description: "Monthly retainer, February 2027", amount: "3000.00", open_amount: "3000.00" },
         ]);
-        // Running again adds nothing; a day that is not a billing day bills no one.
+        // Running again adds nothing; nothing is ready on the 15th.
+        expect(await as(OWNER, ready, ["2027-02-10", clientA])).toEqual([]);
         expect(await as(OWNER, `select public.run_billing('2027-02-10') as n`)).toEqual([{ n: 0 }]);
         expect(await as(OWNER, `select public.run_billing('2027-02-15') as n`)).toEqual([{ n: 0 }]);
 
-        // VAT is reviewed later and goes on the 20th, without a second retainer.
+        // VAT reviewed but not approved by the client: not billable until two days before its deadline (the 25th).
         await admin(`update public.filing_instances set status = 'reviewed' where id = $1`, [vat]);
-        expect(await as(OWNER, `select public.run_billing('2027-02-20') as n`)).toEqual([{ n: 1 }]);
-        const second = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-02-20'`);
+        expect(await as(OWNER, ready, ["2027-02-22", clientA])).toEqual([]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-22') as n`)).toEqual([{ n: 0 }]);
+        expect(await as(OWNER, ready, ["2027-02-23", clientA])).toEqual([
+          { kind: "tax", description: "Tax due, 2550Q Jan 2027", amount: "8000.00", reason: "due_soon", days_to_due: 2 },
+        ]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-23') as n`)).toEqual([{ n: 1 }]);
+        const second = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-02-23'`);
         expect(second).toEqual([{ kind: "tax", amount: "8000.00" }]);
 
-        // A client billed once a month is skipped on the 20th.
-        await as(OWNER, `select public.set_billing_days($1, '{10}')`, [clientA]);
+        // From the 1st of the month a client with only the retainer to bill is listed; a charge joins it.
+        expect(await as(OWNER, ready, ["2027-03-01", clientA])).toEqual([
+          { kind: "retainer", description: "Monthly retainer, March 2027", amount: "3000.00", reason: "retainer", days_to_due: null },
+        ]);
         await as(OWNER, `select public.add_client_charge($1, 'contribution', 'SSS contributions, January 2027', 1450, '2027-02-28')`, [clientA]);
-        expect(await as(OWNER, `select public.run_billing('2027-03-20') as n`)).toEqual([{ n: 0 }]);
-        expect(await as(OWNER, `select public.run_billing('2027-03-10') as n`)).toEqual([{ n: 1 }]);
-        const march = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-03-10' order by d.kind`);
+        expect((await as(OWNER, ready, ["2027-03-01", clientA])).map((r) => r.reason)).toEqual(["retainer", "charge"]);
+        expect(await as(OWNER, `select public.run_billing('2027-03-01', $1) as n`, [clientA])).toEqual([{ n: 1 }]);
+        const march = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-03-01' order by d.kind`);
         expect(march).toEqual([{ kind: "contribution", amount: "1450.00" }, { kind: "retainer", amount: "3000.00" }]);
+        expect(await as(OWNER, ready, ["2027-03-01", clientA])).toEqual([]);
+
+        await expect(as(STAFF, `select * from public.ready_to_bill()`)).rejects.toThrow(/Only the Owner/);
+        await expect(as(CLIENT_USER, `select * from public.ready_to_bill()`)).rejects.toThrow(/Only the Owner/);
+      });
+    });
+
+    it("bills a client-approved return at once, with the retainer on the same statement; never a nil return", async () => {
+      await money(async ({ as, admin, withholding, vat }) => {
+        await admin(`update public.filing_instances set status = 'client_approved' where id = $1`, [vat]);
+        await admin(`update public.filing_instances set status = 'client_approved', tax_due = 0 where id = $1`, [withholding]);
+        // Weeks before the VAT deadline: approved by the client, so ready now. The nil return is not listed.
+        expect(await as(OWNER, ready, ["2027-02-01", clientA])).toEqual([
+          { kind: "retainer", description: "Monthly retainer, February 2027", amount: "3000.00", reason: "retainer", days_to_due: null },
+          { kind: "tax", description: "Tax due, 2550Q Jan 2027", amount: "8000.00", reason: "client_approved", days_to_due: 24 },
+        ]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-01') as n`)).toEqual([{ n: 1 }]);
+        const items = await as(OWNER, `select d.kind, d.amount::text from public.client_dues d join public.soas s on s.id = d.soa_id where s.reference = 'TC-9001-2027-02-01' order by d.kind`);
+        expect(items).toEqual([{ kind: "retainer", amount: "3000.00" }, { kind: "tax", amount: "8000.00" }]);
+        // The nil return stays unbilled, even past its deadline and once filed.
+        await admin(`update public.filing_instances set status = 'filed' where id = $1`, [withholding]);
+        expect(await as(OWNER, ready, ["2027-02-20", clientA])).toEqual([]);
+        expect(await as(OWNER, `select public.run_billing('2027-02-20') as n`)).toEqual([{ n: 0 }]);
+        expect(await as(OWNER, `select count(*)::int as n from public.client_dues where filing_instance_id = $1`, [withholding])).toEqual([{ n: 0 }]);
       });
     });
 
@@ -421,8 +464,8 @@ describe.skipIf(!url)("database", () => {
         expect((await as(OWNER, open, [clientA])).map((r) => r.open_amount)).toEqual(["0.00", "0.00"]);
         expect(await as(OWNER, `select unallocated::text from public.deposit_balances where id = $1`, [second])).toEqual([{ unallocated: "1000.00" }]);
 
-        // The credit is used on the next statement.
-        await admin(`update public.filing_instances set status = 'reviewed' where id = $1`, [vat]);
+        // The credit is used on the next statement (the VAT return, once the client approves it).
+        await admin(`update public.filing_instances set status = 'client_approved' where id = $1`, [vat]);
         await as(OWNER, `select public.run_billing('2027-02-20')`);
         expect(await as(OWNER, `select open_amount::text from public.due_balances where filing_instance_id = $1`, [vat])).toEqual([{ open_amount: "7000.00" }]);
 
