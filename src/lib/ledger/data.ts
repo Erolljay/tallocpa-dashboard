@@ -107,9 +107,20 @@ export interface TbRowOut {
   closing: Centavos;
 }
 
-/** The trial balance of `from`…`to`: `trial_balance` for staff, `portal_trial_balance` (locked months whose returns the client approved) for the portal. */
-export async function loadTrialBalance(supabase: SupabaseClient, clientId: string, from: string, to: string, rpc: "trial_balance" | "portal_trial_balance" = "trial_balance"): Promise<TbRowOut[]> {
-  const { data, error } = await supabase.rpc(rpc, { p_client: clientId, p_from: from, p_to: to });
+/**
+ * The trial balance of `from`…`to`: `trial_balance` for staff, `portal_trial_balance`
+ * for the portal (locked months; for a client user, the months the report `kind`
+ * stands on approved).
+ */
+export async function loadTrialBalance(
+  supabase: SupabaseClient,
+  clientId: string,
+  from: string,
+  to: string,
+  rpc: "trial_balance" | "portal_trial_balance" = "trial_balance",
+  kind?: "monthly" | "quarterly" | "annual",
+): Promise<TbRowOut[]> {
+  const { data, error } = await supabase.rpc(rpc, { p_client: clientId, p_from: from, p_to: to, ...(rpc === "portal_trial_balance" && kind ? { p_kind: kind } : {}) });
   if (error) throw new Error(`Could not load the trial balance: ${error.message}`);
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     accountId: r.account_id as string,

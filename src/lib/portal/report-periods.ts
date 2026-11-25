@@ -2,11 +2,11 @@
  * Portal Reports: which periods the client may open (decision 19). The loose-leaf
  * books show closed months: every month from the start of the books through the last
  * locked one (the database checks the same in portal_book_entries). The financial
- * statements also wait for the client's approval of the returns covering a month
- * (Owner, option b; migration 20261207000001): a closed month is held while a monthly
- * or quarterly return covering it is not yet client approved, and a statement is
- * offered only when no closed month it reads is held (portal_trial_balance checks the
- * same). Pure.
+ * statements also wait for the client's approval of the returns (Owner, REWORK 19a;
+ * migration 20261207000002): a closed month is held while a monthly or quarterly
+ * return covering it is not yet client approved, each month on its own; a quarter
+ * shows when its three months show; the year when its twelve months show and its
+ * annual income tax return is approved (portal_trial_balance checks the same). Pure.
  */
 import type { ReportKind } from "@/lib/ledger/statements";
 import { taxableYearStart } from "@/lib/ledger/statements";
@@ -79,47 +79,61 @@ export function booksYears(months: string[], fyeMonth: number): BooksYear[] {
     });
 }
 
-/** A closed month held from the client's statements, and the return (not yet client approved) that holds it. */
+/**
+ * What holds the client's statements, with the return (not yet client approved) that holds it:
+ * "month": a closed month covered by a monthly or quarterly return;
+ * "year": the year ending on `month`, by its annual income tax return.
+ */
 export interface StatementHold {
-  /** First day of the month. */
+  scope: "month" | "year";
+  /** First day of the month (for "year", the year's last month). */
   month: string;
   filingId: string;
   form: string;
   periodLabel: string;
+  /** The holding return is an amended return: the period's books were corrected. */
+  amended: boolean;
   status: string;
 }
 
-/** A return holding statements, with the closed months it holds (first days, oldest first). */
+/** A return holding statements, with what it holds. */
 export interface WaitingReturn {
   filingId: string;
   form: string;
   periodLabel: string;
   status: string;
+  amended: boolean;
+  /** Closed months it holds (first days, oldest first). */
   months: string[];
+  /** The last month of the year whose annual statements it holds, if any. */
+  yearEnding: string | null;
 }
 
 const ym = (d: string) => d.slice(0, 7);
 
-/** The first month a statement ending on `month` reads: its taxable year's start, and the prior year's for the annual one (shown beside it). */
-export function statementReadsFrom(month: string, kind: ReportKind, fyeMonth: number): string {
-  const yearStart = taxableYearStart(month, fyeMonth);
-  return kind === "annual" ? taxableYearStart(iso(Number(yearStart.slice(0, 4)), Number(yearStart.slice(5, 7)), 0), fyeMonth) : yearStart;
+/** The months a report ending on `month` stands on, as YYYY-MM, oldest first: the month; its quarter's three; the year's twelve. */
+export function monthsOfReport(month: string, kind: ReportKind): string[] {
+  const n = kind === "monthly" ? 1 : kind === "quarterly" ? 3 : 12;
+  const y = Number(month.slice(0, 4));
+  const m = Number(month.slice(5, 7));
+  return Array.from({ length: n }, (_, i) => ym(iso(y, m - (n - 1 - i), 1)));
 }
 
 /**
- * The statements offered ending on a closed month (first day): the month, quarter and
- * year that end on it (reportKindsEnding) whose every closed month read, from
- * statementReadsFrom through `month`, is not held. So a quarter or the year shows
- * only when all its months show. Months before the books' start hold nothing.
- * `closed`: the closed months (first days).
+ * The statements offered ending on a closed month (first day). Each month stands on
+ * its own returns: the month shows when it is not held; the quarter ending on it when
+ * its three months show; the year when its twelve months show and its annual income
+ * tax return holds nothing. Months before the books' start (not in `closed`) hold
+ * nothing. `closed`: the closed months (first days).
  */
 export function offeredKinds(month: string, fyeMonth: number, closed: string[], holds: StatementHold[]): ReportKind[] {
-  if (!closed.some((m) => ym(m) === ym(month))) return [];
-  const held = new Set(holds.map((h) => ym(h.month)));
-  return reportKindsEnding(month, fyeMonth).filter((kind) => {
-    const from = ym(statementReadsFrom(month, kind, fyeMonth));
-    return !closed.some((m) => ym(m) >= from && ym(m) <= ym(month) && held.has(ym(m)));
-  });
+  const closedSet = new Set(closed.map(ym));
+  if (!closedSet.has(ym(month))) return [];
+  const held = new Set(holds.filter((h) => h.scope === "month").map((h) => ym(h.month)));
+  const yearHeld = holds.some((h) => h.scope === "year" && ym(h.month) === ym(month));
+  return reportKindsEnding(month, fyeMonth).filter(
+    (kind) => monthsOfReport(month, kind).every((m) => !closedSet.has(m) || !held.has(m)) && !(kind === "annual" && yearHeld),
+  );
 }
 
 /** Each closed month with a statement offered, oldest first, with the kinds offered. */
@@ -127,15 +141,18 @@ export function statementPeriods(closed: string[], holds: StatementHold[], fyeMo
   return closed.map((month) => ({ month, kinds: offeredKinds(month, fyeMonth, closed, holds) })).filter((p) => p.kinds.length > 0);
 }
 
-/** The returns holding statements, one each with the months it holds, by its earliest month. */
+/** The returns holding statements, one each with what it holds, by its earliest month. */
 export function waitingReturns(holds: StatementHold[]): WaitingReturn[] {
   const byId = new Map<string, WaitingReturn>();
   for (const h of holds) {
-    const r = byId.get(h.filingId) ?? { filingId: h.filingId, form: h.form, periodLabel: h.periodLabel, status: h.status, months: [] };
-    if (!r.months.includes(h.month)) r.months.push(h.month);
+    const r = byId.get(h.filingId) ?? { filingId: h.filingId, form: h.form, periodLabel: h.periodLabel, status: h.status, amended: h.amended, months: [], yearEnding: null };
+    if (h.scope === "year") r.yearEnding = h.month;
+    else if (!r.months.includes(h.month)) r.months.push(h.month);
     byId.set(h.filingId, r);
   }
+  const first = (r: WaitingReturn) => r.months[0] ?? r.yearEnding ?? "";
   return [...byId.values()]
     .map((r) => ({ ...r, months: [...r.months].sort() }))
-    .sort((a, b) => a.months[0].localeCompare(b.months[0]) || a.form.localeCompare(b.form));
+    .sort((a, b) => first(a).localeCompare(first(b)) || a.form.localeCompare(b.form));
 }
+
