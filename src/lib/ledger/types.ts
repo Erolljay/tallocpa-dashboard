@@ -39,10 +39,14 @@ export const CONTROLS = {
   capital: "Capital",
   drawings: "Drawings",
   retained_earnings: "Retained earnings / fund balance",
+  cwt_awaiting: "Creditable withholding tax awaiting 2307",
+  vat_withheld: "Creditable VAT withheld",
+  sales_discount: "Sales discount – SC/PWD",
 } as const;
 export type Control = keyof typeof CONTROLS;
 export const SINGLE_CONTROLS: readonly Control[] = [
   "ar", "ap", "input_vat", "output_vat", "cwt", "ewt_payable", "percentage_tax_payable", "income_tax_payable", "inventory", "retained_earnings",
+  "cwt_awaiting", "vat_withheld", "sales_discount",
 ];
 
 /** The usual side of an account type (contra accounts set theirs explicitly). */

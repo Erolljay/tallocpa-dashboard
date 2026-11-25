@@ -2196,9 +2196,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/coa/index.ts": {
-    "mtime": 1795556117.9076705,
-    "seen": 1795565923.226942,
-    "ast_hash": "f6bef1e07a289743d08a8d6f0f444672",
+    "mtime": 1795567980.1891224,
+    "seen": 1795568206.0372162,
+    "ast_hash": "f876d1e49d64a4348068951850322f01",
     "semantic_hash": ""
   },
   "src/lib/ledger/data.ts": {
@@ -2232,9 +2232,9 @@
     "semantic_hash": ""
   },
   "src/lib/ledger/types.ts": {
-    "mtime": 1795556117.9076705,
-    "seen": 1795565923.2269576,
-    "ast_hash": "905fad067d0c5a80de1e8632c0a0ad00",
+    "mtime": 1795567980.188815,
+    "seen": 1795568206.0374024,
+    "ast_hash": "6d73842cc392730e0f0d660f9d521457",
     "semantic_hash": ""
   },
   "supabase/tests/ledger.test.ts": {
@@ -2562,21 +2562,21 @@
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/register/page.tsx": {
-    "mtime": 1795565850.5706234,
-    "seen": 1795565923.2265933,
-    "ast_hash": "82d44692ca6374ba0671c8cf6ca7ff91",
+    "mtime": 1795568125.0526044,
+    "seen": 1795568206.0311158,
+    "ast_hash": "e53ac0fe3a6da1d1129c31a4c0b0c60e",
     "semantic_hash": ""
   },
   "src/lib/register/parts.test.ts": {
-    "mtime": 1795565780.3026192,
-    "seen": 1795565923.2270093,
-    "ast_hash": "341e2f5bc7af74f3a7f2f477657f4059",
+    "mtime": 1795567980.1949117,
+    "seen": 1795568206.038349,
+    "ast_hash": "ea9f9270d5615a821cf35fd38fb05be5",
     "semantic_hash": ""
   },
   "src/lib/register/parts.ts": {
-    "mtime": 1795566182.0241446,
-    "seen": 1795566337.6645367,
-    "ast_hash": "89eae88d2fc1395a68ce022966d818cd",
+    "mtime": 1795567980.1900392,
+    "seen": 1795568206.0383515,
+    "ast_hash": "7c26644d04ed11226c84d25b21a9c317",
     "semantic_hash": ""
   },
   "supabase/tests/register.test.ts": {
@@ -2598,9 +2598,15 @@
     "semantic_hash": ""
   },
   "supabase/tests/register-upgrade.test.ts": {
-    "mtime": 1795566417.126657,
-    "seen": 1795566469.9052033,
-    "ast_hash": "8dc169b7076001865085c6d332814b06",
+    "mtime": 1795568021.5126417,
+    "seen": 1795568206.0407405,
+    "ast_hash": "21e0fcb5d76cfce176d62016288fda88",
+    "semantic_hash": ""
+  },
+  "supabase/tests/register-books.test.ts": {
+    "mtime": 1795568125.0523,
+    "seen": 1795568206.0407379,
+    "ast_hash": "185bfffd6a9156f5f45dd0c03d12e640",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

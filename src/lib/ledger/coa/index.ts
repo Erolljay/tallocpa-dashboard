@@ -41,7 +41,10 @@ const ASSETS: Spec[] = [
   ["other_receivables", "1120", "Other Receivables", "asset", "receivables"],
   ["inventory", "1200", "Merchandise Inventory", "asset", "inventories", null, { control: "inventory" }],
   ["input_vat", "1300", "Input VAT", "asset", "prepaid_taxes", null, { control: "input_vat" }],
+  // CWT booked on a cash sale waits here until the customer's 2307 arrives (one register, slice 3).
+  ["cwt_awaiting", "1305", "Creditable Withholding Tax - Awaiting 2307", "asset", "prepaid_taxes", null, { control: "cwt_awaiting" }],
   ["cwt", "1310", "Creditable Withholding Tax (BIR 2307)", "asset", "prepaid_taxes", null, { control: "cwt" }],
+  ["vat_withheld", "1315", "Creditable VAT Withheld", "asset", "prepaid_taxes", null, { control: "vat_withheld" }],
   ["prepaid_income_tax", "1320", "Prepaid Income Tax (quarterly payments)", "asset", "prepaid_taxes"],
   ["prepaid_expenses", "1350", "Prepaid Expenses", "asset", "other_current_assets"],
   ["prepaid_insurance", "1355", "Prepaid Insurance", "asset", "other_current_assets"],
@@ -129,6 +132,8 @@ const EXPENSES: Spec[] = [
   ["bad_debts", "6210", "Bad Debts", "expense", "operating_expenses", "ded_bad_debts"],
   ["donations", "6220", "Donations and Contributions", "expense", "operating_expenses", "ded_charitable"],
   ["printing_documentation", "6230", "Printing and Documentation", "expense", "operating_expenses", "ded_others"],
+  // SC/PWD discount, deducted from gross income (RR 7-2010; Owner's decision 9).
+  ["sales_discount_scpwd", "6240", "Sales Discount - SC/PWD", "expense", "operating_expenses", "ded_others", { control: "sales_discount" }],
   ["penalties", "6280", "Fines, Penalties and Surcharges", "expense", "operating_expenses", "nondeductible"],
   ["miscellaneous", "6290", "Miscellaneous Expense", "expense", "operating_expenses", "ded_miscellaneous"],
   ["interest_expense", "7010", "Interest Expense", "expense", "finance_costs", "ded_interest"],

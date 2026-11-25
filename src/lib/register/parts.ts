@@ -13,7 +13,8 @@
  *     it ties to the 0619-E and 1601-EQ;
  *   - the SC/PWD discount is its own debit, Sales Discount – SC/PWD (decision 9);
  *   - a client that is not VAT-registered carries VAT inside the amounts.
- * The books do not use these entries yet: book_document still posts as built.
+ * book_document (migration 20261125000003_register_books.sql) posts the same
+ * entries; account names here are the chart template's.
  */
 import { BIR_LINES, type BirLineKey } from "@/lib/ledger/bir-lines";
 import { toCentavos } from "@/lib/returns/money";
@@ -142,15 +143,15 @@ export interface EntryLine {
 
 export const ACCOUNTS = {
   cash: "Cash",
-  receivable: "Accounts Receivable",
-  payable: "Accounts Payable",
-  cwtAwaiting: "Creditable Withholding Tax – awaiting 2307",
-  cwtReceived: "Creditable Withholding Tax – 2307 received",
+  receivable: "Accounts Receivable - Trade",
+  payable: "Accounts Payable - Trade",
+  cwtAwaiting: "Creditable Withholding Tax - Awaiting 2307",
+  cwtReceived: "Creditable Withholding Tax (BIR 2307)",
   vatWithheld: "Creditable VAT Withheld",
   outputVat: "Output VAT",
   inputVat: "Input VAT",
-  ewtPayable: "Withholding Tax Payable – Expanded",
-  discount: "Sales Discount – SC/PWD",
+  ewtPayable: "Withholding Tax Payable - Expanded",
+  discount: "Sales Discount - SC/PWD",
   otherDeduction: "Other Deductions",
   sales: "Sales",
   expense: "Account title not chosen",

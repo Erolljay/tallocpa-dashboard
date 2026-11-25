@@ -79,7 +79,7 @@ async function Register({ params, searchParams }: Pick<PageProps<"/app/clients/[
       />
       <div className="space-y-6">
         <Notice tone="waiting">
-          Every line is written by the database when a document is approved, and rewritten when its figures, month or account title change. The entries shown are what each line will post once the books read the register; until then the books post as built.
+          Every line is written by the database when a document is approved, and rewritten when its figures, month or account title change. The returns read these lines, and booking a document posts the entry shown under its Parts.
         </Notice>
 
         {lines.length === 0 && (
@@ -270,6 +270,12 @@ function LineParts({ line: l }: { line: RegisterLine }) {
                 ))}
               </tbody>
             </table>
+          )}
+          {l.kind === "cwt_received" && (
+            <p className="mt-2 text-caption-1-regular text-text-tertiary">When less is awaiting from this payor, the rest settles the receivable, else cash, as before.</p>
+          )}
+          {l.kind === "ewt_issued" && entry.length === 0 && (
+            <p className="mt-2 text-caption-1-regular text-text-tertiary">If the quarter&rsquo;s purchases from this payee did not carry the EWT, booking it puts the difference to EWT payable.</p>
           )}
           {!l.account && (l.kind === "sale" || l.kind === "purchase") && (
             <p className="mt-2 text-caption-1-regular text-text-tertiary">No account title yet: the client has no chart of accounts, or none was chosen on the document.</p>
