@@ -119,6 +119,29 @@ export async function applyCreditAction(clientId: string): Promise<MoneyState> {
   return { ok: Number(data) > 0 ? "Credit applied to open items." : "No credit or nothing open to apply it to." };
 }
 
+/** Records that a contribution (SSS, PhilHealth, Pag-IBIG) was remitted: its money is no longer held. */
+export async function markRemittedAction(clientId: string, dueId: string, _: MoneyState, form: FormData): Promise<MoneyState> {
+  await requireOwner();
+  const d = date.safeParse(text(form.get("remitted_on")));
+  if (!d.success) return { error: "Enter the date it was remitted." };
+  const reference = text(form.get("reference"));
+  if (reference.length > 100) return { error: "Keep the reference under 100 characters." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("mark_contribution_remitted", { p_due: dueId, p_remitted_on: d.data, p_reference: reference });
+  if (error) return { error: error.message };
+  refresh(clientId);
+  return { ok: "Marked remitted." };
+}
+
+export async function clearRemittedAction(clientId: string, dueId: string): Promise<MoneyState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("clear_contribution_remitted", { p_due: dueId });
+  if (error) return { error: error.message };
+  refresh(clientId);
+  return { ok: "Remittance undone; the money is held again." };
+}
+
 export async function setBillingDaysAction(clientId: string, _: MoneyState, form: FormData): Promise<MoneyState> {
   await requireOwner();
   const parsed = parseBillingDays(text(form.get("billing_days")));

@@ -47,10 +47,15 @@ export interface PaymentProof {
   reviewed_at: string | null;
   reject_reason: string | null;
   fileUrl: string | null;
-  /** Once verified: the items the payment was applied to (oldest first), from the allocation. */
+  /**
+   * Once verified: the items the payment was applied to, from the allocation: the
+   * items the Owner ticked (oldest first), then any its leftover credit paid later.
+   */
   paidItems: PaidItem[];
   /** Verified, then the recorded deposit was voided by the Owner. */
   reversed: boolean;
+  /** Once verified: the amount recorded (the Owner may correct it to what the bank shows). */
+  depositAmount: number | null;
 }
 
 /** What the client and the Owner call each payment status. */
@@ -67,6 +72,17 @@ export function statementStatus(open: number, pendingProofs: number, dueOn: stri
   if (open <= 0) return "paid";
   if (pendingProofs > 0) return "for_verification";
   return dueOn < today ? "overdue" : "due";
+}
+
+/** An open item on the client's statements that a verified payment can be ticked against. */
+export interface OpenStatementItem {
+  id: string;
+  kind: string;
+  description: string;
+  due_on: string;
+  open: number;
+  /** On this statement (else on an earlier one). */
+  thisStatement: boolean;
 }
 
 export interface Statement {
@@ -86,6 +102,8 @@ export interface Statement {
   accounts: PayAccount[];
   /** Proofs of payment the client uploaded for this statement, newest first. */
   proofs: PaymentProof[];
+  /** Every item still open on the client's statements, oldest first (ticked when the Owner verifies a payment). */
+  openItems: OpenStatementItem[];
 }
 
 /** Everything a statement shows. RLS decides who may read it (Owner, the client's own users). */
@@ -159,6 +177,9 @@ export async function loadStatement(supabase: SupabaseClient, soaId: string): Pr
       qrUrl: a.qr_path ? (signed.get(a.qr_path) ?? null) : null,
     })),
     proofs,
+    openItems: all
+      .filter((d) => d.soa_id && Number(d.open_amount) > 0)
+      .map((d) => ({ id: d.id, kind: d.kind, description: d.description, due_on: d.due_on, open: Number(d.open_amount), thisStatement: d.soa_id === soa.id })),
   };
 }
 
@@ -179,7 +200,7 @@ type ProofRow = {
   deposit_id: string | null;
   soas: { reference: string } | null;
   brand_payment_accounts: { institution: string } | null;
-  client_deposits: { voided_at: string | null } | null;
+  client_deposits: { voided_at: string | null; amount: string } | null;
 };
 
 /**
@@ -191,7 +212,7 @@ export async function loadPayments(supabase: SupabaseClient, where: { soaId: str
   let query = supabase
     .from("payment_proofs")
     .select(
-      "id, soa_id, status, method, amount, paid_on, reference, file_name, mime_type, storage_path, submitted_at, reviewed_at, reject_reason, deposit_id, soas(reference), brand_payment_accounts(institution), client_deposits(voided_at)",
+      "id, soa_id, status, method, amount, paid_on, reference, file_name, mime_type, storage_path, submitted_at, reviewed_at, reject_reason, deposit_id, soas(reference), brand_payment_accounts(institution), client_deposits(voided_at, amount)",
     )
     .order("submitted_at", { ascending: false })
     .limit(limit);
@@ -208,7 +229,7 @@ export async function loadPayments(supabase: SupabaseClient, where: { soaId: str
   const [files, allocations] = await Promise.all([
     supabase.storage.from("payment-proofs").createSignedUrls(rows.map((r) => r.storage_path), 3600),
     deposits.length
-      ? supabase.from("payment_allocations").select("deposit_id, due_id, amount, client_dues(description)").in("deposit_id", deposits).order("id")
+      ? supabase.from("payment_allocations").select("deposit_id, due_id, amount, from_credit, client_dues(description)").in("deposit_id", deposits).order("id")
       : null,
   ]);
   const fileUrl = new Map<string, string>();
@@ -233,5 +254,6 @@ export async function loadPayments(supabase: SupabaseClient, where: { soaId: str
     fileUrl: fileUrl.get(r.storage_path) ?? null,
     paidItems: r.deposit_id ? (items.get(r.deposit_id) ?? []) : [],
     reversed: Boolean(r.client_deposits?.voided_at),
+    depositAmount: r.client_deposits ? Number(r.client_deposits.amount) : null,
   }));
 }

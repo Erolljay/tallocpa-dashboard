@@ -157,7 +157,7 @@ export function StatementView({ s, today, owner = false, payments = true }: { s:
 
       {payments && s.proofs.length > 0 && (
         <Card title="Payments" className="print:hidden">
-          <PaymentsList proofs={s.proofs} owner={owner} />
+          <PaymentsList proofs={s.proofs} owner={owner} openItems={owner ? s.openItems : undefined} />
         </Card>
       )}
 

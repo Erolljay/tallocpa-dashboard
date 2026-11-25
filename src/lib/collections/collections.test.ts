@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOpenItems, agingBucket, describeBillingDays, groupPaidItems, nextBillingDate, parseBillingDays } from "./collections";
+import { ageOpenItems, agingBucket, describeBillingDays, groupPaidItems, nextBillingDate, parseBillingDays, suggestTicks, tickedSplit, totalHeld } from "./collections";
 
 describe("agingBucket", () => {
   it("puts amounts not yet due in current, then 30/60/90-day buckets", () => {
@@ -59,10 +59,51 @@ describe("groupPaidItems", () => {
       { deposit_id: "d1", due_id: "retainer", amount: "0.50", client_dues: null },
     ]);
     expect(items.get("d1")).toEqual([
-      { dueId: "retainer", description: "Retainer, October", amount: 3000.5 },
-      { dueId: "tax", description: "1601-C October", amount: 1500 },
+      { dueId: "retainer", description: "Retainer, October", amount: 3000.5, fromCredit: false },
+      { dueId: "tax", description: "1601-C October", amount: 1500, fromCredit: false },
     ]);
-    expect(items.get("d2")).toEqual([{ dueId: "tax", description: "1601-C October", amount: 500 }]);
+    expect(items.get("d2")).toEqual([{ dueId: "tax", description: "1601-C October", amount: 500, fromCredit: false }]);
     expect(items.get("d3")).toBeUndefined();
+  });
+});
+
+describe("ticked items", () => {
+  const items = [
+    { id: "a", open: 3000 },
+    { id: "b", open: 1000 },
+    { id: "c", open: 500.1 },
+  ];
+
+  it("suggests the oldest items the amount reaches, the last possibly in part", () => {
+    expect(suggestTicks(items, 3000)).toEqual(["a"]);
+    expect(suggestTicks(items, 3000.01)).toEqual(["a", "b"]);
+    expect(suggestTicks(items, 10000)).toEqual(["a", "b", "c"]);
+    expect(suggestTicks(items, 0)).toEqual([]);
+  });
+
+  it("splits a payment into applied, credit and what stays open on the ticked items", () => {
+    expect(tickedSplit([items[1], items[2]], 2000)).toEqual({ applied: 1500.1, credit: 499.9, stillOpen: 0 });
+    expect(tickedSplit([items[0]], 1200)).toEqual({ applied: 1200, credit: 0, stillOpen: 1800 });
+    expect(tickedSplit([], 700)).toEqual({ applied: 0, credit: 700, stillOpen: 0 });
+  });
+
+  it("keeps the items ticked and those paid later from credit apart", () => {
+    const paid = groupPaidItems([
+      { deposit_id: "d", due_id: "tax", amount: 1000, from_credit: false, client_dues: { description: "Tax" } },
+      { deposit_id: "d", due_id: "ret", amount: 200, from_credit: true, client_dues: { description: "Retainer" } },
+    ]);
+    expect(paid.get("d")?.map((p) => [p.dueId, p.fromCredit])).toEqual([["tax", false], ["ret", true]]);
+  });
+});
+
+describe("totalHeld", () => {
+  it("totals cash for remittance per client and firm-wide without drift", () => {
+    const r = totalHeld([
+      { client_id: "x", held: "0.10" },
+      { client_id: "x", held: "0.20" },
+      { client_id: "y", held: 1000 },
+    ]);
+    expect(r.byClient.get("x")).toBe(0.3);
+    expect(r.total).toBe(1000.3);
   });
 });

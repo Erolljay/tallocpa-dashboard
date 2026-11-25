@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { ageOpenItems, describeBillingDays, dueKindLabel, methodLabel, nextBillingDate, type DepositMethod, type DueKind } from "@/lib/collections/collections";
+import { ageOpenItems, describeBillingDays, dueKindLabel, methodLabel, nextBillingDate, totalHeld, type DepositMethod, type DueKind, type RemittanceItem } from "@/lib/collections/collections";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
-import { AddChargeForm, ApplyCreditButton, BillingDaysForm, RecordDepositForm, RunBillingForm, VoidDepositForm, WaiveDueForm } from "../forms";
+import { AddChargeForm, ApplyCreditButton, BillingDaysForm, RecordDepositForm, RemittedForm, RunBillingForm, VoidDepositForm, WaiveDueForm } from "../forms";
 
 export default function ClientCollectionsPage(props: PageProps<"/app/collections/[clientId]">) {
   return (
@@ -54,12 +54,17 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
   const { data: client } = await supabase.from("clients").select("id, name, code, billing_days, payment_mode, brand_id").eq("id", clientId).maybeSingle();
   if (!client) notFound();
 
-  const [dues, deposits, soas, accounts, staff] = await Promise.all([
+  const [dues, deposits, soas, accounts, staff, remittance] = await Promise.all([
     supabase.from("due_balances").select("id, soa_id, kind, description, due_on, amount, paid, open_amount, waived_at, waive_reason").eq("client_id", clientId).order("due_on").order("created_at"),
     supabase.from("deposit_balances").select("id, received_on, amount, allocated, unallocated, method, reference, bir_invoice_number, note, voided_at, void_reason, payment_account_id, deposited_by").eq("client_id", clientId).order("received_on", { ascending: false }),
     supabase.from("soas").select("id, reference, billing_date, due_on").eq("client_id", clientId).order("billing_date", { ascending: false }),
     supabase.from("brand_payment_accounts").select("id, institution, account_number, purpose, active").eq("brand_id", client.brand_id).order("sort_order").order("institution"),
     supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name"),
+    supabase
+      .from("remittance_items")
+      .select("due_id, kind, description, due_on, received, remitted, remitted_on, remit_reference, held")
+      .eq("client_id", clientId)
+      .order("due_on", { ascending: false }),
   ]);
 
   const allDues = (dues.data ?? []) as Due[];
@@ -71,6 +76,9 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
   const accountLabel = new Map((accounts.data ?? []).map((a) => [a.id, `${a.institution} ${maskNumber(a.account_number)}${a.purpose === "client_tax_funds" ? " (tax funds)" : ""}`]));
   const staffName = new Map((staff.data ?? []).map((s) => [s.user_id, s.full_name]));
   const next = nextBillingDate(client.billing_days, today);
+  // Decision 16: tax and contribution items with money received, newest first; held until remitted.
+  const remitItems = ((remittance.data ?? []) as RemittanceItem[]).filter((r) => Number(r.received) > 0 || (r.kind === "contribution" && r.remitted));
+  const held = totalHeld(remitItems.map((r) => ({ client_id: clientId, held: r.held }))).total;
 
   return (
     <>
@@ -85,7 +93,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         actions={<RunBillingForm clientId={client.id} today={today} />}
       />
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <p className="text-body-medium text-text-secondary">Owes now</p>
             <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(aging.total)}</p>
@@ -95,6 +103,11 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
             <p className="text-body-medium text-text-secondary">Credit</p>
             <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(credit)}</p>
             <div className="mt-2">{credit > 0 && open.length > 0 ? <ApplyCreditButton clientId={client.id} /> : <p className="text-body-regular text-text-secondary">Overpayments are used on the next statement.</p>}</div>
+          </Card>
+          <Card>
+            <p className="text-body-medium text-text-secondary">Cash for remittance</p>
+            <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{peso.format(held)}</p>
+            <p className="mt-2 text-body-regular text-text-secondary">Tax and contribution money received, not yet remitted.</p>
           </Card>
           <Card>
             <p className="text-body-medium text-text-secondary">Billed on the {describeBillingDays(client.billing_days)}</p>
@@ -171,6 +184,61 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
             </div>
           )}
         </section>
+
+        {remitItems.length > 0 && (
+          <section id="remittance" className="scroll-mt-6">
+            <h2 className="mb-1 text-title-3-semibold text-text-primary">Cash for remittance</h2>
+            <p className="mb-3 text-body-regular text-text-secondary">
+              Money the client paid for taxes and contributions is held for them until it is remitted: a return when it is Filed &amp; paid, a contribution when you mark it remitted.
+            </p>
+            <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+              <table className="w-full min-w-[48rem] text-body-regular">
+                <thead className="border-b border-separator-border bg-background-secondary-default text-body-medium text-text-tertiary">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-start">Item</th>
+                    <th scope="col" className="px-4 py-3 text-end">Received</th>
+                    <th scope="col" className="px-4 py-3 text-end">Held</th>
+                    <th scope="col" className="px-4 py-3 text-start">Remitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {remitItems.map((r) => (
+                    <tr key={r.due_id} className="border-t border-separator-border align-top first:border-t-0">
+                      <td className="px-4 py-3">
+                        <p className="text-text-primary">{r.description}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">{dueKindLabel[r.kind]} · due {showDate(r.due_on)}</p>
+                      </td>
+                      <td className="amount px-4 py-3 text-text-secondary">{peso.format(Number(r.received))}</td>
+                      <td className="amount px-4 py-3 font-medium text-text-primary">{Number(r.held) ? peso.format(Number(r.held)) : "—"}</td>
+                      <td className="space-y-1 px-4 py-3">
+                        {r.remitted ? (
+                          <p className="text-text-primary">
+                            <Badge tone="done">Remitted</Badge>{" "}
+                            <span className="tabular-nums text-text-secondary">
+                              {r.remitted_on ? showDate(r.remitted_on) : ""}
+                              {r.remit_reference ? ` · ${r.remit_reference}` : ""}
+                            </span>
+                          </p>
+                        ) : r.kind === "tax" ? (
+                          <p className="text-text-secondary">When the return is Filed &amp; paid</p>
+                        ) : null}
+                        {r.kind === "contribution" && <RemittedForm clientId={client.id} dueId={r.due_id} today={today} remitted={r.remitted} />}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-border-button-default bg-background-secondary-default font-semibold text-text-primary">
+                    <td className="px-4 py-3">Total held</td>
+                    <td />
+                    <td className="amount px-4 py-3">{peso.format(held)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card title="Payments Received">

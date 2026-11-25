@@ -6,6 +6,8 @@ import { CONTRIBUTIONS, methodLabel, type DepositMethod } from "@/lib/collection
 import {
   addChargeAction,
   applyCreditAction,
+  clearRemittedAction,
+  markRemittedAction,
   recordDepositAction,
   runBillingAction,
   setBillingDaysAction,
@@ -236,5 +238,48 @@ export function BillingDaysForm({ clientId, days }: { clientId: string; days: nu
       <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
       <Result state={state} />
     </form>
+  );
+}
+
+/** Records a contribution's remittance to the agency (date and reference), or undoes one recorded by mistake. */
+export function RemittedForm({ clientId, dueId, today, remitted }: { clientId: string; dueId: string; today: string; remitted: boolean }) {
+  const [state, run, pending] = useActionState(markRemittedAction.bind(null, clientId, dueId), {} as MoneyState);
+  const [undoState, setUndoState] = useState<MoneyState>({});
+  const [undoing, setUndoing] = useState(false);
+  if (remitted) {
+    return (
+      <div className="space-y-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={undoing}
+          onClick={async () => {
+            setUndoing(true);
+            setUndoState(await clearRemittedAction(clientId, dueId));
+            setUndoing(false);
+          }}
+        >
+          {undoing ? "Undoing…" : "Undo remitted"}
+        </Button>
+        <Result state={undoState} />
+      </div>
+    );
+  }
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-body-medium text-button-ghost-foreground hover:underline pointer-coarse:min-h-11">Mark remitted</summary>
+      <form action={run} className="mt-2 grid gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
+        <Field label="Date remitted" htmlFor={`remitted_on_${dueId}`}>
+          <Input id={`remitted_on_${dueId}`} name="remitted_on" type="date" defaultValue={today} max={today} required />
+        </Field>
+        <Field label="Reference" htmlFor={`remit_ref_${dueId}`} hint="PRN or receipt number">
+          <Input id={`remit_ref_${dueId}`} name="reference" maxLength={100} />
+        </Field>
+        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+        <div className="sm:col-span-3">
+          <Result state={state} />
+        </div>
+      </form>
+    </details>
   );
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { ageOpenItems, AGING_BUCKETS, agingLabel, describeBillingDays, nextBillingDate } from "@/lib/collections/collections";
+import { ageOpenItems, AGING_BUCKETS, agingLabel, describeBillingDays, nextBillingDate, totalHeld } from "@/lib/collections/collections";
 import { addDays } from "@/lib/deadlines/dates";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
@@ -40,11 +40,11 @@ async function Overview() {
   await requireOwner();
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const [dues, credits, clients, taxPaid, notReady, soas, proofs] = await Promise.all([
+  const [dues, credits, clients, remittance, notReady, soas, proofs] = await Promise.all([
     supabase.from("due_balances").select("client_id, due_on, open_amount, kind, soa_id").gt("open_amount", 0),
     supabase.from("deposit_balances").select("client_id, unallocated").gt("unallocated", 0),
     supabase.from("clients").select("id, name, code, billing_days, payment_mode, status").in("status", ["onboarding", "active"]).order("name"),
-    supabase.from("due_balances").select("paid, filing_instances(status)").eq("kind", "tax").gt("paid", 0),
+    supabase.rpc("cash_for_remittance"),
     supabase
       .from("filing_instances")
       .select("id, form, period_label, due_date, status, clients!inner(id, name, payment_mode, billing_days)")
@@ -77,10 +77,11 @@ async function Overview() {
   const creditByClient = new Map<string, number>();
   for (const c of credits.data ?? []) creditByClient.set(c.client_id, (creditByClient.get(c.client_id) ?? 0) + Number(c.unallocated));
   const totalCredit = [...creditByClient.values()].reduce((a, b) => a + b, 0);
-  // Q26: tax money received from clients and not yet remitted to BIR is held for them, not earned.
-  const held = ((taxPaid.data ?? []) as unknown as { paid: string; filing_instances: { status: string } | null }[])
-    .filter((r) => r.filing_instances?.status !== "filed")
-    .reduce((s, r) => s + Number(r.paid), 0);
+  // Decision 16: tax and contribution money received from clients is cash for
+  // remittance (held for them, not earned) until the return is Filed & paid or the
+  // contribution is remitted.
+  const remitRows = (remittance.data ?? []) as { client_id: string; held: string }[];
+  const held = totalHeld(remitRows);
 
   const clientList = (clients.data ?? []) as Client[];
   const byClient = clientList
@@ -116,7 +117,7 @@ async function Overview() {
         <Stat label="Receivable" value={all.total} note="Everything clients owe now." />
         <Stat label="Overdue" value={all.overdue} note="Past its due date." tone={all.overdue > 0 ? "blocked" : undefined} />
         <Stat label="Client credits" value={totalCredit} note="Overpayments, used on the next statement." />
-        <Stat label="Client tax money held" value={held} note="Received for taxes, not yet remitted to BIR." />
+        <Stat label="Cash for remittance" value={held.total} note="Tax and contribution money received, not yet remitted." />
       </div>
 
       {toVerify.length > 0 && (
@@ -181,6 +182,27 @@ async function Overview() {
           )}
         </Card>
       </section>
+
+      {held.total > 0 && (
+        <Card title="Cash for remittance" actions={<span className="text-caption-1-regular text-text-tertiary">Held until the return is Filed &amp; paid or the contribution is remitted</span>}>
+          <ul className="divide-y divide-separator-border text-body-regular">
+            {clientList
+              .filter((c) => (held.byClient.get(c.id) ?? 0) > 0)
+              .sort((a, b) => (held.byClient.get(b.id) ?? 0) - (held.byClient.get(a.id) ?? 0))
+              .map((c) => (
+                <li key={c.id}>
+                  <Link href={`/app/collections/${c.id}#remittance`} className="flex items-center justify-between gap-4 py-2.5 hover:bg-background-secondary-hover pointer-coarse:min-h-11">
+                    <span className="min-w-0">
+                      <span className="text-body-medium text-text-primary">{c.name}</span>{" "}
+                      <span className="text-caption-1-regular text-text-tertiary">{c.code}</span>
+                    </span>
+                    <span className="amount text-body-medium text-text-primary">{peso.format(held.byClient.get(c.id) ?? 0)}</span>
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </Card>
+      )}
 
       <section>
         <h2 className="mb-3 text-title-3-semibold text-text-primary">Receivables by client</h2>

@@ -111,21 +111,78 @@ function iso(y: number, m: number, d: number): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-export type AllocationRow = { deposit_id: string; due_id: string; amount: string | number; client_dues: { description: string } | null };
-export type PaidItem = { dueId: string; description: string; amount: number };
+export type AllocationRow = {
+  deposit_id: string;
+  due_id: string;
+  amount: string | number;
+  /** Applied later from the payment's leftover credit, not ticked by the Owner at verification. */
+  from_credit?: boolean | null;
+  client_dues: { description: string } | null;
+};
+export type PaidItem = { dueId: string; description: string; amount: number; fromCredit: boolean };
 
 /**
- * The items each deposit paid, in the order the allocation applied it (oldest
- * first), one line per item even when it was applied in several parts.
+ * The items each deposit paid, in the order they were applied: first the items the
+ * Owner ticked (oldest first), then any its leftover credit paid later. One line per
+ * item even when it was applied in several parts.
  */
 export function groupPaidItems(rows: AllocationRow[]): Map<string, PaidItem[]> {
   const out = new Map<string, PaidItem[]>();
   for (const a of rows) {
     const list = out.get(a.deposit_id) ?? [];
-    const same = list.find((x) => x.dueId === a.due_id);
+    const fromCredit = Boolean(a.from_credit);
+    const same = list.find((x) => x.dueId === a.due_id && x.fromCredit === fromCredit);
     if (same) same.amount = Math.round((same.amount + Number(a.amount)) * 100) / 100;
-    else list.push({ dueId: a.due_id, description: a.client_dues?.description ?? "Item", amount: Number(a.amount) });
+    else list.push({ dueId: a.due_id, description: a.client_dues?.description ?? "Item", amount: Number(a.amount), fromCredit });
     out.set(a.deposit_id, list);
   }
   return out;
+}
+
+/** A tax or contribution item and the client's money held for it (public.remittance_items). */
+export interface RemittanceItem {
+  due_id: string;
+  kind: "tax" | "contribution";
+  description: string;
+  due_on: string;
+  received: number;
+  remitted: boolean;
+  remitted_on: string | null;
+  remit_reference: string | null;
+  held: number;
+}
+
+/**
+ * Cash for remittance (decision 16): tax and contribution money received from
+ * clients and not yet remitted, totalled per client and firm-wide. Sums in
+ * centavos to avoid float drift.
+ */
+export function totalHeld(rows: { client_id: string; held: number | string }[]): { byClient: Map<string, number>; total: number } {
+  const cents = new Map<string, number>();
+  for (const r of rows) cents.set(r.client_id, (cents.get(r.client_id) ?? 0) + toCents(r.held));
+  const byClient = new Map([...cents].map(([k, v]) => [k, fromCents(v)] as const));
+  return { byClient, total: fromCents([...cents.values()].reduce((a, b) => a + b, 0)) };
+}
+
+/**
+ * The items ticked by default when verifying a payment of `amount`: open items
+ * oldest first until the amount is used up (the last one may be paid in part).
+ */
+export function suggestTicks(items: { id: string; open: number }[], amount: number): string[] {
+  let left = toCents(amount);
+  const out: string[] = [];
+  for (const i of items) {
+    if (left <= 0) break;
+    out.push(i.id);
+    left -= toCents(i.open);
+  }
+  return out;
+}
+
+/** How a payment of `amount` lands on the ticked items: applied, kept as the client's credit, and still open on them. */
+export function tickedSplit(ticked: { open: number }[], amount: number): { applied: number; credit: number; stillOpen: number } {
+  const open = ticked.reduce((s, i) => s + toCents(i.open), 0);
+  const amt = Math.max(toCents(amount), 0);
+  const applied = Math.min(open, amt);
+  return { applied: fromCents(applied), credit: fromCents(amt - applied), stillOpen: fromCents(open - applied) };
 }
