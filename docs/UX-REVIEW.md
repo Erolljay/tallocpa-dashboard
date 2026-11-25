@@ -26,6 +26,7 @@ Screens were read from the source. This review has not yet been tested with staf
 | F12 | Medium | Documents don't carry the firm's worksheet columns: no SC/PWD discount, no CWT per invoice, no EWT per supplier, so no net receipt or net paid. |
 | F14 | Medium | A supplier's firm-wide account title is applied silently when a client hasn't used that supplier before (only a hint below the field), even when the account isn't in that client's chart. Titles are chosen one document at a time. |
 | F15 | Medium | The portal has no "I've sent everything for the month", no check for missing invoice numbers, and no view of what happens next. |
+| F16 | High | The sidebar is built around tax compliance: Deadlines, Monthly cycle, Review (returns), Registrations. The books (entries, month close, depreciation, financial statements) are reachable only from a button on each client's page, and only for bookkeeping engagements, so nobody sees across clients which months are closed or which statements wait. |
 | F13 | High | Cash is posted at the invoice total, not the net receipt. `book_document` debits Cash on hand for the total of a cash sale; the CWT leaves cash only when the 2307 is approved (Dr CWT / Cr Cash). Purchases credit Cash at the gross; EWT payable appears only when a 2307 is issued. The SC/PWD discount is never recorded, cash sales never go to a bank account, and payroll posts nothing to the books. |
 
 ## Recommendations
@@ -54,6 +55,23 @@ Screens were read from the source. This review has not yet been tested with staf
 12. **Capital expenditure to a fixed asset register (H) with straight-line depreciation.** See below.
 13. **Documents reviewed per client.** Inside one client: pending documents with the account title chosen inline from that client's chart, and approve-selected. Each line shows where its title came from: this client's history (green), a firm suggestion to confirm (amber), a new supplier or a preset not in this chart (must choose). A chosen or confirmed title is saved for that client and supplier only (`client_party_accounts`); the firm-wide preset is only a starting suggestion.
 14. **Client portal: "I've sent everything for <month>" and what happens next.** The portal lists what was sent by kind and how far each is checked; asks about gaps first (missing sales invoice numbers in the series — uploaded or cancelled? — and outstanding 2307s); then a confirm step. On confirmation the month is complete (new `document_cycles` columns for when and who), staff are told, the filing's first step is done so work starts early, and later uploads are marked late. A plain-language timeline shows the next steps with dates from the deadline steps: checking, each return ready for approval, filing, proof. "No transactions this month" stays as built.
+
+15. **A sidebar for one month of books and returns** (see below).
+
+## Sidebar
+
+Grouped by the month's flow, not by service, because bookkeeping and tax compliance are one service from one register.
+
+| Group | Items | Notes |
+|---|---|---|
+| — | My work (staff, reviewers) · Dashboard (Owner) | Next actions: books and returns together |
+| Intake | Documents · Requests | Documents lists clients with documents waiting; each client's documents are reviewed inside that client |
+| Month end | Books and returns · Review | One grid per client: documents in, the month's books closed, each return filed, financial statements released. Replaces Monthly cycle and Deadlines; the deadline safeguards work inside it. Review holds returns, statements to release, prior-year exceptions and amendments |
+| Clients | Recent clients · All clients | Client workspace tabs: Overview, Documents, Register, Books, Workpapers, Returns, Payroll, Requests, Registration |
+| Services | Registrations | As built |
+| Firm (Owner) | Collections · Scores · Staff · Settings | As built |
+
+**Closing the month (books).** Steps per client and month: documents in (client confirmed or cutoff), documents reviewed, entries confirmed, payroll posted, depreciation run, tie-outs clean, then close. Target: close by the 8th, before the month's first returns. Staff can reopen a closed month until a return covering it is filed; filing locks it (as built).
 
 ## Data flow: one register
 

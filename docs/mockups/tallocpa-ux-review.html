@@ -274,8 +274,8 @@ textarea{resize:vertical;min-height:54px}
 
   <nav class="tabs" aria-label="Review sections" id="tabs">
     <a href="#journeys">1 · Journeys today</a>
-    <a href="#findings">2 · Findings <span class="c">15</span></a>
-    <a href="#recommendations">3 · Recommendations <span class="c">14</span></a>
+    <a href="#findings">2 · Findings <span class="c">16</span></a>
+    <a href="#recommendations">3 · Recommendations <span class="c">15</span></a>
     <a href="#flow">4 · Data flow</a>
     <a href="#deadlines">5 · Deadlines</a>
     <a href="#final">6 · Final journeys</a>
@@ -311,7 +311,7 @@ textarea{resize:vertical;min-height:54px}
   <!-- ================= FINDINGS ================= -->
   <section id="v-findings" class="stack" hidden>
     <div class="card">
-      <div class="card-h"><h2>What the journeys show</h2><span class="muted">F1–F10 by impact; F11–F15 added after your follow-ups</span></div>
+      <div class="card-h"><h2>What the journeys show</h2><span class="muted">F1–F10 by impact; F11–F16 added after your follow-ups</span></div>
       <div id="findings-list"></div>
     </div>
   </section>
@@ -342,6 +342,37 @@ textarea{resize:vertical;min-height:54px}
     <div class="card">
       <div class="card-h"><h2>Recommended changes</h2><span class="muted">Each with the reason</span></div>
       <div id="recs-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>Sidebar: today and proposed</h2><p class="muted">What the Owner sees. Staff see the same without Firm; reviewers also see Review.</p></div></div>
+      <div class="grid2">
+        <div><h4>Today (12 items)</h4><div class="tscroll" style="margin-top:6px"><table><tbody>
+          <tr><td>Dashboard</td><td class="muted">Filings and missed cutoffs</td></tr>
+          <tr><td>Clients</td><td class="muted">Books and Payroll are buttons on the client page</td></tr>
+          <tr><td>Deadlines</td><td class="muted">Tax</td></tr>
+          <tr><td>Documents</td><td class="muted">Intake</td></tr>
+          <tr><td>Monthly cycle</td><td class="muted">Intake, for tax</td></tr>
+          <tr><td>Registrations</td><td class="muted">Service</td></tr>
+          <tr><td>Requests</td><td class="muted">Intake</td></tr>
+          <tr><td>Review</td><td class="muted">Returns only</td></tr>
+          <tr><td>Collections · Scores · Staff · Settings</td><td class="muted">Firm</td></tr>
+          <tr><td colspan="2"><span class="chip bad">No bookkeeping item</span></td></tr>
+        </tbody></table></div></div>
+        <div><h4>Proposed</h4><div class="tscroll" style="margin-top:6px"><table><tbody>
+          <tr><td><b>Dashboard</b> / <b>My work</b></td><td class="muted">Your firm view; staff get their next actions, books and returns together</td></tr>
+          <tr><td colspan="2" class="faint">INTAKE</td></tr>
+          <tr><td>Documents</td><td class="muted">Clients with documents waiting, then each client's own list</td></tr>
+          <tr><td>Requests</td><td class="muted">As built</td></tr>
+          <tr><td colspan="2" class="faint">MONTH END</td></tr>
+          <tr><td>Books and returns</td><td class="muted">One grid: documents in, books closed, each return, statements. Replaces Monthly cycle and Deadlines</td></tr>
+          <tr><td>Review</td><td class="muted">Returns, statements to release, exceptions, amendments</td></tr>
+          <tr><td colspan="2" class="faint">CLIENTS</td></tr>
+          <tr><td>Recent clients · All clients</td><td class="muted">Workspace tabs: Overview, Documents, Register, Books, Workpapers, Returns, Payroll, Requests, Registration</td></tr>
+          <tr><td colspan="2" class="faint">SERVICES · FIRM</td></tr>
+          <tr><td>Registrations · Collections · Scores · Staff · Settings</td><td class="muted">As built</td></tr>
+        </tbody></table></div></div>
+      </div>
     </div>
 
     <div class="card">
@@ -612,7 +643,7 @@ textarea{resize:vertical;min-height:54px}
       </aside>
       <main class="main" id="mmain"></main>
     </div>
-    <p class="muted" style="margin-top:10px;font-size:13px">Try it: switch to <b>Client</b> and confirm March is complete, then back to <b>Preparer</b> › <b>Documents</b> to see it and review per client. Open <b>Deadlines</b> to see April's filings and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers 10, 20 and 30 use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
+    <p class="muted" style="margin-top:10px;font-size:13px">Try it: the sidebar follows the month (Intake · Month end · Clients). Switch to <b>Client</b> and confirm March is complete, then back to <b>Preparer</b> › <b>Documents</b> to see it and review per client. Open <b>Month end</b> to see March books and April's returns together, close Jaro's March books, and remind Molo Bakeshop; as <b>Owner</b>, assign a preparer to Arevalo and add the missing obligations. In <b>Clients</b>, registers 10, 20 and 30 use your worksheet columns; explain T-1, answer D's note, then switch to <b>Reviewer</b> and <b>Owner</b>. Nothing here is saved.</p>
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -674,6 +705,7 @@ const F = [
  ["High","bad","Cash is posted at the invoice total, not the net receipt","An approved cash sale debits Cash on hand for the invoice total. The CWT is taken out of cash only when the 2307 arrives, often months later and in a lump, credited to Cash. Purchases do the same with EWT: Cash is credited at the gross, and EWT payable appears only when the 2307 is issued. Until then cash in the trial balance doesn't match the bank, EWT payable doesn't match the 0619-E, the SC/PWD discount is never recorded, and cash sales always go to Cash on hand, never to the bank. Payroll doesn't post to the books at all.","migrations/20261124000005_ledger_documents.sql (book_document)"],
  ["Medium","warn","A supplier's firm-wide account title is applied silently to a new client","The account title is prefilled from this client's own history with the supplier first, which is right. But for a supplier the client hasn't used before, the supplier's single firm-wide preset is used with only a hint below the field. SM Supermarket preset as Representation lands on a bakeshop where it is Purchases, and if the preset account isn't in that client's chart, nothing says so. Titles are also chosen one document at a time.","ledger_documents.sql (document_account), documents/[id]/page.tsx"],
  ["Medium","warn","Clients can't say they've sent everything, or see what happens next","The portal shows how many documents were sent and offers “No transactions this month”. There is no “I've sent everything for March”, no check for missing invoice numbers before the cutoff, and no view of what the firm does next and when. Staff can't start early with confidence, and clients call to ask.","portal/page.tsx, document_cycles"],
+ ["High","bad","The sidebar is built around tax compliance; the books have no place in it","Firm-wide, every item is intake or tax: Deadlines, Monthly cycle, Review (returns) and Registrations. The books (suggested entries, closing a month, depreciation, financial statements to release) are reached only from a button on each client's page, and only for clients with a bookkeeping engagement. With general bookkeeping for every client and one register behind both, nobody can see across clients which months are closed or which statements are waiting.","app/app/layout.tsx, nav/app-nav.tsx, clients/[id]/page.tsx"],
 ];
 document.getElementById("findings-list").innerHTML = F.map((f,i)=>`<div class="finding"><span class="fid">F${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${f[2]}</h3><span class="chip ${f[1]}">${f[0]}</span></div><p class="why">${f[3]}</p><p class="ev">Where: <code>${f[4]}</code></p></div></div>`).join("");
 
@@ -720,6 +752,9 @@ const R = [
  ["“I've sent everything” for the client, and what happens next","Fixes F15",
   ["The portal shows what was sent for the month by kind and how far each is checked, then a button: “I've sent everything for March”, with a confirm step.","Before confirming, the portal asks about gaps it can see: missing sales invoice numbers in the series (uploaded or cancelled?) and 2307s still outstanding.","After confirming: March shows as complete, staff are told, the filing's first step is done so work can start early, and anything sent later is marked late.","A plain-language timeline shows what happens next with dates from the deadline steps: checking, each return ready for approval, filing, proof."],
   "The client gets a clear finish line and knows what comes next, the firm gets a confirmed start instead of waiting for the cutoff, and a missing invoice is caught while the client still has it in hand."],
+ ["A sidebar for one month of books and returns","Fixes F16 · F10",
+  ["Grouped by the month's flow, not by service: My work (Dashboard for you) · Intake: Documents, Requests · Month end: Books and returns, Review · Clients: recent clients, all clients · Services: Registrations · Firm: Collections, Scores, Staff, Settings.","Month end is one grid per client: documents in, March books closed, each return filed, financial statements released. It replaces both Monthly cycle and Deadlines; the deadline safeguards work inside it.","Review holds everything waiting on a reviewer or you: returns, financial statements to release, prior-year exceptions and amendments.","Each client opens a workspace with tabs: Overview, Documents, Register, Books, Workpapers, Returns, Payroll, Requests, Registration.","Badges count what waits on you, not totals."],
+  "Bookkeeping and tax compliance are one service from one register, so the sidebar shows them together, in the order the month happens: documents in, books closed, returns filed, statements released."],
 ];
 document.getElementById("recs-list").innerHTML = R.map((r,i)=>`<div class="rec"><span class="fid">R${i+1}</span><div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>${r[0]}</h3><span class="chip info">${r[1]}</span></div><ul>${r[2].map(x=>`<li>${x}</li>`).join("")}</ul><p class="why-b"><b>Why:</b> ${r[3]}</p></div></div>`).join("");
 
@@ -746,13 +781,14 @@ document.getElementById("safeguards").innerHTML = SG.map((s,i)=>`<div class="rec
 /* ---------------- final journeys + questions ---------------- */
 const FJ = [
  {who:"Preparer",name:"Rhea, preparer",steps:[
-  ["Apr 1–5","Documents arrive by portal, email to invoices@tallocpa.com, or staff upload","Reviews them inside Jaro Agri Supply's own list: figures checked, account title chosen from this client's chart, approve selected. Firm suggestions for a new supplier must be confirmed.","info","F14 · R13 · R11","preparer|docs"],
-  ["Apr 3","The client confirms “I've sent everything for March”","A notice shows the month is complete; the 1601-C's first step is done, so preparing starts before the cutoff.","warn","F15 · R14","preparer|docs"],
+  ["Apr 1–5","Documents arrive by portal, email to invoices@tallocpa.com, or staff upload","Reviews them inside Jaro Agri Supply's own list: figures checked, account title chosen from this client's chart, approve selected. Firm suggestions for a new supplier must be confirmed.","info","F14 · R13 · R11","preparer|cdocs"],
+  ["Apr 3","The client confirms “I've sent everything for March”","A notice shows the month is complete; the 1601-C's first step is done, so preparing starts before the cutoff.","warn","F15 · R14","preparer|cdocs"],
   ["Every morning","Opens My work","Own filings and workpapers ordered by the next step's date, red first: a Critical 1601-C at Molo Bakeshop, a review today at Jaro.","warn","F6 · F11 · R5","preparer|mywork"],
   ["Apr 6","Prepares the March 1601-C","From payroll register 30; tie-out T-6 checks tax withheld against the 1601-C; marks it prepared. Net pay posts to cash in bank.","info","R9 · R10","preparer|file|F"],
   ["Apr 6–16","Works the Q1 workpapers, generated from the register","Registers 10 (sales: discount, CWT, VAT withheld, net receipt), 20 (purchases: SLP category, EWT, net paid; capital goods go to E) and 30 (payroll) are already filled. Each line shows its entry and where it goes on the returns.","warn","F1 · F12 · F13 · R1 · R9 · R10","preparer|file|B"],
   ["Apr 6–16","Fixed assets and depreciation","Office tables bought Mar 12 are now asset E-3; input VAT stays on the 2550Q in full; the depreciation schedule generates the monthly entry.","warn","R12","preparer|file|H"],
   ["Apr 6–16","Explains differences and records adjustments","Tie-outs T-1 to T-10; a difference needs a written reason. Disallowed input VAT is an adjustment with reason and support, not a typed figure.","warn","F2 · F3 · R2 · R3","preparer|file|T"],
+  ["Apr 7–8","Closes the March books","Month end › March books: documents reviewed, entries confirmed, payroll and depreciation posted, tie-outs clean, then close. Every return of the period builds on the closed month.","warn","F16 · R15","preparer|deadlines"],
   ["Apr 16","Answers review notes, marks the 2550Q prepared","Prepared only when tie-outs are clean, B and C are signed and their notes are cleared.","warn","F5 · R4","preparer|file|A"],
   ["Apr 23–26","Files, pays and records the proof","As built: filing reference and proof go to the client's Returns. The filing closes only with both.","ok","Safeguard 5","preparer|deadlines"],
  ]},
@@ -764,11 +800,11 @@ const FJ = [
   ["When stuck","Watches At risk filings","The Deadlines tracker shows the steps and whose they are; he reviews late ones first.","warn","F11","reviewer|deadlines"],
  ]},
  {who:"Owner",name:"You, Owner",steps:[
-  ["Every morning","Opens the Deadlines tracker for the month","Every client × form in one grid: Critical, At risk, coverage gaps, filed. Assigns a preparer to Arevalo, adds Oton's missing 1601-C obligation.","warn","F11 · R8","owner|deadlines"],
+  ["Every morning","Opens Month end","Month end: every client's March books, each return and the financial statements in one grid. Assigns a preparer to Arevalo, adds Oton's missing 1601-C obligation.","warn","F11 · R8","owner|deadlines"],
   ["As returns arrive","Gives the final approval with the approval memo","Tax due against the last period, rate on sales, adjustments, tie-outs, review notes, who prepared and reviewed, then the payment check you already have.","info","F7 · R6","owner|approval"],
   ["Monthly","Watches money, people and clients","Collections, staff load, scores, amendments and the acting approver: as built.","ok","Q21–Q41","owner|deadlines"],
   ["Once, then rarely","Sets the policies","Deadline step targets, tie-out tolerance, capitalization threshold, useful lives, the SC/PWD account: the Decisions tab.","warn","Decisions","owner|deadlines"],
-  ["Quarter end","Releases reports, keeps the binder","Reports released to the portal (as built); the period's workpapers print as a binder for an LOA.","info","R1 · W4","owner|approval"],
+  ["Quarter end","Reviews and releases the financial statements","The Month end grid shows each client's statements: waiting for the books to close, ready for review, waiting for your release. Release to the portal is as built; the period's workpapers print as a binder.","info","F16 · R15","owner|deadlines"],
  ]},
  {who:"Client",name:"The client (for reference)",steps:[
   ["During the month","Uploads in the portal or emails invoices@tallocpa.com","Either way the documents land in the same review.","info","R11","client|portal"],
@@ -820,7 +856,7 @@ document.getElementById("q-list").innerHTML = QS.map(([g,qs])=>`<div class="card
 const PEOPLE = {preparer:{i:"RS",n:"Rhea S.",r:"Staff · preparer"},reviewer:{i:"MR",n:"Marco R.",r:"Reviewer"},owner:{i:"OW",n:"Owner",r:"Owner"},client:{i:"AR",n:"Ana R.",r:"Client · Jaro Agri Supply"}};
 const S = {
   role:"preparer", view:"file", sched:"B", approved:false, showAdj:false, showNote:null,
-  ticks:{}, requested:false, onlyMine:true, dsel:"1|c", bsel:0, csel:0, dcl:"jaro", dchk:{}, portalDone:false, portalAsk:false, gap:null,
+  ticks:{}, requested:false, onlyMine:true, dsel:"1|c", bsel:0, csel:0, dcl:"jaro", dchk:{}, portalDone:false, portalAsk:false, gap:null, entDone:false, depDone:false, marClosed:false,
   sign:{A:{},B:{p:"RS · 2 Apr"},C:{p:"RS · 2 Apr",r:"MR · 3 Apr"},D:{p:"RS · 2 Apr"},E:{p:"RS · 1 Apr",r:"MR · 3 Apr"},F:{p:"RS · 6 Apr"},H:{p:"RS · 2 Apr"},G:{},T:{}},
   adj:[{id:1,kind:"Disallowed input VAT",amt:-2184,reason:"OR 22817 (Mar 14, hardware) is issued to “Cash”, not to the client's name and TIN.",support:"Doc C-14 · image",by:"RS",ok:true}],
   tie:[
@@ -953,6 +989,32 @@ const DL = {
   ],
 };
 const formOf = k => DL.forms.find(f=>f.k===k);
+const BK = [
+  {docs:()=>S.portalDone?"ok":"wait", rev:()=>PEND.jaro.filter(r=>!r.done).length, ent:()=>S.entDone?0:3, pay:true, dep:()=>S.depDone, ties:()=>!openTies().some(t=>t.id==="T-1"), closed:()=>S.marClosed?"Apr 7":null, fs:()=>S.marClosed?["info","Q1 · ready for review"]:["neutral","Q1 · after March closes"]},
+  {docs:()=>"bad", rev:()=>PEND.molo.filter(r=>!r.done).length, ent:()=>0, pay:false, dep:()=>true, ties:()=>true, closed:()=>null, fs:()=>["ok","Feb · released"]},
+  {docs:()=>"ok", rev:()=>3, ent:()=>0, pay:true, dep:()=>true, ties:()=>true, closed:()=>null, fs:()=>["neutral","Q1 · after March closes"]},
+  {docs:()=>"ok", rev:()=>0, ent:()=>0, pay:true, dep:()=>true, ties:()=>true, closed:()=>"Apr 6", fs:()=>["warn","Mar · waiting for your release"]},
+  {docs:()=>"bad", rev:()=>9, ent:()=>4, pay:true, dep:()=>true, ties:()=>true, closed:()=>null, fs:()=>["neutral","Q1 · after March closes"]},
+  {docs:()=>"ok", rev:()=>0, ent:()=>0, pay:true, dep:()=>true, ties:()=>true, closed:()=>null, fs:()=>["neutral","Q1 · after March closes"]},
+];
+function bkSteps(i){
+  const b=BK[i];
+  return [
+    ["Documents in", b.docs()==="ok"?"ok":b.docs()==="wait"?"wait":"bad", b.docs()==="ok"?(i===0?"Client confirmed Apr 3":"In by the cutoff"):b.docs()==="wait"?"Due Apr 5":"Missing after the Apr 5 cutoff"],
+    ["Documents reviewed", b.rev()?"wait":"ok", b.rev()?`${b.rev()} to review`:"All reviewed"],
+    ["Entries confirmed", b.ent()?"wait":"ok", b.ent()?`${b.ent()} suggested entries to confirm`:"All posted"],
+    ["Payroll posted", b.pay?"ok":"bad", b.pay?"Posted":"Register not in"],
+    ["Depreciation run", b.dep()?"ok":"wait", b.dep()?"Posted":"March not run yet"],
+    ["Tie-outs clean", b.ties()?"ok":"bad", b.ties()?"No open differences":"T-1 open"],
+  ];
+}
+function bkStat(i){
+  if (BK[i].closed()) return "done";
+  const st=bkSteps(i).map(x=>x[1]);
+  if (st[0]==="bad"||st[3]==="bad") return "risk";
+  return st.every(x=>x==="ok")?"ready":"track";
+}
+const BST = {done:["ok","Closed"],ready:["info","Ready to close"],track:["neutral","In progress"],risk:["warn","At risk"]};
 function cstat(cell,k){
   if (!cell) return "na";
   if (cell.gap) return "gap";
@@ -974,21 +1036,26 @@ function nextTxt(cell,k){
 /* ---------------- views ---------------- */
 function nav(){
   const r=S.role, cur=k=>S.view===k?"page":"false";
+  const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
   if (r==="client"){
-    $("#mnav").innerHTML = `<button data-go="portal" aria-current="page">Home</button>` + ["Documents","Returns","Requests","Statement"].map(x=>`<span>${x}</span>`).join("");
-    const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
+    $("#mnav").innerHTML = `<button data-go="portal" aria-current="page">Home</button>` + ["Documents","Returns","Reports","Requests","Statement"].map(x=>`<span>${x}</span>`).join("");
     return;
   }
-  let h = `<button data-go="mywork" aria-current="${cur("mywork")}">My work${r==="owner"?"":'<span class="new">NEW</span>'}</button>`
-    + `<span>Dashboard</span>`
-    + `<button data-go="file" aria-current="${cur("file")}">Clients</button>`
-    + `<button data-go="deadlines" aria-current="${cur("deadlines")}">Deadlines<span class="new">NEW</span></button>`
-    + `<button data-go="docs" aria-current="${cur("docs")}">Documents</button>`
-    + ["Monthly cycle","Requests"].map(x=>`<span>${x}</span>`).join("");
-  if (r!=="preparer") h += `<div class="grp">Firm</div><button data-go="approval" aria-current="${cur("approval")}">Review${r==="owner"?'<span class="cnt">1</span>':""}</button>`;
-  if (r==="owner") h += ["Collections","Scores","Staff","Settings"].map(x=>`<span>${x}</span>`).join("");
+  const grp=t=>`<div class="grp">${t}</div>`;
+  const btn=(k,l,c)=>`<button data-go="${k}" aria-current="${cur(k)}">${l}${c?`<span class="cnt">${c}</span>`:""}</button>`;
+  const sp=(l,c)=>`<span>${l}${c?`<span class="cnt">${c}</span>`:""}</span>`;
+  const inClient=c=>(S.view==="file"&&c==="jaro")||(S.view==="cdocs"&&S.dcl===c);
+  const docsLeft=Object.values(PEND).reduce((a,x)=>a+x.filter(r=>!r.done).length,0)+12;
+  let h = (r==="owner" ? sp("Dashboard") : btn("mywork","My work",r==="reviewer"?4:5))
+    + grp("Intake") + btn("docs","Documents",docsLeft) + sp("Requests",2)
+    + grp("Month end") + btn("deadlines","Books and returns") + (r!=="preparer"?btn("approval","Review",r==="owner"?3:4):"")
+    + grp("Clients")
+    + `<button data-recent="jaro" aria-current="${inClient("jaro")?"page":"false"}">Jaro Agri Supply</button>`
+    + `<button data-recent="molo" aria-current="${inClient("molo")?"page":"false"}">Molo Bakeshop</button>`
+    + sp("All clients")
+    + grp("Services") + sp("Registrations");
+  if (r==="owner") h += grp("Firm") + ["Collections","Scores","Staff","Settings"].map(x=>sp(x)).join("");
   $("#mnav").innerHTML=h;
-  const p=PEOPLE[r]; $("#whoAv").textContent=p.i; $("#whoName").textContent=p.n; $("#whoRole").textContent=p.r;
 }
 
 function viewMyWork(){
@@ -999,6 +1066,7 @@ function viewMyWork(){
     ["Jaro Agri Supply · 1601-C March", "Prepared · Marco reviews today (target Apr 7)", "info", "Open filing", 'data-go="deadlines" data-dsel="0|c"'],
     ["Jaro Agri Supply · Q1 2027 workpapers", vt?`${vt} tie-out difference to explain before the 2550Q can be prepared`:"Tie-outs clean · ready to mark the 2550Q prepared", vt?"bad":"ok", "Open workpapers", 'data-open="T"'],
     ["Jaro Agri Supply · Q1 2027 workpapers", nb?`${nb} review note${nb>1?"s":""} from Marco to answer`:"No open review notes", nb?"warn":"ok", "Open notes", 'data-open="N"'],
+    ["Jaro Agri Supply · March books", S.marClosed?"Closed Apr 7":`Close by Apr 8: ${S.entDone?"":"3 entries to confirm, "}${S.depDone?"":"depreciation to run, "}then close`, S.marClosed?"ok":"info", "Open month end", 'data-go="deadlines" data-dsel="0|bk"'],
     ["Mandurriao Print Shop · Q1 2027", "Workpapers not started · 2551Q prepared target Apr 16", "none", "Start workpapers", ""],
   ];
   const revItems = [
@@ -1009,7 +1077,7 @@ function viewMyWork(){
   ];
   const items = r==="reviewer"?revItems:prepItems;
   return `<div class="ph"><div><p class="crumb">My work · Wed, Apr 7, 2027</p><h2>${r==="reviewer"?"Marco's":"Rhea's"} next actions</h2><p class="muted">One line per client and filing or period, ordered by how close the next step is. Red first.</p></div></div>
-  <div class="strip">${[["Critical filings","1"],["At risk","1"],["Documents to review","17"],["Notes to clear",String(nb)],["Client questions","1"]].map(([k,v])=>`<div><p class="k">${k}</p><p class="v">${v}</p></div>`).join("")}</div>
+  <div class="strip">${[["Critical filings","1"],["Books to close","2"],["Documents to review","17"],["Notes to clear",String(nb)],["Client questions","1"]].map(([k,v])=>`<div><p class="k">${k}</p><p class="v">${v}</p></div>`).join("")}</div>
   <div class="card queue"><ul>${items.map(i=>`<li><div style="min-width:0"><p style="font-weight:500">${i[0]}</p><p class="muted" style="font-size:13px"><span class="dot ${i[2]==="none"?"":i[2]}" style="display:inline-block;margin-right:6px"></span>${i[1]}</p></div>${i[4]?`<button class="btn sm" ${i[4]}>${i[3]}</button>`:`<button class="btn sm" disabled title="Outside this mock">${i[3]}</button>`}</li>`).join("")}</ul></div>`;
 }
 
@@ -1018,7 +1086,32 @@ function viewDeadlines(){
   const rows=DL.rows.map((x,i)=>[x,i]).filter(([x])=>!(r==="preparer"&&S.onlyMine)||x.mine);
   const all=[]; DL.rows.forEach(x=>DL.forms.forEach(f=>{const c=x.cells[f.k]; if(c) all.push(cstat(c,f.k));}));
   const cnt=k=>all.filter(s=>s===k).length;
-  const [ri,k]=S.dsel.split("|"); const row=DL.rows[+ri], f=formOf(k), cell=row.cells[k], st=cstat(cell,k);
+  const [ri,k]=S.dsel.split("|"); const row=DL.rows[+ri];
+  const closedN=DL.rows.filter((x,i)=>BK[i].closed()).length;
+  const head=`<div class="ph"><div><p class="crumb">Month end · as of Wed, Apr 7, 2027</p><h2>March books and April returns</h2><p class="muted">One grid for the whole month, because the books and the returns come from the same register: documents in, books closed, each return filed, financial statements released.</p></div>
+    ${r==="preparer"?`<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="onlyMine" ${S.onlyMine?"checked":""} style="width:auto"> Only my clients</label>`:""}</div>
+  <div class="strip">${[["Books closed",`${closedN} of ${DL.rows.length}`,""],["Critical",cnt("crit"),"bad"],["At risk",cnt("risk"),"warn"],["Coverage gaps",cnt("gap"),"bad"],["Returns filed",cnt("done"),"ok"]].map(([l,v,c])=>`<div><p class="k">${l}</p><p class="v" style="${c&&v?`color:var(--${c==="ok"?"ok":c==="warn"?"warn":"bad"})`:""}">${v}</p></div>`).join("")}</div>
+  <div class="card" style="padding:12px"><div class="tscroll"><table class="matrix"><thead><tr><th>Client</th><th>Preparer</th><th>March books<br><span class="faint" style="font-weight:400">close by Apr 8</span></th>${DL.forms.map(x=>`<th>${x.name}<br><span class="faint" style="font-weight:400">${x.per} · due ${x.due}</span></th>`).join("")}<th>Financial statements</th></tr></thead><tbody>
+    ${rows.map(([x,i])=>{const bs=bkStat(i), nxt=bkSteps(i).find(z=>z[1]!=="ok"); return `<tr><td><b style="font-weight:500">${x.c}</b></td><td style="white-space:nowrap">${x.prep??'<span class="chip bad">None</span>'}</td><td><button class="cell st-${bs==="risk"?"risk":bs}" data-cell="${i}|bk" aria-pressed="${S.dsel===i+"|bk"}"><span class="chip ${BST[bs][0]}">${BST[bs][1]}</span><small>${bs==="done"?`Closed ${BK[i].closed()}`:nxt?esc(nxt[2]):"Every step done"}</small></button></td>${DL.forms.map(fm=>{const c=x.cells[fm.k], s=cstat(c,fm.k); if(!c) return `<td><span class="faint">—</span></td>`; return `<td><button class="cell st-${s}" data-cell="${i}|${fm.k}" aria-pressed="${S.dsel===i+"|"+fm.k}"><span class="chip ${DST[s][0]}">${DST[s][1]}</span>${c.form?`<span class="faint" style="font-size:11.5px"> ${c.form}</span>`:""}<small>${esc(nextTxt(c,fm.k))}</small></button></td>`}).join("")}<td><span class="chip ${BK[i].fs()[0]}">${BK[i].fs()[1]}</span></td></tr>`}).join("")}
+  </tbody></table></div></div>`;
+  if (k==="bk"){
+    const i=+ri, steps=bkSteps(i), bs=bkStat(i), jaro=i===0;
+    let act="";
+    if (jaro && r!=="owner" && !S.marClosed){
+      if (S.entDone===false) act+=`<button class="btn sm" data-ent>Confirm 3 suggested entries</button>`;
+      if (!S.depDone) act+=`<button class="btn sm" data-dep>Run March depreciation</button>`;
+      act+=`<button class="btn sm pri" data-closem ${bs==="ready"?"":"disabled"}>Close March books</button>`;
+      if (bs!=="ready") act+=`<span class="muted" style="font-size:12.5px">Every step must be done first.</span>`;
+    }
+    return head + `<div class="card"><div class="card-h"><div><h3>March books · ${row.c}</h3><p class="muted" style="font-size:13px">Closing is the bookkeeping step every return of the period builds on. Staff can reopen a closed month until a return covering it is filed; filing locks it (as built).</p></div><span class="chip ${BST[bs][0]}">${BST[bs][1]}</span></div>
+      <div class="tscroll"><table>${hdr(["#","Step","State"])}<tbody>${steps.map((x,j)=>`<tr class="${x[1]==="bad"?"hl":""}"><td class="num">${j+1}</td><td>${x[0]}</td><td><span class="chip ${x[1]==="ok"?"ok":x[1]==="bad"?"bad":"info"}">${x[2]}</span></td></tr>`).join("")}
+      <tr><td class="num">7</td><td>Month closed</td><td><span class="chip ${BK[i].closed()?"ok":"neutral"}">${BK[i].closed()?`Closed ${BK[i].closed()}`:"Open"}</span></td></tr></tbody></table></div>
+      ${act?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">${act}</div>`:""}
+      ${jaro&&!S.portalDone?`<p class="muted" style="font-size:12.5px;margin-top:8px">Documents in turns green when the client confirms the month (switch to Client).</p>`:""}
+      ${jaro&&!openTies().every(t=>t.id!=="T-1")?`<p class="muted" style="font-size:12.5px;margin-top:4px">Explain T-1 in the workpapers (Clients › Jaro Agri Supply › Workpapers › 0-2).</p>`:""}
+    </div>`;
+  }
+  const f=formOf(k), cell=row.cells[k], st=cstat(cell,k);
   const d=cell?.done??0;
   const firstLate=f.steps.findIndex((s,i)=>i>=d && s[2]<DL.today);
   const told={track:"Nobody yet. It sits in the preparer's My work, ordered by date.",risk:"The preparer and reviewer: At risk in My work, and an email the morning the step was missed.",crit:"The preparer, the reviewer and you: Critical banner on your dashboard and in the morning email.",gap:"You: coverage list on your dashboard from last night's check.",done:"The client: filed return and proof in the portal.",na:""}[st];
@@ -1029,12 +1122,7 @@ function viewDeadlines(){
   if (st==="gap" && cell.noFiling) actions += r==="owner"?`<button class="btn sm pri" data-addob>Add the obligation and create the filing</button>`:`<span class="muted" style="font-size:13px">The Owner adds the obligation.</span>`;
   if (st==="track" && f.steps[d][1]==="Owner" && r==="owner") actions += `<button class="btn sm pri" disabled title="Outside this mock">Open the final approval</button>`;
 
-  return `<div class="ph"><div><p class="crumb">Deadlines · as of Wed, Apr 7, 2027</p><h2>April 2027 filings</h2><p class="muted">Every client and form due this month, each with a person, its steps and a status.</p></div>
-    ${r==="preparer"?`<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="onlyMine" ${S.onlyMine?"checked":""} style="width:auto"> Only my clients</label>`:""}</div>
-  <div class="strip">${[["Critical",cnt("crit"),"bad"],["At risk",cnt("risk"),"warn"],["Coverage gaps",cnt("gap"),"bad"],["On track",cnt("track"),""],["Filed",cnt("done"),"ok"]].map(([l,v,c])=>`<div><p class="k">${l}</p><p class="v" style="${c&&v?`color:var(--${c==="ok"?"ok":c==="warn"?"warn":"bad"})`:""}">${v}</p></div>`).join("")}</div>
-  <div class="card" style="padding:12px"><div class="tscroll"><table class="matrix"><thead><tr><th>Client</th><th>Preparer</th>${DL.forms.map(x=>`<th>${x.name}<br><span class="faint" style="font-weight:400">${x.per} · due ${x.due}</span></th>`).join("")}</tr></thead><tbody>
-    ${rows.map(([x,i])=>`<tr><td><b style="font-weight:500">${x.c}</b></td><td style="white-space:nowrap">${x.prep??'<span class="chip bad">None</span>'}</td>${DL.forms.map(fm=>{const c=x.cells[fm.k], s=cstat(c,fm.k); if(!c) return `<td><span class="faint">—</span></td>`; return `<td><button class="cell st-${s}" data-cell="${i}|${fm.k}" aria-pressed="${S.dsel===i+"|"+fm.k}"><span class="chip ${DST[s][0]}">${DST[s][1]}</span>${c.form?`<span class="faint" style="font-size:11.5px"> ${c.form}</span>`:""}<small>${esc(nextTxt(c,fm.k))}</small></button></td>`}).join("")}</tr>`).join("")}
-  </tbody></table></div></div>
+  return head + `
   <div class="card">
     <div class="card-h"><div><h3>${cell?.form??f.name} · ${f.per} 2027 · ${row.c}</h3><p class="muted" style="font-size:13px">BIR due ${f.due}${f.note?` (${f.note})`:""} · preparer ${row.prep??"none"}</p></div><span class="chip ${DST[st][0]}">${DST[st][1]}</span></div>
     ${cell?.noFiling?`<p class="muted">No filing exists, so nothing would ever show as late. ${esc(cell.gap)}. The nightly coverage check found it.</p>`:`
@@ -1071,14 +1159,27 @@ const SUPMAP = {jaro:[["SM Supermarket Iloilo","Representation"],["Panay Feedmil
 const SRC = {history:["ok","This client's history"],preset:["warn","Firm suggestion · confirm"],notinchart:["bad","Firm preset “Fuel and Oil” isn't in this chart · choose"],none:["bad","New supplier · choose"],chosen:["info","Chosen · saved for this client"]};
 const dReady = r => r.acct && (r.src==="history"||r.src==="chosen");
 
+function clientTabs(active, c){
+  const name=DCL.find(x=>x[0]===c)[1], jaro=c==="jaro";
+  const tabs=[["Overview",null],["Documents","cdocs"],["Register",jaro?"reg":null],["Books",null],["Workpapers",jaro?"file":null],["Returns",null],["Payroll",null],["Requests",null],["Registration",null]];
+  return `<div><p class="crumb">Clients</p><h2>${name}</h2><p class="muted" style="font-size:13px">${jaro?"Sole proprietor · VAT · general bookkeeping and tax compliance · Rhea S. / Marco R.":"Sole proprietor · non-VAT · general bookkeeping and tax compliance · Rhea S. / Marco R."}</p></div>
+  <nav class="pills" aria-label="Client workspace">${tabs.map(([l,v])=>v?`<button data-ctab="${v}" data-c="${c}" aria-pressed="${active===v}">${l}</button>`:`<button disabled title="Outside this mock">${l}</button>`).join("")}</nav>`;
+}
+function viewDocsQueue(){
+  const rows=[["jaro","Jaro Agri Supply",PEND.jaro.filter(r=>!r.done).length,"Apr 2",S.portalDone],["molo","Molo Bakeshop",PEND.molo.filter(r=>!r.done).length,"Apr 2",false],[null,"Lapaz Hardware",9,"Apr 1",false],[null,"Arevalo Dental Clinic",3,"Apr 3",true]];
+  return `<div class="ph"><div><p class="crumb">Intake</p><h2>Documents to review</h2><p class="muted">Every client with documents waiting, oldest first. Each client's documents are reviewed inside that client, against its own chart of accounts.</p></div></div>
+  <div class="card" style="padding:12px"><div class="tscroll"><table>${hdr(["Client",">Waiting","Oldest","Month","Client says"])}<tbody>
+  ${rows.map(([k,n,c,o,done])=>`<tr><td>${k?`<button class="btn sm ghost" data-dq="${k}">${n}</button>`:`<span style="padding-inline:9px">${n}</span>`}</td><td class="r">${c}</td><td>${o}</td><td>March</td><td>${done?'<span class="chip ok">Sent everything</span>':'<span class="chip neutral">Still sending</span>'}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
+}
 function viewDocs(){
   const k=S.dcl, rows=PEND[k], chart=CHART[k], name=DCL.find(x=>x[0]===k)[1];
   const open=rows.map((r,i)=>[r,i]).filter(([r])=>!r.done);
   const sel=open.filter(([r,i])=>S.dchk[k+"|"+i]&&dReady(r));
   const other=k==="jaro"?"molo":"jaro", otherName=DCL.find(x=>x[0]===other)[1];
   const smOther=SUPMAP[other].find(x=>x[0]==="SM Supermarket Iloilo");
-  return `<div class="ph"><div><p class="crumb">Documents</p><h2>${name} · documents to review</h2><p class="muted">Each client has its own chart of accounts, so each client's documents are reviewed in their own list. An account title chosen here is saved for this client and this supplier only.</p></div></div>
-  <div class="pills" role="group" aria-label="Client">${DCL.map(([c,n])=>`<button data-dclient="${c}" aria-pressed="${k===c}">${n} (${PEND[c].filter(r=>!r.done).length})</button>`).join("")}<button disabled title="Outside this mock">Lapaz Hardware (9)</button><button disabled title="Outside this mock">Arevalo Dental Clinic (3)</button></div>
+  return `${clientTabs("cdocs",k)}
+  <p class="muted">Documents waiting for review. An account title chosen here is saved for this client and this supplier only.</p>
   ${S.portalDone&&k==="jaro"?`<div class="gate" style="border-color:var(--ok);background:var(--ok-bg)"><b style="color:var(--ok)">The client confirmed March is complete on Apr 3</b><p class="muted">380 documents. Anything sent after this is marked late. The 1601-C's first step is done, so preparing can start now.</p></div>`:""}
   <div class="card" style="padding:12px"><div class="tscroll"><table>${hdr(["","Received","Document","Supplier",">Total","Account title (this client's chart)","Suggested from"])}<tbody>
     ${open.length?open.map(([r,i])=>`<tr><td><input type="checkbox" data-dchk="${k}|${i}" ${S.dchk[k+"|"+i]&&dReady(r)?"checked":""} ${dReady(r)?"":"disabled"} aria-label="Select ${r.no}" style="width:auto"></td><td style="white-space:nowrap">${r.rec}</td><td style="white-space:nowrap">${r.no}<br><span class="faint" style="font-size:12px">dated ${r.dt}</span></td><td>${r.sup}</td><td class="r">${amt(r.tot)}</td><td><select data-acct="${k}|${i}" aria-label="Account title for ${r.no}" style="min-width:190px">${["",...chart].map(a=>`<option ${a===r.acct?"selected":""} value="${a}">${a||"Choose…"}</option>`).join("")}</select></td><td><span class="chip ${SRC[r.src][0]}">${SRC[r.src][1]}</span>${r.src==="preset"?` <button class="btn sm" data-dconfirm="${k}|${i}">Confirm</button>`:""}</td></tr>`).join(""):`<tr><td colspan="7" class="muted">Nothing left to review for ${name}.</td></tr>`}
@@ -1290,7 +1391,7 @@ function viewFile(){
   const list=["A","B","C","D","E","F","H","G","T"];
   const done = list.filter(r=>["ok","info"].includes(schedState(r))).length;
   const cur = SCHED.find(s=>s[0]===S.sched);
-  return `<div class="ph"><div><p class="crumb">Clients › Jaro Agri Supply › Workpapers</p><h2>Q1 2027 · January – March</h2><p class="muted">Sole proprietor · VAT · Bookkeeping + Tax · Preparer Rhea S. · Reviewer Marco R.</p></div>
+  return `${clientTabs(S.view==="reg"?"reg":"file","jaro")}<div class="ph"><div><h3>${S.view==="reg"?"Register":"Workpapers"} · Q1 2027 · January – March</h3><p class="muted">${S.view==="reg"?"Every line from every intake channel, with its sales, bookkeeping and tax parts.":"Generated from the register; index 0 to 50."}</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" disabled title="Outside this mock">Download registers (Excel)</button><button class="btn sm" disabled title="Outside this mock">Print binder (PDF)</button>${S.role!=="preparer"?`<button class="btn sm pri" data-go="approval">Open 2550Q</button>`:""}</div></div>
   <div class="strip">
     <div><p class="k">Register</p><p class="v done">1,049 lines</p><p class="k">Portal 612 · Email 401 · Staff 36</p></div>
@@ -1300,7 +1401,7 @@ function viewFile(){
     <div><p class="k">Filed</p><p class="v">0619-E × 2 · 1601-C × 2</p></div>
   </div>
   <div class="wp">
-    <div class="index" role="list">${SCHED.map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${WPREF[s[0]]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
+    <div class="index" role="list">${SCHED.filter(s=>S.view!=="reg"||["B","C","F"].includes(s[0])).map(s=>{const st=schedState(s[0]);return `<button role="listitem" data-sched="${s[0]}" aria-current="${S.sched===s[0]}"><span class="ref">${WPREF[s[0]]}</span><span class="t">${s[1]}<small>${s[2]}</small></span><span class="dot ${st==="none"||st==="na"?"":st}" title="${stateTxt[st]}"></span></button>`}).join("")}</div>
     <div class="sched">
       <div class="sh"><div><p class="ref">W/P ${WPREF[cur[0]]}</p><h3>${cur[1]}</h3><p class="faint" style="font-size:12.5px">${stateTxt[schedState(cur[0])]}</p></div>${["A","T","N"].includes(cur[0])?"":signBlock(cur[0])}</div>
       ${schedBody(cur[0])}
@@ -1343,7 +1444,7 @@ function viewApproval(){
 
 function render(){
   nav();
-  $("#mmain").innerHTML = S.role==="client"?viewPortal():S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():S.view==="deadlines"?viewDeadlines():S.view==="docs"?viewDocs():viewFile();
+  $("#mmain").innerHTML = S.role==="client"?viewPortal():S.view==="mywork"?viewMyWork():S.view==="approval"?viewApproval():S.view==="deadlines"?viewDeadlines():S.view==="reg"?viewFile():S.view==="docs"?viewDocsQueue():S.view==="cdocs"?viewDocs():viewFile();
 }
 
 /* ---------------- events ---------------- */
@@ -1381,6 +1482,12 @@ document.getElementById("v-mock").addEventListener("click",e=>{
   if (d.go){ S.view=d.go; if(d.dsel) S.dsel=d.dsel; }
   else if (d.open){ S.view="file"; S.sched=d.open; }
   else if (d.cell){ S.dsel=d.cell; }
+  else if (d.recent){ S.dcl=d.recent; S.view=d.recent==="jaro"?"file":"cdocs"; }
+  else if (d.dq){ S.dcl=d.dq; S.view="cdocs"; }
+  else if (d.ctab){ S.dcl=d.c; S.view=d.ctab; if(d.ctab==="reg") S.sched="B"; else if(d.ctab==="file"&&["B","C","F"].includes(S.sched)) S.sched="A"; }
+  else if ("ent" in d){ S.entDone=true; toast("3 entries posted to the March books"); }
+  else if ("dep" in d){ S.depDone=true; toast("March depreciation posted: ₱21,499.95"); }
+  else if ("closem" in d){ S.marClosed=true; toast("March books closed · Q1 statements ready for review"); }
   else if (d.dclient){ S.dcl=d.dclient; }
   else if (d.dconfirm){ const [k,i]=d.dconfirm.split("|"); const r=PEND[k][+i]; r.src="chosen"; SUPMAP[k].push([r.sup,r.acct]); toast(`Saved for ${DCL.find(x=>x[0]===k)[1]}: ${r.sup} → ${r.acct}`); }
   else if ("dall" in d){ PEND[S.dcl].forEach((r,i)=>{ if(!r.done&&dReady(r)) S.dchk[S.dcl+"|"+i]=true; }); }
