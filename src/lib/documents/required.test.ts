@@ -15,9 +15,9 @@ describe("missingForApproval", () => {
     expect(missingForApproval("sales_invoice", fields({ total: "100" })).map((m) => m.field)).toEqual(["date", "number", "party_name"]);
   });
 
-  it("asks for the TIN and ATC when tax is withheld (QAP, SAWT), and the TIN when VAT is withheld", () => {
-    expect(missingForApproval("sales_invoice", fields({ ...base, withholding: "20.00" })).map((m) => m.field)).toEqual(["party_tin", "atc"]);
-    expect(missingForApproval("sales_invoice", fields({ ...base, vat_withheld: "50.00" })).map((m) => m.field)).toEqual(["party_tin"]);
+  it("asks a sale for the customer's TIN and address only when tax or VAT was withheld (SAWT)", () => {
+    expect(missingForApproval("sales_invoice", fields({ ...base, withholding: "20.00" })).map((m) => m.field)).toEqual(["party_tin", "party_address", "atc"]);
+    expect(missingForApproval("sales_invoice", fields({ ...base, vat_withheld: "50.00" })).map((m) => m.field)).toEqual(["party_tin", "party_address"]);
   });
 
   it("asks an individual for last and first name", () => {
@@ -30,7 +30,7 @@ describe("missingForApproval", () => {
 
   it("asks Books clients for the account title, every tax code, the withholding code and the cash account", () => {
     const books = { accountId: null, invoice: { lineCodes: ["c1", null], withholdingCode: null, vatWithholdingCode: null, terms: "cash" as const, cashAccountId: null } };
-    expect(missingForApproval("sales_invoice", fields({ ...base, party_tin: "1", atc: "WC160", withholding: "20" }), books).map((m) => m.field)).toEqual([
+    expect(missingForApproval("sales_invoice", fields({ ...base, party_tin: "1", party_address: "Jaro", atc: "WC160", withholding: "20" }), books).map((m) => m.field)).toEqual([
       "ledger_account", "tax_code", "withholding_code", "payment_account",
     ]);
   });

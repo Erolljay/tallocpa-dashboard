@@ -6,8 +6,9 @@
  *
  *   Every sale or purchase   date, document number, supplier / customer, total
  *   A purchase (SLP)         the supplier's TIN and address
- *   Tax withheld (QAP, SAWT) the TIN and the ATC
- *   VAT withheld (SAWT)      the government customer's TIN
+ *   Tax withheld (QAP, SAWT) the TIN, address and ATC
+ *   VAT withheld (SAWT)      the government customer's TIN and address
+ *   A sale without either    no TIN or address (walk-in and cash customers)
  *   An individual            last and first name (every list)
  *   A 2307                   date, payor / payee, TIN, ATC and the tax withheld
  *   Books clients            the account title, a tax code on every amount, the
@@ -60,7 +61,8 @@ export function missingForApproval(docType: string, f: OcrFields, books?: BooksC
   const vatWithheld = sale && positive(f.vat_withheld);
   // The SLP lists every supplier with TIN and address; the QAP and SAWT every payee and payor.
   need(!(purchase || withheld || vatWithheld) || has(f.party_tin), "party_tin", "TIN");
-  need(!purchase || has(f.party_address), "party_address", "Address");
+  // A sale needs the customer's TIN and address only when tax or VAT was withheld (SAWT, 2307).
+  need(!(purchase || withheld || vatWithheld) || has(f.party_address), "party_address", "Address");
   need(!withheld || has(f.atc), "atc", "ATC");
 
   if (books) {
