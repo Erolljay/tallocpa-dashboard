@@ -70,7 +70,17 @@ Set these in Vercel (Settings → Environment Variables, Production) — never i
 - `GEMINI_MODEL` (optional) — the Gemini model OCR uses; default `gemini-3.8-flash`. Change it to compare models on real receipts (open item O4).
 - `GEMINI_FALLBACK_MODEL` (optional) — second model OCR tries when the main one is busy; default `gemini-2.5-flash`. OCR retries busy errors (503/429) twice per model before falling back.
 - `CRON_SECRET` — any long random string. Vercel sends it to `/api/cron/generate-filings` (scheduled in `vercel.json` at 02:00 Manila time) so nobody else can trigger the job.
-- `RESEND_API_KEY` and `EMAIL_FROM` (optional) — send the monthly document request (the 1st) and reminder (day before the cutoff) by email through Resend. `EMAIL_FROM` must be on a domain verified in Resend, e.g. `Tallo CPA <documents@tallocpa.com>`. Without them the request shows in the client portal only.
+- `RESEND_API_KEY` and `EMAIL_FROM` — every email the app sends goes through Resend in the branded layout: the monthly document request and reminder, the 7:00 am deadline emails, and the notification emails (below). `EMAIL_FROM` must be on a domain verified in Resend, e.g. `Tallo CPA <notifications@tallocpa.com>`. Replies go to the **Reply-to email** in Settings → Brand. Without these, nothing is emailed; the bell and the portal still show everything.
+
+### Notifications
+
+Returns, payments, requests, leads and bookings each notify the people who act next: the bell in the sidebar (staff) or header (clients), and an email unless the person turned that kind off on their **Notifications** settings page. The full list of events and who receives each is at the top of `supabase/migrations/20261213000001_notifications.sql`.
+
+Emails leave right after the action that caused them (the app sends them once the page has answered). As a safety net, also send any that are waiting once a minute: in Supabase → **Integrations → Cron**, add a job every minute (`* * * * *`) of type **HTTP request**: `GET https://app.tallocpa.com/api/cron/notifications` with the header `Authorization: Bearer <CRON_SECRET>`. Without it, a waiting email goes out with the next action anyone takes in the app, or with the 7:00 am job at the latest. An email not sent within 3 days is dropped (the bell has shown it).
+
+### Sign-out after no activity
+
+Staff are signed out after **30 minutes** without activity and clients after **15 minutes**, with a one-minute warning and a **Stay signed in** button. Activity in any tab counts for all tabs; a browser left closed past the limit is signed out on its next visit. The limits are in `src/lib/session/idle.ts`.
 
 ### eSubmission mailbox (optional, docs/REWORK.md decision 15)
 
