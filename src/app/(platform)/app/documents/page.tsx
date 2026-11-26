@@ -30,7 +30,9 @@ const FORM_ID = "doc-filters";
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" }).format(new Date(iso));
 
-type Tab = Stream | "approved";
+type Tab = Stream;
+/** Inside each stream: what is waiting for approval, or what was approved. */
+type View = "waiting" | "approved";
 const STREAM_KEYS = Object.keys(STREAMS) as Stream[];
 type Sort = "name" | "-name" | "count" | "-count";
 
@@ -65,9 +67,11 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const me = await requireStaff();
   const owner = me.staff.role === "owner";
   const sp = await searchParams;
-  // Inbox tabs: one per intake stream (Sales, Purchases & Expenses, Payroll, Other), then Approved.
+  // Inbox tabs: one per intake stream (Sales, Purchases & Expenses, Payroll, Other), each
+  // with "Waiting approval" and "Approved". The old ?tab=approved opens Sales, Approved.
   const tabParam = one(sp.tab);
-  const tab: Tab = tabParam === "approved" ? "approved" : (STREAM_KEYS.find((k) => k === tabParam) ?? "sales");
+  const tab: Tab = STREAM_KEYS.find((k) => k === tabParam) ?? "sales";
+  const view: View = tabParam === "approved" || one(sp.view) === "approved" ? "approved" : "waiting";
   const sortParam = one(sp.sort);
   const sort: Sort = (["name", "-name", "count", "-count"] as const).find((s) => s === sortParam) ?? "name";
   const range = periodRange(one(sp.period), manilaToday(), one(sp.from), one(sp.to));
@@ -105,18 +109,21 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
     pendingQuery = pendingQuery.gte("period", range.from).lte("period", range.to);
     subQuery = subQuery.gte("pay_month", range.from).lte("pay_month", range.to);
   }
-  let approvedQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").eq("status", "posted").order("created_at", { ascending: false }).limit(1000);
+  let approvedQuery = supabase.from("documents").select(select).in("doc_type", [...STREAMS[tab].types]).eq("status", "posted").order("created_at", { ascending: false }).limit(1000);
   if (clientId) approvedQuery = approvedQuery.eq("client_id", clientId);
   if (range) approvedQuery = approvedQuery.gte("period", range.from).lte("period", range.to);
-  const [pendingRes, subRes, approvedRes] = await Promise.all([pendingQuery, subQuery, tab === "approved" ? approvedQuery : Promise.resolve({ data: [], error: null })]);
+  const [pendingRes, subRes, approvedRes] = await Promise.all([pendingQuery, subQuery, approvedQuery]);
   if (pendingRes.error) throw pendingRes.error;
   if (approvedRes.error) throw approvedRes.error;
   const ids = new Set(clients.map((c) => c.id));
   const pendingAll = ((pendingRes.data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id));
   const submissions = ((subRes.data ?? []) as Submission[]).filter((r) => ids.has(r.client_id));
-  const rows = tab === "approved"
-    ? ((approvedRes.data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id))
-    : pendingAll.filter((r) => streamOf(r.doc_type) === tab);
+  const waitingRows = pendingAll.filter((r) => streamOf(r.doc_type) === tab);
+  const approvedRows = ((approvedRes.data ?? []) as unknown as Row[]).filter((r) => ids.has(r.client_id));
+  const rows = view === "approved" ? approvedRows : waitingRows;
+  const inClient = (list: { client_id: string }[]) => (clientId ? list.filter((r) => r.client_id === clientId) : list).length;
+  const subs = tab === "payroll" ? inClient(submissions) : 0;
+  const viewCounts: Record<View, number> = { waiting: inClient(waitingRows) + subs, approved: inClient(approvedRows) };
 
   // Waiting per stream (the tab counts) and per client in the open tab (the client list).
   const streamCounts = new Map<Stream, number>(STREAM_KEYS.map((k) => [k, 0]));
@@ -126,13 +133,13 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   }
   streamCounts.set("payroll", streamCounts.get("payroll")! + submissions.length);
   const pendingCounts = new Map<string, number>();
-  for (const r of tab === "approved" ? pendingAll : rows) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
-  if (tab === "payroll" || tab === "approved") for (const r of submissions) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
+  for (const r of view === "approved" ? approvedRows : waitingRows) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
+  if (tab === "payroll" && view === "waiting") for (const r of submissions) pendingCounts.set(r.client_id, (pendingCounts.get(r.client_id) ?? 0) + 1);
 
   const link = (over: Record<string, string>) => {
     const p = new URLSearchParams();
-    const base: Record<string, string> = { client: clientId, tab, period: range?.key ?? "", from: one(sp.from), to: one(sp.to), sort: sort === "name" ? "" : sort };
-    for (const [k, v] of Object.entries({ ...base, ...over })) if (v && !(k === "tab" && v === "sales") && !((k === "from" || k === "to") && (over.period ?? base.period) !== "custom")) p.set(k, v);
+    const base: Record<string, string> = { client: clientId, tab, view, period: range?.key ?? "", from: one(sp.from), to: one(sp.to), sort: sort === "name" ? "" : sort };
+    for (const [k, v] of Object.entries({ ...base, ...over })) if (v && !(k === "tab" && v === "sales") && !(k === "view" && v === "waiting") && !((k === "from" || k === "to") && (over.period ?? base.period) !== "custom")) p.set(k, v);
     const s = p.toString();
     return s ? `/app/documents?${s}` : "/app/documents";
   };
@@ -141,7 +148,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
     <>
       <PageHeader
         title="Inbox"
-        description={client ? `${client.name}: what came in and is waiting for approval.` : "Everything clients sent, by kind. OCR reads each receipt; check the figures, then approve it into the Books or return it to the client."}
+        description={client ? `${client.name}: what came in, waiting for approval or approved.` : "Everything clients sent, by kind. OCR reads each receipt; check the figures, then approve it into the Books or return it to the client."}
         actions={
           <>
             <ClientSelect form={FORM_ID} value={clientId} clients={clients} />
@@ -152,10 +159,10 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
 
       {/* BoardUI underline tabs (components/base/tabs), as links so each list has its own URL. */}
       <nav aria-label="Inbox" className="mb-5 flex gap-1 overflow-x-auto border-b border-separator-border">
-        {([...STREAM_KEYS.map((k) => [k, STREAMS[k].label, streamCounts.get(k) ?? 0] as const), ["approved", "Approved", null] as const] as const).map(([t, label, count]) => (
+        {STREAM_KEYS.map((k) => [k, STREAMS[k].label, streamCounts.get(k) ?? 0] as const).map(([t, label, count]) => (
           <Link
             key={t}
-            href={link({ tab: t })}
+            href={link({ tab: t, view: "waiting" })}
             aria-current={tab === t ? "page" : undefined}
             className={cx(
               "-mb-px inline-flex items-center gap-2.5 border-b-2 px-2.5 py-2 whitespace-nowrap transition-colors duration-150",
@@ -164,43 +171,62 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
             )}
           >
             {label}
-            {count != null && (
-              <span className={cx("rounded-sm px-1 py-px text-caption-1-medium tabular-nums", tab === t ? "bg-tab-count-selected-background text-accent-600" : "bg-background-tertiary-default text-text-secondary")}>
-                {count}
-              </span>
-            )}
+            <span className={cx("rounded-sm px-1 py-px text-caption-1-medium tabular-nums", tab === t ? "bg-tab-count-selected-background text-accent-600" : "bg-background-tertiary-default text-text-secondary")}>
+              {count}
+            </span>
           </Link>
         ))}
       </nav>
 
+      <ViewSwitch view={view} counts={viewCounts} link={link} />
+
       <form id={FORM_ID} role="search" className="mb-6">
         {tab !== "sales" && <input type="hidden" name="tab" value={tab} />}
+        {view === "approved" && <input type="hidden" name="view" value="approved" />}
         {sort !== "name" && <input type="hidden" name="sort" value={sort} />}
         <PeriodFilter period={range?.key ?? "all"} from={range ? range.from.slice(0, 7) : ""} to={range ? range.to.slice(0, 7) : ""} />
-        {tab === "approved" && <p className="mt-2 text-caption-1-regular text-text-tertiary">Approved figures can be corrected until the return for their month is filed. After that the month is locked.</p>}
+        {view === "approved" && <p className="mt-2 text-caption-1-regular text-text-tertiary">Approved figures can be corrected until the return for their month is filed. After that the month is locked.</p>}
       </form>
 
       {!client ? (
-        <ClientList clients={clients} tab={tab} sort={sort} link={link} counts={tab === "approved" ? countBy(rows) : pendingCounts} complete={await confirmedMonths(supabase, clients.map((c) => c.id))} />
-      ) : tab === "payroll" ? (
-        <PayrollPending rows={rows} submissions={submissions} clientId={clientId} />
-      ) : tab !== "approved" ? (
-        <Suspense fallback={<Skeleton rows={6} />}>
-          <ClientPending rows={rows} clientId={clientId} canMove={canMove} fyeMonth={fyeMonth} />
-        </Suspense>
-      ) : (
+        <ClientList clients={clients} view={view} sort={sort} link={link} counts={pendingCounts} complete={await confirmedMonths(supabase, clients.map((c) => c.id))} />
+      ) : view === "approved" ? (
         <Suspense fallback={<Skeleton rows={6} />}>
           <ApprovedTable rows={rows} clientId={clientId} canMove={canMove} fyeMonth={fyeMonth} />
+        </Suspense>
+      ) : tab === "payroll" ? (
+        <PayrollPending rows={rows} submissions={submissions} clientId={clientId} />
+      ) : (
+        <Suspense fallback={<Skeleton rows={6} />}>
+          <ClientPending rows={rows} clientId={clientId} canMove={canMove} fyeMonth={fyeMonth} />
         </Suspense>
       )}
     </>
   );
 }
 
-function countBy(rows: Row[]) {
-  const m = new Map<string, number>();
-  for (const r of rows) m.set(r.client_id, (m.get(r.client_id) ?? 0) + 1);
-  return m;
+/** "Waiting approval" and "Approved" inside a stream tab: BoardUI's segmented control, as links. */
+function ViewSwitch({ view, counts, link }: { view: View; counts: Record<View, number>; link: (o: Record<string, string>) => string }) {
+  const items: [View, string][] = [["waiting", "Waiting approval"], ["approved", "Approved"]];
+  return (
+    <nav aria-label="Approval" className="mb-4 inline-flex items-start gap-0.5 rounded-2lg bg-segmented-control-background p-1">
+      {items.map(([v, label]) => (
+        <Link
+          key={v}
+          href={link({ view: v })}
+          aria-current={view === v ? "page" : undefined}
+          className={cx(
+            "inline-flex items-center gap-2 rounded-md px-2.5 py-1 whitespace-nowrap transition-colors duration-200 ease",
+            "outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring",
+            view === v ? "bg-segmented-control-selected-background text-body-medium text-text-primary shadow-2xs" : "text-body-regular text-text-secondary hover:text-text-primary",
+          )}
+        >
+          {label}
+          <span className="text-caption-1-medium tabular-nums text-text-tertiary">{counts[v]}</span>
+        </Link>
+      ))}
+    </nav>
+  );
 }
 
 /** Open months each client confirmed as complete in the portal (P1): staff can start before the cutoff. */
@@ -213,7 +239,7 @@ async function confirmedMonths(supabase: Awaited<ReturnType<typeof supabaseServe
 }
 
 /** The client list from the sketch: name, then the count waiting (or a check when none). */
-function ClientList({ clients, tab, sort, link, counts, complete }: { clients: { id: string; name: string }[]; tab: Tab; sort: Sort; link: (o: Record<string, string>) => string; counts: Map<string, number>; complete: Map<string, string[]> }) {
+function ClientList({ clients, view, sort, link, counts, complete }: { clients: { id: string; name: string }[]; view: View; sort: Sort; link: (o: Record<string, string>) => string; counts: Map<string, number>; complete: Map<string, string[]> }) {
   const n = (id: string) => counts.get(id) ?? 0;
   const sorted = [...clients].sort((a, b) => {
     if (sort === "count" || sort === "-count") {
@@ -222,7 +248,7 @@ function ClientList({ clients, tab, sort, link, counts, complete }: { clients: {
     }
     return sort === "-name" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
   });
-  const waiting = tab !== "approved";
+  const waiting = view === "waiting";
   const countLabel = waiting ? "Waiting" : "Approved";
 
   return (
