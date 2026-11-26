@@ -85,7 +85,7 @@ describe.skipIf(!url)("payroll to the books", () => {
   it("totals a run and its dues to SSS, PhilHealth and Pag-IBIG", async () => {
     const r = await run("2027-03-31");
     expect(r).toMatchObject({ employees: 2, gross: 19000, tax_withheld: 600, employer: 1060, problems: [] });
-    expect(r.dues).toEqual({ sss: { ee: 360, er: 760 }, phic: { ee: 200, er: 200 }, hdmf: { ee: 100, er: 100 } });
+    expect(r.dues).toEqual({ sss: { ee: 360, er: 760 }, phic: { ee: 200, er: 200 }, hdmf: { ee: 100, er: 100 }, sss_loan: 0, hdmf_loan: 0 });
     expect(r.net).toBe(19000 - 600 - 660);
   });
 
@@ -98,8 +98,10 @@ describe.skipIf(!url)("payroll to the books", () => {
       { acct: "cash_on_hand", debit: "0.00", credit: "17740.00" },
       { acct: "contributions_direct", debit: "1060.00", credit: "0.00" },
       { acct: "direct_labor", debit: "8000.00", credit: "0.00" },
-      { acct: "government_contributions_payable", debit: "0.00", credit: "1720.00" },
+      { acct: "pagibig_payable", debit: "0.00", credit: "200.00" },
+      { acct: "philhealth_payable", debit: "0.00", credit: "400.00" },
       { acct: "salaries", debit: "11000.00", credit: "0.00" },
+      { acct: "sss_payable", debit: "0.00", credit: "1120.00" },
       { acct: "wtc_payable", debit: "0.00", credit: "600.00" },
     ]);
     expect((await db.query(`select status, entry_date::text, book from public.journal_entries where id = $1`, [e])).rows[0]).toEqual({ status: "posted", entry_date: "2027-03-31", book: "cash_disbursements" });
@@ -112,6 +114,39 @@ describe.skipIf(!url)("payroll to the books", () => {
     const j = (await as(`select public.workpaper_ledger($1, '2027-03-01', '2027-03-31') as j`, [client])).rows[0].j;
     expect(Number(j.compensation)).toBe(10000 + 11000 + 8000);
     expect(Number(j.wtc_payable)).toBe(500 + 600);
+  });
+
+  it("credits each agency's shares and SSS and Pag-IBIG loan payments to their own payables; payslips show the loans apart", async () => {
+    const add = async (name: string, cat: string) =>
+      (await db.query(`insert into public.payroll_items (client_id, name, kind, bir_category) values ($1, $2, 'deduction', $3) returning id`, [client, name, cat])).rows[0].id as string;
+    item.sss_loan = await add("SSS Salary Loan", "none"); // entered before loans had their own category
+    item.hdmf_loan = await add("Pag-IBIG MPL", "hdmf_loan");
+    item.none = await add("Cash Advance", "none");
+    await save([pay(crew, "2027-03-20", {
+      basic: "5000", sss_ee: "100", phic_ee: "50", hdmf_ee: "40", sss_loan: "700", hdmf_loan: "300", none: "200", sss_er: "200", phic_er: "50", hdmf_er: "40",
+    })]);
+    // A used deduction moves between 'none' and the loan categories (no BIR figure changes), never to a BIR figure.
+    await as(`update public.payroll_items set bir_category = 'sss_loan' where id = $1`, [item.sss_loan]);
+    await expect(as(`update public.payroll_items set bir_category = 'sss_ee' where id = $1`, [item.sss_loan])).rejects.toThrow(/cannot change/);
+    const r = await run("2027-03-20");
+    expect(r.dues).toEqual({ sss: { ee: 100, er: 200 }, phic: { ee: 50, er: 50 }, hdmf: { ee: 40, er: 40 }, sss_loan: 700, hdmf_loan: 300 });
+    const e = (await as(`select public.post_payroll($1, '2027-03-01', '2027-03-20') as id`, [client])).rows[0].id;
+    const lines = (await db.query(
+      `select a.template_key as acct, l.debit, l.credit from public.journal_lines l join public.ledger_accounts a on a.id = l.account_id where l.entry_id = $1 order by a.template_key`, [e],
+    )).rows;
+    expect(lines).toEqual([
+      { acct: "cash_on_hand", debit: "0.00", credit: "3610.00" },
+      { acct: "contributions_direct", debit: "290.00", credit: "0.00" },
+      { acct: "direct_labor", debit: "5000.00", credit: "0.00" },
+      { acct: "other_payables", debit: "0.00", credit: "200.00" },
+      { acct: "pagibig_loans_payable", debit: "0.00", credit: "300.00" },
+      { acct: "pagibig_payable", debit: "0.00", credit: "80.00" },
+      { acct: "philhealth_payable", debit: "0.00", credit: "100.00" },
+      { acct: "sss_loans_payable", debit: "0.00", credit: "700.00" },
+      { acct: "sss_payable", debit: "0.00", credit: "300.00" },
+    ]);
+    const slip = (await as(`select sss, philhealth, pagibig, deductions, sss_loan, pagibig_loan, other_deductions, net from public.payslips($1, '2027-03-01') where pay_period_end = '2027-03-20'`, [client])).rows;
+    expect(slip).toEqual([{ sss: "100.00", philhealth: "50.00", pagibig: "40.00", deductions: "190.00", sss_loan: "700.00", pagibig_loan: "300.00", other_deductions: "200.00", net: "3610.00" }]);
   });
 
   it("will not post a merged whole-month run on top of the month's runs already in the books", async () => {

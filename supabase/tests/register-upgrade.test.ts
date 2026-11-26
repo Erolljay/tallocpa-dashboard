@@ -36,7 +36,9 @@ describe.skipIf(!url)("register: upgrade from slice 1 to slice 2", () => {
     // The database as it is after slice 1, with an approved document in it.
     for (const f of migrations.filter((f) => f < SLICE_2)) await db.query(read(`migrations/${f}`));
     await db.query(read("tests/grants.sql"));
-    await db.query(read("seed.sql"));
+    // Only the brand: seed.sql follows the latest schema (its deadline rules need later migrations).
+    await db.query(`insert into public.brands (code, display_name, legal_name, tax_on_fee, portal_domain)
+      values ('TC', 'Tallo CPA', 'EJ Tallo Cloud Accounting and Auditing Services', 'percentage_tax_3', 'app.tallocpa.com')`);
     await db.query(`insert into auth.users (id) values ($1)`, [STAFF]);
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     const client = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9601', 'Client U', 'corporation') returning id`, [brand])).rows[0].id;

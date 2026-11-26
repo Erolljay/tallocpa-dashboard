@@ -272,13 +272,13 @@ describe.skipIf(!url)("returns: five-step sign-off, filed copy, Books entries, e
       expect((await db.query(`select count(*)::int as n from public.return_book_entries r join public.client_dues d on d.id = r.due_id where d.kind = 'other'`)).rows[0].n).toBe(0);
     });
 
-    it("posts a contribution's payment to SSS, PhilHealth and Pag-IBIG Payable and reverses it when the deposit is voided", async () => {
+    it("posts a contribution's payment to SSS Payable and reverses it when the deposit is voided", async () => {
       const due = (await as(OWNER, `select public.add_client_charge($1, 'contribution', 'SSS contribution, March 2026', 1500, '2026-04-15') as id`, [remits])).rows[0].id;
       const dep = (await as(OWNER, `select public.record_deposit($1, '2026-04-12', 1500, null, null, null, null, $2, 'cash', $3) as id`, [remits, [due], PREPARER])).rows[0].id;
       const r = (await db.query(`select id, status, entry_id from public.return_book_entries where due_id = $1`, [due])).rows[0];
       expect(r.status).toBe("posted");
       expect(await entryLines(r.entry_id)).toEqual([
-        { account: "government_contributions_payable", debit: "1500.00", credit: "0.00" },
+        { account: "sss_payable", debit: "1500.00", credit: "0.00" },
         { account: "cash_on_hand", debit: "0.00", credit: "1500.00" },
       ]);
       await as(OWNER, `select public.void_deposit($1, 'Bounced')`, [dep]);
@@ -289,16 +289,85 @@ describe.skipIf(!url)("returns: five-step sign-off, filed copy, Books entries, e
 
     it("records why an entry could not be posted, without stopping the payment, and posts it on retry", async () => {
       // The payable account is switched off in the chart: the entry cannot be posted.
-      await db.query(`update public.ledger_accounts set active = false where id = $1`, [acct[remits].government_contributions_payable]);
+      await db.query(`update public.ledger_accounts set active = false where id = $1`, [acct[remits].philhealth_payable]);
       const due = (await as(OWNER, `select public.add_client_charge($1, 'contribution', 'PhilHealth, March 2026', 800, '2026-04-15') as id`, [remits])).rows[0].id;
       await as(OWNER, `select public.record_deposit($1, '2026-04-14', 800, null, null, null, null, $2)`, [remits, [due]]);
       expect((await db.query(`select open_amount::text from public.due_balances where id = $1`, [due])).rows[0].open_amount).toBe("0.00");
       const r = (await db.query(`select id, status, note from public.return_book_entries where due_id = $1`, [due])).rows[0];
       expect(r).toMatchObject({ status: "failed", note: expect.stringMatching(/lacks the payable account/) });
       await expect(as(PREPARER, `select public.retry_return_book_entry($1)`, [r.id])).rejects.toThrow(/lacks the payable account/);
-      await db.query(`update public.ledger_accounts set active = true where id = $1`, [acct[remits].government_contributions_payable]);
+      await db.query(`update public.ledger_accounts set active = true where id = $1`, [acct[remits].philhealth_payable]);
       await as(PREPARER, `select public.retry_return_book_entry($1)`, [r.id]);
       expect((await db.query(`select status from public.return_book_entries where due_id = $1`, [due])).rows).toEqual([{ status: "posted" }]);
+    });
+
+    it("books one payment of SSS, PhilHealth, Pag-IBIG, SSS loan and Pag-IBIG loan items as one entry with a debit to each payable", async () => {
+      const items: [string, string, number][] = [
+        ["sss", "SSS contributions, March 2026", 1500],
+        ["philhealth", "PhilHealth contributions, March 2026", 800],
+        ["pagibig", "Pag-IBIG contributions, March 2026", 400],
+        ["sss_loan", "SSS loan payments, March 2026", 1200],
+        ["pagibig_loan", "Pag-IBIG loan payments, March 2026", 900],
+      ];
+      const dues: string[] = [];
+      for (const [c, d, amount] of items) {
+        dues.push((await as(OWNER, `select public.add_client_charge($1, 'contribution', $2, $3, '2026-04-15', $4) as id`, [remits, d, amount, c])).rows[0].id);
+      }
+      expect((await db.query(`select contribution from public.client_dues where id = any($1) order by amount desc`, [dues])).rows.map((r) => r.contribution))
+        .toEqual(["sss", "sss_loan", "pagibig_loan", "philhealth", "pagibig"]);
+      const dep = (await as(OWNER, `select public.record_deposit($1, '2026-04-16', 4800, null, 'PAY-5', null, null, $2) as id`, [remits, dues])).rows[0].id;
+      const rows = (await db.query(`select status, entry_id, amount::text from public.return_book_entries where due_id = any($1) order by return_book_entries.amount desc`, [dues])).rows;
+      expect(rows.map((r) => [r.status, r.amount])).toEqual([["posted", "1500.00"], ["posted", "1200.00"], ["posted", "900.00"], ["posted", "800.00"], ["posted", "400.00"]]);
+      expect(new Set(rows.map((r) => r.entry_id)).size).toBe(1);
+      const entry = rows[0].entry_id;
+      expect(await entryLines(entry)).toEqual([
+        { account: "pagibig_payable", debit: "400.00", credit: "0.00" },
+        { account: "pagibig_loans_payable", debit: "900.00", credit: "0.00" },
+        { account: "philhealth_payable", debit: "800.00", credit: "0.00" },
+        { account: "sss_payable", debit: "1500.00", credit: "0.00" },
+        { account: "sss_loans_payable", debit: "1200.00", credit: "0.00" },
+        { account: "cash_in_bank", debit: "0.00", credit: "4800.00" },
+      ]);
+      expect((await db.query(`select party_name from public.journal_lines where entry_id = $1 and debit > 0 order by line_no`, [entry])).rows.map((r) => r.party_name))
+        .toEqual(["Pag-IBIG Fund", "Pag-IBIG Fund", "PhilHealth", "SSS", "SSS"]);
+      expect((await db.query(`select entry_date::text, book, source, reference from public.journal_entries where id = $1`, [entry])).rows[0])
+        .toEqual({ entry_date: "2026-04-16", book: "cash_disbursements", source: "dues_payment", reference: "PAY-5" });
+      // Remitting is per item: the SSS loan payments only.
+      await as(OWNER, `select public.mark_contribution_remitted($1, '2026-04-17', 'PRN-1')`, [dues[3]]);
+      expect((await db.query(`select due_id, remitted, held::text from public.remittance_items where due_id = any($1) order by received desc`, [dues])).rows.map((r) => [r.due_id, r.remitted, r.held]))
+        .toEqual([[dues[0], false, "1500.00"], [dues[3], true, "0.00"], [dues[4], false, "900.00"], [dues[1], false, "800.00"], [dues[2], false, "400.00"]]);
+      // Voiding the payment reverses the one entry for every item.
+      await as(OWNER, `select public.void_deposit($1, 'Bounced')`, [dep]);
+      const after = (await db.query(`select distinct status, reversal_id from public.return_book_entries where due_id = any($1)`, [dues])).rows;
+      expect(after).toHaveLength(1);
+      expect(after[0].status).toBe("reversed");
+      expect(after[0].reversal_id).not.toBeNull();
+      expect((await db.query(`select status from public.journal_entries where id = $1`, [entry])).rows[0].status).toBe("reversed");
+    });
+
+    it("takes one item per agency and kind, and pays an item entered before from the combined account its payroll was booked to", async () => {
+      await expect(as(OWNER, `select public.add_client_charge($1, 'contribution', 'SSS, PhilHealth and Pag-IBIG contributions, March 2026', 2700, '2026-04-15')`, [remits]))
+        .rejects.toThrow(/one item per agency/);
+      await expect(as(OWNER, `select public.add_client_charge($1, 'contribution', 'Contributions, March 2026', 2700, '2026-04-15')`, [remits]))
+        .rejects.toThrow(/one item per agency/);
+      await expect(as(OWNER, `select public.add_client_charge($1, 'other', 'ORUS registration', 500, '2026-04-15', 'sss')`, [remits])).rejects.toThrow(/Only a contribution/);
+      // A caller that sends no field gets it from a description naming one agency and kind.
+      const inferred = (await as(OWNER, `select public.add_client_charge($1, 'contribution', 'HDMF loan, March 2026', 300, '2026-04-15') as id`, [remits])).rows[0].id;
+      expect((await db.query(`select contribution from public.client_dues where id = $1`, [inferred])).rows[0].contribution).toBe("pagibig_loan");
+      // An item entered before the field, as one combined charge; the chart still has the combined payable.
+      await db.query(
+        `insert into public.ledger_accounts (client_id, template_key, code, name, type, normal_side, fs_line, sort_order)
+         values ($1, 'government_contributions_payable', '2060', 'SSS, PhilHealth and Pag-IBIG Payable', 'liability', 'credit', 'accrued_liabilities', 365)`, [remits]);
+      const legacy = (await db.query(
+        `insert into public.client_dues (client_id, kind, description, amount, due_on) values ($1, 'contribution', 'SSS, PhilHealth and Pag-IBIG contributions, February 2026', 2700, '2026-03-15') returning id`, [remits])).rows[0].id;
+      await as(OWNER, `select public.record_deposit($1, '2026-04-18', 2700, null, null, null, null, $2)`, [remits, [legacy]]);
+      const r = (await db.query(`select status, entry_id from public.return_book_entries where due_id = $1`, [legacy])).rows[0];
+      expect(r.status).toBe("posted");
+      expect(await entryLines(r.entry_id)).toEqual([
+        { account: "government_contributions_payable", debit: "2700.00", credit: "0.00" },
+        { account: "cash_in_bank", debit: "0.00", credit: "2700.00" },
+      ]);
+      expect((await db.query(`select party_name from public.journal_lines where entry_id = $1 and debit > 0`, [r.entry_id])).rows[0].party_name).toBe("SSS, PhilHealth and Pag-IBIG");
     });
 
     it("keeps excess input VAT carried over with no VAT payable line, and books a direct client's own payment", async () => {

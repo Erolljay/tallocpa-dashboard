@@ -7,7 +7,8 @@ on conflict (code) do nothing;
 
 insert into public.deadline_rules (id, form, frequency, period_filter, calendar_year, due, channel, efps_group, effective_from, effective_to, source) values
   ('0619E', '0619-E', 'monthly', 'exclude_quarter_end_months', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
-  ('1601C', '1601-C', 'monthly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
+  ('1601C', '1601-C', 'monthly', 'exclude_year_end_month', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":10}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
+  ('1601C-DEC', '1601-C', 'monthly', 'year_end_month_only', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":15}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('1601EQ', '1601-EQ', 'quarterly', 'all', true, '{"kind":"day_of_month_after","monthsAfter":1,"day":"last"}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('2550Q', '2550Q', 'quarterly', 'all', false, '{"kind":"day_of_month_after","monthsAfter":1,"day":25}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),
   ('2551Q', '2551Q', 'quarterly', 'all', false, '{"kind":"day_of_month_after","monthsAfter":1,"day":25}'::jsonb, null, null, '2026-01-01', null, 'UNVERIFIED'),

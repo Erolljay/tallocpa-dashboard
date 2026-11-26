@@ -9,6 +9,9 @@ import { esubmissionLabel, esubmissionTone, filingStatusLabel, filingStatusTone,
 import { activeFor, type Delegation } from "@/lib/acting/period";
 import { availableActions, isNilReturn, SIGN_OFF_STEPS, stepIndex, type FilingStatus } from "@/lib/filings/sign-off";
 import { esubmissionMailEnv } from "@/lib/env";
+import { moduleForForm } from "@/lib/returns/registry";
+import { TAX_DUE_FIGURE, taxDueOf } from "@/lib/returns/source";
+import type { WorksheetResult } from "@/lib/returns/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { filingsBooksReady, filingsNeedingAmendment } from "@/lib/books/actions";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
@@ -78,7 +81,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   if (!f) notFound();
   const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
 
-  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }, { data: files }, { data: sends }, { data: bookRows }, { data: esubState }] = await Promise.all([
+  const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }, { data: files }, { data: sends }, { data: bookRows }, { data: esubState }, { data: worksheetRow }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
     supabase.from("staff_assignments").select("user_id, role").eq("client_id", f.client_id),
     supabase.from("staff_profiles").select("user_id, full_name"),
@@ -93,7 +96,14 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
     supabase.from("esubmissions").select("id, method, files, status, sent_at, result_at, result_note").eq("filing_instance_id", id).is("superseded_at", null).maybeSingle(),
     supabase.from("return_book_entries").select("id, kind, status, entry_date, amount, note, entry_id").eq("filing_instance_id", id).order("created_at"),
     supabase.rpc("filing_esubmission_state", { p_filing: id }),
+    supabase.from("return_worksheets").select("figures, result").eq("filing_instance_id", id).maybeSingle(),
   ]);
+  // The tax due comes from the saved worksheet when the app has one for the form (Owner, 26 November 2026).
+  const worksheetTaxDue: number | "missing" | null = !moduleForForm(f.form)
+    ? null
+    : !worksheetRow?.result
+      ? "missing"
+      : (((worksheetRow.figures ?? {}) as Record<string, number>)[TAX_DUE_FIGURE] ?? taxDueOf(worksheetRow.result as WorksheetResult)) / 100;
   // Month lock (docs/REWORK.md, decisions 9 and 10): a filed return whose month was unlocked
   // needs an amended return; an unfiled one waits until the Books of its period are locked.
   const [amendment, ready] = await Promise.all([
@@ -216,7 +226,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             )}
             <div className="mt-4">
               {actions.length > 0 ? (
-                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} amended={f.amendment_no > 0} hasFiledCopy={Boolean(filedCopy)} />
+                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} amended={f.amendment_no > 0} hasFiledCopy={Boolean(filedCopy)} worksheetTaxDue={worksheetTaxDue} worksheetHref={`/app/filings/${f.id}/worksheet`} />
               ) : (
                 <p className="text-body-regular text-text-secondary">
                   {complete ? "This return is done." : status === "filed" ? "Filed & paid. It is complete once the BIR validates its DAT files (eSubmission below)." : "Nothing for you to do on this return right now."}

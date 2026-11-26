@@ -288,7 +288,7 @@ async function loadEwtYear(db: Supabase, filingId: string): Promise<EwtQuarter[]
 async function loadPayslips(db: Supabase, clientId: string, month: string): Promise<PayslipRow[] | undefined> {
   const { data, error } = await db.rpc("payslips", { p_client: clientId, p_month: monthOf(month) });
   if (error) return undefined;
-  type Raw = { employee_no: string | null; employee_name: string; pay_period_end: string | null; gross: string; sss: string; philhealth: string; pagibig: string; tax: string; other_deductions: string; net: string };
+  type Raw = { employee_no: string | null; employee_name: string; pay_period_end: string | null; gross: string; sss: string; philhealth: string; pagibig: string; tax: string; sss_loan?: string; pagibig_loan?: string; other_deductions: string; net: string };
   return ((data ?? []) as Raw[]).map((r) => ({
     employeeNo: r.employee_no,
     employeeName: r.employee_name,
@@ -298,7 +298,8 @@ async function loadPayslips(db: Supabase, clientId: string, month: string): Prom
     philhealth: num(r.philhealth),
     pagibig: num(r.pagibig),
     tax: num(r.tax),
-    otherDeductions: num(r.other_deductions),
+    // The 1601-C schedule shows loan payments with the other deductions (not BIR figures).
+    otherDeductions: num(r.other_deductions) + num(r.sss_loan ?? 0) + num(r.pagibig_loan ?? 0),
     net: num(r.net),
   }));
 }

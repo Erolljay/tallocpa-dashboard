@@ -224,6 +224,8 @@ describe.skipIf(!url)("collections: ticked items and cash for remittance", () =>
       scenario(async () => {
         await verify(await submit(4500), [retainer, tax, sss]);
         await db.query("reset role");
+        // Contribution items post when the transaction commits; this scenario never commits.
+        await db.query("set constraints contribution_payment_on_allocation immediate");
         const rows = await q<{ due_id: string; status: string; amount: string; entry_date: string }>(
           `select due_id, status, amount::text, entry_date::text from public.return_book_entries where kind = 'dues_payment' and client_id = $1 order by return_book_entries.amount desc`,
           [client],

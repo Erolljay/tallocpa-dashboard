@@ -5,8 +5,9 @@
  * Template Individual", MRJ Transport Services Corp, Rey-an Poultry Farm OPC,
  * the cooperative and lending FSs): cash, receivables, prepaid tax assets
  * (2307, input VAT), property and equipment with accumulated depreciation,
- * accrued liabilities (SSS/PhilHealth/HDMF, withholding and percentage tax
- * payable), income tax payable, advances from owners, then revenue, cost of
+ * accrued liabilities (SSS, PhilHealth and Pag-IBIG payable and SSS and Pag-IBIG
+ * loans payable, each its own account; withholding and percentage tax payable),
+ * income tax payable, advances from owners, then revenue, cost of
  * sales / services and operating expenses.
  *
  * Each account carries:
@@ -73,8 +74,14 @@ const liabilities = (advancesFrom: string): Spec[] => [
   ["percentage_tax_payable", "2040", "Percentage Tax Payable", "liability", "accrued_liabilities", null, { control: "percentage_tax_payable" }],
   ["ewt_payable", "2050", "Withholding Tax Payable - Expanded", "liability", "accrued_liabilities", null, { control: "ewt_payable" }],
   ["wtc_payable", "2055", "Withholding Tax Payable - Compensation", "liability", "accrued_liabilities"],
-  ["government_contributions_payable", "2060", "SSS, PhilHealth and Pag-IBIG Payable", "liability", "accrued_liabilities"],
-  ["government_loans_payable", "2065", "SSS and Pag-IBIG Loans Payable", "liability", "accrued_liabilities"],
+  // One payable per agency and kind, as the payroll's columns (Owner, December 2026): payroll
+  // credits each, and the client's payment of each statement item debits its own. Books set
+  // up earlier keep their combined 2060 / 2065 accounts for what was booked to them.
+  ["sss_payable", "2061", "SSS Payable", "liability", "accrued_liabilities"],
+  ["philhealth_payable", "2062", "PhilHealth Payable", "liability", "accrued_liabilities"],
+  ["pagibig_payable", "2063", "Pag-IBIG Payable", "liability", "accrued_liabilities"],
+  ["sss_loans_payable", "2066", "SSS Loans Payable", "liability", "accrued_liabilities"],
+  ["pagibig_loans_payable", "2067", "Pag-IBIG Loans Payable", "liability", "accrued_liabilities"],
   ["income_tax_payable", "2070", "Income Tax Payable", "liability", "income_tax_payable", null, { control: "income_tax_payable" }],
   ["loans_payable_current", "2100", "Loans Payable - Current", "liability", "loans_payable_current"],
   ["loans_payable_noncurrent", "2500", "Loans Payable - Non-current", "liability", "loans_payable_noncurrent"],

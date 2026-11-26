@@ -221,10 +221,25 @@ export function taxableYearStart(date: string, fyeMonth: number): string {
  */
 export const priorKey = (form: string, periodStart: string) => `${form}@${periodStart.slice(0, 7)}`;
 
-/** Every line with an amount, line key → centavos: what later worksheets read as priorFigures. */
+/** The figure key holding the return's tax due (TAX_DUE_FIGURE), saved with the worksheet; the database bills it. */
+export const TAX_DUE_FIGURE = "__tax_due";
+
+/**
+ * The tax due on the return, from its worksheet (Owner, 26 November 2026: no longer typed by
+ * hand): the TOTAL AMOUNT PAYABLE line (the one line with emphasis "payable"), never below
+ * zero (an overpayment is nothing to collect). Information returns (1604-C, 1604-E) have no
+ * such line: nothing is due.
+ */
+export function taxDueOf(result: Pick<WorksheetResult, "sections">): Centavos {
+  const line = result.sections.flatMap((s) => s.lines).find((l) => l.emphasis === "payable");
+  return Math.max(0, line?.amount ?? 0);
+}
+
+/** Every line with an amount, line key → centavos: what later worksheets read as priorFigures; plus the tax due. */
 export function flattenFigures(result: Pick<WorksheetResult, "sections">): Record<string, Centavos> {
   const out: Record<string, Centavos> = {};
   for (const s of result.sections) for (const l of s.lines) if (l.amount != null) out[l.key] = l.amount;
+  out[TAX_DUE_FIGURE] = taxDueOf(result);
   return out;
 }
 

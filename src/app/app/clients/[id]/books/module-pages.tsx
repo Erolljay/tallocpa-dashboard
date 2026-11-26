@@ -119,12 +119,12 @@ export async function Payslips({ params, searchParams }: Props) {
             <span key="n" className="text-text-primary">{p.employee_name}</span>,
             p.pay_period_end ? `Until ${fmtDate(p.pay_period_end)}` : fmtMonth(p.pay_month),
             formatAmount(cents(p.gross)),
-            formatAmount(cents(p.deductions) + cents(p.other_deductions)),
+            formatAmount(cents(p.deductions) + cents(p.sss_loan) + cents(p.pagibig_loan) + cents(p.other_deductions)),
             formatAmount(cents(p.net)),
             p.journal_entry_id ? <Badge key="b" tone="done">Posted</Badge> : <Badge key="b">Not posted</Badge>,
           ],
         }))}
-        totals={["Total", null, null, formatAmount(t((p) => p.gross)), formatAmount(t((p) => p.deductions) + t((p) => p.other_deductions)), formatAmount(t((p) => p.net)), null]}
+        totals={["Total", null, null, formatAmount(t((p) => p.gross)), formatAmount(t((p) => p.deductions) + t((p) => p.sss_loan) + t((p) => p.pagibig_loan) + t((p) => p.other_deductions)), formatAmount(t((p) => p.net)), null]}
         empty={c.q ? "Nothing matches the search." : `No payslips for ${fmtMonth(c.month)}.`}
         minWidth="52rem"
       />
@@ -219,6 +219,7 @@ export async function ReportsIndex({ params, searchParams }: Props) {
     { title: "Trial Balance", text: "As of the end of any month.", href: `${b}/tools?to=${c.month}#trial-balance` },
     { title: "General Ledger", text: `Every account's entries for ${fmtMonth(c.month)}.`, href: book("general_ledger"), extra: { label: "Excel", href: xlsx("general_ledger") } },
     { title: "BIR 2307 to suppliers", text: "Certificates for the EWT on Purchase Invoices, per quarter, month or transaction; print one or all.", href: booksHref(c.id, "reports", c.month, {}, "/2307") },
+    { title: "Old register beside the Books", text: "Parallel run: the returns' figures from the register and from the Books by tax code, to the centavo.", href: booksHref(c.id, "reports", c.month, {}, "/parallel-run") },
     { title: "Books of account (loose-leaf / manual)", text: "Sales, Purchase, Cash Receipts, Cash Disbursements and General Journals, printed on ruled pages.", href: `${b}/tools#books-of-account` },
   ];
   return (

@@ -277,6 +277,10 @@ export interface Payslip {
   tax: string;
   /** SSS + PhilHealth + Pag-IBIG + tax. */
   deductions: string;
+  /** SSS and Pag-IBIG loan payments withheld (each to its own loans payable). */
+  sss_loan: string;
+  pagibig_loan: string;
+  /** Other deductions (company loans, advances). */
   other_deductions: string;
   net: string;
   employer_contributions: string;

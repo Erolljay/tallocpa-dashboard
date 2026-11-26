@@ -248,7 +248,9 @@ describe("payroll worksheets", () => {
 /** Item ids as a client might have them (items.ts DEFAULT_ITEMS plus a loan deduction and an inactive one). */
 const ITEMS: PayrollItem[] = [
   ...DEFAULT_ITEMS.map((d, i) => ({ id: `i${i}`, name: d.name, kind: d.kind, category: d.category, sortOrder: i, active: true })),
-  { id: "loan", name: "SSS Loan", kind: "deduction", category: "none_deduction", sortOrder: 99, active: true },
+  { id: "loan", name: "SSS Loan", kind: "deduction", category: "sss_loan", sortOrder: 99, active: true },
+  { id: "hdmf-loan", name: "Pag-IBIG Loan", kind: "deduction", category: "hdmf_loan", sortOrder: 99, active: false },
+  { id: "advance", name: "Cash Advance", kind: "deduction", category: "none_deduction", sortOrder: 99, active: false },
   { id: "old", name: "Old Allowance", kind: "earning", category: "other_taxable", sortOrder: 99, active: false },
 ];
 const item = (name: string) => ITEMS.find((i) => i.name === name)!.id;
@@ -260,13 +262,21 @@ describe("payslip items", () => {
     expect(payTotals(a)).toEqual({ gross: P(22000), deductions: P(500), net: P(21500) });
   });
 
-  it("a 'none' deduction changes net pay but not tax", () => {
+  it("an SSS loan payment or a 'none' deduction changes net pay but not tax", () => {
     const base: [string, number][] = [[item("Basic Pay"), P(40000)], [item("SSS (Employee)"), P(1350)], [item("Withholding Tax"), P(2000)]];
     const without = categoryTotals(base, ITEMS);
     const withLoan = categoryTotals([...base, [item("SSS Loan"), P(3000)]], ITEMS);
     expect(payTotals(withLoan).net).toBe(payTotals(without).net - P(3000));
     const months = (a: PayAmounts) => [a, ...Array(11).fill(null)];
     expect(computeEmployeeYear(months(withLoan), false, 2025)[0]).toEqual(computeEmployeeYear(months(without), false, 2025)[0]);
+    const withAll = categoryTotals([...base, [item("SSS Loan"), P(3000)], [item("Pag-IBIG Loan"), P(1000)], [item("Cash Advance"), P(500)]], ITEMS);
+    expect(payTotals(withAll).net).toBe(payTotals(without).net - P(4500));
+    expect(computeEmployeeYear(months(withAll), false, 2025)[0]).toEqual(computeEmployeeYear(months(without), false, 2025)[0]);
+  });
+
+  it("reads SSS and Pag-IBIG loan payments as their own categories", () => {
+    expect(itemFromRow({ id: "z", name: "SSS Loan", kind: "deduction", bir_category: "sss_loan", sort_order: 1, active: true }).category).toBe("sss_loan");
+    expect(itemFromRow({ id: "w", name: "HDMF Loan", kind: "deduction", bir_category: "hdmf_loan", sort_order: 1, active: true }).category).toBe("hdmf_loan");
   });
 
   it("reads 'none' from the database by kind", () => {

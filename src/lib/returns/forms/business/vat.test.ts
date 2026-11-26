@@ -126,20 +126,27 @@ describe("2550Q", () => {
     expect(r.warnings.some((w) => w.includes("Item 38"))).toBe(true);
   });
 
-  it("blocks VATable documents without a TIN and back-computes VAT on total-only sales", () => {
+  it("lists walk-in sales without a TIN as VARIOUS CUSTOMERS, blocks purchases without one, and back-computes VAT on total-only sales", () => {
     const ctx = ctxFor({
       form: "2550Q",
       periodStart: "2026-01-01",
       periodEnd: "2026-03-31",
       client: { vatRegistered: true },
-      documents: [sale({ month: "2026-01", number: "S-1", total: 11_200, partyName: "Walk-in" }), purchase({ month: "2026-01", number: "R-9", vatable: 1_000, vat: 120 })],
+      documents: [
+        sale({ month: "2026-01", number: "S-1", total: 11_200, partyName: "Walk-in" }),
+        sale({ month: "2026-01", number: "S-2", total: 5_600, partyName: "Cash sales" }),
+        purchase({ month: "2026-01", number: "R-9", vatable: 1_000, vat: 120 }),
+      ],
     });
     const r = form2550Q.compute(ctx);
-    expect(amounts(r)).toMatchObject({ vatable_sales: 10_000, output_tax: 1_200 });
-    expect(r.errors).toEqual([
-      "Invoice S-1 — Walk-in (2026-01-15) is VATable but has no customer TIN; the SLS needs one. Add it in review.",
-      "Receipt R-9 (2026-01-15) is VATable but has no supplier TIN; the SLP needs one. Add it in review.",
-    ]);
+    expect(amounts(r)).toMatchObject({ vatable_sales: 15_000, output_tax: 1_800 });
+    // The SLP still needs the supplier's TIN.
+    expect(r.errors).toEqual(["Receipt R-9 (2026-01-15) is VATable but has no supplier TIN; the SLP needs one. Add it in review."]);
+    // Both walk-in sales are one SLS line for January.
+    const sls = form2550Q.attachments!(ctx, r).find((a) => /^sls.*dat/i.test(a.kind))!.build().body.split("\r\n").filter((l) => l.startsWith("D,S"));
+    expect(sls).toHaveLength(1);
+    expect(sls[0]).toContain('"VARIOUS CUSTOMERS"');
+    expect(sls[0]).toContain("15000.00,1800.00");
   });
 
   it("takes capital goods and services from the register lines' categories when nothing is typed in", () => {

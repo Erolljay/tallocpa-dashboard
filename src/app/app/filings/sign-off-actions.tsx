@@ -35,6 +35,9 @@ export function SignOffActions(props: {
   amended?: boolean;
   /** The scanned copy is attached (needed for Filed & paid). */
   hasFiledCopy?: boolean;
+  /** Prepared: the tax due from the saved worksheet (pesos); "missing" until it is saved; null/absent when the form has no worksheet (typed). */
+  worksheetTaxDue?: number | "missing" | null;
+  worksheetHref?: string;
 }) {
   if (props.actions.length === 0) return null;
   return (
@@ -46,14 +49,26 @@ export function SignOffActions(props: {
   );
 }
 
-function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit, amended = false, hasFiledCopy = true }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null; amended?: boolean; hasFiledCopy?: boolean }) {
+function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit, amended = false, hasFiledCopy = true, worksheetTaxDue = null, worksheetHref }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null; amended?: boolean; hasFiledCopy?: boolean; worksheetTaxDue?: number | "missing" | null; worksheetHref?: string }) {
   const [state, run, pending] = useActionState(advanceFilingAction.bind(null, filingId, action), {} as SignOffState);
   const id = (n: string) => `${action}-${n}`;
   const secondary = action === "kick_back" || action === "client_query";
 
   return (
     <form action={run} className="space-y-3">
-      {action === "prepare" && (
+      {action === "prepare" && worksheetTaxDue === "missing" && (
+        <Notice tone="waiting">
+          Compute and save the {worksheetHref ? <Link href={worksheetHref} className="underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">worksheet</Link> : "worksheet"} first: the tax due comes from it.
+        </Notice>
+      )}
+      {action === "prepare" && typeof worksheetTaxDue === "number" && (
+        <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-2xl bg-background-secondary-default px-4 py-3">
+          <span className="text-body-regular text-text-secondary">{amended ? "Tax still due on this amended return, from the worksheet" : "Tax due, from the worksheet"}{worksheetTaxDue === 0 ? " (nil: skips the client's approval)" : ""}</span>
+          <span className="amount text-headline-medium tabular-nums text-text-primary">{peso.format(worksheetTaxDue)}</span>
+          <input type="hidden" name="tax_due_from_worksheet" value="1" />
+        </div>
+      )}
+      {action === "prepare" && worksheetTaxDue == null && (
         <Field
           label={amended ? "Tax still due on this amended return (₱)" : "Tax due on this return (₱)"}
           htmlFor={id("tax_due")}
@@ -92,7 +107,7 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant={secondary ? "secondary" : "primary"} disabled={pending}>
+        <Button type="submit" variant={secondary ? "secondary" : "primary"} disabled={pending || (action === "prepare" && worksheetTaxDue === "missing")}>
           {pending ? "Saving…" : audience === "client" && action === "client_approve" ? "Approve this return" : ACTION_LABEL[action]}
         </Button>
         {state.error && <Notice tone="blocked">{state.error}</Notice>}

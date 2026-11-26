@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
+import { contributionDescription, isContribution, type Contribution } from "@/lib/collections/collections";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -81,15 +82,18 @@ export async function addChargeAction(clientId: string, _: MoneyState, form: For
   const due = date.safeParse(text(form.get("due_on")));
   if (!due.success) return { error: "Enter the due date." };
   let description = text(form.get("description"));
+  let contribution: Contribution | null = null;
   if (kind === "contribution") {
     const agency = text(form.get("agency"));
     const month = text(form.get("month"));
-    if (!agency || !/^\d{4}-\d{2}$/.test(month)) return { error: "Choose the agency and the month." };
-    const label = new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));
-    description = `${agency} contributions, ${label}`;
+    if (!isContribution(agency) || !/^\d{4}-\d{2}$/.test(month)) return { error: "Choose the agency and the month." };
+    contribution = agency;
+    description = contributionDescription(agency, month);
   }
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("add_client_charge", { p_client: clientId, p_kind: kind, p_description: description, p_amount: amount.data, p_due_on: due.data });
+  const { error } = await supabase.rpc("add_client_charge", {
+    p_client: clientId, p_kind: kind, p_description: description, p_amount: amount.data, p_due_on: due.data, p_contribution: contribution,
+  });
   if (error) return { error: error.message };
   refresh(clientId);
   return { ok: "Added. It goes on the next statement." };
@@ -122,7 +126,7 @@ export async function applyCreditAction(clientId: string): Promise<MoneyState> {
   return { ok: Number(data) > 0 ? "Credit applied to open items." : "No credit or nothing open to apply it to." };
 }
 
-/** Records that a contribution (SSS, PhilHealth, Pag-IBIG) was remitted: its money is no longer held. */
+/** Records that one contribution item (SSS, PhilHealth, Pag-IBIG or a loan payment) was remitted: its money is no longer held. */
 export async function markRemittedAction(clientId: string, dueId: string, _: MoneyState, form: FormData): Promise<MoneyState> {
   await requireOwner();
   const d = date.safeParse(text(form.get("remitted_on")));

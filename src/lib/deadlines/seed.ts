@@ -16,8 +16,10 @@ export const seedDeadlineRules: DeadlineRule[] = [
   // follows the manual (eBIRForms) due dates, not the staggered eFPS group dates.
   // Monthly withholding remittance, first two months of each quarter.
   { id: "0619E", calendarYear: true, form: "0619-E", frequency: "monthly", periodFilter: "exclude_quarter_end_months", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
-  // Monthly compensation withholding.
-  { id: "1601C", calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
+  // Monthly compensation withholding: the 10th of the following month, except
+  // December's return, due 15 January (Owner's decision, BIR 1601-C guidelines).
+  { id: "1601C", calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "exclude_year_end_month", due: { kind: "day_of_month_after", monthsAfter: 1, day: 10 }, effectiveFrom: FROM, source: UNVERIFIED },
+  { id: "1601C-DEC", calendarYear: true, form: "1601-C", frequency: "monthly", periodFilter: "year_end_month_only", due: { kind: "day_of_month_after", monthsAfter: 1, day: 15 }, effectiveFrom: FROM, source: UNVERIFIED },
   // Quarterly.
   { id: "1601EQ", calendarYear: true, form: "1601-EQ", frequency: "quarterly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: "last" }, effectiveFrom: FROM, source: UNVERIFIED },
   { id: "2550Q", form: "2550Q", frequency: "quarterly", periodFilter: "all", due: { kind: "day_of_month_after", monthsAfter: 1, day: 25 }, effectiveFrom: FROM, source: UNVERIFIED },
