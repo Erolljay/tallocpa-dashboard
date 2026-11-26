@@ -1,15 +1,18 @@
-import { RiFacebookCircleFill } from "@remixicon/react";
+import { RiFacebookCircleFill, RiLoginBoxLine } from "@remixicon/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ButtonLink } from "@/components/base/buttons/button";
 import { Lockup } from "@/components/brand/lockup";
 import { phoneLinks, quoteTarget, type SiteBrand } from "@/lib/site/brand";
-import { signInHref } from "@/lib/site/config";
+import { QUOTE_LABEL, signInHref } from "@/lib/site/config";
+import { SERVICES } from "@/lib/site/content";
 import { cx } from "@/utils/cx";
 import { CtaLink } from "./cta-link";
 import { MobileMenu } from "./mobile-menu";
 
 export const NAV = [
   { href: "/services", label: "Services" },
+  { href: "/bir-filing-calendar", label: "BIR calendar" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
@@ -28,10 +31,10 @@ export function SiteHeader({ brand }: { brand: SiteBrand }) {
     <header className="sticky top-0 z-30 border-b border-separator-border bg-background-full">
       <Container className="relative flex h-18 items-center justify-between gap-4">
         <Link href="/" aria-label={`${brand.displayName}, home`} className={cx(LINK, "min-w-0")}>
-          <Lockup taglineClassName="text-text-secondary max-sm:hidden" />
+          <Lockup taglineClassName="text-text-secondary max-sm:hidden lg:max-xl:hidden" />
         </Link>
-        <nav aria-label="Site" className="max-md:hidden">
-          <ul className="flex items-center gap-1">
+        <nav aria-label="Site" className="max-lg:hidden">
+          <ul className="flex items-center gap-0.5">
             {NAV.map((l) => (
               <li key={l.href}>
                 <Link href={l.href} className={cx(LINK, "flex h-11 items-center rounded-lg px-3 text-body-medium text-text-secondary hover:bg-background-secondary-default hover:text-text-primary active:bg-background-secondary-hover")}>
@@ -42,10 +45,13 @@ export function SiteHeader({ brand }: { brand: SiteBrand }) {
           </ul>
         </nav>
         <div className="flex items-center gap-2">
-          <CtaLink href={quote.href} className="h-11 px-4 max-md:hidden">
-            Get a quote
+          <ButtonLink href={signInHref()} variant="secondary" leadingIcon={RiLoginBoxLine} className="h-11 px-3 max-lg:hidden">
+            Client log-in
+          </ButtonLink>
+          <CtaLink href={quote.href} className="h-11 px-4 max-lg:hidden">
+            {QUOTE_LABEL}
           </CtaLink>
-          <MobileMenu links={NAV} quoteHref={quote.href} quoteLabel="Get a quote" />
+          <MobileMenu links={NAV} quoteHref={quote.href} quoteLabel={QUOTE_LABEL} loginHref={signInHref()} />
         </div>
       </Container>
     </header>
@@ -93,18 +99,31 @@ export function SiteFooter({ brand }: { brand: SiteBrand }) {
           </div>
         </div>
 
-        <nav aria-label="Firm" className="md:col-span-4 md:col-start-9">
+        <nav aria-label="Services" className="md:col-span-4">
+          <p className="text-body-2-semibold text-text-primary">Services</p>
+          <ul className="mt-2 flex flex-col text-body-2-regular text-text-secondary">
+            {SERVICES.map((s) => (
+              <li key={s.slug}>
+                <Link href={`/services/${s.slug}`} className={cx(LINK, "inline-flex min-h-8 items-center hover:text-text-primary")}>
+                  {s.shortName ?? s.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <nav aria-label="Firm" className="md:col-span-3">
           <p className="text-body-2-semibold text-text-primary">Firm</p>
-          <ul className="mt-3 flex flex-col gap-2 text-body-2-regular text-text-secondary">
+          <ul className="mt-2 flex flex-col text-body-2-regular text-text-secondary">
             {[...NAV, { href: "/privacy", label: "Privacy notice" }].map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className={cx(LINK, "hover:text-text-primary")}>
+                <Link href={l.href} className={cx(LINK, "inline-flex min-h-8 items-center hover:text-text-primary")}>
                   {l.label}
                 </Link>
               </li>
             ))}
             <li>
-              <a href={signInHref()} className={cx(LINK, "hover:text-text-primary")}>
+              <a href={signInHref()} className={cx(LINK, "inline-flex min-h-8 items-center hover:text-text-primary")}>
                 Client and staff sign-in
               </a>
             </li>

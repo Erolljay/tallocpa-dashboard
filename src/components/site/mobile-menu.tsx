@@ -1,12 +1,13 @@
 "use client";
 
-import { RiCloseLine, RiMenuLine } from "@remixicon/react";
+import { RiCloseLine, RiLoginBoxLine, RiMenuLine } from "@remixicon/react";
+import { ButtonLink } from "@/components/base/buttons/button";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { CtaLink } from "./cta-link";
 
 /** The phone menu: a disclosure under the header, closed by a link, Escape or the button. */
-export function MobileMenu({ links, quoteHref, quoteLabel }: { links: { href: string; label: string }[]; quoteHref: string; quoteLabel: string }) {
+export function MobileMenu({ links, quoteHref, quoteLabel, loginHref }: { links: { href: string; label: string }[]; quoteHref: string; quoteLabel: string; loginHref: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
 
@@ -19,7 +20,7 @@ export function MobileMenu({ links, quoteHref, quoteLabel }: { links: { href: st
 
   const Icon = open ? RiCloseLine : RiMenuLine;
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         aria-expanded={open}
@@ -50,9 +51,14 @@ export function MobileMenu({ links, quoteHref, quoteLabel }: { links: { href: st
             ))}
           </ul>
         </nav>
-        <CtaLink href={quoteHref} className="mt-4 h-11 w-full">
-          {quoteLabel}
-        </CtaLink>
+        <div className="mt-4 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+          <ButtonLink href={loginHref} variant="secondary" leadingIcon={RiLoginBoxLine} className="h-12 w-full">
+            Client log-in
+          </ButtonLink>
+          <CtaLink href={quoteHref} className="h-12 w-full">
+            {quoteLabel}
+          </CtaLink>
+        </div>
       </div>
     </div>
   );

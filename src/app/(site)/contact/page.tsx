@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 import { H2, PageIntro, Section } from "@/components/site/blocks";
 import { CtaLink } from "@/components/site/cta-link";
 import { phoneLinks, quoteTarget, type SiteBrand, getSiteBrand } from "@/lib/site/brand";
+import { signInHref } from "@/lib/site/config";
 import { pageMetadata } from "@/lib/site/metadata";
 
 export const metadata = pageMetadata({
-  title: "Contact",
-  description: "How to reach Tallo CPA, and how to request a quote for bookkeeping, BIR compliance, audit and other services.",
+  title: "Contact Tallo CPA | Request a Bookkeeping or Tax Quote",
+  description: "Contact Tallo CPA, a Philippine CPA firm, for a quote on bookkeeping, BIR tax compliance, audit and other accounting services.",
   path: "/contact",
 });
 
@@ -19,7 +20,11 @@ export default async function ContactPage() {
   return (
     <>
       <PageIntro
-        title="Contact"
+        title="Contact Tallo CPA"
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Contact", path: "/contact" },
+        ]}
         lede={
           quote.toFunnel
             ? "The quote form is the quickest start: it shows your fee and sends us your details."
@@ -41,6 +46,13 @@ export default async function ContactPage() {
               Reach us
             </h2>
             <ContactList brand={brand} />
+            <p className="text-body-regular text-text-secondary">
+              Already a client?{" "}
+              <a href={signInHref()} className={LINK}>
+                Log in to your portal
+              </a>
+              .
+            </p>
           </div>
           <div className="flex flex-col gap-5 lg:col-span-6 lg:col-start-7">
             <h2 className="text-title-1-semibold text-text-primary">What to tell us</h2>
@@ -61,9 +73,9 @@ export default async function ContactPage() {
 }
 
 const BRING = [
-  { title: "How you are registered", body: "Your Certificate of Registration (Form 2303) shows it." },
-  { title: "What you need", body: "Monthly books and returns, an audit, or catching up." },
-  { title: "How busy the books are", body: "Documents a month, employees, branches." },
+  { title: "How you are registered", body: "Form 2303 shows it." },
+  { title: "What you need", body: "Monthly returns, an audit, or catching up." },
+  { title: "How busy the books are", body: "Documents, employees, branches." },
 ];
 
 function ContactList({ brand }: { brand: SiteBrand }) {

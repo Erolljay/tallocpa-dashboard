@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { PageIntro, QuoteBand, Section } from "@/components/site/blocks";
+import { H2, PageIntro, QuoteBand, Section } from "@/components/site/blocks";
 import { getSiteBrand } from "@/lib/site/brand";
-import { SERVICES } from "@/lib/site/content";
+import { SERVICES, SERVICE_GROUPS, type ServiceGroup } from "@/lib/site/content";
 import { pageMetadata } from "@/lib/site/metadata";
 
+/* Primary search phrase: "accounting and tax services Philippines". */
 export const metadata = pageMetadata({
-  title: "Services",
-  description: "Bookkeeping, BIR tax compliance, accounting outsourcing, audit, CAS implementation, agreed-upon procedures, and corporate rehabilitation and liquidation.",
+  title: "Accounting and Tax Services, Philippines | Tallo CPA",
+  description: "Accounting and tax services in the Philippines: bookkeeping, BIR tax compliance, outsourcing, audit, CAS implementation and court-appointed work.",
   path: "/services",
 });
 
@@ -14,27 +15,38 @@ export default async function ServicesPage() {
   const brand = await getSiteBrand();
   return (
     <>
-      <PageIntro title="Services" lede="Accounting, tax and assurance work for Philippine businesses, each scoped and quoted on its own." />
-      <Section labelledBy="service-list">
-        <h2 id="service-list" className="sr-only">
-          All services
+      <PageIntro
+        title="Accounting and tax services"
+        lede="Accounting and tax services for businesses across the Philippines, each scoped and quoted on its own."
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Services", path: "/services" },
+        ]}
+      />
+      <Section labelledBy="all-services">
+        <h2 id="all-services" className={H2}>
+          Seven services, three kinds of work
         </h2>
-        <ol className="flex flex-col">
-          {SERVICES.map((s, i) => (
-            <li key={s.slug} className="border-b border-separator-border first:border-t">
-              <Link
-                href={`/services/${s.slug}`}
-                className="group grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 gap-y-1 rounded-lg py-6 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring active:opacity-80 md:grid-cols-[3rem_minmax(0,5fr)_minmax(0,7fr)] md:gap-x-8"
-              >
-                <span className="text-title-2-medium text-text-secondary tabular-nums" aria-hidden>
-                  {i + 1}
-                </span>
-                <span className="text-title-2-semibold text-text-primary group-hover:underline group-hover:underline-offset-4">{s.name}</span>
-                <span className="col-start-2 text-body-regular text-text-secondary md:col-start-3">{s.short}</span>
-              </Link>
-            </li>
+        <div className="mt-12 flex flex-col gap-14">
+          {(Object.keys(SERVICE_GROUPS) as ServiceGroup[]).map((g) => (
+            <div key={g} className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+              <h3 className="text-title-1-semibold text-text-primary lg:col-span-4">{SERVICE_GROUPS[g]}</h3>
+              <ul className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:col-span-8">
+                {SERVICES.filter((s) => s.group === g).map((s) => (
+                  <li key={s.slug} className="border-t border-separator-border pt-4">
+                    <Link
+                      href={`/services/${s.slug}`}
+                      className="group flex flex-col gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring active:opacity-80"
+                    >
+                      <span className="text-title-3-semibold text-text-primary underline-offset-4 group-hover:underline">{s.h1}</span>
+                      <span className="text-body-2-regular text-text-secondary">{s.short}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ol>
+        </div>
       </Section>
       <QuoteBand brand={brand} />
     </>

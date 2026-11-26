@@ -1,9 +1,10 @@
-/* Hallmark · shape: Ledger (the filing year as the hero's object, services as an index, the month as a two-sided table) · genre: editorial · theme: brand (BoardUI tokens, Tallo CPA accent ramp) · job: hire · hero: Stage (head on 6 columns, the filing schedule on 6) · inner pages: Banner (service, contact, about, FAQ, privacy) · nav: edge-aligned bar, the lockup and one action, chosen for a firm whose one action is the quote · footer: colophon block (firm, address, credentials as one block) beside the service index · imagery: none, the BIR schedule and the client month are the material · signature: the BIR filing year set as a real schedule on the first screen
- * axes: white paper / Inter display / navy-blue accent · posture: accent held to actions and one navy close band · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4 · weakest: P and H, the first build had icon tiles and tinted bands with grey text; replaced the tiles with the client's month as a two-sided table and moved rhythm to hairlines and one navy band */
-/* Hallmark · waive 42 · edge-aligned nav with the lockup, four links and Get a quote · a CPA firm's visitors come for one action, the quote, and four real destinations */
+/* Hallmark · shape: Product ledger (the client portal as the hero's object, the filing flow, services by kind of work, the BIR year as a matrix, safeguards, the practitioner) · genre: modern-minimal · theme: brand (BoardUI tokens, Tallo CPA accent ramp, Geist and Geist Mono) · job: hire · hero: Stage (head on 6 columns, the portal on 6) · inner pages: Banner (service, calendar, contact, about, FAQ, privacy) · nav: edge-aligned bar, the lockup, five links, Client log-in and the quote · footer: colophon block beside the service and firm indexes · imagery: the product built from BoardUI components in a data-slot, captioned as an illustration with sample figures; no photographs · signature: the portal with a return awaiting approval, and the BIR year as a due-day matrix
+ * axes: white paper / Geist display / navy-blue accent · posture: accent held to actions, due days and one navy close band · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: R, the hero now carries a built product; kept it to one frame, inert, captioned, and let the rest of the page run on type, hairlines and one matrix */
+/* Hallmark · waive 42 · edge-aligned nav with the lockup, five links, Client log-in and Get a quote · clients come to log in and prospects to ask for a quote, the two actions this firm has */
 /* Hallmark · waive 26b · no form control and no aria-disabled anywhere on the site · the quote form lives at /start; every site control is a link, which has no disabled state */
-/* Hallmark · waive 44c · inner pages open on a Banner: head, one sentence, the quote action, the first section above the fold · service, contact and FAQ pages are references a visitor scans, not posters */
+/* Hallmark · waive 39b · the flagged controls are links inside running sentences (FAQ, BIR tax compliance services) · a link in a sentence takes the line height of its paragraph; every standalone control is 44px or taller */
+/* Hallmark · waive 44c · inner pages open on a Banner: breadcrumbs, head, one sentence, the quote action · service, calendar, contact and FAQ pages are references a visitor scans, not posters */
 
 /*
  * The website shares the app's tokens and Tailwind utilities (AGENTS.md); this
@@ -12,4 +13,22 @@
 html,
 body {
   overflow-x: clip;
+}
+
+/*
+ * The site's faces (set in (site)/layout.tsx): BoardUI's components read
+ * --font-sans and --font-mono, so pointing those at Geist here re-faces every
+ * component inside the site and nothing in the app.
+ */
+.site {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-family: var(--font-sans);
+}
+
+/* Form codes, dates and amounts: tabular figures, the mono face. */
+.site .figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }

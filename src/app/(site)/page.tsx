@@ -1,65 +1,137 @@
+import { RiCheckDoubleLine, RiFileList3Line, RiLoginBoxLine, RiSendPlaneLine, RiStackLine, RiUploadCloud2Line } from "@remixicon/react";
 import Link from "next/link";
 import { ButtonLink } from "@/components/base/buttons/button";
-import { H1, QuoteBand, Section, SectionHeading } from "@/components/site/blocks";
+import { H1, H2, QUOTE_LABEL, QuoteBand, Section, SectionHeading } from "@/components/site/blocks";
 import { Container } from "@/components/site/chrome";
 import { CtaLink } from "@/components/site/cta-link";
+import { FilingCalendar } from "@/components/site/filing-calendar";
+import { PortalPreview } from "@/components/site/portal-preview";
 import { getSiteBrand, quoteTarget } from "@/lib/site/brand";
-import { PRACTITIONER } from "@/lib/site/config";
-import { CLIENT_MONTH, FILING_RHYTHM, SERVICES } from "@/lib/site/content";
+import { PRACTITIONER, signInHref } from "@/lib/site/config";
+import { PLATFORM_FLOW, SAFEGUARDS, SERVICES, SERVICE_GROUPS, type ServiceGroup } from "@/lib/site/content";
 import { pageMetadata } from "@/lib/site/metadata";
+import { cx } from "@/utils/cx";
 
+/* Primary search phrase: "CPA firm for bookkeeping and BIR compliance, Philippines". */
 export const metadata = pageMetadata({
-  title: null,
+  title: "Tallo CPA | Bookkeeping and BIR Compliance, Philippines",
   description:
-    "Bookkeeping, BIR tax compliance, audit and accounting outsourcing for Philippine businesses, from a CPA firm in public practice. Get an instant quote.",
+    "A Philippine CPA firm for bookkeeping, BIR tax compliance and audit. Upload documents, approve returns and pay by QR in one client portal. Get a quote.",
   path: "/",
 });
+
+const FLOW_ICONS = [RiUploadCloud2Line, RiStackLine, RiFileList3Line, RiCheckDoubleLine, RiSendPlaneLine];
+const GROUP_SPAN: Record<ServiceGroup, string> = { accounting: "lg:col-span-6", assurance: "lg:col-span-3", court: "lg:col-span-3" };
 
 export default async function HomePage() {
   const brand = await getSiteBrand();
   const quote = quoteTarget(brand);
   return (
     <>
-      {/* Hero, Stage: the promise and the action on the left, the BIR year itself on the right. */}
+      {/* Hero: the promise and the action, beside the product itself. */}
       <section aria-labelledby="hero">
-        <Container className="grid min-h-[calc(100svh-4.5rem)] grid-cols-1 content-center gap-12 py-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,6fr)] lg:items-center lg:gap-12 xl:gap-16 lg:py-10">
+        <Container className="grid grid-cols-1 items-center gap-10 py-10 lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-2 lg:gap-14 lg:py-12">
           <div className="flex min-w-0 flex-col gap-6">
-            <h1 id="hero" className={H1}>
-              Clear numbers. Clean compliance.
+            <h1 id="hero" className={cx(H1, "lg:text-display-1-semibold")}>
+              BIR compliance, in one portal.
             </h1>
-            <p className="max-w-[34ch] text-title-3-regular text-text-secondary">Bookkeeping, BIR filings and audit for businesses across the Philippines.</p>
+            <p className="max-w-[40ch] text-title-3-regular text-text-secondary">
+              A Philippine CPA firm keeps your books and files your returns. You approve online.
+            </p>
             <div className="flex flex-wrap gap-3">
               <CtaLink href={quote.href} className="h-12 px-5">
-                {quote.toFunnel ? "Get a quote" : "Ask for a quote"}
+                {QUOTE_LABEL}
               </CtaLink>
-              <ButtonLink href="/services" variant="secondary" className="h-12 px-5">
-                See the services
+              <ButtonLink href="#how" variant="secondary" className="h-12 px-5">
+                How it works
               </ButtonLink>
             </div>
           </div>
-          <FilingYear />
+          <div className="flex min-w-0 flex-col gap-4">
+            <PortalPreview />
+            <a
+              href={signInHref()}
+              className="flex w-fit items-center gap-1.5 rounded-sm text-body-2-medium text-text-secondary underline decoration-1 underline-offset-4 outline-none hover:text-text-primary active:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+            >
+              <RiLoginBoxLine className="size-4" aria-hidden />
+              Already a client? Log in to your portal
+            </a>
+          </div>
         </Container>
       </section>
 
-      {/* Index: the seven services, the name doing the work. */}
-      <Section labelledBy="services">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
-          <SectionHeading id="services" title="What we do" className="lg:col-span-4" />
-          <ol className="flex flex-col border-t border-separator-border lg:col-span-8">
-            {SERVICES.map((s, i) => (
-              <li key={s.slug} className="border-b border-separator-border">
-                <Link
-                  href={`/services/${s.slug}`}
-                  className="group grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 gap-y-1 rounded-lg py-5 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring active:opacity-80 sm:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)] sm:items-baseline"
-                >
-                  <span className="text-body-medium text-text-secondary tabular-nums">{i + 1}</span>
-                  <span className="text-title-2-semibold text-text-primary underline-offset-4 group-hover:underline">{s.name}</span>
-                  <span className="col-start-2 text-body-regular text-text-secondary sm:col-start-3">{s.short}</span>
-                </Link>
+      {/* Process: receipt to filed return, five verbs on one line. */}
+      <Section id="how" labelledBy="how-title">
+        <SectionHeading id="how-title" title="From receipt to filed return" />
+        <ol className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+          {PLATFORM_FLOW.map((step, i) => {
+            const Icon = FLOW_ICONS[i];
+            return (
+              <li key={step.verb} className="flex flex-col gap-3 border-t-2 border-accent-500 pt-5">
+                <span className="flex items-center gap-2">
+                  <Icon className="size-5 text-button-ghost-foreground" aria-hidden />
+                  <h3 className="text-title-3-semibold text-text-primary">{step.verb}</h3>
+                </span>
+                <p className="text-body-regular text-text-secondary">{step.body}</p>
               </li>
-            ))}
-          </ol>
+            );
+          })}
+        </ol>
+      </Section>
+
+      {/* Services, grouped by kind of work; the names are the links. */}
+      <Section labelledBy="services">
+        <SectionHeading id="services" title="Services" />
+        <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
+          {(Object.keys(SERVICE_GROUPS) as ServiceGroup[]).map((g) => (
+            <div key={g} className={cx("flex flex-col gap-4", GROUP_SPAN[g])}>
+              <h3 className="text-body-2-semibold text-text-secondary">{SERVICE_GROUPS[g]}</h3>
+              <ul className={cx("grid grid-cols-1 gap-x-8 gap-y-6", g === "accounting" && "sm:grid-cols-2")}>
+                {SERVICES.filter((s) => s.group === g).map((s) => (
+                  <li key={s.slug} className="border-t border-separator-border pt-4 pb-2">
+                    <Link
+                      href={`/services/${s.slug}`}
+                      className="group flex flex-col gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring active:opacity-80"
+                    >
+                      <span className="text-title-3-semibold text-text-primary underline-offset-4 group-hover:underline">{s.name}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
+      </Section>
+
+      {/* Data: the BIR year as a matrix, linked to the full guide. */}
+      <Section labelledBy="calendar">
+        <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-4">
+            <h2 id="calendar" className={H2}>
+              The BIR year, by due day
+            </h2>
+            <p className="max-w-[56ch] text-title-3-regular text-text-secondary">Common returns for a calendar-year business, and the day each is due.</p>
+          </div>
+          <FilingCalendar />
+          <div>
+            <ButtonLink href="/bir-filing-calendar" variant="secondary" className="h-12 px-5">
+              Open the BIR filing calendar
+            </ButtonLink>
+          </div>
+        </div>
+      </Section>
+
+      {/* Safeguards: one panel, four facts. */}
+      <Section labelledBy="safeguards">
+        <SectionHeading id="safeguards" title="Your records, kept private" />
+        <ul className="mt-12 grid grid-cols-1 divide-y divide-separator-border rounded-3xl border border-border-button-default sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+          {SAFEGUARDS.map((g, i) => (
+            <li key={g.title} className={cx("flex flex-col gap-2 p-6", i < 2 && "sm:border-b sm:border-separator-border lg:border-b-0", i % 2 === 0 && "sm:max-lg:border-e sm:max-lg:border-separator-border")}>
+              <h3 className="text-title-3-semibold text-text-primary">{g.title}</h3>
+              <p className="text-body-2-regular text-text-secondary">{g.body}</p>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       {/* Statement: the practitioner, one sentence at the section's size. */}
@@ -76,58 +148,7 @@ export default async function HomePage() {
         </div>
       </Section>
 
-      {/* Table: a client's month, both sides of it. */}
-      <Section labelledBy="month">
-        <SectionHeading id="month" title="Your month with us" lede="All of it happens in your client portal." />
-        <div className="mt-12">
-          <div aria-hidden className="grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,4fr)] gap-8 border-b border-separator-border pb-3 text-body-2-medium text-text-secondary max-md:hidden md:grid">
-            <span>When</span>
-            <span>You</span>
-            <span>We</span>
-          </div>
-          <ul>
-            {CLIENT_MONTH.map((r) => (
-              <li key={r.when} className="grid grid-cols-1 gap-3 border-b border-separator-border py-6 md:grid-cols-[minmax(0,3fr)_minmax(0,4fr)_minmax(0,4fr)] md:gap-8">
-                <h3 className="text-title-2-semibold text-text-primary">{r.when}</h3>
-                <p className="text-body-regular text-text-primary">
-                  <span className="text-text-secondary md:sr-only">You: </span>
-                  {r.you}
-                </p>
-                <p className="text-body-regular text-text-secondary">
-                  <span className="md:sr-only">We: </span>
-                  {r.we}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </Section>
-
       <QuoteBand brand={brand} />
     </>
-  );
-}
-
-/** The hero's object: the BIR filing rhythm a registered business keeps, as a real schedule. */
-function FilingYear() {
-  return (
-    <figure aria-label="BIR filing calendar for a registered business" className="min-w-0 rounded-3xl border border-border-button-default bg-background-primary-default p-5 shadow-xs sm:p-7">
-      <div className="flex flex-col gap-6">
-        {FILING_RHYTHM.map((group) => (
-          <div key={group.cadence} className="flex flex-col gap-1">
-            <p className="text-body-2-semibold text-text-primary">{group.cadence}</p>
-            <ul className="flex flex-col divide-y divide-separator-border border-y border-separator-border">
-              {group.rows.map((r) => (
-                <li key={r.form} className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-x-3 gap-y-0.5 py-2.5 sm:grid-cols-[6.5rem_minmax(0,1fr)_minmax(0,auto)] sm:items-baseline">
-                  <span className="text-body-2-semibold text-text-primary tabular-nums">{r.form}</span>
-                  <span className="text-body-2-regular text-text-secondary">{r.what}</span>
-                  <span className="col-start-2 text-body-2-medium text-text-primary sm:col-start-3 sm:text-end">{r.due}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </figure>
   );
 }

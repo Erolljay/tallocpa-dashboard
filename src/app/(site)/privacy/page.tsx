@@ -4,7 +4,7 @@ import { getSiteBrand } from "@/lib/site/brand";
 import { pageMetadata } from "@/lib/site/metadata";
 
 export const metadata = pageMetadata({
-  title: "Privacy notice",
+  title: "Privacy Notice | Tallo CPA",
   description: "How Tallo CPA collects, uses, keeps and protects the personal information sent through its website, under the Data Privacy Act of 2012.",
   path: "/privacy",
 });
@@ -21,7 +21,13 @@ export default async function PrivacyPage() {
   const controller = brand.legalName ?? brand.displayName;
   return (
     <>
-      <PageIntro title="Privacy notice" lede={`How ${controller} handles the personal information you send through this website, under the Data Privacy Act of 2012 (Republic Act No. 10173).`} />
+      <PageIntro
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Privacy notice", path: "/privacy" },
+        ]}
+        title="Privacy notice"
+        lede={`How ${controller} handles the personal information you send through this website, under the Data Privacy Act of 2012 (Republic Act No. 10173).`} />
       <Section labelledBy="privacy-body">
         <h2 id="privacy-body" className="sr-only">
           The notice

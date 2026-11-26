@@ -1,13 +1,12 @@
 import { RiAddLine } from "@remixicon/react";
-import { H2, PageIntro, QuoteBand, Section } from "@/components/site/blocks";
-import { cx } from "@/utils/cx";
+import { H2, PageIntro, QuoteBand, Section, TextLink } from "@/components/site/blocks";
 import { getSiteBrand } from "@/lib/site/brand";
 import { FAQ_GROUPS } from "@/lib/site/content";
 import { pageMetadata } from "@/lib/site/metadata";
 
 export const metadata = pageMetadata({
-  title: "Questions",
-  description: "BIR filing deadlines for monthly withholding, quarterly VAT and percentage tax, annual income tax and information returns, and how onboarding works.",
+  title: "BIR Filing Deadlines and Onboarding FAQ | Tallo CPA",
+  description: "Answers on BIR filing deadlines (withholding, VAT, percentage tax, income tax, alphalists) and on how working with a CPA firm begins.",
   path: "/faq",
 });
 
@@ -21,15 +20,29 @@ export default async function FaqPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, "\\u003c") }} />
-      <PageIntro title="Questions" lede="BIR deadlines and how working with us begins. General information, not advice for your particular case." />
+      <PageIntro
+        title="BIR deadlines and onboarding: questions"
+        lede="Answers on BIR filing deadlines and on how working with us begins. General information, not advice for your particular case."
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "FAQ", path: "/faq" },
+        ]}
+      />
       {FAQ_GROUPS.map((group, gi) => {
         const id = `faq-${gi}`;
         return (
           <Section key={group.title} labelledBy={id}>
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-              <h2 id={id} className={cx(H2, "lg:col-span-4")}>
-                {group.title}
-              </h2>
+              <div className="flex flex-col gap-4 lg:col-span-4">
+                <h2 id={id} className={H2}>
+                  {group.title}
+                </h2>
+                {gi === 0 && (
+                  <p className="text-body-regular text-text-secondary">
+                    Every due date on one page: <TextLink href="/bir-filing-calendar">the BIR filing calendar</TextLink>.
+                  </p>
+                )}
+              </div>
               <div className="border-t border-separator-border lg:col-span-8">
                 {group.items.map((f) => (
                   <details key={f.q} className="group border-b border-separator-border">

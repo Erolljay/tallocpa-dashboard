@@ -1,26 +1,56 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ButtonLink } from "@/components/base/buttons/button";
+import { Breadcrumb, BreadcrumbItem } from "@/components/base/breadcrumb/breadcrumb";
 import { quoteTarget, type SiteBrand } from "@/lib/site/brand";
 import { cx } from "@/utils/cx";
 import { Container } from "./chrome";
 import { CtaLink } from "./cta-link";
+import { JsonLd } from "./json-ld";
+import { breadcrumbLd } from "@/lib/site/structured-data";
+
+import { QUOTE_LABEL } from "@/lib/site/config";
+export { QUOTE_LABEL };
 
 /** Display heads: one weight, one colour, and they may break inside long words on a phone. */
-export const H1 = "min-w-0 [overflow-wrap:break-word] text-display-3-semibold text-text-primary md:text-display-1-semibold lg:text-large-title-semibold";
-export const H2 = "min-w-0 [overflow-wrap:break-word] text-display-4-semibold text-text-primary md:text-display-3-semibold lg:text-display-2-semibold";
+export const H1 = "min-w-0 text-balance [overflow-wrap:break-word] text-display-3-semibold text-text-primary md:text-display-1-semibold lg:text-large-title-semibold";
+export const H2 = "min-w-0 text-balance [overflow-wrap:break-word] text-display-4-semibold text-text-primary md:text-display-3-semibold lg:text-display-2-semibold";
 
-/** Top of an inner page (Banner posture): the heading, one sentence, optionally one action; content shows above the fold. */
-export function PageIntro({ title, lede, children, aside }: { title: string; lede: string; children?: ReactNode; aside?: ReactNode }) {
+export type Crumb = { name: string; path: string };
+
+/** The visible trail (BoardUI Breadcrumb) and its BreadcrumbList, home first, the current page last. */
+export function Crumbs({ trail }: { trail: Crumb[] }) {
+  return (
+    <>
+      <JsonLd data={breadcrumbLd(trail)} />
+      <Breadcrumb className="-ms-1">
+        {trail.map((c, i) =>
+          i === trail.length - 1 ? (
+            <BreadcrumbItem key={c.path} current>
+              {c.name}
+            </BreadcrumbItem>
+          ) : (
+            <BreadcrumbItem key={c.path} href={c.path} className="text-text-secondary hover:text-text-primary">
+              {c.name}
+            </BreadcrumbItem>
+          ),
+        )}
+      </Breadcrumb>
+    </>
+  );
+}
+
+/** Top of an inner page (Banner posture): breadcrumbs, the heading, one sentence, optionally one action. */
+export function PageIntro({ title, lede, children, aside, crumbs }: { title: string; lede: string; children?: ReactNode; aside?: ReactNode; crumbs?: Crumb[] }) {
   return (
     <section className="border-b border-separator-border">
-      <Container className="grid grid-cols-1 gap-10 py-12 md:py-20 lg:grid-cols-12">
-        <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
+      <Container className="grid grid-cols-1 gap-10 py-12 md:py-24 lg:grid-cols-12">
+        <div className="flex min-w-0 flex-col gap-5 lg:col-span-8">
+          {crumbs && <Crumbs trail={crumbs} />}
           <h1 className={H1}>{title}</h1>
           <p className="max-w-[52ch] text-title-3-regular text-text-secondary">{lede}</p>
           {children}
         </div>
-        {aside && <div className="min-w-0 lg:col-span-5 lg:self-end">{aside}</div>}
+        {aside && <div className="min-w-0 lg:col-span-4 lg:self-end">{aside}</div>}
       </Container>
     </section>
   );
@@ -63,13 +93,8 @@ export function QuoteBand({ brand, title = "Tell us about your business.", onCon
         </div>
         <div className="flex flex-wrap gap-3 lg:col-span-4 lg:justify-end">
           <CtaLink href={quote.href} className="h-12 px-5">
-            {quote.toFunnel ? "Get a quote" : "Ask for a quote"}
+            {onContactPage && !quote.toFunnel ? "Email us for a quote" : QUOTE_LABEL}
           </CtaLink>
-          {!onContactPage && (
-            <ButtonLink href="/contact" variant="secondary" className="h-12 px-5">
-              Contact us
-            </ButtonLink>
-          )}
         </div>
       </Container>
     </section>
@@ -77,7 +102,7 @@ export function QuoteBand({ brand, title = "Tell us about your business.", onCon
 }
 
 export const textLink =
-  "rounded-sm text-button-ghost-foreground underline decoration-1 underline-offset-4 outline-none hover:decoration-2 active:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring";
+  "rounded-sm whitespace-nowrap text-button-ghost-foreground underline decoration-1 underline-offset-4 outline-none hover:decoration-2 active:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring";
 
 export function TextLink({ href, children }: { href: string; children: ReactNode }) {
   return (

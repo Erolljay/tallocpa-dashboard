@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/site/metadata";
 import { cx } from "@/utils/cx";
 
 export const metadata = pageMetadata({
-  title: "About",
+  title: "About Eroll Jay C. Tallo, CPA | Tallo CPA",
   description: `${PRACTITIONER} is a Philippine CPA in public practice and a court-appointed receiver and liquidator for businesses under rehabilitation.`,
   path: "/about",
 });
@@ -29,7 +29,14 @@ export default async function AboutPage() {
 
   return (
     <>
-      <PageIntro title="About the firm" lede={`${brand.displayName} is the accounting practice of ${PRACTITIONER}.`} />
+      <PageIntro
+        title="About the firm"
+        lede={`${brand.displayName} is the accounting practice of ${PRACTITIONER}, a Philippine CPA in public practice.`}
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "About", path: "/about" },
+        ]}
+      />
 
       {/* Statement: who the practitioner is, one sentence; the registration numbers beside it when set. */}
       <Section labelledBy="practitioner">

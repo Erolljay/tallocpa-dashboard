@@ -26,11 +26,35 @@ export interface Service {
   start: string[];
   /** Plain notes that matter (scope limits, independence). */
   notes?: string[];
+  /** SEO: the page's primary search phrase, its title (60 characters at most), meta description (155 at most) and H1. */
+  keyword: string;
+  seoTitle: string;
+  metaDescription: string;
+  h1: string;
+  /** The opening paragraph under the H1, carrying the keyword naturally. */
+  opening: string;
+  /** Services linked from this one. */
+  related: string[];
+  group: ServiceGroup;
 }
+
+export type ServiceGroup = "accounting" | "assurance" | "court";
+export const SERVICE_GROUPS: Record<ServiceGroup, string> = {
+  accounting: "Accounting and tax",
+  assurance: "Assurance",
+  court: "Court-appointed work",
+};
 
 export const SERVICES: Service[] = [
   {
     slug: "bookkeeping",
+    keyword: "bookkeeping services Philippines",
+    seoTitle: "Bookkeeping Services in the Philippines | Tallo CPA",
+    metaDescription: "Monthly bookkeeping services for Philippine businesses: books of accounts kept in BIR form, reconciled to the bank, ready for your returns.",
+    h1: "Bookkeeping services",
+    opening: "Bookkeeping services for Philippine businesses: your sales, purchases and bank activity recorded every month, in books of accounts kept the way the BIR requires.",
+    related: ["tax-compliance", "cas-implementation", "accounting-outsourcing"],
+    group: "accounting",
     short: "Monthly books, kept current",
     name: "Bookkeeping",
     summary: "Books of accounts kept current every month, ready for your returns and your decisions.",
@@ -48,6 +72,13 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "tax-compliance",
+    keyword: "BIR tax compliance services",
+    seoTitle: "BIR Tax Compliance Services | Tallo CPA",
+    metaDescription: "BIR tax compliance services: VAT or percentage tax, withholding, income tax and annual information returns, prepared from your books and filed for you.",
+    h1: "BIR tax compliance services",
+    opening: "BIR tax compliance services: we prepare each return from your books, you approve it in the client portal, and we file it on the BIR's schedule.",
+    related: ["bookkeeping", "accounting-outsourcing", "audit"],
+    group: "accounting",
     short: "VAT, withholding and income tax returns",
     name: "Tax compliance",
     summary: "BIR returns prepared and filed on time: VAT or percentage tax, withholding, income tax and annual information returns.",
@@ -55,18 +86,24 @@ export const SERVICES: Service[] = [
       "We prepare and file the returns your registration requires, on the BIR's schedule, and keep the alphalists and eSubmission files that go with them. You approve each return in the client portal before it is filed.",
     includes: [
       "VAT (2550Q) or percentage tax (2551Q) returns",
-      "Withholding tax on compensation and expanded withholding (1601-C, 0619-E, 1601-EQ)",
-      "Quarterly and annual income tax returns (1701Q/1701, 1702Q/1702)",
-      "Annual information returns and alphalists (1604-C, 1604-E), with eSubmission",
-      "Certificates of withholding (2307, 2316) and the summary lists the BIR asks for",
+      "Withholding on compensation and expanded withholding (1601-C, 0619-E, 1601-EQ)",
+      "Quarterly and annual income tax returns (1701Q, 1701, 1702Q, 1702)",
+      "Annual information returns and alphalists (1604-C, 1604-E) by eSubmission",
+      "Certificates of withholding (2307, 2316)",
       "A filing calendar built from your Certificate of Registration",
     ],
-    forWhom: "Any registered taxpayer: individuals in business or practice, one person corporations, partnerships, corporations and non-stock organizations.",
+    forWhom: "Any registered taxpayer: individuals in business, OPCs, partnerships, corporations and non-stock organizations.",
     start: ["Your BIR Certificate of Registration (Form 2303)", "Your eFPS or eBIRForms access, if already enrolled", "Copies of the last returns filed"],
-    notes: ["Due dates move when they fall on a weekend or holiday, and the BIR occasionally extends them. We file on the date in force."],
   },
   {
     slug: "accounting-outsourcing",
+    keyword: "accounting outsourcing Philippines",
+    seoTitle: "Accounting Outsourcing in the Philippines | Tallo CPA",
+    metaDescription: "Accounting outsourcing for Philippine businesses: monthly close, payables, receivables and payroll records, and management reports, run by a CPA firm.",
+    h1: "Accounting outsourcing",
+    opening: "Accounting outsourcing for Philippine businesses: we run the records, reconciliations, monthly close and reports, so you need not build an accounting team.",
+    related: ["bookkeeping", "tax-compliance", "audit"],
+    group: "accounting",
     short: "Your accounting function, run for you",
     name: "Accounting outsourcing",
     summary: "The accounting function run for you: books, payables and receivables records, payroll records and reports.",
@@ -84,6 +121,13 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "audit",
+    keyword: "financial statement audit Philippines",
+    seoTitle: "Financial Statement Audit, Philippines | Tallo CPA",
+    metaDescription: "Audit of financial statements under the Philippine Standards on Auditing, with the auditor's report for your annual BIR return and SEC filing.",
+    h1: "Financial statement audit",
+    opening: "A financial statement audit under the Philippine Standards on Auditing, with the auditor's report for your annual income tax return and SEC filing.",
+    related: ["agreed-upon-procedures", "accounting-outsourcing", "tax-compliance"],
+    group: "assurance",
     short: "Financial statements, audited",
     name: "Audit",
     summary: "Audit of financial statements under the Philippine Standards on Auditing, for filing with the BIR and the SEC.",
@@ -101,6 +145,13 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "cas-implementation",
+    keyword: "CAS implementation BIR",
+    seoTitle: "BIR CAS Implementation and Registration | Tallo CPA",
+    metaDescription: "Computerized accounting system (CAS) implementation: choose a system, set it up, and prepare the documents for its registration with the BIR.",
+    h1: "CAS implementation",
+    opening: "CAS implementation for businesses leaving manual books: we help choose a computerized accounting system, set it up, and prepare its BIR registration.",
+    related: ["bookkeeping", "tax-compliance", "accounting-outsourcing"],
+    group: "accounting",
     short: "Computerized books, registered with the BIR",
     name: "CAS implementation",
     summary: "A computerized accounting system chosen, set up and registered with the BIR.",
@@ -118,6 +169,13 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "agreed-upon-procedures",
+    keyword: "agreed-upon procedures engagement",
+    seoTitle: "Agreed-Upon Procedures Engagements | Tallo CPA",
+    metaDescription: "Agreed-upon procedures engagements: specific procedures on specific figures or controls, reported as factual findings for a lender, grantor or regulator.",
+    h1: "Agreed-upon procedures",
+    opening: "An agreed-upon procedures engagement answers a narrow question: we perform the procedures you and the report's users agree on and report factual findings.",
+    related: ["audit", "accounting-outsourcing", "rehabilitation-and-liquidation"],
+    group: "assurance",
     short: "Specific checks, factual findings",
     name: "Agreed-upon procedures",
     summary: "Specific procedures performed on specific information, reported as factual findings.",
@@ -133,6 +191,13 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "rehabilitation-and-liquidation",
+    keyword: "corporate rehabilitation receiver Philippines",
+    seoTitle: "Corporate Rehabilitation Receiver, Philippines | Tallo CPA",
+    metaDescription: "Court-appointed corporate rehabilitation receiver and liquidator in the Philippines under RA 10142 (FRIA), and the accounting these cases need.",
+    h1: "Corporate rehabilitation and liquidation",
+    opening: "Eroll Jay C. Tallo, CPA accepts court appointments as corporate rehabilitation receiver and liquidator in the Philippines under RA 10142 (FRIA).",
+    related: ["audit", "agreed-upon-procedures", "accounting-outsourcing"],
+    group: "court",
     shortName: "Rehabilitation and liquidation",
     short: "Court-appointed receiver and liquidator",
     name: "Corporate rehabilitation and liquidation",
@@ -152,31 +217,6 @@ export const SERVICES: Service[] = [
 
 export const serviceBySlug = (slug: string) => SERVICES.find((s) => s.slug === slug) ?? null;
 
-/** The BIR filing rhythm shown on the home page. OWNER REVIEW against current regulations. */
-export const FILING_RHYTHM: { cadence: string; rows: { form: string; what: string; due: string }[] }[] = [
-  {
-    cadence: "Every month",
-    rows: [
-      { form: "1601-C", what: "Compensation withholding", due: "10th, next month" },
-      { form: "0619-E", what: "Expanded withholding", due: "10th, next month" },
-    ],
-  },
-  {
-    cadence: "Every quarter",
-    rows: [
-      { form: "2550Q / 2551Q", what: "VAT or percentage tax", due: "25th day after quarter" },
-      { form: "1601-EQ", what: "Expanded withholding", due: "Last day, next month" },
-    ],
-  },
-  {
-    cadence: "Every year",
-    rows: [
-      { form: "1604-C", what: "Alphalist, compensation", due: "January 31" },
-      { form: "1604-E", what: "Alphalist, expanded", due: "March 1" },
-      { form: "1701 / 1702", what: "Annual income tax", due: "April 15" },
-    ],
-  },
-];
 
 export interface Faq {
   q: string;
@@ -253,10 +293,19 @@ export const FAQ_GROUPS: { title: string; items: Faq[] }[] = [
   },
 ];
 
-/** The client's month, both sides of it. OWNER REVIEW: describes how the portal works today. */
-export const CLIENT_MONTH: { when: string; you: string; we: string }[] = [
-  { when: "As documents come in", you: "Upload receipts and bank statements.", we: "Record them in your books." },
-  { when: "Before each deadline", you: "Check the return and approve it.", we: "Prepare it from your books." },
-  { when: "On the deadline", you: "Nothing.", we: "File it and post the filed copy." },
-  { when: "When billed", you: "Pay by QR from your bank app.", we: "Post your statement of account." },
-]
+/** How the platform works, from receipt to filed return. OWNER REVIEW: describes the portal as it works today. */
+export const PLATFORM_FLOW: { verb: string; body: string }[] = [
+  { verb: "Upload", body: "Receipts and bank statements, from your phone." },
+  { verb: "Record", body: "Posted to your books every month." },
+  { verb: "Prepare", body: "Returns and alphalists, from your books." },
+  { verb: "Approve", body: "Check each return, then approve it." },
+  { verb: "File", body: "Filed with the BIR, the copy in your portal." },
+];
+
+/** Security and privacy: factual statements only. OWNER REVIEW: keep each one true. */
+export const SAFEGUARDS: { title: string; body: string }[] = [
+  { title: "Data Privacy Act", body: "Personal information is handled under Republic Act No. 10173." },
+  { title: "Access by role", body: "You see your own business only. Staff access is set by role and enforced by the database." },
+  { title: "Private storage", body: "Uploaded documents are kept in private storage, never on public links." },
+  { title: "Encrypted connections", body: "The site and the portal are served over HTTPS only." },
+];
