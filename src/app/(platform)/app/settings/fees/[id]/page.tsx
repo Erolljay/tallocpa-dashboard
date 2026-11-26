@@ -7,7 +7,8 @@ import { itemName, toSettings, unpricedItems } from "@/lib/fees/schedule";
 import { COMPONENTS } from "@/lib/fees/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadItems, loadSchedule, loadTaxOnFee, longDate, statusLabel, statusTone } from "../data";
-import { ActivateForm, DeleteDraftButton, PRICE_SECTIONS, priceSection, PricesForm, ScheduleSettingsForm } from "../forms";
+import { PRICE_SECTIONS, priceSection } from "@/lib/fees/sections";
+import { ActivateForm, DeleteDraftButton, PricesForm, ScheduleSettingsForm } from "../forms";
 
 export default function FeeScheduleEditorPage(props: PageProps<"/app/settings/fees/[id]">) {
   return (
