@@ -4,12 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireOwnerOrReviewer } from "@/lib/auth";
 import { addDays } from "@/lib/deadlines/dates";
-import { buildQuote } from "@/lib/fees/quote";
-import { toSettings } from "@/lib/fees/schedule";
-import type { ClientProfile } from "@/lib/fees/types";
+import { auditIndependenceWarning, buildProposalQuote, parseSales, readJobs } from "@/lib/fees/proposal";
+import { parsePrice } from "@/lib/fees/schedule";
 import { manilaToday } from "@/lib/filings/run";
+import { proposalStart } from "@/lib/funnel/proposal-quote";
 import { supabaseServer } from "@/lib/supabase/server";
-import { loadItems, loadSchedules, loadTaxOnFee } from "../settings/fees/data";
 
 export type LeadState = { ok?: string; error?: string; link?: string };
 
@@ -53,26 +52,41 @@ export async function recordCallAction(leadId: string, _: LeadState, form: FormD
   return { ok: "Discovery call recorded." };
 }
 
-/** Funnel step 3: a proposal from the lead's profile, priced on today's active fee schedule. The Owner or the lead's reviewer. */
+/**
+ * Funnel step 3: a proposal from the lead's profile, priced on today's active fee
+ * schedule: the monthly retainer and catch-up, plus the annual and ad hoc jobs
+ * ticked (and the audit, shown for information as a separate engagement). Above the
+ * monthly cap the agreed retainer is entered. The Owner or the lead's reviewer.
+ */
 export async function sendProposalAction(leadId: string, _: LeadState, form: FormData): Promise<LeadState> {
   const me = await requireOwnerOrReviewer();
   const supabase = await supabaseServer();
-  const { data: lead } = await supabase.from("leads").select("id, profile").eq("id", leadId).maybeSingle();
+  const { data: lead } = await supabase.from("leads").select("id, profile, services").eq("id", leadId).maybeSingle();
   if (!lead) return { error: "Lead not found." };
-  const schedule = (await loadSchedules(supabase, me.staff.brandId)).find((s) => s.status === "active");
-  if (!schedule) return { error: "The Owner activates a fee schedule first (Settings → Fee schedule)." };
-  const [items, taxOnFee] = await Promise.all([loadItems(supabase, schedule.id), loadTaxOnFee(supabase, me.staff.brandId)]);
-  const today = manilaToday();
-  const quote = buildQuote({ profile: lead.profile as ClientProfile, items, settings: toSettings(schedule), taxOnFee, quoteDate: today });
+  const start = await proposalStart(supabase, me.staff.brandId, lead.profile);
+  if ("error" in start) return { error: start.error };
+  const value = (k: string) => (typeof form.get(k) === "string" ? String(form.get(k)) : null);
+  const sales = parseSales(value("annual_sales"));
+  if ("error" in sales) return { error: sales.error };
+  const jobs = readJobs(start.jobs, value, sales.value);
+  if ("error" in jobs) return { error: jobs.error };
+  const agreedRaw = parsePrice(text(form, "agreed_monthly"));
+  if ("error" in agreedRaw) return { error: `Agreed monthly retainer: ${agreedRaw.error}` };
+  const built = buildProposalQuote(start.quote, jobs.jobs, { monthly: start.quote.overCap ? agreedRaw.value : null, catchUpFactor: start.settings.catchUpFactor, annualSales: sales.value });
+  if ("error" in built) return { error: built.error };
   const terms = text(form, "terms");
   if (!terms) return { error: "The proposal needs its terms of engagement." };
   const days = Math.min(Math.max(Number(form.get("valid_days") ?? 30) || 30, 1), 120);
+  const today = manilaToday();
   const { data, error } = await supabase.rpc("create_proposal", {
-    p_lead: leadId, p_quote: quote, p_terms: terms, p_monthly: quote.monthlyRetainer, p_first_year: quote.firstYearTotal, p_valid_until: addDays(today, days),
+    // first_year_total is no longer filled (26 Nov 2026): the proposal has no grand total.
+    p_lead: leadId, p_quote: built.quote, p_terms: terms, p_monthly: built.quote.monthlyRetainer, p_first_year: 0, p_valid_until: addDays(today, days),
   });
   if (error) return { error: error.message };
   refresh(leadId);
-  return { ok: "Proposal ready. Send the link to the prospect.", link: `/proposal/${(data as { token: string }).token}` };
+  const keepsBooks = built.quote.monthly.some((l) => l.component === "F") || ((lead.services as string[] | null) ?? []).includes("bookkeeping");
+  const warning = auditIndependenceWarning(built.quote.audit ? [built.quote.audit] : [], keepsBooks);
+  return { ok: `Proposal ready. Send the link to the prospect.${warning ? ` ${warning}` : ""}`, link: `/proposal/${(data as { token: string }).token}` };
 }
 
 /** Lost needs its reason. */

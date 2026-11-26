@@ -2,8 +2,11 @@
  * Current fee vs computed fee for existing clients (spec §3.12; Q49, Q52).
  * Existing clients keep their fees until their annual renewal; this only shows
  * the gap. The OS does not record everything a quote needs (employees, kind of
- * withholding, bookkeeping load), so anything not recorded takes the LOWEST band
+ * withholding, branches, complexity), so anything not recorded takes the LOWEST band
  * and is listed as an assumption: the computed fee is an estimate, at least this much.
+ * Bookkeeping is priced by the documents the client actually sent (F), whether or
+ * not the client has the bookkeeping service line (Owner, 26 Nov 2026). The quote is
+ * monthly only, so the gap is monthly only: there is no annual package to compare.
  */
 import type { TaxpayerType } from "@/lib/clients/obligations";
 import { buildQuote, documentBand, type QuoteInput } from "./quote";
@@ -13,8 +16,6 @@ export interface ExistingClient {
   taxpayerType: TaxpayerType;
   /** Forms of the client's open obligations, e.g. 2550Q, 0619-E, 1601-C. */
   openForms: readonly string[];
-  /** Service lines of the client's active engagements. */
-  serviceLines: readonly string[];
   /** Submitted documents (sales, purchases, 2307s, other) per month over the window, oldest first. */
   monthlyDocuments: readonly number[];
 }
@@ -32,18 +33,12 @@ export function estimateProfile(c: ExistingClient): EstimatedProfile {
   const vat = has(c.openForms, "2550Q", "2550M");
   const ewt = has(c.openForms, "0619-E", "1601-EQ", "1604-E");
   const payroll = has(c.openForms, "1601-C", "1604-C");
-  const bookkeeping = c.serviceLines.includes("bookkeeping");
   const months = c.monthlyDocuments.length;
   const averageDocuments = months ? Math.round(c.monthlyDocuments.reduce((s, n) => s + n, 0) / months) : 0;
 
   if (ewt) assumptions.push("Expanded withholding priced as rental only (the lower band); the kind is not recorded.");
   if (payroll) assumptions.push("Payroll priced at 1–9 employees and without SSS, PhilHealth, Pag-IBIG; headcount is not recorded.");
-  if (bookkeeping) assumptions.push("Bookkeeping priced as light, no branches or complexity factor.");
   if (!months) assumptions.push("No document history yet; volume taken as 0.");
-
-  const annualItems = ["H.afs_itr", "H.sawt"];
-  if (payroll) annualItems.push("H.1604c");
-  if (ewt) annualItems.push("H.1604e");
 
   return {
     averageDocuments,
@@ -55,11 +50,9 @@ export function estimateProfile(c: ExistingClient): EstimatedProfile {
       employees: payroll ? 1 : 0,
       remitsContributions: false,
       documentsPerMonth: averageDocuments,
-      bookkeeping: bookkeeping ? "light" : "none",
       complexity: [],
       branches: 0,
-      annualItems,
-      oneTimeItems: [],
+      monthsBehind: 0,
     },
   };
 }
@@ -69,11 +62,10 @@ export interface GapRow {
   computedMonthly: number;
   /** computed − current: positive means the client pays less than the schedule. */
   gap: number;
-  annualPackage: number;
   averageDocuments: number;
-  /** The volume band the client's documents fall in, and whether it is above the included band. */
+  /** The bookkeeping band the client's documents fall in, and whether it is above the first band. */
   volumeBand: string | null;
-  aboveIncludedVolume: boolean;
+  aboveFirstBand: boolean;
   volumeNeedsCustomQuote: boolean;
   /** Documents in the busiest month of the window. */
   peakDocuments: number;
@@ -91,23 +83,22 @@ export function gapFor(
   const input: QuoteInput = { profile: est.profile, items: schedule.items, settings: schedule.settings, taxOnFee: schedule.taxOnFee, quoteDate: today };
   const q = buildQuote(input);
   const band = documentBand(schedule.items, est.averageDocuments);
-  const included = schedule.items
+  const firstBand = schedule.items
     .filter((i) => i.component === "F" && i.conditions.documents)
     .sort((a, b) => (a.conditions.documents?.min ?? 0) - (b.conditions.documents?.min ?? 0))[0];
-  const includedMax = included?.conditions.documents?.max ?? null;
+  const firstMax = firstBand?.conditions.documents?.max ?? null;
   const peak = client.monthlyDocuments.length ? Math.max(...client.monthlyDocuments) : 0;
   return {
     currentMonthly: client.currentMonthly,
     computedMonthly: q.monthlyRetainer,
     gap: Math.round((q.monthlyRetainer - client.currentMonthly) * 100) / 100,
-    annualPackage: q.annualTotal,
     averageDocuments: est.averageDocuments,
     volumeBand: band?.band ?? null,
-    aboveIncludedVolume: includedMax !== null && est.averageDocuments > includedMax,
+    aboveFirstBand: firstMax !== null && est.averageDocuments > firstMax,
     volumeNeedsCustomQuote: Boolean(band?.isCustomQuote),
     peakDocuments: peak,
     assumptions: est.assumptions,
-    incomplete: q.missingPrices.length > 0 || q.customQuote.length > 0,
+    incomplete: !q.complete,
   };
 }
 

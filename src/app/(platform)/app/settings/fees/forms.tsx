@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState, useTransition } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { auditNote, isAuditItem } from "@/lib/fees/template";
 import { COMPONENTS, type ComponentLetter } from "@/lib/fees/types";
 import {
   activateAction,
@@ -85,6 +86,8 @@ export interface SettingsValues {
   minimum_monthly_retainer: number | null;
   late_surcharge_amount: number | null;
   late_surcharge_auto: boolean;
+  monthly_cap: number | null;
+  catch_up_factor: number | null;
   notes: string | null;
 }
 
@@ -119,6 +122,12 @@ export function ScheduleSettingsForm({ scheduleId, values, taxLabel }: { schedul
           <option value="1">Automatically</option>
         </Select>
       </Field>
+      <Field label="Monthly cap (₱)" htmlFor="fs-cap" hint="Above it the website quote shows no price: the business is quoted on request in the proposal. Empty for no cap.">
+        <Input id="fs-cap" name="monthly_cap" inputMode="decimal" defaultValue={values.monthly_cap ?? ""} className="text-end tabular-nums" />
+      </Field>
+      <Field label="Catch-up factor" htmlFor="fs-catchup" hint="Per month behind, × the monthly retainer. 0.5 = half. Empty: catch-up on request.">
+        <Input id="fs-catchup" name="catch_up_factor" inputMode="decimal" defaultValue={values.catch_up_factor ?? ""} className="text-end tabular-nums" />
+      </Field>
       <div className="sm:col-span-2">
         <Field label="Notes (optional)" htmlFor="fs-notes">
           <Textarea id="fs-notes" name="notes" rows={2} defaultValue={values.notes ?? ""} />
@@ -134,6 +143,7 @@ export function ScheduleSettingsForm({ scheduleId, values, taxLabel }: { schedul
 
 export interface PriceRow {
   id: string;
+  code: string;
   component: ComponentLetter;
   label: string;
   band: string | null;
@@ -145,31 +155,54 @@ export interface PriceRow {
 
 const billingHint: Record<string, string> = {
   monthly: "a month",
-  annual: "a year",
-  one_time: "once",
+  annual: "a year, in the proposal",
+  one_time: "when done, in the proposal",
   per_unit_monthly: "a month each",
   multiplier: "factor",
 };
 
-/** Every price of a draft in one form, grouped by component; one Save for all. */
+/** The editor's sections: monthly components, annual jobs, ad hoc jobs, and the separate audit. */
+export const PRICE_SECTIONS = [
+  { key: "monthly", title: "Monthly", hint: "The monthly retainer on every quote. Each needs a price before activating (0 if included)." },
+  { key: "annual", title: "Annual jobs", hint: "Not on the quote: priced in the proposal, billed once a year. A price is optional; it fills in the proposal." },
+  { key: "ad_hoc", title: "Ad hoc jobs", hint: "Not on the quote: priced in the proposal, billed when done. A price is optional; it fills in the proposal." },
+  { key: "audit", title: "Audit (separate engagement)", hint: auditNote(null) + " Priced by taxpayer type and annual gross sales." },
+] as const;
+export const priceSection = (r: Pick<PriceRow, "billing" | "code">) => (isAuditItem(r) ? "audit" : r.billing === "annual" ? "annual" : r.billing === "one_time" ? "ad_hoc" : "monthly");
+
+/** Every price of a draft in one form, in sections and grouped by component; one Save for all. */
 export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: PriceRow[] }) {
   const [state, run, pending] = useActionState(savePricesAction.bind(null, scheduleId), {} as FeeFormState);
   const [values, setValues] = useState(() => Object.fromEntries(rows.map((r) => [r.id, r.price === null ? "" : String(r.price)])));
-  const groups = useMemo(() => {
-    const map = new Map<ComponentLetter, PriceRow[]>();
-    for (const r of rows) map.set(r.component, [...(map.get(r.component) ?? []), r]);
-    return [...map.entries()];
-  }, [rows]);
-  const empty = rows.filter((r) => !r.isCustomQuote && (values[r.id] ?? "").trim() === "").length;
+  const sections = useMemo(
+    () =>
+      PRICE_SECTIONS.map((s) => {
+        const map = new Map<ComponentLetter, PriceRow[]>();
+        for (const r of rows.filter((x) => priceSection(x) === s.key)) map.set(r.component, [...(map.get(r.component) ?? []), r]);
+        return { ...s, groups: [...map.entries()] };
+      }).filter((s) => s.groups.length > 0),
+    [rows],
+  );
+  const empty = rows.filter((r) => !r.isCustomQuote && priceSection(r) === "monthly" && (values[r.id] ?? "").trim() === "").length;
 
   return (
     <form action={run} className="space-y-6">
-      {groups.map(([letter, items]) => (
+      {sections.map((section) => (
+      <div key={section.key} className="space-y-4">
+        <div>
+          <h2 className="text-title-2-medium text-text-primary">{section.title}</h2>
+          <p className="text-body-regular text-text-secondary">{section.hint}</p>
+        </div>
+      {section.groups.map(([letter, items]) => (
         <section key={letter} className="rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-xs sm:p-6">
-          <h2 className="text-title-3-semibold text-text-primary">
-            <span className="text-text-tertiary">{letter}.</span> {COMPONENTS[letter].title}
-          </h2>
-          <p className="mb-3 text-body-regular text-text-secondary">{COMPONENTS[letter].hint}</p>
+          {section.key !== "audit" && (
+            <>
+              <h3 className="text-title-3-semibold text-text-primary">
+                <span className="text-text-tertiary">{letter}.</span> {COMPONENTS[letter].title}
+              </h3>
+              <p className="mb-3 text-body-regular text-text-secondary">{COMPONENTS[letter].hint}</p>
+            </>
+          )}
           <ul className="divide-y divide-separator-border">
             {items.map((r) => {
               const factor = r.billing === "multiplier";
@@ -192,7 +225,7 @@ export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: Pri
                         name={`price:${r.id}`}
                         inputMode="decimal"
                         autoComplete="off"
-                        placeholder="Not set"
+                        placeholder={priceSection(r) === "monthly" ? "Not set" : "Optional"}
                         value={values[r.id] ?? ""}
                         onChange={(e) => setValues((v) => ({ ...v, [r.id]: e.target.value }))}
                         className="w-28 text-end tabular-nums sm:w-32"
@@ -205,9 +238,11 @@ export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: Pri
           </ul>
         </section>
       ))}
+      </div>
+      ))}
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-separator-border bg-background-primary-default/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
         <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Prices"}</Button>
-        <span className="text-body-regular text-text-secondary">{empty === 0 ? "Every item has a price." : `${empty} item${empty === 1 ? "" : "s"} without a price.`}</span>
+        <span className="text-body-regular text-text-secondary">{empty === 0 ? "Every monthly item has a price." : `${empty} monthly item${empty === 1 ? "" : "s"} without a price.`}</span>
         <Result state={state} />
       </div>
     </form>

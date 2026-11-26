@@ -5,6 +5,7 @@ import { requireOwner } from "@/lib/auth";
 import type { TaxpayerType } from "@/lib/clients/obligations";
 import { manilaToday } from "@/lib/filings/run";
 import { gapFor, lastWholeMonths, type GapRow } from "@/lib/fees/gap";
+import { isLegacySchedule } from "@/lib/fees/template";
 import { toSettings } from "@/lib/fees/schedule";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadItems, loadSchedules, loadTaxOnFee } from "../data";
@@ -16,7 +17,7 @@ export default function FeeGapPage() {
         title="Current clients vs schedule"
         description={
           <>
-            Existing clients keep their fees until their annual renewal. This compares each client&apos;s current monthly retainer with what the active schedule would charge, and flags document volume above the included band.{" "}
+            Existing clients keep their fees until their annual renewal. This compares each client&apos;s current monthly retainer with what the active schedule would charge a month, bookkeeping by the documents they send, and flags volume above the first band.{" "}
             <Link href="/app/settings/fees" className="text-button-ghost-foreground hover:underline">Fee schedule</Link>
           </>
         }
@@ -83,20 +84,26 @@ async function Gap() {
       // Only months the client was with us count toward the average.
       const startMonth = `${c.start.slice(0, 7)}-01`;
       const monthlyDocuments = months.filter((m) => m >= startMonth).map((m) => docs.get(`${id}|${m}`) ?? 0);
-      const g = gapFor({ taxpayerType: c.taxpayerType, openForms: forms.get(id) ?? [], serviceLines: [...c.lines], monthlyDocuments, currentMonthly: c.current }, { items, settings, taxOnFee }, today);
+      const g = gapFor({ taxpayerType: c.taxpayerType, openForms: forms.get(id) ?? [], monthlyDocuments, currentMonthly: c.current }, { items, settings, taxOnFee }, today);
       return { ...g, id, name: c.name, code: c.code };
     })
     .sort((a, b) => b.gap - a.gap || a.name.localeCompare(b.name));
 
   const totalCurrent = rows.reduce((s, r) => s + r.currentMonthly, 0);
   const totalComputed = rows.reduce((s, r) => s + r.computedMonthly, 0);
-  const above = rows.filter((r) => r.aboveIncludedVolume).length;
+  const above = rows.filter((r) => r.aboveFirstBand).length;
+  const legacy = isLegacySchedule(items);
   const monthName = (m: string) => new Intl.DateTimeFormat("en-PH", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${m}T00:00:00Z`));
 
   return (
     <div className="space-y-6">
+      {legacy && (
+        <Notice tone="blocked">
+          The active schedule is from before 26 Nov 2026: its bookkeeping (G) is not priced on the new structure, so these figures leave it out. Start a new version, price it and activate it.
+        </Notice>
+      )}
       <Notice tone="waiting">
-        Estimate only. The OS does not record headcount, the kind of withholding or bookkeeping load, so those take the lowest band and are listed under each client: the computed fee is a floor. Document volume is the monthly average from {monthName(months[0])} to {monthName(months[months.length - 1])}. Schedule: “{active.name}”.
+        Estimate only. The OS does not record headcount, the kind of withholding, branches or complexity, so those take the lowest band (or none) and are listed under each client: the computed fee is a floor. Bookkeeping is priced by the documents each client sent, with or without the bookkeeping service. Document volume is the monthly average from {monthName(months[0])} to {monthName(months[months.length - 1])}. Schedule: “{active.name}”.
       </Notice>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -111,9 +118,9 @@ async function Gap() {
           <p className="mt-2 text-body-regular text-text-secondary">A month, at least.</p>
         </Card>
         <Card>
-          <p className="text-body-medium text-text-secondary">Above the included volume</p>
+          <p className="text-body-medium text-text-secondary">Above the first band</p>
           <p className="mt-2 text-title-1-semibold tabular-nums text-text-primary">{above}</p>
-          <p className="mt-2 text-body-regular text-text-secondary">Clients sending more documents than their fee covers.</p>
+          <p className="mt-2 text-body-regular text-text-secondary">Clients sending more documents than the first bookkeeping band.</p>
         </Card>
       </div>
 
@@ -136,7 +143,7 @@ async function Gap() {
                 <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                   <td className="px-4 py-3">
                     <Link href={`/app/clients/${r.id}`} className="font-medium text-text-primary hover:text-button-ghost-foreground hover:underline">{r.name}</Link>
-                    <p className="text-caption-1-regular text-text-tertiary">{r.code}{r.annualPackage > 0 ? ` · annual package ${peso.format(r.annualPackage)}` : ""}</p>
+                    <p className="text-caption-1-regular text-text-tertiary">{r.code}</p>
                     {r.assumptions.length > 0 && (
                       <ul className="mt-1 space-y-0.5 text-caption-1-regular text-text-secondary">
                         {r.assumptions.map((a) => <li key={a}>{a}</li>)}
@@ -155,7 +162,7 @@ async function Gap() {
                     <p className="tabular-nums text-text-primary">{r.averageDocuments} <span className="text-text-tertiary">(busiest {r.peakDocuments})</span></p>
                     <p className="text-caption-1-regular text-text-tertiary">{r.volumeBand ?? "No band"}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {r.volumeNeedsCustomQuote ? <Badge tone="blocked">Custom quote volume</Badge> : r.aboveIncludedVolume ? <Badge tone="waiting">Above included volume</Badge> : null}
+                      {r.volumeNeedsCustomQuote ? <Badge tone="blocked">Custom quote volume</Badge> : r.aboveFirstBand ? <Badge tone="waiting">Above the first band</Badge> : null}
                     </div>
                   </td>
                 </tr>

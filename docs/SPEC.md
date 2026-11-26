@@ -256,11 +256,14 @@ Per client per month:
 - **One fee schedule per brand** in the database. Quotes, proposals, SOAs and the Phase 2 website calculator all read from it (Q48).
 - **Model: low entry, fair scaling (Q54).** Entry prices stay low; volume, annual work and complexity are charged as add-ons; a **late-submission surcharge** applies when documents come after cutoff.
 - The OS counts each client's real monthly documents and **flags clients whose volume is above their priced band** (Q49).
-- Every quote shows **monthly retainer + estimated annual package = first-year total** (Q50).
+- ~~Every quote shows **monthly retainer + estimated annual package = first-year total** (Q50).~~ **Replaced by the Owner's decision of 26 Nov 2026:** the quote is **monthly only** — the itemised monthly retainer, the tax on the fee and the EWT note — with **backlog catch-up as a separate one-time line** below the monthly total (months behind × catch-up factor × monthly retainer; the factor is a schedule setting, 0.5 = half). Above the schedule's **monthly cap** (₱6,000 in the Owner's 2027 draft) the quote shows **no price**: the business is quoted on request in the proposal, the components that apply are still listed, and the lead is created as usual. There is **no annual package and no first-year total**. The quote lists what is **"Not included in this quote"**: annual jobs, ad hoc jobs and the audit, priced in the proposal.
+- **Bookkeeping and document volume are one component (26 Nov 2026):** "Bookkeeping, by documents a month" (≤50 / 51–150 / 151–300 / 301+ on request; band edges in `src/lib/fees/template.ts`), a flat add-on for inventory, manufacturing or construction (once, even if several apply) and a charge per branch. **Every client is charged by the documents they send a month**, with or without the bookkeeping service line: each document is recorded for the SLSP, the 2307s and the returns either way, so tax-compliance-only clients take the same band. There is no bookkeeping on/off on the quote.
+- **Proposals (26 Nov 2026)** are built from the quote. The Owner (or the lead's reviewer) ticks the **annual jobs** (ITR with AFS preparation, 1604-C, 1604-E, SAWT, inventory list) and **ad hoc jobs** (ORUS and registration updates, business permit renewal, SEC filings, closure, new business registration, SSS / PhilHealth / Pag-IBIG registration, amended returns, BIR audit / LOA support, AUP, CAS …) that apply. Prices come from the active schedule and can be overridden with a required note. The proposal shows **separate sections — monthly retainer, catch-up (one time), annual jobs (with the month billed), ad hoc jobs (billed when done)** — and **no grand total**. Above the cap the Owner enters the agreed monthly retainer. The jobs and prices are part of the content the client accepts (its SHA-256 is the e-signature's fingerprint).
+- **Audit (separate engagement, 26 Nov 2026):** the audit of financial statements is priced by taxpayer type and annual gross sales (an amount exactly on a band edge takes the lower band; over ₱100M on request). The Owner enters the client's annual gross sales once in the proposal form and the band's price is used (override with a note). The audit is **quoted and contracted separately by the firm (brands.legal_name, e.g. EJ Tallo Cloud Accounting and Auditing Services) under its own engagement letter**: it has its own section on the proposal, for information, and is **left out of the accepted-content hash**. A warning (not a block) shows when the audit is chosen for a client whose books we keep (we do not audit statements we prepared).
 - **Existing clients keep their fees until their annual renewal**; the OS shows a **current fee vs computed fee** gap report (Q52).
 - Quotes state the tax on the fee (currently non-VAT, 3% percentage tax) and that **clients may withhold EWT on the fee** (Q53).
 - **The prices themselves are the Owner's decision and are not final.** A draft band structure for discussion is in Appendix A.
-- **Built (Settings → Fee schedule):** versioned schedules with an effective date; the Owner enters prices on a draft and activates it once every band is priced (activating retires the previous one). A quote preview gives monthly retainer + annual package + one-time = first-year total, with the tax-on-fee and EWT notes. A gap report estimates each current client's schedule fee against their retainer (a floor: headcount, withholding kind and bookkeeping load are not recorded yet) and flags document volume above the included band. Audit, AUP, systems implementation, AI & automation and BIR audit support are price-on-request (component K). Not yet: saved quotes/proposals (Phase 2) and putting the late-submission surcharge on statements.
+- **Built (Settings → Fee schedule):** versioned schedules with an effective date; the editor has sections **Monthly**, **Annual jobs**, **Ad hoc jobs** and **Audit (separate engagement)**, plus settings (monthly cap, catch-up factor, minimum retainer, late surcharge). The Owner activates a draft once every monthly item is priced (annual and ad hoc prices are optional; they fill in the proposal). A quote preview gives the monthly retainer, catch-up and the not-included list. A gap report compares each current client's monthly fee with the schedule (a floor: headcount, withholding kind, branches and complexity are not recorded yet) and flags volume above the first bookkeeping band. Schedules made before 26 Nov 2026 stay readable; quotes from them are flagged outdated and not sent, and "Start new version" moves them to the new structure. Not yet: putting the late-submission surcharge on statements.
 
 ### 3.13 Notifications & automation (Q11, Q12, Q38)
 
@@ -401,9 +404,45 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 
 ---
 
-## Appendix A — Draft fee bands (for discussion, not final)
+## Appendix A — Fee schedule structure and the Owner's prices (26 Nov 2026)
 
-Based on the Moxie fee schedule and the website calculator, with the review findings. The Owner intends **lower** prices for a nationwide market (Q54); these numbers are a starting structure to adjust, not a decision.
+**Owner's decision, 26 Nov 2026.** The market for bookkeeping plus tax compliance is ₱2,000–6,000 a month. These prices are seeded as the **draft** "2027 schedule (Owner's prices, 26 Nov 2026)" (migration `20261214000002_fee_quote_monthly.sql`); the Owner reviews and activates it in Settings → Fee schedule. Monthly cap ₱6,000; catch-up factor 0.5.
+
+**Monthly (on the quote)**
+
+| Component | Band | Monthly (₱) |
+|---|---|---|
+| A. Base | Individual / Corporation, OPC, partnership / Non-stock | 1,000 / 1,500 / 1,500 |
+| B. VAT (2550Q + SLSP) | Individual / Non-individual | 500 / 1,000 |
+| C. Expanded withholding | Rental only / TAMP or regular | 300 / 500 |
+| D. Payroll 1601-C | 1–9 / 10–29 / 30–49 / 50+ employees | 300 / 600 / 1,000 / on request |
+| E. SSS, PhilHealth, Pag-IBIG (when we remit) | same bands | 300 / 600 / 1,000 / on request |
+| F. Bookkeeping, by documents a month | ≤50 / 51–150 / 151–300 / 301+ | 1,000 / 1,500 / 2,500 / on request |
+| F. Inventory, manufacturing or construction | flat add-on, once even if several apply | 500 |
+| F. Branch | per branch | 500 |
+| Catch-up (one time) | per month behind | 0.5 × monthly retainer |
+| J. Late-submission surcharge | documents after cutoff | schedule setting |
+
+Worked examples: non-VAT sole proprietor, ≤50 documents: ₱2,000. VAT corporation, 5 employees, rent withholding, contributions remitted, ~120 documents: ₱4,900, plus catch-up for 2 months ₱4,900. VAT online seller (individual), inventory, ~200 documents: ₱4,500. VAT corporation, 25 employees, regular withholding, inventory, contributions, ~250 documents: ₱7,200 — over the cap, so quoted on request.
+
+**Annual jobs (in the proposal, billed once a year)**: ITR with AFS (preparation) individual ₱5,000 / partnership ₱7,500 / corporation, OPC or non-stock ₱10,000; 1604-C ₱1,500; 1604-E ₱1,500; SAWT ₱500; inventory list ₱1,000.
+
+**Ad hoc jobs (in the proposal, billed when done)**: ORUS and BIR registration updates ₱1,500; business permit renewal (Iloilo City only for now) ₱3,500; SEC filings (GIS, AFS submission) ₱2,000; closure of business ₱20,000; new business registration (BIR and SEC only; LGU permit and others separate) individual ₱8,000, corporation, OPC, partnership or non-stock ₱12,500; SSS, PhilHealth, Pag-IBIG registration ₱1,500 each. Quoted per request: amended returns, BIR certificates and clearances, BIR audit / LOA support, agreed-upon procedures, CAS implementation, systems implementation, AI and automation.
+
+**Audit of financial statements (separate engagement, quoted and contracted by the firm under its own engagement letter)**, by annual gross sales (an amount exactly on an edge takes the lower band):
+
+| Annual gross sales | Single proprietor | Partnership | Corporation, OPC, non-stock |
+|---|---|---|---|
+| Up to ₱3M | 8,000 | 12,000 | 16,000 |
+| Over ₱3M to ₱10M | 12,000 | 16,000 | 24,000 |
+| Over ₱10M to ₱20M | 16,000 | 24,000 | 32,000 |
+| Over ₱20M to ₱50M | 24,000 | 32,000 | 48,000 |
+| Over ₱50M to ₱100M | 28,000 | 40,000 | 56,000 |
+| Over ₱100M | on request | on request | on request |
+
+### Earlier draft bands (superseded 26 Nov 2026, kept for the record)
+
+Based on the Moxie fee schedule and the website calculator, with the review findings. The Owner intends **lower** prices for a nationwide market (Q54); these numbers were a starting structure to adjust, not a decision.
 
 | Component | Band | Draft monthly fee |
 |---|---|---|

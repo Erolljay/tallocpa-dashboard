@@ -4,10 +4,10 @@ import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { itemName, toSettings, unpricedItems } from "@/lib/fees/schedule";
-import { COMPONENTS, type ComponentLetter } from "@/lib/fees/types";
+import { COMPONENTS } from "@/lib/fees/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadItems, loadSchedule, loadTaxOnFee, longDate, statusLabel, statusTone } from "../data";
-import { ActivateForm, DeleteDraftButton, PricesForm, ScheduleSettingsForm } from "../forms";
+import { ActivateForm, DeleteDraftButton, PRICE_SECTIONS, priceSection, PricesForm, ScheduleSettingsForm } from "../forms";
 
 export default function FeeScheduleEditorPage(props: PageProps<"/app/settings/fees/[id]">) {
   return (
@@ -59,6 +59,8 @@ async function Editor({ params }: Pick<PageProps<"/app/settings/fees/[id]">, "pa
                 minimum_monthly_retainer: settings.minimumMonthlyRetainer,
                 late_surcharge_amount: settings.lateSurchargeAmount,
                 late_surcharge_auto: settings.lateSurchargeAuto,
+                monthly_cap: settings.monthlyCap,
+                catch_up_factor: settings.catchUpFactor,
                 notes: schedule.notes,
               }}
             />
@@ -66,7 +68,7 @@ async function Editor({ params }: Pick<PageProps<"/app/settings/fees/[id]">, "pa
 
           <PricesForm
             scheduleId={schedule.id}
-            rows={items.map((i) => ({ id: i.id, component: i.component, label: i.label, band: i.band, billing: i.billing, unit: i.unit, isCustomQuote: i.isCustomQuote, price: i.price }))}
+            rows={items.map((i) => ({ id: i.id, code: i.code, component: i.component, label: i.label, band: i.band, billing: i.billing, unit: i.unit, isCustomQuote: i.isCustomQuote, price: i.price }))}
           />
 
           <Card title="Activate">
@@ -83,8 +85,6 @@ async function Editor({ params }: Pick<PageProps<"/app/settings/fees/[id]">, "pa
 }
 
 function ReadOnly({ items, settings, taxLabel, notes }: { items: Awaited<ReturnType<typeof loadItems>>; settings: ReturnType<typeof toSettings>; taxLabel: string; notes: string | null }) {
-  const groups = new Map<ComponentLetter, typeof items>();
-  for (const i of items) groups.set(i.component, [...(groups.get(i.component) ?? []), i]);
   const show = (i: (typeof items)[number]) => {
     if (i.isCustomQuote) return "On request";
     if (i.price === null) return "—";
@@ -97,6 +97,8 @@ function ReadOnly({ items, settings, taxLabel, notes }: { items: Awaited<ReturnT
           <div><dt className="text-text-secondary">Tax on our fee</dt><dd className="text-text-primary">{taxLabel}, {settings.pricesIncludeTax ? "included in prices" : "added on top"}</dd></div>
           <div><dt className="text-text-secondary">Quotes valid for</dt><dd className="text-text-primary">{settings.quoteValidDays} days</dd></div>
           <div><dt className="text-text-secondary">Minimum monthly retainer</dt><dd className="amount text-start text-text-primary">{settings.minimumMonthlyRetainer === null ? "None" : peso.format(settings.minimumMonthlyRetainer)}</dd></div>
+          <div><dt className="text-text-secondary">Monthly cap</dt><dd className="text-text-primary">{settings.monthlyCap === null ? "None" : `${peso.format(settings.monthlyCap)}: above it, quoted on request`}</dd></div>
+          <div><dt className="text-text-secondary">Catch-up</dt><dd className="text-text-primary">{settings.catchUpFactor === null ? "On request" : `${settings.catchUpFactor} × monthly retainer per month behind`}</dd></div>
           <div>
             <dt className="text-text-secondary">Late-submission surcharge</dt>
             <dd className="text-text-primary">{settings.lateSurchargeAmount === null ? "None" : `${peso.format(settings.lateSurchargeAmount)} a month, ${settings.lateSurchargeAuto ? "added automatically" : "after Owner approval"}`}</dd>
@@ -104,18 +106,23 @@ function ReadOnly({ items, settings, taxLabel, notes }: { items: Awaited<ReturnT
           {notes && <div className="sm:col-span-2"><dt className="text-text-secondary">Notes</dt><dd className="whitespace-pre-line text-text-primary">{notes}</dd></div>}
         </dl>
       </Card>
-      {[...groups.entries()].map(([letter, list]) => (
-        <Card key={letter} title={`${letter}. ${COMPONENTS[letter].title}`}>
-          <ul className="divide-y divide-separator-border text-body-regular">
-            {list.map((i) => (
-              <li key={i.id} className="flex items-center justify-between gap-4 py-2">
-                <span className="min-w-0 flex-1 text-text-primary">{itemName(i)}</span>
-                <span className="amount shrink-0 tabular-nums text-text-primary">{show(i)}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ))}
+      {PRICE_SECTIONS.map((s) => {
+        const list = items.filter((i) => priceSection(i) === s.key);
+        if (list.length === 0) return null;
+        return (
+          <Card key={s.key} title={s.title}>
+            <p className="mb-2 text-body-regular text-text-secondary">{s.hint}</p>
+            <ul className="divide-y divide-separator-border text-body-regular">
+              {list.map((i) => (
+                <li key={i.id} className="flex items-center justify-between gap-4 py-2">
+                  <span className="min-w-0 flex-1 text-text-primary"><span className="text-text-tertiary">{i.component}.</span> {itemName(i)}{i.component === "G" ? ` (${COMPONENTS.G.title})` : ""}</span>
+                  <span className="amount shrink-0 tabular-nums text-text-primary">{show(i)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        );
+      })}
       {items.length === 0 && <Notice tone="waiting">This schedule has no items.</Notice>}
     </div>
   );

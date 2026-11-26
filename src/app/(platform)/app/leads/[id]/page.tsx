@@ -14,6 +14,7 @@ import { defaultTerms, SERVICE_LABELS } from "@/lib/funnel/terms";
 import { notesTimeline, type NoteRow } from "@/lib/leads/notes";
 import { manilaNowLocal } from "@/lib/leads/time";
 import { channelLabel, leadChannel, type LeadSourceRow } from "@/lib/marketing/links";
+import { proposalSetup } from "@/lib/funnel/proposal-quote";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
 
@@ -153,7 +154,7 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
 
           {canWork && (stage === "lead" || stage === "prospect") && (
             <Card title={latest ? "Send a new proposal" : "Send a proposal"}>
-              <ProposalForm leadId={id} defaultTerms={defaultTerms(brand.legal_name, lead.services as string[])} />
+              <ProposalForm leadId={id} defaultTerms={defaultTerms(brand.legal_name, lead.services as string[])} setup={await proposalSetup(supabase, me.staff.brandId, lead.profile, lead.services as string[])} />
             </Card>
           )}
           {latest && <ProposalView p={view(latest)} />}

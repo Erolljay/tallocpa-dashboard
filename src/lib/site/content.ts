@@ -230,7 +230,7 @@ export const FAQ_GROUPS: { title: string; items: Faq[] }[] = [
     items: [
       {
         q: "How do I get a quote?",
-        a: ["Press Get a quote and tell us your industry, how your business is registered, and the taxes you file: VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, and income tax. The quote form works out the fee for those answers from our fee schedule and sends your request to us."],
+        a: ["Press Get a quote and tell us your industry, how your business is registered, and the taxes you file: VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, and income tax. The quote form works out the fee for those answers from our fee schedule and sends your request to us.", "The quote shows your monthly fee, and a one-time catch-up if your books and returns are behind. Annual work (your annual income tax return with financial statements, 1604-C, 1604-E, SAWT) and one-off jobs such as registrations and permits are priced in your proposal."],
       },
       {
         q: "What do you need to start?",

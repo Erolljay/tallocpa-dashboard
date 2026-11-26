@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { itemName, parsePrice, settingsSchema, unpricedItems } from "@/lib/fees/schedule";
-import { templateRows } from "@/lib/fees/template";
+import { templateRows, upgradeLegacyItems } from "@/lib/fees/template";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadItems, loadSchedule, loadSchedules } from "./data";
 
@@ -48,7 +48,8 @@ export async function startNewVersionAction(_: FeeFormState, form: FormData): Pr
   if (parsed.data.effective_from <= active.effective_from) {
     return { error: `The new version must take effect after the current one (${active.effective_from}).` };
   }
-  const items = await loadItems(supabase, active.id);
+  // A schedule from before 26 Nov 2026 moves to the new structure; prices that do not map go in the notes.
+  const { items, note, catchUpFactor } = upgradeLegacyItems(await loadItems(supabase, active.id));
   const { data, error } = await supabase.rpc("create_fee_schedule_draft", {
     p_schedule: {
       brand_id: owner.staff.brandId,
@@ -58,7 +59,9 @@ export async function startNewVersionAction(_: FeeFormState, form: FormData): Pr
       minimum_monthly_retainer: active.minimum_monthly_retainer,
       late_surcharge_amount: active.late_surcharge_amount,
       late_surcharge_auto: active.late_surcharge_auto,
-      notes: active.notes,
+      monthly_cap: active.monthly_cap,
+      catch_up_factor: active.catch_up_factor ?? catchUpFactor,
+      notes: [active.notes, note].filter(Boolean).join("\n\n") || null,
     },
     p_items: items.map((i) => ({
       code: i.code,
@@ -88,6 +91,8 @@ export async function saveSettingsAction(scheduleId: string, _: FeeFormState, fo
     minimum_monthly_retainer: text(form.get("minimum_monthly_retainer")),
     late_surcharge_amount: text(form.get("late_surcharge_amount")),
     late_surcharge_auto: form.get("late_surcharge_auto") === "1",
+    monthly_cap: text(form.get("monthly_cap")),
+    catch_up_factor: text(form.get("catch_up_factor")),
     notes: text(form.get("notes")),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };

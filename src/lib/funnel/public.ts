@@ -6,7 +6,7 @@ import "server-only";
  */
 import { createHash } from "node:crypto";
 import { profileFromQuery, type QuerySource } from "@/lib/fees/params";
-import { buildQuote, type Quote } from "@/lib/fees/quote";
+import { buildQuote, instantView, type InstantQuote, type Quote } from "@/lib/fees/quote";
 import { FEE_ITEM_COLUMNS, FEE_SCHEDULE_COLUMNS, toFeeItem, toSettings, type FeeItemRow, type FeeScheduleRow } from "@/lib/fees/schedule";
 import type { ClientProfile } from "@/lib/fees/types";
 import { manilaToday } from "@/lib/filings/run";
@@ -39,13 +39,20 @@ export async function brandSchedule(brandCode = FUNNEL_BRAND) {
   return { brand, schedule: schedule as FeeScheduleRow, items: ((items ?? []) as FeeItemRow[]).map(toFeeItem) };
 }
 
-/** The instant quote for a profile from the website form. */
-export async function instantQuote(q: QuerySource): Promise<{ profile: ClientProfile; quote: Quote | null }> {
+/**
+ * The instant quote for a profile from the website form: the full quote (stored on
+ * the lead, for staff) and what the prospect is shown (`view`: no amounts when the
+ * quote is over the monthly cap or has an item on request). No quote when no
+ * schedule is active, or the active one is from before 26 Nov 2026.
+ */
+export async function instantQuote(q: QuerySource): Promise<{ profile: ClientProfile; quote: Quote | null; view: InstantQuote | null }> {
   const s = await brandSchedule();
-  const { profile } = profileFromQuery(q, s?.items ?? []);
-  if (!s?.schedule) return { profile, quote: null };
+  const { profile } = profileFromQuery(q);
+  if (!s?.schedule) return { profile, quote: null, view: null };
   const taxOnFee = s.brand.tax_on_fee === "vat_12" ? "vat_12" : "percentage_tax_3";
-  return { profile, quote: buildQuote({ profile, items: s.items, settings: toSettings(s.schedule), taxOnFee, quoteDate: manilaToday() }) };
+  const quote = buildQuote({ profile, items: s.items, settings: toSettings(s.schedule), taxOnFee, quoteDate: manilaToday() });
+  if (quote.outdatedSchedule) return { profile, quote: null, view: null };
+  return { profile, quote, view: instantView(quote) };
 }
 
 export const contentHash = (p: ProposalContent) => createHash("sha256").update(canonicalContent(p)).digest("hex");

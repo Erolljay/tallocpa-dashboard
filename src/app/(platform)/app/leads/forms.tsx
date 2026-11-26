@@ -2,6 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { auditIndependenceWarning, bandForSales, JOB_GROUPS, jobField, parseSales, type JobOption } from "@/lib/fees/proposal";
+import { parsePrice } from "@/lib/fees/schedule";
+import { auditNote } from "@/lib/fees/template";
 import {
   assignReviewerAction,
   bookingLinkAction,
@@ -66,18 +69,121 @@ export function DiscoveryCallForm({ leadId, defaultAt }: { leadId: string; defau
   );
 }
 
-export function ProposalForm({ leadId, defaultTerms }: { leadId: string; defaultTerms: string }) {
+/** What the proposal form needs from the active schedule (src/lib/funnel/proposal-quote.ts). */
+export interface ProposalSetup {
+  jobs: JobOption[];
+  monthlyRetainer: number;
+  overCap: boolean;
+  monthlyCap: number | null;
+  /** We keep the client's books (every client pays bookkeeping by documents, or the lead asked for it). */
+  keepsBooks: boolean;
+}
+
+const pesoFmt = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
+
+/** One job row: tick, price (prefilled from the schedule or the sales band), and a note when the price changes. */
+function JobRow({ o, sales, ticked, onTick }: { o: JobOption; sales: number | null; ticked: boolean; onTick: (on: boolean) => void }) {
+  const band = o.bands ? (sales === null ? undefined : bandForSales(o.bands, sales)) : undefined;
+  const reference = o.bands ? (band?.price ?? null) : o.schedulePrice;
+  const [price, setPrice] = useState("");
+  const typed = parsePrice(price);
+  const differs = ticked && "value" in typed && typed.value !== null && reference !== null && typed.value !== reference;
+  const id = `job-${o.code}`;
+  const hint = o.bands
+    ? sales === null
+      ? "Priced by annual gross sales: enter them above."
+      : band
+        ? `${band.band ?? ""}: ${band.price === null ? "quoted on request" : pesoFmt.format(band.price)}`
+        : "No band for these sales."
+    : o.onRequest
+      ? "Quoted on request"
+      : o.schedulePrice === null
+        ? "No price in the schedule"
+        : pesoFmt.format(o.schedulePrice);
+  return (
+    <li className="space-y-2 py-3">
+      <div className="flex flex-wrap items-start gap-3">
+        <label htmlFor={id} className="flex min-w-0 flex-1 items-start gap-2 text-body-regular text-text-primary">
+          <input id={id} type="checkbox" name={jobField.ticked(o.code)} value="1" checked={ticked} onChange={(e) => onTick(e.target.checked)} className="mt-1 size-4 shrink-0 accent-accent-600" />
+          <span className="min-w-0">
+            {o.label}
+            {o.band ? <span className="text-text-tertiary"> · {o.band}</span> : null}
+            <span className="block text-caption-1-regular text-text-tertiary">{hint} · {o.billed}{o.suggested ? "" : " · not suggested for this lead"}</span>
+          </span>
+        </label>
+        {ticked && (
+          <Input
+            name={jobField.price(o.code)}
+            inputMode="decimal"
+            aria-label={`Price of ${o.label}`}
+            placeholder={reference === null ? "Price" : String(reference)}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-32 text-end tabular-nums"
+          />
+        )}
+      </div>
+      {ticked && (differs || o.bands) && (
+        <Input name={jobField.note(o.code)} aria-label={`Note on the price of ${o.label}`} placeholder={differs ? "Why the price differs (required), e.g. annual sales about ₱12M" : "Note (optional)"} className="ms-6" />
+      )}
+    </li>
+  );
+}
+
+export function ProposalForm({ leadId, defaultTerms, setup }: { leadId: string; defaultTerms: string; setup: ProposalSetup | { error: string } }) {
   const [state, action, pending] = useActionState(sendProposalAction.bind(null, leadId), {} as LeadState);
   const [copied, setCopied] = useState(false);
+  const [salesRaw, setSalesRaw] = useState("");
+  const [ticked, setTicked] = useState<Set<string>>(() => new Set());
   const url = state.link && typeof window !== "undefined" ? `${window.location.origin}${state.link}` : state.link;
+  const parsedSales = parseSales(salesRaw);
+  const sales = "value" in parsedSales ? parsedSales.value : null;
+  const ready = !("error" in setup);
+  const jobs = ready ? setup.jobs : [];
+  const auditTicked = jobs.filter((o) => o.group === "audit" && ticked.has(o.code)).map((o) => ({ label: o.label }));
+  const warning = ready ? auditIndependenceWarning(auditTicked, setup.keepsBooks) : null;
+  const tick = (code: string, on: boolean) => setTicked((t) => { const n = new Set(t); if (on) n.add(code); else n.delete(code); return n; });
+
   return (
-    <form action={action} className="space-y-3">
+    <form action={action} className="space-y-4">
+      {!ready ? (
+        <Notice tone="blocked">{setup.error}</Notice>
+      ) : (
+        <>
+          <p className="text-body-regular text-text-secondary">
+            Monthly retainer from the lead&apos;s profile: <span className="tabular-nums text-text-primary">{pesoFmt.format(setup.monthlyRetainer)}</span>
+            {setup.overCap ? ` — above the monthly cap of ${pesoFmt.format(setup.monthlyCap ?? 0)}, so it is quoted for this client.` : "."}
+          </p>
+          {setup.overCap && (
+            <Field label="Agreed monthly retainer (₱)" htmlFor="p-agreed" hint="Required above the cap. Catch-up is worked out on it.">
+              <Input id="p-agreed" name="agreed_monthly" inputMode="decimal" required className="w-40 text-end tabular-nums" />
+            </Field>
+          )}
+          <Field label="Annual gross sales (₱)" htmlFor="p-sales" hint="Once, for jobs priced by sales (the audit). An amount exactly on a band edge takes the lower band." error={"error" in parsedSales ? parsedSales.error : undefined}>
+            <Input id="p-sales" name="annual_sales" inputMode="decimal" value={salesRaw} onChange={(e) => setSalesRaw(e.target.value)} className="w-48 text-end tabular-nums" />
+          </Field>
+          {(["annual", "ad_hoc", "audit"] as const).map((g) => {
+            const list = jobs.filter((o) => o.group === g);
+            if (list.length === 0) return null;
+            return (
+              <fieldset key={g} className="rounded-2xl border border-separator-border px-4 pt-3">
+                <legend className="px-1 text-body-medium text-text-primary">{JOB_GROUPS[g].title}</legend>
+                <p className="text-caption-1-regular text-text-secondary">{g === "audit" ? auditNote(null) : JOB_GROUPS[g].hint} Leave the price empty to use the schedule&apos;s.</p>
+                <ul className="divide-y divide-separator-border">
+                  {list.map((o) => <JobRow key={o.code} o={o} sales={sales} ticked={ticked.has(o.code)} onTick={(on) => tick(o.code, on)} />)}
+                </ul>
+              </fieldset>
+            );
+          })}
+          {warning && <Notice tone="waiting">{warning}</Notice>}
+        </>
+      )}
       <Field label="Terms of engagement" htmlFor="p-terms" hint="Draft terms; edit them for this client if needed.">
         <Textarea id="p-terms" name="terms" rows={12} defaultValue={defaultTerms} />
       </Field>
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Valid for (days)" htmlFor="p-days"><Input id="p-days" name="valid_days" type="number" min={1} max={120} defaultValue={30} className="w-28 tabular-nums" /></Field>
-        <Button type="submit" disabled={pending}>{pending ? "Preparing…" : "Prepare the proposal"}</Button>
+        <Button type="submit" disabled={pending || !ready}>{pending ? "Preparing…" : "Prepare the proposal"}</Button>
       </div>
       <p className="text-caption-1-regular text-text-secondary">Priced on today&apos;s active fee schedule from the lead&apos;s profile. A new proposal replaces the one not yet accepted.</p>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
