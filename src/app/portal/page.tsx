@@ -339,7 +339,7 @@ async function MonthCard(props: { client: PortalClient; several: boolean; period
     supabase.from("documents").select("doc_type, status").eq("client_id", client.id).eq("document_month", period).not("status", "in", "(uploading)").not("doc_type", "in", "(filed_return,payment_proof,cor)").limit(5000),
     supabase.from("payroll_submissions").select("status").eq("client_id", client.id).eq("pay_month", period),
     supabase.from("filing_instances").select("form, period_label, period_start, period_end, due_date, status").eq("client_id", client.id).lte("period_start", period).gte("period_end", period).neq("status", "proof_uploaded"),
-    supabase.from("holidays").select("date"),
+    supabase.from("holidays").select("date").neq("kind", "local"),
   ]);
   const c = (check.data ?? { missing: [], cwt: [], reading: 0 }) as { missing: MissingNumber[]; cwt: { party: string; amount: number }[]; reading: number };
   const sent: SentRow[] = KINDS.map((k) => {

@@ -47,7 +47,8 @@ interface FilingRow {
 const monthStart = (iso: string) => `${iso.slice(0, 7)}-01`;
 
 async function holidaySet(db: SupabaseClient): Promise<Set<IsoDate>> {
-  const { data } = await db.from("holidays").select("date");
+  // National days: a local holiday already moved the due dates of its RDOs' clients.
+  const { data } = await db.from("holidays").select("date").neq("kind", "local");
   return new Set((data ?? []).map((h: { date: string }) => String(h.date).slice(0, 10)));
 }
 

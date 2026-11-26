@@ -3,6 +3,7 @@
  * Owner's "Generate now" button both use this.
  */
 import { addDays, type IsoDate } from "@/lib/deadlines/dates";
+import { normalizeRdo } from "@/lib/deadlines/holiday-list";
 import {
   formYearEndMonth,
   generateFilingInstances,
@@ -32,6 +33,34 @@ export interface ClientRow {
   fiscal_year_end_month: number;
   filing_channel: FilingChannel;
   efps_group: EfpsGroup | null;
+  /** For local holidays: the client's RDO code. */
+  rdo_code?: string | null;
+}
+
+/** A local holiday: its date and the RDO codes it covers (holidays.kind = 'local'). */
+export interface LocalHoliday {
+  date: IsoDate;
+  rdo_codes: readonly string[];
+}
+
+/**
+ * The non-working days for one client: the national ones, plus the local ones of its RDO
+ * (Owner, 26 November 2026). Cached per RDO.
+ */
+function holidaysByClient(national: readonly IsoDate[], local: readonly LocalHoliday[] = []) {
+  const base = new Set(national);
+  const byRdo = new Map<string, Set<IsoDate>>();
+  return (client: Pick<ClientRow, "rdo_code">): Set<IsoDate> => {
+    const rdo = normalizeRdo(client.rdo_code);
+    if (!rdo || local.length === 0) return base;
+    let set = byRdo.get(rdo);
+    if (!set) {
+      set = new Set(base);
+      for (const h of local) if (h.rdo_codes.some((c) => normalizeRdo(c) === rdo)) set.add(h.date);
+      byRdo.set(rdo, set);
+    }
+    return set;
+  };
 }
 
 export interface RuleRow {
@@ -91,11 +120,12 @@ export function buildFilingRows(input: {
   clients: readonly ClientRow[];
   rules: readonly RuleRow[];
   holidays: readonly IsoDate[];
+  localHolidays?: readonly LocalHoliday[];
   today: IsoDate;
 }): { rows: FilingRow[]; missing: MissingRule[] } {
   const clients = new Map(input.clients.map((c) => [c.id, c]));
   const rules = input.rules.map(toDeadlineRule);
-  const holidays = new Set(input.holidays);
+  const holidaysOf = holidaysByClient(input.holidays, input.localHolidays);
   const from = addDays(input.today, -WINDOW.back);
   const to = addDays(input.today, WINDOW.ahead);
   const rows: FilingRow[] = [];
@@ -118,7 +148,7 @@ export function buildFilingRows(input: {
         },
       ],
       rules,
-      holidays,
+      holidaysOf(client),
       from,
       to,
     );
@@ -174,11 +204,12 @@ export function recomputeDueDates(input: {
   clients: readonly ClientRow[];
   rules: readonly RuleRow[];
   holidays: readonly IsoDate[];
+  localHolidays?: readonly LocalHoliday[];
 }): DueDateUpdate[] {
   const frequencyOf = new Map(input.obligations.map((o) => [o.id, o.frequency]));
   const clients = new Map(input.clients.map((c) => [c.id, c]));
   const rules = input.rules.map(toDeadlineRule);
-  const holidays = new Set(input.holidays);
+  const holidaysOf = holidaysByClient(input.holidays, input.localHolidays);
   const updates: DueDateUpdate[] = [];
   for (const f of input.filings) {
     const frequency = frequencyOf.get(f.obligation_id);
@@ -189,7 +220,7 @@ export function recomputeDueDates(input: {
     const rule = selectRule(rules, f.form, frequency, period, yearEndMonth, client.filing_channel, client.efps_group ?? undefined);
     if (!rule) continue;
     const statutory = statutoryDueDate(rule.due, f.period_end);
-    const due = nextWorkingDay(statutory, holidays);
+    const due = nextWorkingDay(statutory, holidaysOf(client));
     if (rule.id !== f.rule_id || statutory !== f.statutory_due_date || due !== f.due_date) {
       updates.push({ id: f.id, rule_id: rule.id, statutory_due_date: statutory, due_date: due });
     }

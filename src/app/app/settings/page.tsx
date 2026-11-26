@@ -5,7 +5,8 @@ import { requireOwner } from "@/lib/auth";
 import { describeDue, FREQUENCY_SECTIONS, taxTypeOfForm } from "@/lib/deadlines/describe";
 import type { DueRule, Frequency, PeriodFilter } from "@/lib/deadlines/engine";
 import { supabaseServer } from "@/lib/supabase/server";
-import { HolidayForm, RemoveHolidayButton, RuleEditor } from "./forms";
+import { manilaToday } from "@/lib/filings/run";
+import { HolidayForm, HolidayYearForm, RemoveHolidayButton, RuleEditor } from "./forms";
 import { AddPaymentAccountForm, EditPaymentAccountForm, MoveAccountButtons, PaymentDaysForm, ReplaceQrForm, ToggleAccountButton } from "./payment-forms";
 
 export default function SettingsPage() {
@@ -55,7 +56,7 @@ interface Rule {
 }
 
 const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
-const kindLabel: Record<string, string> = { regular: "Regular", special: "Special non-working", suspension: "Work suspension" };
+const kindLabel: Record<string, string> = { regular: "Regular", special: "Special non-working", suspension: "Work suspension", local: "Local" };
 
 /** Which periods the rule files for, when it is not every period. */
 function periodNote(r: Rule): string {
@@ -81,9 +82,11 @@ async function DeadlineSettings() {
   const supabase = await supabaseServer();
   const [{ data: rules }, { data: holidays }] = await Promise.all([
     supabase.from("deadline_rules").select("id, form, frequency, due, channel, efps_group, calendar_year, period_filter, effective_from, source, verified_at").is("effective_to", null).order("form").order("channel", { nullsFirst: true }).order("efps_group", { nullsFirst: true }),
-    supabase.from("holidays").select("date, name, kind, source").order("date"),
+    supabase.from("holidays").select("id, date, name, kind, source, place, rdo_codes").order("date"),
   ]);
   const all = (rules ?? []) as Rule[];
+  const thisYear = Number(manilaToday().slice(0, 4));
+  const nextYears = [thisYear + 1, thisYear, thisYear + 2];
   const unverified = all.filter((r) => !r.verified_at).length;
 
   return (
@@ -141,19 +144,25 @@ async function DeadlineSettings() {
       })}
       {unverified > 0 && <p className="text-body-regular text-text-secondary">{unverified} rule(s) still to check against current BIR issuances.</p>}
 
-      <Card title="Non-working days" actions={<span className="text-caption-1-regular text-text-tertiary">A due date on a weekend or one of these days moves to the next working day.</span>}>
+      <Card title="Non-working days" actions={<span className="text-caption-1-regular text-text-tertiary">A due date on a weekend or one of these days moves to the next working day. A local holiday moves it only for clients of its RDOs.</span>}>
         <ul className="divide-y divide-separator-border text-body-regular">
-          {(holidays ?? []).map((h) => (
-            <li key={h.date} className="flex items-center justify-between gap-4 py-2">
+          {((holidays ?? []) as { id: string; date: string; name: string; kind: string; source: string; place: string | null; rdo_codes: string[] | null }[]).map((h) => (
+            <li key={h.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">
               <span className="w-32 shrink-0 tabular-nums text-text-primary">{fmtDate(h.date)}</span>
-              <span className="flex-1 text-text-primary">{h.name}</span>
+              <span className="min-w-0 flex-1 text-text-primary">
+                {h.name}
+                {h.kind === "local" && <span className="ms-2 text-caption-1-regular text-text-secondary">{h.place} · RDO {(h.rdo_codes ?? []).join(", ")}</span>}
+              </span>
               <span className="hidden w-40 text-text-secondary sm:block">{kindLabel[h.kind] ?? h.kind}</span>
               <span className="hidden w-28 text-caption-1-regular text-text-tertiary sm:block">{h.source === "UNVERIFIED" ? "Unverified" : h.source}</span>
-              <RemoveHolidayButton date={h.date} />
+              <RemoveHolidayButton id={h.id} />
             </li>
           ))}
         </ul>
-        <div className="mt-4"><HolidayForm /></div>
+        <div className="mt-4 space-y-6">
+          <HolidayYearForm years={nextYears} />
+          <HolidayForm />
+        </div>
       </Card>
     </div>
   );

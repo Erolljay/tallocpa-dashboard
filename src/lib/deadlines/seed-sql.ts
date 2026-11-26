@@ -25,7 +25,7 @@ export function buildSeedSql(): string {
   lines.push("", "insert into public.holidays (date, name, kind, source) values");
   lines.push(
     seedHolidays.map((h) => `  (${q(h.date)}, ${q(h.name)}, ${q(h.kind)}, 'UNVERIFIED')`).join(",\n") +
-      "\non conflict (date) do nothing;",
+      "\non conflict (date) where kind <> 'local' do nothing;",
     "",
   );
   return lines.join("\n");
