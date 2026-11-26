@@ -77,15 +77,24 @@ interface Split {
   zeroRated: Centavos;
 }
 
-/** Groups per party (same TIN = same taxpayer, as in taxify; else by name) per month. */
-function groupByPartyMonth(splits: Split[]) {
+/** The SLS line for sales to customers with no TIN (walk-in sales; Owner, 26 November 2026). */
+export const VARIOUS_CUSTOMERS = "VARIOUS CUSTOMERS";
+
+/**
+ * Groups per party (same TIN = same taxpayer, as in taxify; else by name) per month. With
+ * `various`, parties with no TIN (walk-in customers on the SLS) are one line per month,
+ * "VARIOUS CUSTOMERS", as the BIR's validation module accepts; the SLP has no such line.
+ */
+function groupByPartyMonth(splits: Split[], various = false) {
   const groups = new Map<string, { monthKey: string; doc: SourceDocument; vatable: number; vat: number; exempt: number; zeroRated: number; txnCount: number; cap: number; svc: number }>();
   for (const s of splits) {
     if (s.vatable + s.exempt + s.zeroRated === 0) continue;
     const mk = monthKeyOf(s.doc);
     const tin = tinDigits(s.doc.partyTin).substring(0, 9);
-    const key = `${tin || "n:" + (s.doc.partyName ?? "").trim().toUpperCase()}|${mk}`;
-    const g = groups.get(key) ?? { monthKey: mk, doc: s.doc, vatable: 0, vat: 0, exempt: 0, zeroRated: 0, txnCount: 0, cap: 0, svc: 0 };
+    const walkIn = various && tin.length < 9;
+    const key = walkIn ? `various|${mk}` : `${tin || "n:" + (s.doc.partyName ?? "").trim().toUpperCase()}|${mk}`;
+    const doc = walkIn ? { ...s.doc, partyName: VARIOUS_CUSTOMERS, partyTin: null, partyAddress: null } : s.doc;
+    const g = groups.get(key) ?? { monthKey: mk, doc, vatable: 0, vat: 0, exempt: 0, zeroRated: 0, txnCount: 0, cap: 0, svc: 0 };
     g.vatable += s.vatable;
     // The register's SLP category of the line (capital goods, services), when known.
     if (s.doc.slpCategory === "capital_goods") g.cap += s.vatable;
@@ -144,8 +153,9 @@ function computeAll(ctx: WorksheetContext): VatData {
     else if (s.vatable > 0 && Math.abs(s.vat - pct(s.vatable, rate)) > 100)
       warnings.push(`${docLabel(d)}: VAT ₱${peso(s.vat)} is not ${rate}% of the VATable amount ₱${peso(s.vatable)}; check the OCR figures.`);
     if (s.vat > 0 && s.vatable === 0) warnings.push(`${docLabel(d)}: VAT without a VATable amount; check the OCR figures.`);
-    if ((s.vatable > 0 || s.vat > 0) && tinDigits(d.partyTin).length < 9)
-      errors.push(`${docLabel(d)} is VATable but has no ${side === "sale" ? "customer" : "supplier"} TIN; the ${side === "sale" ? "SLS" : "SLP"} needs one. ${d.fromBooks ? "Add it to the invoice in the Books." : "Add it in review."}`);
+    // A sale with no customer TIN goes on the SLS under VARIOUS CUSTOMERS; a purchase needs the supplier's TIN.
+    if (side === "purchase" && (s.vatable > 0 || s.vat > 0) && tinDigits(d.partyTin).length < 9)
+      errors.push(`${docLabel(d)} is VATable but has no supplier TIN; the SLP needs one. ${d.fromBooks ? "Add it to the invoice in the Books." : "Add it in review."}`);
     return { doc: d, ...s };
   };
   const sales = docs.filter((d) => d.docType === "sales_invoice").map((d) => split(d, "sale"));
@@ -238,7 +248,7 @@ function computeAll(ctx: WorksheetContext): VatData {
   if (sales.length + purchases.length > 0) warnings.push(...filerWarnings(ctx));
 
   // SLS / SLP rows.
-  const sls: SlsRow[] = groupByPartyMonth(sales).map((g) => ({
+  const sls: SlsRow[] = groupByPartyMonth(sales, true).map((g) => ({
     monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address,
     taxable: g.vatable, zeroRated: g.zeroRated, exempt: g.exempt, vat: g.vat, txnCount: g.txnCount,
   }));
