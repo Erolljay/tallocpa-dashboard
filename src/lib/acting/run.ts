@@ -1,7 +1,9 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/cycle/email";
+import { sendBrandedEmail } from "@/lib/cycle/email";
 import { addDays } from "@/lib/deadlines/dates";
+import { loadEmailBrand } from "@/lib/email/brand";
+import { settingsUrlFor } from "@/lib/email/layout";
 import { digestMessage, type DigestRow } from "./digest";
 
 /**
@@ -24,7 +26,13 @@ export async function runActingDigest(admin: SupabaseClient, today: string, orig
     if (u.user?.email) to.push(u.user.email);
   }
   const m = digestMessage(day, rows, origin);
-  const sent = (await sendEmail(to, m.subject, m.text)) === "sent";
+  const brand = await loadEmailBrand(null, admin);
+  const sent =
+    (await sendBrandedEmail(to, m, {
+      brand,
+      footerNote: `you are the Owner of ${brand.displayName} and an acting approver gave final approvals`,
+      settingsUrl: settingsUrlFor(origin, "staff"),
+    })) === "sent";
   await admin.from("acting_digests").insert({ day, approvals: rows.length, emailed: sent });
   return { day, approvals: rows.length, emailed: sent };
 }

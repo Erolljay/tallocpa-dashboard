@@ -26,10 +26,10 @@ describe("morning email", () => {
   it("gives the Owner the critical and overdue filings, the count at risk and the coverage gaps", () => {
     const e = ownerEmail(today, board, [{ clientId: "c9", clientName: "Oton Rice Mill", kind: "payroll_without_1601c", text: "Payroll was posted, but there is no 1601-C obligation." }], "https://os", "owner@x");
     expect(e?.subject).toBe("Deadlines: 1 critical or overdue, 1 coverage gap");
-    expect(e?.text).toContain("Critical · Molo Bakeshop · 1601-C March 2027 · due Apr 12 · next: Documents in (client, was due Apr 5) · waiting on the client");
-    expect(e?.text).toContain("1 more at risk");
-    expect(e?.text).toContain("- Oton Rice Mill: Payroll was posted, but there is no 1601-C obligation.");
-    expect(e?.text).not.toContain("Jaro Agri Supply");
+    expect(e?.bodyText).toContain("Critical · Molo Bakeshop · 1601-C March 2027 · due Apr 12 · next: Documents in (client, was due Apr 5) · waiting on the client");
+    expect(e?.bodyText).toContain("1 more at risk");
+    expect(e?.bodyText).toContain("- Oton Rice Mill: Payroll was posted, but there is no 1601-C obligation.");
+    expect(e?.bodyText).not.toContain("Jaro Agri Supply");
   });
 
   it("sends the Owner nothing on a quiet morning", () => {
@@ -38,13 +38,13 @@ describe("morning email", () => {
 
   it("gives each preparer and reviewer only their own filings that need attention", () => {
     const emails = staffEmails(today, board, new Map([["u-rhea", "rhea@x"], ["u-marco", "marco@x"], ["u-joy", "joy@x"]]), "https://os");
-    const of = (to: string) => emails.find((e) => e.to === to)?.text ?? "";
+    const of = (to: string) => emails.find((e) => e.to === to)?.bodyText ?? "";
     expect(emails.map((e) => e.to).sort()).toEqual(["joy@x", "marco@x", "rhea@x"]);
     expect(of("rhea@x")).toContain("Molo Bakeshop");
     expect(of("rhea@x")).not.toContain("Lapaz Hardware");
     expect(of("joy@x")).toContain("Lapaz Hardware");
     expect(of("marco@x")).toContain("Molo Bakeshop");
     expect(of("marco@x")).toContain("Lapaz Hardware");
-    expect(emails.some((e) => e.text.includes("Jaro Agri Supply"))).toBe(false);
+    expect(emails.some((e) => e.bodyText.includes("Jaro Agri Supply"))).toBe(false);
   });
 });

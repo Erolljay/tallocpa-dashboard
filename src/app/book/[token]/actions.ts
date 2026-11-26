@@ -5,6 +5,7 @@ import type { BookingState } from "@/components/booking/slot-picker";
 import { slotsFor } from "@/lib/calendar/booking";
 import { DISCOVERY_CALL } from "@/lib/calendar/slots";
 import { bookOn } from "@/lib/calendar/staff";
+import { scheduleNotificationEmails } from "@/lib/notifications/dispatch";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const TOKEN = /^[0-9a-f]{64}$/;
@@ -13,6 +14,8 @@ const TOKEN = /^[0-9a-f]{64}$/;
 export async function bookDiscoveryCallAction(token: string, start: string): Promise<BookingState> {
   if (!TOKEN.test(token)) return { error: "This booking link is not valid." };
   const admin = supabaseAdmin();
+  // The booking notifies the reviewer (discovery_call_booked): email it once the response is done.
+  await scheduleNotificationEmails();
   const { data } = await admin.rpc("booking_lead", { p_token: token });
   const lead = ((data ?? []) as { lead_id: string; business_name: string; contact_name: string; email: string; reviewer_id: string; reviewer_name: string; open: boolean; booked_at: string | null }[])[0];
   if (!lead || !lead.open) return { error: "This booking link is closed. Please reply to our email and we will arrange the call." };

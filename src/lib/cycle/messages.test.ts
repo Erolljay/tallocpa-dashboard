@@ -7,13 +7,13 @@ describe("cycleMessage", () => {
   it("asks for the month's documents with the cutoff day", () => {
     const m = cycleMessage("request", p);
     expect(m.subject).toBe("November 2026 documents for Client A — due Saturday, December 5");
-    expect(m.text).toContain("Please send Client A's November 2026 documents by Saturday, December 5.");
-    expect(m.text).toContain("https://os.example/portal");
+    expect(m.bodyText).toContain("Please send Client A's November 2026 documents by Saturday, December 5.");
+    expect(m.action).toEqual({ label: "Upload documents", url: "https://os.example/portal" });
   });
 
   it("reminds the day before", () => {
     const m = cycleMessage("reminder", p);
     expect(m.subject).toBe("Reminder: November 2026 documents are due tomorrow");
-    expect(m.text).toContain("due tomorrow, Saturday, December 5");
+    expect(m.bodyText).toContain("due tomorrow, Saturday, December 5");
   });
 });

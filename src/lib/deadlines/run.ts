@@ -1,6 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/cycle/email";
+import { sendBrandedEmail } from "@/lib/cycle/email";
+import { loadEmailBrand } from "@/lib/email/brand";
+import { settingsUrlFor } from "@/lib/email/layout";
 import { ownerEmail, staffEmails, type Email } from "./morning";
 import { loadBoard, loadCoverage } from "./safeguards-load";
 
@@ -31,10 +33,12 @@ export async function runMorningEmail(admin: SupabaseClient, today: string, orig
   ];
   let sent = 0;
   const failed: string[] = [];
+  const brand = emails.length ? await loadEmailBrand(null, admin) : undefined;
+  const opts = { brand, footerNote: `you are on the ${brand?.displayName ?? "Tallo CPA"} team and get the 7:00 am deadlines email`, settingsUrl: settingsUrlFor(origin, "staff") };
   for (const e of emails) {
     // One rejected address must not stop the others' email.
     try {
-      if ((await sendEmail([e.to], e.subject, e.text)) === "sent") sent += 1;
+      if ((await sendBrandedEmail([e.to], e, opts)) === "sent") sent += 1;
     } catch (err) {
       failed.push(`${e.to}: ${(err as Error).message}`);
     }
