@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
   },
   partialPrefetching: true,
   experimental: {
+    // Keep a visited page in the browser for 30 seconds, so going back to a tab you just
+    // left shows it at once instead of asking the server again. Every save (a Server
+    // Action that revalidates or refreshes) clears this cache, so your own changes show
+    // at once; another person's change shows on a tab you revisit within 30 seconds.
+    staleTimes: { dynamic: 30 },
     // Two root layouts (the website's and the app's) leave no single layout for an
     // unmatched URL's 404: src/app/global-not-found.tsx renders it with the website's document.
     globalNotFound: true,
