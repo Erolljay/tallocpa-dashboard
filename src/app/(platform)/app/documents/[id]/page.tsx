@@ -24,6 +24,7 @@ import { byName, displayName } from "@/lib/payroll/year";
 import { PayrollIntake } from "./payroll-intake";
 import { ColumnMapping, PayrollReadReview, ReadPayrollButton, SheetPreview } from "./payroll-read";
 import { ReviewForm, type Booking } from "./review-form";
+import { CwtMatch } from "./cwt-match";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
   return (
@@ -127,6 +128,9 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
             directory={resolved && { partyId: resolved.party!.id, name: resolved.name, tin: resolved.tin, address: resolved.address, verified: Boolean(resolved.party!.verified_at), warning: resolved.warning }}
             booking={booking}
           />
+          {doc.doc_type === "bir_2307_received" && doc.status !== "returned" && (
+            <CwtMatch supabase={supabase} doc={doc} fields={fields} partyId={entry?.id ?? null} canAct={canAct} />
+          )}
         </div>
       </div>
     </>
