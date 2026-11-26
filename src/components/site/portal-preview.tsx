@@ -18,7 +18,7 @@ const DOCS = [
   { label: "Bank statement", state: "Requested", tone: "yellow" as const },
 ];
 
-export function PortalPreview({ className }: { className?: string }) {
+export function PortalPreview({ className, onNavy = false }: { className?: string; onNavy?: boolean }) {
   return (
     <figure data-slot="portal-preview" className={cx("min-w-0", className)}>
       <div
@@ -82,15 +82,15 @@ export function PortalPreview({ className }: { className?: string }) {
             <div className="flex items-center gap-3">
               <RiQrCodeLine className="size-14 shrink-0 text-foreground-icon-primary" aria-hidden />
               <div className="flex min-w-0 flex-col">
-                <span className="figure text-title-3-semibold text-text-primary">₱8,960.00</span>
+                <span className="figure text-body-2-semibold text-text-primary">SOA-2611-0042</span>
                 <span className="text-caption-1-regular text-text-secondary">Scan with your bank or e-wallet app</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <figcaption className="mt-3 text-caption-1-regular text-text-secondary">
-        Illustration of the client portal with sample figures: a return awaiting approval, the month&apos;s documents, and a statement paid by QR code.
+      <figcaption className={cx("mt-3 text-caption-1-regular", onNavy ? "text-accent-200" : "text-text-secondary")}>
+        Illustration of the client portal with sample figures: a return awaiting approval, the month&apos;s documents, and a statement you pay by QR code.
       </figcaption>
     </figure>
   );

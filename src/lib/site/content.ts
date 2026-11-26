@@ -22,8 +22,6 @@ export interface Service {
   includes: string[];
   /** Who usually engages it. */
   forWhom: string;
-  /** What we need from you to start. */
-  start: string[];
   /** Plain notes that matter (scope limits, independence). */
   notes?: string[];
   /** SEO: the page's primary search phrase, its title (60 characters at most), meta description (155 at most) and H1. */
@@ -38,11 +36,10 @@ export interface Service {
   group: ServiceGroup;
 }
 
-export type ServiceGroup = "accounting" | "assurance" | "court";
+export type ServiceGroup = "accounting" | "assurance";
 export const SERVICE_GROUPS: Record<ServiceGroup, string> = {
   accounting: "Accounting and tax",
   assurance: "Assurance",
-  court: "Court-appointed work",
 };
 
 export const SERVICES: Service[] = [
@@ -68,7 +65,6 @@ export const SERVICES: Service[] = [
       "Year-end closing and the schedules your annual return needs",
     ],
     forWhom: "Self-employed professionals, sole proprietors, partnerships and corporations that want the books kept by a CPA firm rather than in-house.",
-    start: ["Your BIR Certificate of Registration (Form 2303)", "Last year's financial statements and books, if any", "Access to bank statements for the period"],
   },
   {
     slug: "tax-compliance",
@@ -93,7 +89,6 @@ export const SERVICES: Service[] = [
       "A filing calendar built from your Certificate of Registration",
     ],
     forWhom: "Any registered taxpayer: individuals in business, OPCs, partnerships, corporations and non-stock organizations.",
-    start: ["Your BIR Certificate of Registration (Form 2303)", "Your eFPS or eBIRForms access, if already enrolled", "Copies of the last returns filed"],
   },
   {
     slug: "accounting-outsourcing",
@@ -117,7 +112,6 @@ export const SERVICES: Service[] = [
       "Coordination with your auditor at year-end",
     ],
     forWhom: "Growing businesses and corporations that need a complete accounting function without hiring for each role.",
-    start: ["Your BIR Certificate of Registration (Form 2303)", "Your current chart of accounts and latest trial balance", "A walk-through of how documents move today"],
   },
   {
     slug: "audit",
@@ -140,7 +134,6 @@ export const SERVICES: Service[] = [
       "The supplementary schedules the BIR and SEC require",
     ],
     forWhom: "Businesses whose gross sales or receipts require audited financial statements, and organizations that need an audit for lenders or members.",
-    start: ["Your draft financial statements and trial balance", "Last year's audited financial statements, if any", "Access to the books and supporting documents"],
     notes: ["To stay independent, we do not audit financial statements we prepared or books we keep."],
   },
   {
@@ -165,7 +158,6 @@ export const SERVICES: Service[] = [
       "Training for the people who will use it",
     ],
     forWhom: "Businesses moving off manual books, and those the BIR requires to keep computerized records or issue system-generated invoices.",
-    start: ["Your BIR Certificate of Registration (Form 2303)", "A sample month of your transactions", "The system you are considering, if any"],
   },
   {
     slug: "agreed-upon-procedures",
@@ -174,7 +166,7 @@ export const SERVICES: Service[] = [
     metaDescription: "Agreed-upon procedures engagements: specific procedures on specific figures or controls, reported as factual findings for a lender, grantor or regulator.",
     h1: "Agreed-upon procedures",
     opening: "An agreed-upon procedures engagement answers a narrow question: we perform the procedures you and the report's users agree on and report factual findings.",
-    related: ["audit", "accounting-outsourcing", "rehabilitation-and-liquidation"],
+    related: ["audit", "accounting-outsourcing", "tax-compliance"],
     group: "assurance",
     short: "Specific checks, factual findings",
     name: "Agreed-upon procedures",
@@ -187,31 +179,6 @@ export const SERVICES: Service[] = [
       "A report of factual findings, under the Philippine standard on related services",
     ],
     forWhom: "Organizations asked by a lender, grantor, franchisor, landlord or regulator for a report on specific figures or controls.",
-    start: ["The request or terms from the party asking for the report", "The records the procedures cover"],
-  },
-  {
-    slug: "rehabilitation-and-liquidation",
-    keyword: "corporate rehabilitation receiver Philippines",
-    seoTitle: "Corporate Rehabilitation Receiver, Philippines | Tallo CPA",
-    metaDescription: "Court-appointed corporate rehabilitation receiver and liquidator in the Philippines under RA 10142 (FRIA), and the accounting these cases need.",
-    h1: "Corporate rehabilitation and liquidation",
-    opening: "Eroll Jay C. Tallo, CPA accepts court appointments as corporate rehabilitation receiver and liquidator in the Philippines under RA 10142 (FRIA).",
-    related: ["audit", "agreed-upon-procedures", "accounting-outsourcing"],
-    group: "court",
-    shortName: "Rehabilitation and liquidation",
-    short: "Court-appointed receiver and liquidator",
-    name: "Corporate rehabilitation and liquidation",
-    summary: "Court-appointed work as rehabilitation receiver or liquidator for businesses in financial distress.",
-    intro:
-      "Eroll Jay C. Tallo, CPA accepts court appointments as rehabilitation receiver and liquidator under the Financial Rehabilitation and Insolvency Act of 2010 (Republic Act No. 10142), and supports debtors and creditors with the accounting these proceedings require.",
-    includes: [
-      "Service as rehabilitation receiver or liquidator when appointed by the court",
-      "Review and evaluation of a proposed rehabilitation plan",
-      "Inventory, valuation support and the accounting of the debtor's assets",
-      "Monitoring and periodic reports to the court and creditors",
-    ],
-    forWhom: "Courts, debtors, creditors and their counsel in rehabilitation and liquidation proceedings.",
-    start: ["The petition or court order, through counsel", "The debtor's latest financial statements"],
   },
 ];
 
@@ -308,4 +275,21 @@ export const SAFEGUARDS: { title: string; body: string }[] = [
   { title: "Access by role", body: "You see your own business only. Staff access is set by role and enforced by the database." },
   { title: "Private storage", body: "Uploaded documents are kept in private storage, never on public links." },
   { title: "Encrypted connections", body: "The site and the portal are served over HTTPS only." },
+];
+
+/**
+ * The /how-we-work page: how bookkeeping and BIR compliance run each month, from data
+ * intake to the filed return. OWNER REVIEW: describes the portal as it works today
+ * (src/app/portal/**); keep each step true.
+ */
+export const HOW_STEPS: { id: string; title: string; body: string }[] = [
+  { id: "calendar", title: "We set up your filing calendar", body: "We read your Certificate of Registration and set up every return you file, with its BIR deadline." },
+  { id: "upload", title: "You upload as the month goes", body: "Snap or choose files by category, any time in the month before the cutoff." },
+  { id: "check", title: "We check and record", body: "We check each document and post it to your books. If something needs fixing, we ask you under Requests." },
+  { id: "confirm", title: "You confirm the month", body: "When everything is in, tap “I've sent everything”. The portal shows anything still missing first." },
+  { id: "lock", title: "The books are locked", body: "Once the month is checked and confirmed, we lock it. Its books are final." },
+  { id: "approve", title: "You approve each return", body: "Each return waits under Returns with its tax due. Approve it, or ask a question first." },
+  { id: "file", title: "We file and pay before the BIR deadline", body: "Every approval and filing is scheduled months ahead, each with its BIR deadline. The filed copy lands in your portal." },
+  { id: "reports", title: "Your reports stay current", body: "Financial position, the last six months, loose-leaf books, filed returns, and your 2307s and 2316s." },
+  { id: "billing", title: "You pay by QR", body: "Your statement comes to the portal. Pay with your bank or e-wallet app and upload the proof." },
 ];

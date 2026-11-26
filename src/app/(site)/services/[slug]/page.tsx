@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
-import { H2, PageIntro, QUOTE_LABEL, QuoteBand, Section, TextLink } from "@/components/site/blocks";
+import { H2, PageIntro, QUOTE_LABEL, Section, TextLink } from "@/components/site/blocks";
 import { JsonLd } from "@/components/site/json-ld";
 import { serviceLd } from "@/lib/site/structured-data";
-import { CtaLink } from "@/components/site/cta-link";
+import { IntakePicker } from "@/components/site/intake-picker";
+import type { PickerService } from "@/lib/site/intake";
+
+const PICKER_SERVICE: Record<string, PickerService> = { "tax-compliance": "tax_compliance", bookkeeping: "bookkeeping" };
+import { ButtonLink } from "@/components/base/buttons/button";
 import { getSiteBrand, quoteTarget } from "@/lib/site/brand";
 import { SERVICES, serviceBySlug } from "@/lib/site/content";
 import { pageMetadata } from "@/lib/site/metadata";
@@ -51,9 +55,9 @@ async function Service({ params }: { params: Promise<{ slug: string }> }) {
         ]}
       >
         <div>
-          <CtaLink href={quote.href} className="h-12 px-5">
+          <ButtonLink href="#tell-us" className="h-12 px-5">
             {QUOTE_LABEL}
-          </CtaLink>
+          </ButtonLink>
         </div>
       </PageIntro>
 
@@ -86,19 +90,30 @@ async function Service({ params }: { params: Promise<{ slug: string }> }) {
                 {n}
               </p>
             ))}
-            <div className="flex flex-col gap-3 border-t-2 border-accent-500 pt-5 lg:max-w-xl">
-              <h3 className="text-title-3-semibold text-text-primary">To start, we need</h3>
-              <ol className="flex list-decimal flex-col gap-2 ps-5 text-body-regular text-text-secondary marker:text-text-secondary">
-                {service.start.map((s) => (
-                  <li key={s}>{s}</li>
-                ))}
-              </ol>
-            </div>
+            {(service.slug === "tax-compliance" || service.slug === "bookkeeping") && (
+              <p className="max-w-[60ch] text-body-regular text-text-secondary">
+                See each step of the month in the portal: <TextLink href="/how-we-work">how we work</TextLink>.
+              </p>
+            )}
             {service.slug === "tax-compliance" && (
               <p className="max-w-[60ch] text-body-regular text-text-secondary">
                 See every due date in the <TextLink href="/bir-filing-calendar">BIR filing calendar</TextLink>.
               </p>
             )}
+          </div>
+        </div>
+      </Section>
+
+      <Section id="tell-us" labelledBy="intake" tone="wash">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
+          <div className="flex flex-col gap-4 lg:col-span-5">
+            <h2 id="intake" className={H2}>
+              Tell us about your business
+            </h2>
+            <p className="max-w-[44ch] text-body-regular text-text-secondary">Pick what your Certificate of Registration shows. The quote form starts from your answers.</p>
+          </div>
+          <div className="lg:col-span-7">
+            <IntakePicker service={PICKER_SERVICE[service.slug] ?? null} toFunnel={quote.toFunnel} fallbackHref={quote.href} />
           </div>
         </div>
       </Section>
@@ -122,7 +137,6 @@ async function Service({ params }: { params: Promise<{ slug: string }> }) {
         </ul>
       </Section>
 
-      <QuoteBand brand={brand} />
     </>
   );
 }

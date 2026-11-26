@@ -7,7 +7,7 @@ import { cx } from "@/utils/cx";
 
 export const metadata = pageMetadata({
   title: "About Eroll Jay C. Tallo, CPA | Tallo CPA",
-  description: `${PRACTITIONER} is a Philippine CPA in public practice and a court-appointed receiver and liquidator for businesses under rehabilitation.`,
+  description: `${PRACTITIONER} is a Philippine CPA in public practice, leading the firm's bookkeeping, BIR tax compliance, accounting and assurance work.`,
   path: "/about",
 });
 
@@ -43,11 +43,11 @@ export default async function AboutPage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="flex flex-col gap-8 lg:col-span-8">
             <h2 id="practitioner" className="min-w-0 [overflow-wrap:break-word] text-display-4-medium text-text-primary md:text-display-3-medium lg:text-display-2-medium">
-              A CPA in public practice, and a court-appointed receiver and liquidator under the Financial Rehabilitation and Insolvency Act of 2010.
+              A Certified Public Accountant in public practice in the Philippines, leading every engagement the firm takes on.
             </h2>
             <div>
-              <ButtonLink href="/services/rehabilitation-and-liquidation" variant="secondary" className="h-12 px-5">
-                Rehabilitation and liquidation work
+              <ButtonLink href="/how-we-work" variant="secondary" className="h-12 px-5">
+                How we work
               </ButtonLink>
             </div>
           </div>

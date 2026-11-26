@@ -12,8 +12,8 @@ import { MobileMenu } from "./mobile-menu";
 
 export const NAV = [
   { href: "/services", label: "Services" },
+  { href: "/how-we-work", label: "How we work" },
   { href: "/bir-filing-calendar", label: "BIR calendar" },
-  { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
@@ -115,7 +115,7 @@ export function SiteFooter({ brand }: { brand: SiteBrand }) {
         <nav aria-label="Firm" className="md:col-span-3">
           <p className="text-body-2-semibold text-text-primary">Firm</p>
           <ul className="mt-2 flex flex-col text-body-2-regular text-text-secondary">
-            {[...NAV, { href: "/privacy", label: "Privacy notice" }].map((l) => (
+            {[...NAV, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy notice" }].map((l) => (
               <li key={l.href}>
                 <Link href={l.href} className={cx(LINK, "inline-flex min-h-8 items-center hover:text-text-primary")}>
                   {l.label}

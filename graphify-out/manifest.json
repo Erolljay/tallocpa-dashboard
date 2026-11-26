@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   "src/app/layout.tsx": {
-    "mtime": 1795661834.4354784,
-    "seen": 1795663344.8924541,
-    "ast_hash": "ee1235b947ccf0b95bc64453c343e990",
+    "mtime": 1795666153.515889,
+    "seen": 1795668254.060306,
+    "ast_hash": "cc772af581374590ca4e4b8c7b7cb1d8",
     "semantic_hash": ""
   },
   "src/app/login/actions.ts": {
@@ -3090,15 +3090,15 @@
     "semantic_hash": ""
   },
   "src/app/start/form.tsx": {
-    "mtime": 1795663503.7246907,
-    "seen": 1795664048.1803195,
-    "ast_hash": "456434e69d29628afabcf5742dfcbec0",
+    "mtime": 1795667273.513672,
+    "seen": 1795668254.0611577,
+    "ast_hash": "c08ab750762c7dccc4193bc6feb5388f",
     "semantic_hash": ""
   },
   "src/app/start/page.tsx": {
-    "mtime": 1795588210.4415996,
-    "seen": 1795663344.892513,
-    "ast_hash": "648989fb7f0c0074bbccc68bfb862433",
+    "mtime": 1795667273.5140126,
+    "seen": 1795668254.0611587,
+    "ast_hash": "3c970fce859fc33c6c043d0d27d3592e",
     "semantic_hash": ""
   },
   "src/components/funnel/proposal-view.tsx": {
@@ -4530,9 +4530,9 @@
     "semantic_hash": ""
   },
   "src/app/(site)/about/page.tsx": {
-    "mtime": 1795665174.7753956,
-    "seen": 1795666101.9201236,
-    "ast_hash": "8e7a15a3ad687c4b016ac8d2d5e03cde",
+    "mtime": 1795667237.8132818,
+    "seen": 1795668254.0558658,
+    "ast_hash": "554353aed5e85aa5ce47e22b7c94532d",
     "semantic_hash": ""
   },
   "src/app/(site)/contact/page.tsx": {
@@ -4554,9 +4554,9 @@
     "semantic_hash": ""
   },
   "src/app/(site)/page.tsx": {
-    "mtime": 1795665468.1876366,
-    "seen": 1795666101.9201376,
-    "ast_hash": "522421bace235823ba1d9e41e18f1752",
+    "mtime": 1795667585.101019,
+    "seen": 1795668254.0559778,
+    "ast_hash": "bea0bc6742c61351f888f318952bd9da",
     "semantic_hash": ""
   },
   "src/app/(site)/privacy/page.tsx": {
@@ -4566,15 +4566,15 @@
     "semantic_hash": ""
   },
   "src/app/(site)/services/[slug]/page.tsx": {
-    "mtime": 1795665540.3294485,
-    "seen": 1795666101.9201422,
-    "ast_hash": "48ee1d879233daa396355285baa6a8ab",
+    "mtime": 1795667623.4483528,
+    "seen": 1795668254.0559983,
+    "ast_hash": "5c87cae1d494e8adf0abbe2f5a03bef2",
     "semantic_hash": ""
   },
   "src/app/(site)/services/page.tsx": {
-    "mtime": 1795665399.7897282,
-    "seen": 1795666101.9201436,
-    "ast_hash": "888827e5356cff2b8d589488f012c3c5",
+    "mtime": 1795667230.9858887,
+    "seen": 1795668254.0559998,
+    "ast_hash": "6cab74c7f1cd50f6d33408b3635ecc68",
     "semantic_hash": ""
   },
   "src/app/app/firm/marketing/actions.ts": {
@@ -4620,15 +4620,15 @@
     "semantic_hash": ""
   },
   "src/components/site/blocks.tsx": {
-    "mtime": 1795665468.188404,
-    "seen": 1795666101.9272902,
-    "ast_hash": "dfa1e0a728267936e53f5583d3017b42",
+    "mtime": 1795667623.4479847,
+    "seen": 1795668254.062344,
+    "ast_hash": "b739ab4f245c70e6dbe7f5776a5c0777",
     "semantic_hash": ""
   },
   "src/components/site/chrome.tsx": {
-    "mtime": 1795665688.698858,
-    "seen": 1795666101.9272916,
-    "ast_hash": "d1e9e65d24b1014cec9dc9d475a0086f",
+    "mtime": 1795667514.3551276,
+    "seen": 1795668254.0623453,
+    "ast_hash": "af0106bda2161d2e386ed3a29f36e7ee",
     "semantic_hash": ""
   },
   "src/components/site/mobile-menu.tsx": {
@@ -4656,15 +4656,15 @@
     "semantic_hash": ""
   },
   "src/lib/site/content.ts": {
-    "mtime": 1795665977.2025003,
-    "seen": 1795666101.932881,
-    "ast_hash": "2d47ffcba0cf158947730a829db62f4b",
+    "mtime": 1795667696.8584273,
+    "seen": 1795668254.0675025,
+    "ast_hash": "0c384f4d0604586f55e69d4e3ff1fae7",
     "semantic_hash": ""
   },
   "src/lib/site/metadata.ts": {
-    "mtime": 1795664974.3417473,
-    "seen": 1795666101.9328828,
-    "ast_hash": "0c3b3a0be9e6e7c1dce6bc958692dcab",
+    "mtime": 1795667514.3553102,
+    "seen": 1795668254.0675068,
+    "ast_hash": "ec4871daefbe444e343006597407a557",
     "semantic_hash": ""
   },
   "supabase/tests/lead-attribution.test.ts": {
@@ -4680,9 +4680,9 @@
     "semantic_hash": ""
   },
   "src/components/site/filing-calendar.tsx": {
-    "mtime": 1795665468.1882076,
-    "seen": 1795666101.9273136,
-    "ast_hash": "f0365aca54e16a208c3422a653ba78e8",
+    "mtime": 1795667353.244216,
+    "seen": 1795668254.0623646,
+    "ast_hash": "407174e54784a8580e3848ce7e7d4c6d",
     "semantic_hash": ""
   },
   "src/components/site/json-ld.tsx": {
@@ -4692,9 +4692,9 @@
     "semantic_hash": ""
   },
   "src/components/site/portal-preview.tsx": {
-    "mtime": 1795665047.869744,
-    "seen": 1795666101.9273186,
-    "ast_hash": "81296f6bdef756dd9fe2b638e60f6d07",
+    "mtime": 1795667506.9763482,
+    "seen": 1795668254.0624018,
+    "ast_hash": "92facb726f9861b483a65431ebee0b39",
     "semantic_hash": ""
   },
   "src/lib/site/calendar.test.ts": {
@@ -4713,6 +4713,42 @@
     "mtime": 1795664984.0457468,
     "seen": 1795666101.9328845,
     "ast_hash": "cb9378b0af003c1fc80d0eaeb755a302",
+    "semantic_hash": ""
+  },
+  "src/app/(site)/how-we-work/page.tsx": {
+    "mtime": 1795667696.8587751,
+    "seen": 1795668254.0559556,
+    "ast_hash": "d103edfb993e287616ed447fe0e598d4",
+    "semantic_hash": ""
+  },
+  "src/app/(site)/services/rehabilitation-and-liquidation/page.tsx": {
+    "mtime": 1795667237.817848,
+    "seen": 1795668254.056001,
+    "ast_hash": "a4623f3b8384708d075aba3262903dfa",
+    "semantic_hash": ""
+  },
+  "src/components/site/intake-picker.tsx": {
+    "mtime": 1795667696.8590133,
+    "seen": 1795668254.0623662,
+    "ast_hash": "dddd4136810c16b5c2a53329fa6ccb6b",
+    "semantic_hash": ""
+  },
+  "src/components/site/screens.tsx": {
+    "mtime": 1795667717.8498175,
+    "seen": 1795668254.0624027,
+    "ast_hash": "a4067e37d1f6d2a24b4e9277c1cafcbb",
+    "semantic_hash": ""
+  },
+  "src/lib/site/intake.test.ts": {
+    "mtime": 1795667262.0016446,
+    "seen": 1795668254.0675042,
+    "ast_hash": "b9745239dc992ab0e864cafaaaf12513",
+    "semantic_hash": ""
+  },
+  "src/lib/site/intake.ts": {
+    "mtime": 1795667256.8616447,
+    "seen": 1795668254.0675054,
+    "ast_hash": "20d3bfdc95a977b9a46376cb83b162a6",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

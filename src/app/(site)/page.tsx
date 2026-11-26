@@ -1,7 +1,7 @@
 import { RiCheckDoubleLine, RiFileList3Line, RiLoginBoxLine, RiSendPlaneLine, RiStackLine, RiUploadCloud2Line } from "@remixicon/react";
 import Link from "next/link";
 import { ButtonLink } from "@/components/base/buttons/button";
-import { H1, H2, QUOTE_LABEL, QuoteBand, Section, SectionHeading } from "@/components/site/blocks";
+import { H1, H2_ON_NAVY, QUOTE_LABEL, QuoteBand, Section, SectionHeading } from "@/components/site/blocks";
 import { Container } from "@/components/site/chrome";
 import { CtaLink } from "@/components/site/cta-link";
 import { FilingCalendar } from "@/components/site/filing-calendar";
@@ -21,7 +21,7 @@ export const metadata = pageMetadata({
 });
 
 const FLOW_ICONS = [RiUploadCloud2Line, RiStackLine, RiFileList3Line, RiCheckDoubleLine, RiSendPlaneLine];
-const GROUP_SPAN: Record<ServiceGroup, string> = { accounting: "lg:col-span-6", assurance: "lg:col-span-3", court: "lg:col-span-3" };
+const GROUP_SPAN: Record<ServiceGroup, string> = { accounting: "lg:col-span-8", assurance: "lg:col-span-4" };
 
 export default async function HomePage() {
   const brand = await getSiteBrand();
@@ -29,13 +29,13 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero: the promise and the action, beside the product itself. */}
-      <section aria-labelledby="hero">
-        <Container className="grid grid-cols-1 items-center gap-10 py-10 lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-2 lg:gap-14 lg:py-12">
+      <section aria-labelledby="hero" className="site-navy site-grid">
+        <Container className="grid grid-cols-1 items-center gap-10 py-12 lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-2 lg:gap-14 lg:py-12">
           <div className="flex min-w-0 flex-col gap-6">
-            <h1 id="hero" className={cx(H1, "lg:text-display-1-semibold")}>
+            <h1 id="hero" className={cx(H1, "text-text-white lg:text-display-1-semibold")}>
               BIR compliance, in one portal.
             </h1>
-            <p className="max-w-[40ch] text-title-3-regular text-text-secondary">
+            <p className="max-w-[40ch] text-title-3-regular text-accent-200">
               A Philippine CPA firm keeps your books and files your returns. You approve online.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -48,10 +48,12 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="flex min-w-0 flex-col gap-4">
-            <PortalPreview />
+            <div className="site-glow">
+              <PortalPreview onNavy />
+            </div>
             <a
               href={signInHref()}
-              className="flex w-fit items-center gap-1.5 rounded-sm text-body-2-medium text-text-secondary underline decoration-1 underline-offset-4 outline-none hover:text-text-primary active:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+              className="flex w-fit items-center gap-1.5 rounded-sm text-body-2-medium text-accent-200 underline decoration-1 underline-offset-4 outline-none hover:text-text-white active:text-text-white focus-visible:ring-2 focus-visible:ring-border-focus-ring"
             >
               <RiLoginBoxLine className="size-4" aria-hidden />
               Already a client? Log in to your portal
@@ -77,10 +79,15 @@ export default async function HomePage() {
             );
           })}
         </ol>
+        <div className="mt-10">
+          <ButtonLink href="/how-we-work" variant="secondary" className="h-12 px-5">
+            See each step in the portal
+          </ButtonLink>
+        </div>
       </Section>
 
       {/* Services, grouped by kind of work; the names are the links. */}
-      <Section labelledBy="services">
+      <Section labelledBy="services" tone="wash">
         <SectionHeading id="services" title="Services" />
         <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-8">
           {(Object.keys(SERVICE_GROUPS) as ServiceGroup[]).map((g) => (
@@ -104,15 +111,15 @@ export default async function HomePage() {
       </Section>
 
       {/* Data: the BIR year as a matrix, linked to the full guide. */}
-      <Section labelledBy="calendar">
+      <Section labelledBy="calendar" tone="navy">
         <div className="flex flex-col gap-10">
           <div className="flex flex-col gap-4">
-            <h2 id="calendar" className={H2}>
+            <h2 id="calendar" className={H2_ON_NAVY}>
               The BIR year, by due day
             </h2>
-            <p className="max-w-[56ch] text-title-3-regular text-text-secondary">Common returns for a calendar-year business, and the day each is due.</p>
+            <p className="max-w-[56ch] text-title-3-regular text-accent-200">Common returns for a calendar-year business, and the day each is due.</p>
           </div>
-          <FilingCalendar />
+          <FilingCalendar onNavy />
           <div>
             <ButtonLink href="/bir-filing-calendar" variant="secondary" className="h-12 px-5">
               Open the BIR filing calendar
@@ -135,10 +142,10 @@ export default async function HomePage() {
       </Section>
 
       {/* Statement: the practitioner, one sentence at the section's size. */}
-      <Section labelledBy="practitioner">
+      <Section labelledBy="practitioner" tone="wash">
         <div className="flex max-w-5xl flex-col gap-8">
           <h2 id="practitioner" className="min-w-0 [overflow-wrap:break-word] text-display-4-medium text-text-primary md:text-display-3-medium lg:text-display-2-medium">
-            {PRACTITIONER} is a CPA in public practice, and serves the courts as receiver and liquidator for businesses under rehabilitation.
+            {PRACTITIONER} is a Philippine CPA in public practice and leads every engagement the firm takes on.
           </h2>
           <div>
             <ButtonLink href="/about" variant="secondary" className="h-12 px-5">

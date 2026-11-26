@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/site/metadata";
 /* Primary search phrase: "accounting and tax services Philippines". */
 export const metadata = pageMetadata({
   title: "Accounting and Tax Services, Philippines | Tallo CPA",
-  description: "Accounting and tax services in the Philippines: bookkeeping, BIR tax compliance, outsourcing, audit, CAS implementation and court-appointed work.",
+  description: "Accounting and tax services in the Philippines: bookkeeping, BIR tax compliance, accounting outsourcing, audit, CAS implementation and AUP.",
   path: "/services",
 });
 
@@ -25,7 +25,7 @@ export default async function ServicesPage() {
       />
       <Section labelledBy="all-services">
         <h2 id="all-services" className={H2}>
-          Seven services, three kinds of work
+          Six services, two kinds of work
         </h2>
         <div className="mt-12 flex flex-col gap-14">
           {(Object.keys(SERVICE_GROUPS) as ServiceGroup[]).map((g) => (

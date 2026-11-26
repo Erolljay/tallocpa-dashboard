@@ -25,6 +25,7 @@ export function pageMetadata({ title, description, path }: { title: string; desc
 export const SITE_PAGES: { path: string; keyword: string; updated: string; priority: number }[] = [
   { path: "/", keyword: "CPA firm for bookkeeping and BIR compliance, Philippines", updated: "2026-11-26", priority: 1 },
   { path: "/services", keyword: "accounting and tax services Philippines", updated: "2026-11-26", priority: 0.9 },
+  { path: "/how-we-work", keyword: "how bookkeeping and BIR compliance work", updated: "2026-11-26", priority: 0.9 },
   { path: "/bir-filing-calendar", keyword: "BIR filing calendar, tax deadlines", updated: "2026-11-26", priority: 0.9 },
   { path: "/about", keyword: "Philippine CPA in public practice", updated: "2026-11-26", priority: 0.6 },
   { path: "/faq", keyword: "BIR deadlines and onboarding questions", updated: "2026-11-26", priority: 0.7 },
