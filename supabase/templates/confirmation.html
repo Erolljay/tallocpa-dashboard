@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Confirm your email</title>
+<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  body { margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table { border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0; }
+  a { color:#0053fb; }
+  @media (max-width: 620px) { .em-pad { padding-left:20px !important; padding-right:20px !important; } }
+  @media (prefers-color-scheme: dark) {
+    .em-page { background-color:#0b1020 !important; }
+    .em-card { background-color:#151b2e !important; border-color:#262f48 !important; }
+    .em-text, .em-heading { color:#eef1f8 !important; }
+    .em-muted { color:#a8b1c4 !important; }
+    .em-rule { border-color:#262f48 !important; }
+  }
+  [data-ogsc] .em-page { background-color:#0b1020 !important; }
+  [data-ogsc] .em-card { background-color:#151b2e !important; }
+  [data-ogsc] .em-text, [data-ogsc] .em-heading { color:#eef1f8 !important; }
+  [data-ogsc] .em-muted { color:#a8b1c4 !important; }
+</style>
+</head>
+<body class="em-page" style="margin:0;padding:0;background-color:#f3f5fa;">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f3f5fa;opacity:0;">Press the button to confirm this email address for your Tallo CPA account.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<table role="presentation" class="em-page" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f3f5fa" style="background-color:#f3f5fa;">
+<tr><td align="center" style="padding:24px 12px;">
+<!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+<tr><td bgcolor="#041a63" class="em-pad" style="background-color:#041a63;border-radius:16px 16px 0 0;padding:22px 32px;">
+<div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:22px;line-height:28px;font-weight:700;letter-spacing:-0.2px;color:#ffffff;">Tallo CPA</div>
+<div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:13px;line-height:18px;color:#8fc6ff;margin-top:2px;">Clear Numbers. Clean Compliance.</div>
+</td></tr>
+<tr><td bgcolor="#ffffff" class="em-card em-pad" style="background-color:#ffffff;border:1px solid #e2e7f0;border-top:0;border-radius:0 0 16px 16px;padding:32px;">
+<h1 class="em-heading" style="margin:0 0 20px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:22px;line-height:30px;font-weight:700;color:#1b2333;">Confirm your email</h1>
+<p class="em-text" style="margin:0 0 16px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:24px;color:#1b2333;">Press the button to confirm this email address for your Tallo CPA account.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px 0;">
+<tr><td align="center" bgcolor="#0053fb" style="border-radius:10px;background-color:#0053fb;">
+<a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;border:1px solid #0053fb;mso-padding-alt:0;">Confirm email</a>
+</td></tr></table>
+<p class="em-muted" style="margin:12px 0 0 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:12px;line-height:18px;color:#5b6577;">Button not working? Open this link: <a href="{{ .ConfirmationURL }}" style="color:#0053fb;text-decoration:underline;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+</td></tr>
+<tr><td class="em-pad" style="padding:24px 32px 8px 32px;">
+<p class="em-muted" style="margin:0 0 6px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:12px;line-height:18px;color:#5b6577;font-weight:600;">EJ Tallo Cloud Accounting and Auditing Services</p>
+<p class="em-muted" style="margin:0 0 6px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:12px;line-height:18px;color:#5b6577;">Rm. 11, Mezzanine Floor, Red Plaza Building, JM Basa St., Iloilo City</p>
+<p class="em-muted" style="margin:0 0 6px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:12px;line-height:18px;color:#5b6577;"><a href="tel:09171354486" style="color:#5b6577;text-decoration:none;">0917 135 4486</a> &nbsp;·&nbsp; <a href="mailto:support@tallocpa.com" style="color:#5b6577;text-decoration:underline;">support@tallocpa.com</a> &nbsp;·&nbsp; <a href="https://www.tallocpa.com" style="color:#5b6577;text-decoration:underline;">www.tallocpa.com</a></p>
+<p class="em-muted em-rule" style="margin:14px 0 0 0;padding-top:14px;border-top:1px solid #e2e7f0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:12px;line-height:18px;color:#5b6577;">You are receiving this because this email address was used for a Tallo CPA account.</p>
+</td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr>
+</table>
+</body>
+</html>
