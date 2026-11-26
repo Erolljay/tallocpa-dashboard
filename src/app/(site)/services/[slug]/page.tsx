@@ -110,7 +110,7 @@ async function Service({ params }: { params: Promise<{ slug: string }> }) {
             <h2 id="intake" className={H2}>
               Tell us about your business
             </h2>
-            <p className="max-w-[44ch] text-body-regular text-text-secondary">Pick what your Certificate of Registration shows. The quote form starts from your answers.</p>
+            <p className="max-w-[44ch] text-body-regular text-text-secondary">Pick your industry and the taxes you file. The quote form starts from your answers.</p>
           </div>
           <div className="lg:col-span-7">
             <IntakePicker service={PICKER_SERVICE[service.slug] ?? null} toFunnel={quote.toFunnel} fallbackHref={quote.href} />

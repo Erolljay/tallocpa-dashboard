@@ -82,14 +82,13 @@ export async function getSiteBrand(): Promise<SiteBrand> {
 }
 
 /**
- * Where "Get a quote" goes. The quote form at /start while the funnel is open to
- * the public; until then the contact page (or, on the contact page, an email),
- * so the site never links to a page that answers 404.
+ * Where "Get a quote" goes: always the quote page at /start. While the funnel is
+ * closed to the public, /start itself shows how to ask for a quote by email or
+ * phone instead of the form, so every quote button leads to the same place.
  */
-export function quoteTarget(brand: SiteBrand, { onContactPage = false } = {}): { href: string; toFunnel: boolean } {
-  if (brand.funnelLive) return { href: "/start", toFunnel: true };
-  if (onContactPage && brand.email) return { href: `mailto:${brand.email}?subject=${encodeURIComponent("Quote request")}`, toFunnel: false };
-  return { href: "/contact#reach-us", toFunnel: false };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- callers still pass the brand and page; the target no longer depends on them.
+export function quoteTarget(_brand?: SiteBrand, _opts?: { onContactPage?: boolean }): { href: string; toFunnel: boolean } {
+  return { href: "/start", toFunnel: true };
 }
 
 /** The firm's phone numbers as tel: links ("0917 123 4567 / 0938 777 7795" holds two). */

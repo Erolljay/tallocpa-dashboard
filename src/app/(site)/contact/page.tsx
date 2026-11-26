@@ -73,9 +73,9 @@ export default async function ContactPage() {
 }
 
 const BRING = [
-  { title: "How you are registered", body: "Form 2303 shows it." },
-  { title: "What you need", body: "Monthly returns, an audit, or catching up." },
-  { title: "How busy the books are", body: "Documents, employees, branches." },
+  { title: "Your industry", body: "Trading, food, services, construction, online selling, and so on." },
+  { title: "How you are registered", body: "Individual, one person corporation, partnership or corporation." },
+  { title: "The taxes you file", body: "VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, income tax." },
 ];
 
 function ContactList({ brand }: { brand: SiteBrand }) {

@@ -230,12 +230,13 @@ export const FAQ_GROUPS: { title: string; items: Faq[] }[] = [
     items: [
       {
         q: "How do I get a quote?",
-        a: ["Answer a few questions about your business in the quote form. It shows the fee for your profile right away, based on our fee schedule, and sends your request to us."],
+        a: ["Press Get a quote and tell us your industry, how your business is registered, and the taxes you file: VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, and income tax. The quote form works out the fee for those answers from our fee schedule and sends your request to us."],
       },
       {
         q: "What do you need to start?",
         a: [
-          "Your BIR Certificate of Registration (Form 2303), copies of the last returns filed, and your books or financial statements for the latest period. Each service page lists what that engagement needs.",
+          "For a quote, only your answers: industry, how you are registered and the taxes you file. No documents yet.",
+          "Once you engage us, we ask for your Certificate of Registration (Form 2303) and the last returns filed, and set up your filing calendar from them.",
         ],
       },
       {
