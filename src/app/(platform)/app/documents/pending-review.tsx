@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useState } from "react";
 import { Pick } from "@/components/books/pick";
-import { Badge, Button, Card, Select } from "@/components/ui";
+import { Badge, Button, Card } from "@/components/ui";
 import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
 import type { TaxCode } from "@/lib/books/tax-codes";
 import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices, type CodeSourceKind } from "@/lib/books/ui";
@@ -68,7 +68,6 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
   const [chosen, setChosen] = useState<Record<string, string>>(() => Object.fromEntries(rows.map((r) => [r.id, r.account?.id ?? ""])));
   const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const groups = useMemo(() => [...new Set(accounts.map((a) => a.group))], [accounts]);
 
   const [codes, setCodes] = useState<Record<string, Codes>>(() => Object.fromEntries(rows.map((r) => [r.id, initialCodes(r)])));
   const [codeOk, setCodeOk] = useState<Set<string>>(new Set());
@@ -197,24 +196,17 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                         <td className="py-2 ps-4 pe-4">
                           {r.booked ? (
                             <div className="flex min-w-72 flex-col gap-1">
-                              <label htmlFor={`acct-${r.id}`} className="sr-only">Account title</label>
-                              <Select
-                                id={`acct-${r.id}`}
-                                value={chosen[r.id]}
-                                onChange={(e) => {
-                                  setChosen({ ...chosen, [r.id]: e.target.value });
+                              <Pick
+                                ariaLabel="Account title"
+                                size="sm"
+                                value={chosen[r.id] || null}
+                                onChange={(x) => {
+                                  setChosen({ ...chosen, [r.id]: x ?? "" });
                                   // Choosing a title on purpose confirms it.
-                                  setConfirmed(set(confirmed, r.id, e.target.value !== ""));
+                                  setConfirmed(set(confirmed, r.id, Boolean(x)));
                                 }}
-                                className="text-caption-1-regular"
-                              >
-                                <option value="">Choose…</option>
-                                {groups.map((g) => (
-                                  <optgroup key={g} label={g}>
-                                    {accounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-                                  </optgroup>
-                                ))}
-                              </Select>
+                                options={accounts}
+                              />
                               {r.invoiceKind && (
                                 <BooksChoices
                                   row={r}

@@ -18,7 +18,7 @@ export async function PartyList({ kind, params, searchParams }: { kind: "sales" 
   const rows = (await loadPartyBalances(c.supabase, c.id, kind)).filter((p) => matches(c.q, p.name, p.tin));
   const total = rows.reduce((s, p) => s + p.balance, 0);
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q }}>
       <BooksList
         title={k.title}
         newHref={booksHref(c.id, k.invoices, c.month, {}, "/new")}

@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { Badge, Card, LinkButton, Notice } from "@/components/ui";
 import { loadClientParties, loadEntryLines, loadInvoice, loadInvoiceLines, loadInvoices, loadInvoicesByOpenItem, loadTaxCodes } from "@/lib/books/data";
 import { invoiceStatus, invoiceTotals, type InvoiceStatusKind } from "@/lib/books/status";
-import { booksHref, cents, journalRows, matches, monthRange, partyKeyOf } from "@/lib/books/ui";
+import { booksHref, cents, journalRows, matches, partyKeyOf } from "@/lib/books/ui";
 import { loadAccounts } from "@/lib/ledger/data";
 import { formatAmount } from "@/lib/returns/money";
 import { BooksFrame } from "./books-frame";
 import { BooksList } from "./books-list";
-import { booksContext, fmtDate, fmtMonth, one, type SearchParams } from "./books-context";
+import { booksContext, fmtDate, one, type SearchParams } from "./books-context";
 import { InvoiceForm, type InvoiceFormValue } from "./invoice-form";
 import { TransactionJournal } from "./transaction-journal";
 import { VoidForm } from "./void-form";
@@ -35,7 +35,7 @@ export async function InvoiceList({ kind, params, searchParams }: Props & { kind
   const c = await booksContext(params, searchParams);
   const k = INVOICE_KINDS[kind];
   const party = one(c.sp.party);
-  const range = monthRange(c.month);
+  const range = { from: c.range.from, to: c.range.to };
   const rows = (await loadInvoices(c.supabase, c.id, kind, party ? {} : range)).filter(
     (r) => (!party || partyKeyOf(r) === party) && matches(c.q, r.reference, r.party_name, r.description, r.party_tin),
   );
@@ -44,7 +44,7 @@ export async function InvoiceList({ kind, params, searchParams }: Props & { kind
   const partyName = party ? rows[0]?.party_name ?? "this party" : null;
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q, party }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q, party }}>
       <BooksList
         title={k.title}
         newHref={booksHref(c.id, k.module, c.month, {}, "/new")}
@@ -53,7 +53,7 @@ export async function InvoiceList({ kind, params, searchParams }: Props & { kind
         note={
           party ? (
             <>
-              All months for {partyName}. <Link href={booksHref(c.id, k.module, c.month)} className="text-button-ghost-foreground hover:underline">Show {fmtMonth(c.month)} only</Link>
+              All months for {partyName}. <Link href={booksHref(c.id, k.module, c.month)} className="text-button-ghost-foreground hover:underline">Show {c.range.label} only</Link>
             </>
           ) : null
         }
@@ -85,7 +85,7 @@ export async function InvoiceList({ kind, params, searchParams }: Props & { kind
           };
         })}
         totals={["Total", null, null, null, formatAmount(totals.total), formatAmount(totals.due), null]}
-        empty={c.q ? "Nothing matches the search." : party ? "No invoices." : `No ${k.title.toLowerCase()} dated in ${fmtMonth(c.month)}.`}
+        empty={c.q ? "Nothing matches the search." : party ? "No invoices." : `No ${k.title.toLowerCase()} dated in ${c.range.label}.`}
         minWidth="56rem"
       />
     </BooksFrame>
@@ -119,7 +119,7 @@ export async function InvoiceView({ kind, params, searchParams }: { kind: Kind; 
   const editable = !inv.voided_at && !inv.document_id && !inv.legacy;
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={`/${inv.id}`}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={`/${inv.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <LinkButton href={booksHref(c.id, k.module, c.month)} variant="ghost" size="sm">Back to {k.title}</LinkButton>
         {editable && <LinkButton href={booksHref(c.id, k.module, c.month, {}, `/${inv.id}/edit`)} variant="secondary" size="sm">Edit</LinkButton>}
@@ -195,7 +195,7 @@ export async function InvoiceEdit({ kind, params, searchParams }: { kind: Kind; 
       };
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={inv ? `/${inv.id}/edit` : "/new"}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={inv ? `/${inv.id}/edit` : "/new"}>
       <Card title={inv ? `Edit ${k.one}` : `New ${k.one}`} actions={<LinkButton href={booksHref(c.id, k.module, c.month, {}, inv ? `/${inv.id}` : "")} variant="ghost" size="sm">Cancel</LinkButton>}>
         {blocked ? (
           <Notice tone="waiting">{blocked}</Notice>

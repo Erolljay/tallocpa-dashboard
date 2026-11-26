@@ -3,6 +3,8 @@ import type { TaxCode } from "./tax-codes";
 import {
   allocateOldestFirst,
   booksHref,
+  booksRange,
+  booksView,
   booksMonth,
   codesFor,
   codesNeedConfirming,
@@ -183,5 +185,25 @@ describe("Inbox tax codes", () => {
   it("names what a row goes to the Books as", () => {
     expect(postingChoices("sales").map((c) => c.label)).toEqual(["Sales Invoice + Receipt (cash)", "Sales Invoice (on account)"]);
     expect(postingChoices("purchase")[1]).toEqual({ value: "charge", label: "Purchase Invoice (on account)" });
+  });
+});
+
+describe("booksRange", () => {
+  it("covers the month", () => {
+    expect(booksRange("2026-11", "month", 12, "2026-01-01")).toMatchObject({ from: "2026-11-01", to: "2026-11-30", endMonth: "2026-11", label: "November 2026" });
+  });
+  it("covers the calendar quarter", () => {
+    expect(booksRange("2026-11", "quarter", 12, "2026-01-01")).toMatchObject({ from: "2026-10-01", to: "2026-12-31", endMonth: "2026-12" });
+  });
+  it("follows a fiscal year (June year end: Jul–Sep is Q1)", () => {
+    expect(booksRange("2026-08", "quarter", 6, null)).toMatchObject({ from: "2026-07-01", to: "2026-09-30" });
+    expect(booksRange("2026-02", "ytd", 6, null)).toMatchObject({ from: "2025-07-01", to: "2026-02-28" });
+  });
+  it("starts the year to date at the books start", () => {
+    expect(booksRange("2026-11", "ytd", 12, "2026-10-01")).toMatchObject({ from: "2026-10-01", to: "2026-11-30", label: "Oct – Nov 2026 (year to date)" });
+  });
+  it("defaults an unknown view to the month", () => {
+    expect(booksView("week")).toBe("month");
+    expect(booksView("ytd")).toBe("ytd");
   });
 });

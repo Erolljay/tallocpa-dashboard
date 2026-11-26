@@ -5,6 +5,7 @@
  * year. Anything else opens on its own page. Pure, so the list and the server
  * action agree.
  */
+import { missingForApproval } from "./required";
 import { checkFields } from "@/lib/ocr/checks";
 import { LOW_CONFIDENCE, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 
@@ -16,7 +17,7 @@ export interface Readiness {
 
 export function bulkReadiness(
   e: { status: string; fields: OcrFields | null; confidence: OcrConfidence | null } | null,
-  ctx: { today: string; priorYear: boolean; duplicate: boolean },
+  ctx: { today: string; priorYear: boolean; duplicate: boolean; docType?: string },
 ): Readiness {
   if (!e) return { ready: false, reason: "Not read yet" };
   if (e.status === "pending") return { ready: false, reason: "Reading…" };
@@ -27,6 +28,9 @@ export function bulkReadiness(
   if (issues.length) return { ready: false, reason: issues[0].message };
   // Bank or card charges need their account chosen on the document's own page.
   if (Number(e.fields?.other_deduction ?? 0) > 0 && !e.fields?.other_deduction_account) return { ready: false, reason: "Choose the account for the other deduction" };
+  // What the BIR lists need (TIN, address, ATC…): filled in on the document's own page.
+  const missing = ctx.docType ? missingForApproval(ctx.docType, e.fields ?? {}) : [];
+  if (missing.length) return { ready: false, reason: `Missing: ${missing.map((m) => m.label).join(", ")}` };
   return { ready: true, reason: null };
 }
 

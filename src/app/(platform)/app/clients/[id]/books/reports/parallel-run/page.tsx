@@ -38,7 +38,7 @@ async function ParallelRun({ params, searchParams }: Pick<PageProps<"/app/client
   const tally = (s: MonthStatus) => run.filter((m) => m.status === s).length;
   const allAgree = run.length > 0 && run.every((m) => m.status === "agree" || m.status === "empty") && tally("agree") > 0;
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports" sub="/parallel-run" query={{ by }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports" sub="/parallel-run" query={{ by }}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-title-2-medium text-text-primary">Old register beside the Books</h2>

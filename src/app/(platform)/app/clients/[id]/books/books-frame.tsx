@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadModuleCounts } from "@/lib/books/data";
-import { BOOKS_MODULES, booksHref, COUNTED, shiftMonth, type BooksModule } from "@/lib/books/ui";
+import { BOOKS_MODULES, booksHref, COUNTED, shiftMonth, type BooksModule, type BooksRange } from "@/lib/books/ui";
 import { cx } from "@/utils/cx";
 import { ClientTabs } from "../client-tabs";
 import { BooksLockBar } from "./lock-bar";
@@ -23,6 +23,7 @@ export async function BooksFrame({
   sub = "",
   at,
   query = {},
+  range,
   children,
 }: {
   supabase: SupabaseClient;
@@ -37,14 +38,20 @@ export async function BooksFrame({
   at?: string;
   /** Other query kept when the month changes (search, party, kind). */
   query?: Record<string, string | null | undefined>;
+  /** The period the page's lists cover (Month, Quarter or Year to date); the month when omitted. */
+  range?: BooksRange;
   children: ReactNode;
 }) {
   const counts = await loadModuleCounts(supabase, clientId, month);
   const startMonth = booksStart.slice(0, 7);
-  const prev = shiftMonth(month, -1);
+  const view = range?.view ?? "month";
+  // A quarter moves a quarter at a time, from its first month.
+  const step = view === "quarter" ? 3 : 1;
+  const anchor = view === "quarter" && range ? shiftMonth(range.endMonth, -2) : month;
+  const prev = shiftMonth(anchor, -step);
   const kept = Object.fromEntries(Object.entries(query).filter(([, v]) => v)) as Record<string, string>;
   const path = at ? `/app/clients/${clientId}/books${at}` : booksHref(clientId, active, null, {}, sub);
-  const hrefFor = (m: string) => `${path}?${new URLSearchParams({ ...kept, month: m }).toString()}`;
+  const hrefFor = (m: string) => `${path}?${new URLSearchParams({ ...kept, month: m, view: range?.view ?? "month" }).toString()}`;
   return (
     <>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
@@ -58,8 +65,10 @@ export async function BooksFrame({
             month={month}
             min={startMonth}
             query={new URLSearchParams(kept).toString()}
-            prevHref={prev >= startMonth ? hrefFor(prev) : null}
-            nextHref={hrefFor(shiftMonth(month, 1))}
+            prevHref={shiftMonth(prev, step - 1) >= startMonth ? hrefFor(prev) : null}
+            nextHref={hrefFor(shiftMonth(anchor, step))}
+            view={view}
+            label={range?.label ?? ""}
           />
           <BooksLockBar clientId={clientId} month={month} />
         </div>

@@ -361,6 +361,7 @@ async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       today,
       priorYear: r.prior_year,
       duplicate: Boolean(fields.party_tin && fields.number && dupes.has(`${fields.party_tin}|${fields.number}`)),
+      docType: r.doc_type,
     });
     const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
     const ocr: PendingRow["ocr"] = !e

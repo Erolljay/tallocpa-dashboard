@@ -8,7 +8,8 @@ import { periodTitle, REPORT_KINDS, type ReportKind } from "@/lib/ledger/stateme
 import { formatAmount } from "@/lib/returns/money";
 import { ReleaseReportForm, WithdrawReportButton } from "../../forms";
 import { BooksFrame } from "../../books-frame";
-import { booksMonth } from "@/lib/books/ui";
+import { booksViewFor } from "../../books-context";
+import { booksMonth, booksRange } from "@/lib/books/ui";
 import { manilaToday } from "@/lib/filings/run";
 
 export default function ReportsPage(props: PageProps<"/app/clients/[id]/books/reports/statements">) {
@@ -37,6 +38,7 @@ async function Reports({ params, searchParams }: Pick<PageProps<"/app/clients/[i
   const kind: ReportKind = typeof q.kind === "string" && q.kind in REPORT_KINDS ? (q.kind as ReportKind) : "monthly";
   const startMonth = books.booksStart.slice(0, 7);
   const month = booksMonth(typeof q.month === "string" ? q.month : "", manilaToday(), books.booksStart);
+  const range = booksRange(month, await booksViewFor(q), client.fiscal_year_end_month, books.booksStart);
   const requested = typeof q.to === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(q.to) ? q.to : typeof q.month === "string" ? month : lastMonth();
   const endMonth = requested < startMonth ? startMonth : requested;
   const owner = me.staff.role === "owner";
@@ -45,7 +47,7 @@ async function Reports({ params, searchParams }: Pick<PageProps<"/app/clients/[i
   const current = "error" in result && result.error ? undefined : released.find((r) => r.kind === kind && r.periodEnd === result.fs?.periodEnd);
 
   return (
-    <BooksFrame supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="reports" sub="/statements" query={{ kind: q.kind as string | undefined }}>
+    <BooksFrame range={range} supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="reports" sub="/statements" query={{ kind: q.kind as string | undefined }}>
       <div className="print:hidden">
         <h2 className="text-title-2-medium text-text-primary">Financial statements</h2>
         <p className="mt-1 text-body-regular text-text-secondary">From the books, by each account&rsquo;s FS line.</p>

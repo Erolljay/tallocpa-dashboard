@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Card, LinkButton, Notice } from "@/components/ui";
 import { loadAllocations, loadEntryLines, loadInvoices, loadInvoicesById, loadInvoicesByOpenItem, loadSettlement, loadSettlements } from "@/lib/books/data";
-import { booksHref, cents, journalRows, matches, monthRange, partyKeyOf, pesos } from "@/lib/books/ui";
+import { booksHref, cents, journalRows, matches, partyKeyOf, pesos } from "@/lib/books/ui";
 import { loadAccounts } from "@/lib/ledger/data";
 import { formatAmount } from "@/lib/returns/money";
 import { BooksFrame } from "./books-frame";
 import { BooksList } from "./books-list";
-import { booksContext, fmtDate, fmtMonth, one, type SearchParams } from "./books-context";
+import { booksContext, fmtDate, one, type SearchParams } from "./books-context";
 import { SettlementForm, type OpenInvoice, type SettlementFormValue } from "./settlement-form";
 import { TransactionJournal } from "./transaction-journal";
 import { VoidForm } from "./void-form";
@@ -25,13 +25,13 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<SearchPara
 export async function SettlementList({ kind, params, searchParams }: Props & { kind: Kind }) {
   const c = await booksContext(params, searchParams);
   const k = SETTLEMENT_KINDS[kind];
-  const [rows0, accounts] = await Promise.all([loadSettlements(c.supabase, c.id, kind, monthRange(c.month)), loadAccounts(c.supabase, c.id)]);
+  const [rows0, accounts] = await Promise.all([loadSettlements(c.supabase, c.id, kind, { from: c.range.from, to: c.range.to }), loadAccounts(c.supabase, c.id)]);
   const name = new Map(accounts.map((a) => [a.id, a.name]));
   const rows = rows0.filter((r) => matches(c.q, r.reference, r.party_name, r.description, name.get(r.cash_account_id)));
   const total = rows.filter((r) => !r.voided_at).reduce((s, r) => s + cents(r.amount), 0);
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} query={{ q: c.q }}>
       <BooksList
         title={k.title}
         newHref={booksHref(c.id, k.module, c.month, {}, "/new")}
@@ -53,7 +53,7 @@ export async function SettlementList({ kind, params, searchParams }: Props & { k
           ],
         }))}
         totals={["Total", null, null, null, null, formatAmount(total)]}
-        empty={c.q ? "Nothing matches the search." : `No ${k.title.toLowerCase()} dated in ${fmtMonth(c.month)}.`}
+        empty={c.q ? "Nothing matches the search." : `No ${k.title.toLowerCase()} dated in ${c.range.label}.`}
       />
     </BooksFrame>
   );
@@ -89,7 +89,7 @@ export async function SettlementView({ kind, params, searchParams }: { kind: Kin
   const editable = !s.voided_at && !s.legacy && !s.document_id;
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={`/${s.id}`}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={`/${s.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <LinkButton href={booksHref(c.id, k.module, c.month)} variant="ghost" size="sm">Back to {k.title}</LinkButton>
         {editable && <LinkButton href={booksHref(c.id, k.module, c.month, {}, `/${s.id}/edit`)} variant="secondary" size="sm">Edit</LinkButton>}
@@ -162,7 +162,7 @@ export async function SettlementEdit({ kind, params, searchParams }: { kind: Kin
       };
 
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={s ? `/${s.id}/edit` : "/new"}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active={k.module} sub={s ? `/${s.id}/edit` : "/new"}>
       <Card title={s ? `Edit ${k.one}` : `New ${k.one}`} actions={<LinkButton href={booksHref(c.id, k.module, c.month, {}, s ? `/${s.id}` : "")} variant="ghost" size="sm">Cancel</LinkButton>}>
         {blocked ? (
           <Notice tone="waiting">{blocked}</Notice>

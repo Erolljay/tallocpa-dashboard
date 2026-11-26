@@ -163,3 +163,25 @@ export function toTaxCode(r: { id: string; code: string; name: string; kind: str
     active: r.active,
   };
 }
+
+/** The SLP purchase categories (as register_lines.slp_category). */
+export type SlpCategoryKey = "capital_goods" | "other_goods" | "services" | "zero_rated" | "exempt";
+
+const SLP_OF_KIND: Partial<Record<TaxCodeKind, SlpCategoryKey>> = {
+  input_vat_capital: "capital_goods",
+  input_vat_goods: "other_goods",
+  input_vat_services: "services",
+  zero_rated_purchases: "zero_rated",
+  vat_exempt_purchases: "exempt",
+};
+
+/**
+ * The SLP category a purchase's line tax codes already say (the Input VAT code is
+ * the category: IVAT12-CG capital goods, IVAT12-OG other goods, IVAT12-S services),
+ * so staff choose it once, on the tax code. A VATable line decides; otherwise
+ * zero-rated, then exempt. Null when no line code is a purchase VAT code.
+ */
+export function slpCategoryFromKinds(kinds: (TaxCodeKind | null | undefined)[]): SlpCategoryKey | null {
+  const cats = kinds.map((k) => (k ? SLP_OF_KIND[k] : undefined)).filter((c): c is SlpCategoryKey => Boolean(c));
+  return cats.find((c) => c === "capital_goods" || c === "other_goods" || c === "services") ?? (cats.includes("zero_rated") ? "zero_rated" : cats.includes("exempt") ? "exempt" : null);
+}

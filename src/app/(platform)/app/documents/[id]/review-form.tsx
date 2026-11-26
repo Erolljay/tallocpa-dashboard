@@ -7,11 +7,12 @@ import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/d
 import type { Issue } from "@/lib/ocr/checks";
 import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PARTY_KINDS, PAYMENT_TERMS, SLP_CATEGORY_KEYS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { SLP_CATEGORIES } from "@/lib/register/parts";
-import { Pick } from "@/components/books/pick";
+import { Pick, PickInput } from "@/components/books/pick";
 import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
 import type { TaxCode } from "@/lib/books/tax-codes";
 import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices } from "@/lib/books/ui";
 import { formatAmount } from "@/lib/returns/money";
+import { missingForApproval } from "@/lib/documents/required";
 import { approveDocumentAction } from "./actions";
 
 /** Which document types each slice 4 field applies to (others always show). */
@@ -23,6 +24,9 @@ const ONLY_FOR: Partial<Record<string, readonly string[]>> = {
   slp_category: ["purchase_receipt"],
   payment_account: ["sales_invoice", "purchase_receipt"],
 };
+
+const fmtDay = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`));
+const fmtMonthOf = (iso: string) => new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`));
 
 const typeLabel: Record<string, string> = {
   sales_invoice: "Sales invoice / OR",
@@ -80,6 +84,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
   const [usedDirectory, setUsedDirectory] = useState(false);
   // Last, first and middle name show only for an individual (the BIR lists need them).
   const [partyKind, setPartyKind] = useState(props.fields.party_kind ?? "");
+  const requiredKeys = new Set(missingForApproval(props.docType, { party_kind: partyKind || null }).map((m) => m.field));
   const dir = props.directory;
   /** Copies the directory's registered name, TIN and address into the party fields. */
   const applyDirectory = () => {
@@ -100,6 +105,8 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {OCR_FIELDS.map((f) => {
+            // Fields the Books and the BIR lists always need for this document (marked *, required on approval).
+            const required = props.mode === "approve" && requiredKeys.has(f.key);
             if (f.kind === "person" && partyKind !== "individual") return null;
             const only = ONLY_FOR[f.key];
             if (only && !only.includes(props.docType)) return null;
@@ -107,6 +114,8 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             if ((f.kind === "account" || f.kind === "payment_account") && !props.booking) return null;
             // Cash or charge and the cash account are chosen with the Books (BookingFields).
             if ((f.kind === "terms" || f.kind === "payment_account") && props.booking?.invoiceKind) return null;
+            // The Input VAT tax code is the SLP category (capital goods, other goods, services): asked once, there.
+            if (f.kind === "slp" && props.booking?.invoiceKind) return null;
             const conf = props.confidence[f.key];
             const low = conf != null && conf < LOW_CONFIDENCE;
             const issue = issueFor(f.key);
@@ -114,7 +123,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             const wide = f.key === "party_name" || f.key === "party_address";
             return (
               <div key={f.key} className={`${wide ? "sm:col-span-2" : ""} ${low ? "rounded-lg bg-status-yellow-background p-2" : ""}`}>
-                <Field label={`${f.label}${low ? ` · ${Math.round((conf ?? 0) * 100)}% sure` : ""}`} htmlFor={id} error={issue || undefined}>
+                <Field label={`${f.label}${required ? " *" : ""}${low ? ` · ${Math.round((conf ?? 0) * 100)}% sure` : ""}`} htmlFor={id} error={issue || undefined}>
                   {f.kind === "doc_type" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">—</option>
@@ -136,14 +145,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
                       {(props.booking?.cashAccounts ?? []).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
                     </Select>
                   ) : f.kind === "account" ? (
-                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
-                      <option value="">Choose if there is one…</option>
-                      {[...new Set((props.booking?.accounts ?? []).map((a) => a.group))].map((g) => (
-                        <optgroup key={g} label={g}>
-                          {(props.booking?.accounts ?? []).filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-                        </optgroup>
-                      ))}
-                    </Select>
+                    <PickInput id={id} ariaLabel={f.label} name={f.key} defaultValue={props.fields[f.key] ?? null} options={props.booking?.accounts ?? []} noneLabel="None" isDisabled={!props.canAct} />
                   ) : f.kind === "terms" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">Not stated (cash)</option>
@@ -157,6 +159,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
                       inputMode={f.kind === "amount" ? "decimal" : undefined}
                       defaultValue={props.fields[f.key] ?? ""}
                       disabled={!props.canAct}
+                      required={required}
                       className={f.kind === "amount" ? "text-end tabular-nums" : undefined}
                     />
                   )}
@@ -187,6 +190,21 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" disabled={pending}>{props.mode === "edit" ? (pending ? "Saving…" : "Save changes") : pending ? "Approving…" : "Approve figures"}</Button>
             {state.error && <Notice tone="blocked">{state.error}</Notice>}
+          </div>
+        )}
+        {props.canAct && state.lockedMonth && (
+          <div role="alert" className="space-y-2 rounded-xl bg-status-yellow-background p-3">
+            <p className="text-body-medium text-status-yellow-text">
+              {state.lockedMonth.message}: it cannot be posted in that month.{" "}
+              {state.lockedMonth.canRedate
+                ? `Approve it dated ${fmtDay(state.lockedMonth.openMonth)} instead? It is reported and posted in ${fmtMonthOf(state.lockedMonth.openMonth)}; the document keeps its own date, and the move is recorded.`
+                : `The client's reviewer or the Owner can approve it dated ${fmtDay(state.lockedMonth.openMonth)} (reported in ${fmtMonthOf(state.lockedMonth.openMonth)}). Ask them to open this document.`}
+            </p>
+            {state.lockedMonth.canRedate && (
+              <Button type="submit" name="redate" value="1" size="sm" disabled={pending}>
+                {pending ? "Approving…" : `Approve dated ${fmtDay(state.lockedMonth.openMonth)}`}
+              </Button>
+            )}
           </div>
         )}
       </form>
@@ -225,7 +243,6 @@ const ENTRY_STATUS = { suggested: "Suggested entry from the old flow, not posted
  * OCR's suggestion, to confirm (choosing it on purpose, or Confirm).
  */
 function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccountId }: { booking: Booking; canAct: boolean; mode: "approve" | "edit"; terms: "cash" | "charge"; cashAccountId: string | null }) {
-  const groups = [...new Set(booking.accounts.map((a) => a.group))];
   const kind = booking.invoiceKind;
   const sug = booking.codes;
   const [lines, setLines] = useState<Record<string, string | null>>(() => Object.fromEntries((sug?.lines ?? []).map((l) => [l.portion, l.tax_code_id])));
@@ -246,14 +263,7 @@ function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccount
   return (
     <div className="space-y-3 rounded-xl bg-background-secondary-default p-3">
       <Field label="Account title (books)" htmlFor="ledger_account" hint={booking.source}>
-        <Select id="ledger_account" name="ledger_account" defaultValue={booking.accountId ?? ""} disabled={disabled}>
-          <option value="">Choose…</option>
-          {groups.map((g) => (
-            <optgroup key={g} label={g}>
-              {booking.accounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </optgroup>
-          ))}
-        </Select>
+        <PickInput id="ledger_account" ariaLabel="Account title (books)" name="ledger_account" defaultValue={booking.accountId} options={booking.accounts} isDisabled={disabled} />
       </Field>
 
       {kind && (
@@ -324,8 +334,6 @@ function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccount
               <Pick label={kind === "sales" ? "Deposited to" : "Paid from"} name="payment_account" value={cash} onChange={setCash} options={booking.cashAccounts} isDisabled={disabled} tone={cash ? "neutral" : "error"} />
             )}
           </div>
-          {/* Disabled selects do not submit: keep the values in the form. */}
-          {disabled && <input type="hidden" name="payment_terms" value={terms} />}
         </>
       )}
 

@@ -191,6 +191,24 @@ export async function confirmAllAction(clientId: string): Promise<FormState> {
   return { ok: `Posted ${n} entr${n === 1 ? "y" : "ies"}.` };
 }
 
+/**
+ * Moves the register's cash sales and purchases (booked the old way, cash book only)
+ * into the Sales or Purchase Journal with their Receipt or Payment.
+ */
+export async function repostRegisterCashAction(clientId: string): Promise<FormState> {
+  const { supabase } = await booksAccess(clientId);
+  const { data, error } = await supabase.rpc("repost_register_cash_invoices", { p_client: clientId });
+  revalidatePath(path(clientId), "layout");
+  if (error) return { error: friendly(error.message) };
+  const rows = (data ?? []) as { reference: string | null; kind: string; issue_date: string; outcome: string }[];
+  const moved = rows.filter((r) => r.outcome === "moved").length;
+  const skipped = rows.filter((r) => r.outcome !== "moved");
+  const label = (r: (typeof rows)[number]) => `${r.kind === "sales" ? "Sales" : "Purchase"} ${r.reference ?? ""} (${r.issue_date})`.replace("  ", " ");
+  const ok = `Moved ${moved} invoice${moved === 1 ? "" : "s"} into the journals with ${moved === 1 ? "its" : "their"} receipts and payments.`;
+  if (skipped.length === 0) return { ok };
+  return { ok, error: `Not moved: ${skipped.map((r) => `${label(r)}: ${friendly(r.outcome.replace(/^skipped: /, ""))}`).join("; ")}` };
+}
+
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 async function checkArapFile(clientId: string, form: FormData) {
