@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Select, SelectItem } from "@/components/base/select/select";
+import { withAttribution } from "@/lib/site/attribution";
 import { QUOTE_LABEL } from "@/lib/site/config";
 import {
   INDUSTRIES,
@@ -14,6 +15,7 @@ import {
   type PickerTaxpayerType,
   type TaxChoice,
 } from "@/lib/site/intake";
+import { useAttribution } from "./attribution-keeper";
 import { CtaLink } from "./cta-link";
 
 /**
@@ -27,6 +29,7 @@ export function IntakePicker({ service, toFunnel, fallbackHref }: { service: Pic
   const [taxpayerType, setTaxpayerType] = useState<PickerTaxpayerType | null>(null);
   const [taxes, setTaxes] = useState<TaxChoice[]>([]);
   const legend = useId();
+  const attribution = useAttribution();
 
   const toggle = (id: TaxChoice, on: boolean) =>
     setTaxes((prev) => {
@@ -34,7 +37,8 @@ export function IntakePicker({ service, toFunnel, fallbackHref }: { service: Pic
       return on ? [...rest, id] : rest;
     });
 
-  const href = toFunnel ? startHref({ industry, taxpayerType, taxes, service }) : fallbackHref;
+  /* The href follows the choices, so the attribution is added here rather than by AttributionKeeper. */
+  const href = withAttribution(toFunnel ? startHref({ industry, taxpayerType, taxes, service }) : fallbackHref, attribution);
 
   return (
     <div className="flex flex-col gap-5">

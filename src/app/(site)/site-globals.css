@@ -1,0 +1,50 @@
+/*
+ * The public website's own Tailwind entry (tallocpa.com, the (site) root layout).
+ *
+ * The app's entry (src/app/(platform)/globals.css) scans the whole repository and
+ * carries BoardUI's component effects (charts, chat, skeletons, tables), about 215 KB.
+ * This one carries BoardUI's tokens, type scale and base layer, and generates
+ * utilities only from the files the website renders. When a site file starts
+ * using a BoardUI component that is not listed below, add it to the @source list,
+ * or its classes will be missing on the site.
+ */
+@import "tailwindcss" source(none);
+@import "../../styles/theme.css";
+@import "../../styles/typography.css";
+@import "../../styles/base.css";
+@import "./site.css";
+
+/* The website: its routes, its blocks and lib, the brand lockup. */
+@source "./";
+@source "../../components/site";
+@source "../../components/brand";
+@source "../../lib/site";
+
+/* The BoardUI pieces the website renders (header, breadcrumbs, the intake picker). */
+@source "../../components/base/badges/chip.tsx";
+@source "../../components/base/breadcrumb/breadcrumb.tsx";
+@source "../../components/base/buttons/button.tsx";
+@source "../../components/base/checkbox";
+@source "../../components/base/dropdown/menu-styles.ts";
+@source "../../components/base/input/label.tsx";
+@source "../../components/base/select/select.tsx";
+@source "../../components/foundations/icons/chevrons.tsx";
+@source "../../components/foundations/scroll-fade/scroll-fade.tsx";
+@source "../../utils";
+
+/* The wordmark face (src/components/brand/lockup.tsx), as in the app's entry, with Geist behind it. */
+@theme inline {
+  --font-display: var(--font-montserrat), var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Two generic rules from the app's layer that the website's markup relies on:
+ * positioned horizontal scroll boxes (screen-reader labels stay clipped inside)
+ * and tabular figures in tables (the BIR filing calendar).
+ */
+:where(.overflow-x-auto) {
+  position: relative;
+}
+table {
+  font-variant-numeric: tabular-nums;
+}

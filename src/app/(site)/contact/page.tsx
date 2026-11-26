@@ -7,9 +7,10 @@ import { phoneLinks, quoteTarget, type SiteBrand, getSiteBrand } from "@/lib/sit
 import { signInHref } from "@/lib/site/config";
 import { pageMetadata } from "@/lib/site/metadata";
 
+/* Primary search phrase: "Accountant in Iloilo City". */
 export const metadata = pageMetadata({
-  title: "Contact Tallo CPA | Request a Bookkeeping or Tax Quote",
-  description: "Contact Tallo CPA, a Philippine CPA firm, for a quote on bookkeeping, BIR tax compliance, audit and other accounting services.",
+  title: "Contact an Accountant in Iloilo City | Tallo CPA",
+  description: "Contact Tallo CPA, an accountant and CPA firm in Iloilo City, for a quote on bookkeeping, BIR tax compliance and audit. We serve clients nationwide.",
   path: "/contact",
 });
 
@@ -45,6 +46,9 @@ export default async function ContactPage() {
             <h2 id="reach" className={H2}>
               Reach us
             </h2>
+            <p className="text-body-regular text-text-secondary">
+              Our office is in Iloilo City. We work with clients in Iloilo and across the Philippines through the client portal.
+            </p>
             <ContactList brand={brand} />
             <p className="text-body-regular text-text-secondary">
               Already a client?{" "}

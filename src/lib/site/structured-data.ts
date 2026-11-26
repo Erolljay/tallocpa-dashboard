@@ -9,7 +9,53 @@ import type { Service } from "./content";
 export const FIRM_ID = `${siteUrl("/")}#firm`;
 export const WEBSITE_ID = `${siteUrl("/")}#website`;
 
-/** The firm (AccountingService, a ProfessionalService) and the website, from the brands row. */
+/** Where the firm works: its city and province, and the whole country (clients nationwide). */
+export const AREA_SERVED = [
+  { "@type": "City", name: "Iloilo City" },
+  { "@type": "AdministrativeArea", name: "Iloilo" },
+  { "@type": "Country", name: "Philippines" },
+];
+
+/**
+ * The office's PostalAddress from the brands address line. The office is in Iloilo City,
+ * so locality, region and country are fixed; trailing "Iloilo City", "Iloilo",
+ * "Philippines" parts and a postal code are taken off the line into their own fields.
+ */
+export function postalAddress(line: string) {
+  const parts = line.split(",").map((p) => p.trim()).filter(Boolean);
+  let postalCode: string | null = null;
+  while (parts.length > 1) {
+    const last = parts[parts.length - 1];
+    const code = last.match(/^(?:(.*?)\s+)?(\d{4})$/);
+    if (code) {
+      postalCode = code[2];
+      parts.pop();
+      if (code[1]) parts.push(code[1]);
+      continue;
+    }
+    if (/^(iloilo( city)?|philippines|ph)$/i.test(last)) {
+      parts.pop();
+      continue;
+    }
+    break;
+  }
+  return {
+    "@type": "PostalAddress",
+    streetAddress: parts.join(", "),
+    addressLocality: "Iloilo City",
+    addressRegion: "Iloilo",
+    ...(postalCode ? { postalCode } : {}),
+    addressCountry: "PH",
+  };
+}
+
+/** The brands website as an absolute URL, or the site's own address when it is not set. */
+function firmUrl(website: string | null): string {
+  if (!website) return siteUrl("/");
+  return /^https?:\/\//i.test(website) ? website : `https://${website}`;
+}
+
+/** The firm (AccountingService and ProfessionalService, LocalBusiness types) and the website, from the brands row. */
 export function firmGraph(brand: SiteBrand, services: Service[]) {
   const address = brand.businessAddress ?? brand.registeredAddress;
   const sameAs = [brand.facebookUrl].filter((v): v is string => Boolean(v));
@@ -22,13 +68,13 @@ export function firmGraph(brand: SiteBrand, services: Service[]) {
         name: brand.displayName,
         ...(brand.legalName && brand.legalName !== brand.displayName ? { legalName: brand.legalName } : {}),
         slogan: TAGLINE,
-        url: siteUrl("/"),
+        url: firmUrl(brand.website),
         logo: siteUrl("/icon.svg"),
         image: siteUrl("/opengraph-image"),
         ...(brand.phone ? { telephone: brand.phone } : {}),
         ...(brand.email ? { email: brand.email } : {}),
-        ...(address ? { address: { "@type": "PostalAddress", streetAddress: address, addressCountry: "PH" } } : {}),
-        areaServed: { "@type": "Country", name: "Philippines" },
+        ...(address ? { address: postalAddress(address) } : {}),
+        areaServed: AREA_SERVED,
         knowsLanguage: ["en", "fil"],
         ...(sameAs.length ? { sameAs } : {}),
         employee: { "@type": "Person", name: PRACTITIONER, jobTitle: "Certified Public Accountant" },
@@ -60,7 +106,8 @@ export function serviceLd(s: Service) {
     description: s.metaDescription,
     url: siteUrl(`/services/${s.slug}`),
     provider: { "@id": FIRM_ID },
-    areaServed: { "@type": "Country", name: "Philippines" },
+    /* The audit page targets "auditor in Iloilo City"; the other services are offered nationwide. */
+    areaServed: s.slug === "audit" ? AREA_SERVED : { "@type": "Country", name: "Philippines" },
   };
 }
 

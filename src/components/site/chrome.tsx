@@ -1,4 +1,4 @@
-import { RiFacebookCircleFill, RiLoginBoxLine } from "@remixicon/react";
+import { RiCloseLine, RiFacebookCircleFill, RiLoginBoxLine, RiMenuLine } from "@remixicon/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/base/buttons/button";
@@ -6,8 +6,11 @@ import { Lockup } from "@/components/brand/lockup";
 import { phoneLinks, quoteTarget, type SiteBrand } from "@/lib/site/brand";
 import { QUOTE_LABEL, signInHref } from "@/lib/site/config";
 import { SERVICES } from "@/lib/site/content";
+import { firmGraph } from "@/lib/site/structured-data";
 import { cx } from "@/utils/cx";
+import { AttributionKeeper } from "./attribution-keeper";
 import { CtaLink } from "./cta-link";
+import { JsonLd } from "./json-ld";
 import { MobileMenu } from "./mobile-menu";
 
 export const NAV = [
@@ -51,7 +54,30 @@ export function SiteHeader({ brand }: { brand: SiteBrand }) {
           <CtaLink href={quote.href} className="h-11 px-4 max-lg:hidden">
             {QUOTE_LABEL}
           </CtaLink>
-          <MobileMenu links={NAV} quoteHref={quote.href} quoteLabel={QUOTE_LABEL} loginHref={signInHref()} />
+          <MobileMenu openIcon={<RiMenuLine className="size-6" aria-hidden />} closeIcon={<RiCloseLine className="size-6" aria-hidden />}>
+            <nav aria-label="Site">
+              <ul className="flex flex-col">
+                {NAV.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="flex min-h-12 items-center rounded-xl px-2 text-headline-medium text-text-primary outline-none hover:bg-background-secondary-default active:bg-background-secondary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <div className="mt-4 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+              <ButtonLink href={signInHref()} variant="secondary" leadingIcon={RiLoginBoxLine} className="h-12 w-full">
+                Client log-in
+              </ButtonLink>
+              <CtaLink href={quote.href} className="h-12 w-full">
+                {QUOTE_LABEL}
+              </CtaLink>
+            </div>
+          </MobileMenu>
         </div>
       </Container>
     </header>
@@ -76,6 +102,7 @@ export function SiteFooter({ brand }: { brand: SiteBrand }) {
           <Lockup taglineClassName="text-text-secondary" />
           <div className="flex flex-col gap-1 text-body-2-regular text-text-secondary">
             {brand.legalName && <p className="text-body-2-medium text-text-primary">{brand.legalName}</p>}
+            <p>A CPA firm in Iloilo City, serving clients across the Philippines.</p>
             {brand.businessAddress && <address className="not-italic">{brand.businessAddress}</address>}
             {brand.registeredAddress && !sameAddress && (
               <address className="not-italic">Registered address: {brand.registeredAddress}</address>
@@ -141,5 +168,30 @@ export function SiteFooter({ brand }: { brand: SiteBrand }) {
         <p>© {brand.legalName ?? brand.displayName}</p>
       </Container>
     </footer>
+  );
+}
+
+/**
+ * The website's frame inside <body>: the skip link, header, main, footer, the firm's
+ * structured data and the attribution keeper. Shared by the (site) root layout and
+ * the global 404 (src/app/global-not-found.tsx), which renders without a layout.
+ */
+export function SiteChrome({ brand, children }: { brand: SiteBrand; children: ReactNode }) {
+  return (
+    <>
+      <JsonLd data={firmGraph(brand, SERVICES)} />
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-lg bg-background-primary-default px-3 py-2 text-body-medium text-text-primary focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+      >
+        Skip to content
+      </a>
+      <SiteHeader brand={brand} />
+      <main id="main" className="flex flex-1 flex-col">
+        {children}
+      </main>
+      <SiteFooter brand={brand} />
+      <AttributionKeeper />
+    </>
   );
 }

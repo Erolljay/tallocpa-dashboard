@@ -12,11 +12,11 @@ import { PLATFORM_FLOW, SAFEGUARDS, SERVICES, SERVICE_GROUPS, type ServiceGroup 
 import { pageMetadata } from "@/lib/site/metadata";
 import { cx } from "@/utils/cx";
 
-/* Primary search phrase: "CPA firm for bookkeeping and BIR compliance, Philippines". */
+/* Primary search phrase: "CPA Iloilo City". */
 export const metadata = pageMetadata({
-  title: "Tallo CPA | Bookkeeping and BIR Compliance, Philippines",
+  title: "Tallo CPA | Accountant and CPA in Iloilo City",
   description:
-    "A Philippine CPA firm for bookkeeping, BIR tax compliance and audit. Upload documents, approve returns and pay by QR in one client portal. Get a quote.",
+    "A CPA firm in Iloilo City for bookkeeping, BIR tax compliance and audit, serving businesses nationwide. Approve returns and pay in one client portal.",
   path: "/",
 });
 
@@ -36,7 +36,7 @@ export default async function HomePage() {
               BIR compliance, in one portal.
             </h1>
             <p className="max-w-[40ch] text-title-3-regular text-accent-200">
-              A Philippine CPA firm keeps your books and files your returns. You approve online.
+              A CPA firm in Iloilo City, serving businesses across the Philippines, keeps your books and files your returns. You approve online.
             </p>
             <div className="flex flex-wrap gap-3">
               <CtaLink href={quote.href} className="h-12 px-5">

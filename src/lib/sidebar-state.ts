@@ -5,7 +5,7 @@
  * layout would make every /app segment block on request data. Instead the
  * inline script below (run in <head> by the root layout, before first paint)
  * copies the cookie onto <html data-sidebar>, and the sidebar's CSS keys off
- * that attribute through the `sidebar-collapsed` variant (src/app/globals.css).
+ * that attribute through the `sidebar-collapsed` variant (src/app/(platform)/globals.css).
  * So the prerendered shell stays static and there is no layout flash.
  */
 export const SIDEBAR_COOKIE = "tallo-sidebar";

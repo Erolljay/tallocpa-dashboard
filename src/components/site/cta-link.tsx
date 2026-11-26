@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useSyncExternalStore, type ComponentProps } from "react";
+import type { ComponentProps } from "react";
 import { ButtonLink } from "@/components/base/buttons/button";
-import { ATTRIBUTION_KEY, pickAttribution, withAttribution } from "@/lib/site/attribution";
 
 /**
  * A call to action that carries the visit's attribution (utm_*, ref, click ids)
@@ -10,44 +7,14 @@ import { ATTRIBUTION_KEY, pickAttribution, withAttribution } from "@/lib/site/at
  * on /start. The first landing's params are kept for the visit in session
  * storage, so they survive a few clicks around the site.
  *
- * The server renders the plain href; the browser adds the params after hydration.
+ * The server renders the plain href, marked `data-attribution`; after hydration
+ * AttributionKeeper (attribution-keeper.tsx) adds the params to every marked link.
+ * It renders on the server, so the website ships no button code to the browser
+ * for it. A client component whose href changes (the intake picker) passes
+ * withAttribution(href, useAttribution()) itself.
  */
-function readAttribution(): string {
-  const here = pickAttribution(window.location.search);
-  if (here) return here;
-  try {
-    return sessionStorage.getItem(ATTRIBUTION_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-const noop = () => () => {};
-
-export function useAttribution(): string {
-  const attribution = useSyncExternalStore(noop, readAttribution, () => "");
-  useEffect(() => {
-    const here = pickAttribution(window.location.search);
-    if (!here) return;
-    try {
-      sessionStorage.setItem(ATTRIBUTION_KEY, here);
-    } catch {
-      /* private mode: the current page's params still apply */
-    }
-  }, []);
-  return attribution;
-}
-
-/* Icons are component references, which cannot cross from a server component into this one. */
 type CtaLinkProps = Omit<ComponentProps<typeof ButtonLink>, "href" | "leadingIcon" | "trailingIcon" | "ref"> & { href: string };
 
 export function CtaLink({ href, ...props }: CtaLinkProps) {
-  const attribution = useAttribution();
-  return <ButtonLink href={withAttribution(href, attribution)} {...props} />;
-}
-
-/** Keeps attribution on the first landing even on pages without a CTA in view. */
-export function AttributionKeeper() {
-  useAttribution();
-  return null;
+  return <ButtonLink href={href} data-attribution="" {...props} />;
 }
