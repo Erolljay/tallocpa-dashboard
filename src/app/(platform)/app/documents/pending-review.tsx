@@ -11,6 +11,7 @@ import { ACCOUNT_SOURCES, needsConfirming, type AccountSource } from "@/lib/docu
 import { formatAmount } from "@/lib/returns/money";
 import { cx } from "@/utils/cx";
 import { approveSelectedAction, type BulkState } from "./bulk-actions";
+import { MoveBar } from "./move-bar";
 
 export interface PendingRow {
   id: string;
@@ -18,6 +19,8 @@ export interface PendingRow {
   typeLabel: string;
   fileName: string;
   month: string;
+  /** The month it is reported in ("YYYY-MM-01"). */
+  documentMonth: string;
   flags: { label: string; tone: "warn" | "bad" }[];
   party: string | null;
   number: string | null;
@@ -61,7 +64,7 @@ const ocrKeys = (r: PendingRow) =>
  * read cleanly. A firm suggestion or a default must be confirmed (or changed) first;
  * a title from this client's history can go as is.
  */
-export function PendingReview({ clientId, rows, accounts, cashAccounts = [], taxCodes = [] }: { clientId: string; rows: PendingRow[]; accounts: { id: string; label: string; group: string }[]; cashAccounts?: { id: string; label: string }[]; taxCodes?: TaxCode[] }) {
+export function PendingReview({ clientId, rows, accounts, cashAccounts = [], taxCodes = [], canMove = false, fyeMonth = 12 }: { clientId: string; rows: PendingRow[]; accounts: { id: string; label: string; group: string }[]; cashAccounts?: { id: string; label: string }[]; taxCodes?: TaxCode[]; canMove?: boolean; fyeMonth?: number }) {
   const [chosen, setChosen] = useState<Record<string, string>>(() => Object.fromEntries(rows.map((r) => [r.id, r.account?.id ?? ""])));
   const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -79,7 +82,11 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
   };
   const titleOk = (r: PendingRow) => !r.booked || !r.titled || (chosen[r.id] !== "" && (!needsConfirming(r.account?.source ?? "choose") || confirmed.has(r.id)));
   const canSelect = (r: PendingRow) => r.ready && titleOk(r) && codesOk(r) && (!r.invoiceKind || terms[r.id] === "charge" || cash[r.id] != null);
-  const selectable = rows.filter(canSelect);
+  // The reviewer or Owner can also tick a sale or purchase not yet ready, to move it to a later period.
+  const movable = (r: PendingRow) => canMove && r.titled;
+  const canTick = (r: PendingRow) => canSelect(r) || movable(r);
+  const selectable = rows.filter(canTick);
+  const toMove = rows.filter((r) => selected.has(r.id) && movable(r)).map((r) => ({ id: r.id, month: r.documentMonth }));
   const picked = rows.filter((r) => selected.has(r.id) && canSelect(r));
   const items = picked.map((r) => {
     const c = codes[r.id];
@@ -134,6 +141,7 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
               Account titles come from this client&apos;s chart. A title from the client&apos;s own history can be approved as is; confirm or change a firm suggestion or a default. Tax codes in green are this client&apos;s default for the party; amber ones were read by OCR and need confirming. The title and codes you choose are kept for this client and party only. Approving posts each sale or purchase to the Books as chosen under &ldquo;Goes to the Books as&rdquo;.
             </p>
           )}
+          {canMove && <MoveBar clientId={clientId} selected={toMove} fyeMonth={fyeMonth} />}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[56rem] text-body-regular">
               <thead className="text-start text-body-medium text-text-tertiary">
@@ -141,7 +149,7 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                   <th scope="col" className="w-8 pb-2 text-start">
                     <input
                       type="checkbox"
-                      aria-label="Select every document ready to approve"
+                      aria-label={canMove ? "Select every document" : "Select every document ready to approve"}
                       checked={allOn}
                       disabled={selectable.length === 0}
                       onChange={(e) => setSelected(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -167,8 +175,8 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                         <input
                           type="checkbox"
                           aria-label={`Select ${r.typeLabel}${r.number ? ` ${r.number}` : ""}`}
-                          checked={selected.has(r.id) && canSelect(r)}
-                          disabled={!canSelect(r)}
+                          checked={selected.has(r.id) && canTick(r)}
+                          disabled={!canTick(r)}
                           onChange={(e) => setSelected(set(selected, r.id, e.target.checked))}
                           className="mt-1 size-4 accent-accent-600"
                         />
