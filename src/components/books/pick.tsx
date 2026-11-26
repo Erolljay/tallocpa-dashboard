@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Key } from "react-aria-components";
 import { ComboBox, ComboBoxItem, ComboBoxSection } from "@/components/base/combobox/combobox";
 import { cx } from "@/utils/cx";
@@ -59,7 +59,12 @@ export function Pick({
   const shown = labelOf(value);
   // The field shows the choice; typed text only filters, and goes back to the choice on leaving.
   const [text, setText] = useState(shown);
-  useEffect(() => setText(shown), [shown]);
+  const [lastShown, setLastShown] = useState(shown);
+  if (lastShown !== shown) {
+    // The choice changed from outside (or its label did): show it.
+    setLastShown(shown);
+    setText(shown);
+  }
   const groups = [...new Set(options.map((o) => o.group ?? ""))];
   const grouped = groups.some((g) => g !== "");
   const item = (o: PickOption) => (
