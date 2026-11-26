@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { postDocumentToBooks, type DocumentCodes } from "@/lib/books/actions";
+import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import { bulkReadiness } from "@/lib/documents/bulk";
 import { manilaToday } from "@/lib/filings/run";
 import { normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
@@ -84,7 +85,12 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
       continue;
     }
     // "Goes to the Books as" sets cash or charge on the approved figures (the register follows them).
-    const approvedFields = invoiced && (item.terms === "cash" || item.terms === "charge") ? { ...fields, payment_terms: item.terms, payment_account: item.terms === "cash" ? item.cashAccountId ?? fields.payment_account ?? null : fields.payment_account ?? null } : fields;
+    const approvedFields = invoiced && (item.terms === "cash" || item.terms === "charge") ? { ...fields, payment_terms: item.terms, payment_account: item.terms === "cash" ? item.cashAccountId ?? fields.payment_account ?? null : fields.payment_account ?? null } : { ...fields };
+    // The SLP category is the Input VAT code's (capital goods, other goods, services): asked once, on the code.
+    if (invoiced && item.codes) {
+      const slp = await slpCategoryFromCodes(supabase, item.codes).catch(() => null);
+      if (slp) approvedFields.slp_category = slp;
+    }
     const a = await supabase.rpc("approve_document", { p_document: d.id, p_fields: approvedFields });
     if (a.error) {
       skipped.push(`${d.file_name} (${a.error.message})`);

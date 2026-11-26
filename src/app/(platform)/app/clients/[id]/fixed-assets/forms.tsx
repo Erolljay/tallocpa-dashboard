@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button, Input, Select } from "@/components/ui";
+import { PickInput } from "@/components/books/pick";
+import { Button, Input } from "@/components/ui";
 import { addOpeningAssetAction, runDepreciationAction, setupAssetAction, type AssetState } from "./actions";
 
 function Message({ state }: { state: AssetState }) {
@@ -40,10 +41,7 @@ export function OpeningAssetForm({ clientId, accounts, before }: { clientId: str
       <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary">What it is<Input name="description" required /></label>
       <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary">
         Account
-        <Select name="asset_account" required defaultValue="">
-          <option value="" disabled>Choose…</option>
-          {accounts.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-        </Select>
+        <PickInput ariaLabel="Account" name="asset_account" defaultValue={null} options={accounts} />
       </label>
       <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary">Bought on (before {before})<Input name="acquired_on" type="date" required max={before} /></label>
       <label className="flex flex-col gap-1 text-caption-1-medium text-text-secondary">Cost<Input name="cost" inputMode="decimal" required className="text-end tabular-nums" /></label>

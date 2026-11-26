@@ -3,6 +3,7 @@
 import { PAY_PERIODS } from "@/lib/payroll/periods";
 
 import { useActionState, useMemo, useState } from "react";
+import { PickInput } from "@/components/books/pick";
 import { Badge, Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { computeEmployeeYear, enteredNet, suggestWithholding, type PriorAmounts } from "@/lib/payroll/compute";
 import { CATEGORIES, CATEGORY_KEYS, ITEM_KINDS, categoryTotals, payTotals, sortItems, type ItemKind, type PayrollItem } from "@/lib/payroll/items";
@@ -43,12 +44,7 @@ export function EmployeeForm({ clientId, employee, payAccounts }: { clientId: st
     <form action={action} className="space-y-6">
       {payAccounts && payAccounts.length > 0 && (
         <Field label="Pay account (books)" htmlFor="pay_account_id" hint="Where this employee's pay is booked. Cost-of-services staff (Direct Labor) also take the direct contributions account.">
-          <Select id="pay_account_id" name="pay_account_id" defaultValue={v?.payAccountId ?? ""} className="sm:max-w-md">
-            <option value="">Salaries and Wages (default)</option>
-            {[...new Set(payAccounts.map((a) => a.group))].map((g) => (
-              <optgroup key={g} label={g}>{payAccounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}</optgroup>
-            ))}
-          </Select>
+          <PickInput id="pay_account_id" ariaLabel="Pay account (books)" name="pay_account_id" defaultValue={v?.payAccountId ?? null} options={payAccounts} noneLabel="Salaries and Wages (default)" className="sm:max-w-md" />
         </Field>
       )}
       <fieldset className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

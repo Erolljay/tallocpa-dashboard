@@ -7,7 +7,7 @@ import { reviewDocumentAction, runOcrAction, type DocActionState } from "@/lib/d
 import type { Issue } from "@/lib/ocr/checks";
 import { LOW_CONFIDENCE, OCR_DOC_TYPES, OCR_FIELDS, PARTY_KINDS, PAYMENT_TERMS, SLP_CATEGORY_KEYS, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { SLP_CATEGORIES } from "@/lib/register/parts";
-import { Pick } from "@/components/books/pick";
+import { Pick, PickInput } from "@/components/books/pick";
 import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
 import type { TaxCode } from "@/lib/books/tax-codes";
 import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices } from "@/lib/books/ui";
@@ -107,6 +107,8 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             if ((f.kind === "account" || f.kind === "payment_account") && !props.booking) return null;
             // Cash or charge and the cash account are chosen with the Books (BookingFields).
             if ((f.kind === "terms" || f.kind === "payment_account") && props.booking?.invoiceKind) return null;
+            // The Input VAT tax code is the SLP category (capital goods, other goods, services): asked once, there.
+            if (f.kind === "slp" && props.booking?.invoiceKind) return null;
             const conf = props.confidence[f.key];
             const low = conf != null && conf < LOW_CONFIDENCE;
             const issue = issueFor(f.key);
@@ -136,14 +138,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
                       {(props.booking?.cashAccounts ?? []).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
                     </Select>
                   ) : f.kind === "account" ? (
-                    <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
-                      <option value="">Choose if there is one…</option>
-                      {[...new Set((props.booking?.accounts ?? []).map((a) => a.group))].map((g) => (
-                        <optgroup key={g} label={g}>
-                          {(props.booking?.accounts ?? []).filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-                        </optgroup>
-                      ))}
-                    </Select>
+                    <PickInput id={id} ariaLabel={f.label} name={f.key} defaultValue={props.fields[f.key] ?? null} options={props.booking?.accounts ?? []} noneLabel="None" isDisabled={!props.canAct} />
                   ) : f.kind === "terms" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">Not stated (cash)</option>
@@ -225,7 +220,6 @@ const ENTRY_STATUS = { suggested: "Suggested entry from the old flow, not posted
  * OCR's suggestion, to confirm (choosing it on purpose, or Confirm).
  */
 function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccountId }: { booking: Booking; canAct: boolean; mode: "approve" | "edit"; terms: "cash" | "charge"; cashAccountId: string | null }) {
-  const groups = [...new Set(booking.accounts.map((a) => a.group))];
   const kind = booking.invoiceKind;
   const sug = booking.codes;
   const [lines, setLines] = useState<Record<string, string | null>>(() => Object.fromEntries((sug?.lines ?? []).map((l) => [l.portion, l.tax_code_id])));
@@ -246,14 +240,7 @@ function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccount
   return (
     <div className="space-y-3 rounded-xl bg-background-secondary-default p-3">
       <Field label="Account title (books)" htmlFor="ledger_account" hint={booking.source}>
-        <Select id="ledger_account" name="ledger_account" defaultValue={booking.accountId ?? ""} disabled={disabled}>
-          <option value="">Choose…</option>
-          {groups.map((g) => (
-            <optgroup key={g} label={g}>
-              {booking.accounts.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </optgroup>
-          ))}
-        </Select>
+        <PickInput id="ledger_account" ariaLabel="Account title (books)" name="ledger_account" defaultValue={booking.accountId} options={booking.accounts} isDisabled={disabled} />
       </Field>
 
       {kind && (
@@ -324,8 +311,6 @@ function BookingFields({ booking, canAct, mode, terms: initialTerms, cashAccount
               <Pick label={kind === "sales" ? "Deposited to" : "Paid from"} name="payment_account" value={cash} onChange={setCash} options={booking.cashAccounts} isDisabled={disabled} tone={cash ? "neutral" : "error"} />
             )}
           </div>
-          {/* Disabled selects do not submit: keep the values in the form. */}
-          {disabled && <input type="hidden" name="payment_terms" value={terms} />}
         </>
       )}
 

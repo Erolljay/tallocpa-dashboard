@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appliesTo, canGoOn, formsFor, placeOf, RETURN_LINES, returnLinesFor, TAX_CODE_KINDS, taxOn, toTaxCode } from "./tax-codes";
+import { appliesTo, canGoOn, formsFor, placeOf, RETURN_LINES, returnLinesFor, slpCategoryFromKinds, TAX_CODE_KINDS, taxOn, toTaxCode } from "./tax-codes";
 
 describe("tax code kinds", () => {
   it("covers every kind the database allows, each with the return lines it feeds", () => {
@@ -62,5 +62,22 @@ describe("tax code kinds", () => {
     expect(taxOn(10_000_000, 0.12)).toBe(1_200_000);
     expect(taxOn(1_005, 0.12)).toBe(121);
     expect(toTaxCode({ id: "x", code: "WC158", name: "WC158", kind: "withholding", rate: "0.0100", atc: "WC158", payee_type: "corporate", active: true })).toMatchObject({ rate: 0.01, payeeType: "corporate" });
+  });
+});
+
+describe("slpCategoryFromKinds", () => {
+  it("takes the category from the Input VAT code", () => {
+    expect(slpCategoryFromKinds(["input_vat_capital"])).toBe("capital_goods");
+    expect(slpCategoryFromKinds(["input_vat_goods"])).toBe("other_goods");
+    expect(slpCategoryFromKinds(["input_vat_services"])).toBe("services");
+  });
+  it("lets the VATable line decide on a split purchase", () => {
+    expect(slpCategoryFromKinds(["vat_exempt_purchases", "input_vat_services", "zero_rated_purchases"])).toBe("services");
+    expect(slpCategoryFromKinds(["vat_exempt_purchases", "zero_rated_purchases"])).toBe("zero_rated");
+    expect(slpCategoryFromKinds(["vat_exempt_purchases"])).toBe("exempt");
+  });
+  it("is null without a purchase VAT code", () => {
+    expect(slpCategoryFromKinds([null, "non_vat_purchases", "output_vat"])).toBeNull();
+    expect(slpCategoryFromKinds([])).toBeNull();
   });
 });

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { postDocumentToBooks, unpostDocumentFromBooks, type DocumentCodes } from "@/lib/books/actions";
+import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import type { DocActionState } from "@/lib/documents/actions";
 import { streamOf, type DocType } from "@/lib/documents/labels";
 import { normalizeFields, OCR_FIELDS, type OcrFields } from "@/lib/ocr/fields";
@@ -30,7 +31,22 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
   if (form.has("ledger_account") && fields.payment_terms === "cash" && form.has("books_codes") && !fields.payment_account) {
     return { error: "Choose the cash or bank account it went to or came from." };
   }
+  let codes: DocumentCodes | null = null;
+  try {
+    const rawCodes = String(form.get("books_codes") ?? "");
+    codes = rawCodes ? (JSON.parse(rawCodes) as DocumentCodes) : null;
+  } catch {
+    codes = null;
+  }
   const supabase = await supabaseServer();
+  // Books clients choose the SLP category once, on the Input VAT tax code: the register follows it.
+  if (codes) {
+    try {
+      fields.slp_category = (await slpCategoryFromCodes(supabase, codes)) ?? fields.slp_category ?? null;
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+  }
   // Correcting a document already in the Books: void its invoice (and receipt or payment) first, then post it again below.
   let unposted = false;
   if (mode === "edit" && form.has("ledger_account")) {
@@ -57,13 +73,6 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
   // with its Receipt or Payment when cash; a 2307 received marks the CWT it supports).
   if (form.has("ledger_account")) {
     const account = String(form.get("ledger_account") ?? "");
-    let codes: DocumentCodes | null = null;
-    try {
-      const raw = String(form.get("books_codes") ?? "");
-      codes = raw ? (JSON.parse(raw) as DocumentCodes) : null;
-    } catch {
-      codes = null;
-    }
     try {
       await postDocumentToBooks(documentId, { accountId: account || null, cashAccountId: fields.payment_terms === "cash" ? fields.payment_account ?? null : null, codes }, supabase);
     } catch (e) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { PickInput } from "@/components/books/pick";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { BIR_LINES } from "@/lib/ledger/bir-lines";
 import { CASH_FLOW_CLASSES, defaultCashFlow } from "@/lib/ledger/cash-flow";
@@ -209,6 +210,7 @@ export function EntryForm({ clientId, accounts, minDate, documents = [] }: { cli
     return { dr, cr };
   }, [amounts, rows]);
   const active = accounts.filter((a) => a.active);
+  const accountOptions = active.map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type] }));
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="rows" value={rows} />
@@ -246,10 +248,7 @@ export function EntryForm({ clientId, accounts, minDate, documents = [] }: { cli
         {Array.from({ length: rows }, (_, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1.6fr_1fr_8rem_8rem]">
             <Field label={i === 0 ? "Account" : ""} htmlFor={`account_${i}`} error={e[`account_${i}`]}>
-              <Select id={`account_${i}`} name={`account_${i}`} defaultValue="">
-                <option value="">—</option>
-                {active.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
-              </Select>
+              <PickInput id={`account_${i}`} ariaLabel={`Line ${i + 1} account`} name={`account_${i}`} defaultValue={null} options={accountOptions} noneLabel="—" />
             </Field>
             <Field label={i === 0 ? "Line description" : ""} htmlFor={`description_${i}`}><Input id={`description_${i}`} name={`description_${i}`} /></Field>
             <Field label={i === 0 ? "Debit" : ""} htmlFor={`debit_${i}`} error={e[`debit_${i}`]}>
