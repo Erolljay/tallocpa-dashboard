@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -42,6 +43,9 @@ export async function verifySignInCode(_: SignInState, form: FormData): Promise<
   const supabase = await supabaseServer();
   const { error } = await supabase.auth.verifyOtp({ email: addr.data, token: token.data, type: "email" });
   if (error) return { step: "code", email: addr.data, error: "That code is wrong or has expired. Request a new one." };
+  // A new person may be signing in on this browser: drop pages the browser kept for
+  // whoever used it before (next.config.ts staleTimes) so none are shown to them.
+  revalidatePath("/", "layout");
   redirect(safeNext(form.get("next")));
 }
 
