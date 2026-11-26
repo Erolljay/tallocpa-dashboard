@@ -235,6 +235,7 @@ export async function ReportsIndex({ params, searchParams }: Props) {
       extra: { label: "Excel", href: xlsx(k) },
     })),
     { title: "BIR 2307 to suppliers", text: "Certificates for the EWT on Purchase Invoices, per quarter, month or transaction; print one or all.", href: booksHref(c.id, "reports", c.month, {}, "/2307") },
+    { title: "2307 tracker (from customers)", text: "CWT on Sales Invoices against the 2307s the client sent, per customer and quarter; follow up the missing ones.", href: booksHref(c.id, "reports", c.month, {}, "/cwt-2307") },
     { title: "Old register beside the Books", text: "Parallel run: the returns' figures from the register and from the Books by tax code, to the centavo.", href: booksHref(c.id, "reports", c.month, {}, "/parallel-run") },
     { title: "Books of account, any dates (loose-leaf / manual)", text: "Any book for any date range, printed on ruled pages; the loose-leaf permit.", href: `${b}/tools#books-of-account` },
   ];

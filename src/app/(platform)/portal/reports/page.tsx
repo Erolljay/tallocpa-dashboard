@@ -114,6 +114,10 @@ async function Reports({ searchParams }: Pick<PageProps<"/portal/reports">, "sea
         <NavRow href={reportsHref("/portal/reports/2307", { client: client1 })} title="Open your 2307s" />
       </Section>
 
+      <Section title="2307s from your customers" description="The tax your customers withheld from your sales, and which of their 2307s we still need.">
+        <NavRow href={reportsHref("/portal/reports/cwt-2307", { client: client1 })} title="See which 2307s are missing" />
+      </Section>
+
       <Section title="BIR 2316" description="Your employees' certificates of compensation and tax withheld, once we release the year.">
         {(releases ?? []).length === 0 ? (
           <p className={emptyClass}>Nothing released yet. We release the 2316s after the year&rsquo;s payroll is final.</p>
