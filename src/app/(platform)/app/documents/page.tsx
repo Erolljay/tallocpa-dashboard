@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { RiArrowDownLine, RiArrowUpLine, RiCheckLine, RiLockLine } from "@remixicon/react";
+import { RiArrowDownLine, RiArrowUpLine, RiCheckLine } from "@remixicon/react";
 import { Badge, Card, LinkButton, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
@@ -14,6 +14,7 @@ import { LOW_CONFIDENCE, normalizeFields, type OcrConfidence, type OcrFields } f
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { ClientSelect, PeriodFilter } from "./filters";
+import { ApprovedReview, type ApprovedRow } from "./approved-review";
 import { PendingReview, type PendingRow } from "./pending-review";
 import { periodRange } from "./period";
 
@@ -42,6 +43,8 @@ interface Row {
   late: boolean;
   prior_year: boolean;
   carried_from: string | null;
+  deferred_from: string | null;
+  deferred_reason: string | null;
   file_name: string;
   status: keyof typeof docStatusTone;
   created_at: string;
@@ -79,8 +82,17 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const clients = (clientRows ?? []).filter((c) => owner || mine.has(c.id));
   const clientId = clients.some((c) => c.id === one(sp.client)) ? one(sp.client) : "";
   const client = clients.find((c) => c.id === clientId);
+  // Moving a sale or purchase to a later period, or taking an approval back: the client's reviewer or the Owner.
+  const [{ data: reviewerOf }, { data: clientInfo }] = clientId
+    ? await Promise.all([
+        owner ? Promise.resolve({ data: null }) : supabase.from("staff_assignments").select("client_id").eq("client_id", clientId).eq("user_id", me.userId).eq("role", "reviewer").maybeSingle(),
+        supabase.from("clients").select("fiscal_year_end_month").eq("id", clientId).maybeSingle(),
+      ])
+    : [{ data: null }, { data: null }];
+  const canMove = Boolean(clientId) && (owner || Boolean(reviewerOf));
+  const fyeMonth = Number(clientInfo?.fiscal_year_end_month ?? 12) || 12;
 
-  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
+  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, deferred_from, deferred_reason, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
   // Everything waiting, across the streams: the tab counts need all of it.
   let pendingQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").in("status", ["received", "under_review"]).order("created_at").limit(1000);
   // Payroll registers clients sent in the Tallo template (portal Payroll tab) wait in the Payroll tab too.
@@ -174,11 +186,11 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
         <PayrollPending rows={rows} submissions={submissions} clientId={clientId} />
       ) : tab !== "approved" ? (
         <Suspense fallback={<Skeleton rows={6} />}>
-          <ClientPending rows={rows} clientId={clientId} />
+          <ClientPending rows={rows} clientId={clientId} canMove={canMove} fyeMonth={fyeMonth} />
         </Suspense>
       ) : (
         <Suspense fallback={<Skeleton rows={6} />}>
-          <ApprovedTable rows={rows} clientId={clientId} />
+          <ApprovedTable rows={rows} clientId={clientId} canMove={canMove} fyeMonth={fyeMonth} />
         </Suspense>
       )}
     </>
@@ -275,10 +287,19 @@ function MonthCell({ r }: { r: Row }) {
       {showMonth(r.period)}
       {r.late && <span className="ms-1 text-caption-1-regular text-status-yellow-text">late</span>}
       {r.carried_from && <span className="ms-1 text-caption-1-regular text-status-yellow-text" title={`Carried from ${showMonth(r.carried_from)}`}>late-recorded</span>}
+      {r.deferred_from && <span className="ms-1 text-caption-1-regular text-status-yellow-text" title={movedTitle(r)}>moved from {showMonth(r.deferred_from)}</span>}
       {r.prior_year && <span className="ms-1 text-caption-1-regular text-text-error-primary">prior year</span>}
     </td>
   );
 }
+
+const movedTitle = (r: Row) => `Reported in ${showMonth(r.document_month)}, moved from ${showMonth(r.deferred_from!)}${r.deferred_reason ? `: ${r.deferred_reason}` : ""}`;
+const monthFlags = (r: Row): { label: string; title?: string; tone: "warn" | "bad" }[] => [
+  ...(r.late ? [{ label: "late", tone: "warn" as const }] : []),
+  ...(r.carried_from ? [{ label: "late-recorded", title: `Carried from ${showMonth(r.carried_from)}`, tone: "warn" as const }] : []),
+  ...(r.deferred_from ? [{ label: `moved from ${showMonth(r.deferred_from)}`, title: movedTitle(r), tone: "warn" as const }] : []),
+  ...(r.prior_year ? [{ label: "prior year", tone: "bad" as const }] : []),
+];
 
 const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
 
@@ -286,7 +307,7 @@ const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", 
  * One client's documents waiting for review (P1): titles from this client's chart,
  * where each came from, and "Approve selected" for the ones OCR read cleanly.
  */
-async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string }) {
+async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[]; clientId: string; canMove: boolean; fyeMonth: number }) {
   const supabase = await supabaseServer();
   const [{ data: books }, { data: accounts }, { data: suggestions }, { data: approved }] = await Promise.all([
     supabase.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
@@ -336,11 +357,8 @@ async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string
       typeLabel: DOC_TYPES[r.doc_type],
       fileName: r.file_name,
       month: showMonth(r.period),
-      flags: [
-        ...(r.late ? [{ label: "late", tone: "warn" as const }] : []),
-        ...(r.carried_from ? [{ label: "late-recorded", tone: "warn" as const }] : []),
-        ...(r.prior_year ? [{ label: "prior year", tone: "bad" as const }] : []),
-      ],
+      documentMonth: r.document_month,
+      flags: monthFlags(r),
       party: fields.party_name ?? null,
       number: fields.number ?? null,
       total: total == null || Number.isNaN(total) ? null : peso.format(total),
@@ -363,12 +381,14 @@ async function ClientPending({ rows, clientId }: { rows: Row[]; clientId: string
       accounts={(accounts ?? []).map((a) => ({ id: a.id, label: `${a.code} · ${a.name}`, group: ACCOUNT_TYPES[a.type as keyof typeof ACCOUNT_TYPES] }))}
       cashAccounts={(accounts ?? []).filter((a) => a.control === "cash" || a.control === "bank").map((a) => ({ id: a.id, label: `${a.code} · ${a.name}` }))}
       taxCodes={taxCodes}
+      canMove={canMove}
+      fyeMonth={fyeMonth}
     />
   );
 }
 
 /** Approved documents, newest first. Open ones can still be corrected; filed months are locked. */
-async function ApprovedTable({ rows, clientId }: { rows: Row[]; clientId: string }) {
+async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[]; clientId: string; canMove: boolean; fyeMonth: number }) {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("filing_instances")
@@ -377,55 +397,24 @@ async function ApprovedTable({ rows, clientId }: { rows: Row[]; clientId: string
     .in("status", LOCKED_STATUSES);
   const filings = (data ?? []) as LockFiling[];
   const sorted = [...rows].sort((a, b) => (b.extractions?.approved_at ?? b.created_at).localeCompare(a.extractions?.approved_at ?? a.created_at));
-
-  return (
-    <Card title={`Approved (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Newest approval first</span>}>
-      {rows.length === 0 ? (
-        <p className="text-body-regular text-text-secondary">No approved documents for this period.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-body-regular">
-            <thead className="text-start text-body-medium text-text-tertiary">
-              <tr>
-                <th scope="col" className="text-start pb-2">Approved</th>
-                <th scope="col" className="text-start pb-2">Document</th>
-                <th scope="col" className="text-start pb-2">Month</th>
-                <th scope="col" className="pb-2 text-end">Total</th>
-                <th scope="col" className="text-start pb-2 ps-4">Edit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((r) => {
-                const f = r.extractions?.approved_fields ?? {};
-                const total = f.total != null && f.total !== "" ? Number(f.total) : null;
-                const lock = lockingFiling(r.client_id, r.document_month, filings);
-                return (
-                  <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
-                    <td className="py-2 pe-4 tabular-nums text-text-secondary">{when(r.extractions?.approved_at ?? r.created_at)}</td>
-                    <td className="py-2 pe-4">
-                      <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{DOC_TYPES[r.doc_type]}{f.number ? ` ${f.number}` : ""}</Link>
-                      <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{f.party_name ?? r.file_name}</p>
-                    </td>
-                    <MonthCell r={r} />
-                    <td className="amount py-2 pe-4 text-end tabular-nums text-text-primary">{total == null || Number.isNaN(total) ? "—" : peso.format(total)}</td>
-                    <td className="py-2 ps-4">
-                      {lock ? (
-                        <span className="inline-flex items-center gap-1.5 text-caption-1-regular text-text-secondary" title={`${lock.form} ${lock.period_label} has been filed`}>
-                          <RiLockLine aria-hidden className="size-3.5" /> Locked · {lock.form} {lock.period_label} filed
-                        </span>
-                      ) : (
-                        <Link href={`/app/documents/${r.id}`} className="text-caption-1-medium text-button-ghost-foreground hover:underline">Edit figures</Link>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Card>
-  );
+  const approved: ApprovedRow[] = sorted.map((r) => {
+    const f = r.extractions?.approved_fields ?? {};
+    const total = f.total != null && f.total !== "" ? Number(f.total) : null;
+    const lock = lockingFiling(r.client_id, r.document_month, filings);
+    return {
+      id: r.id,
+      approved: when(r.extractions?.approved_at ?? r.created_at),
+      label: `${DOC_TYPES[r.doc_type]}${f.number ? ` ${f.number}` : ""}`,
+      party: f.party_name ?? r.file_name,
+      month: showMonth(r.period),
+      flags: monthFlags(r),
+      documentMonth: r.document_month,
+      total: total == null || Number.isNaN(total) ? "—" : peso.format(total),
+      lock: lock ? `${lock.form} ${lock.period_label}` : null,
+      titled: r.doc_type === "sales_invoice" || r.doc_type === "purchase_receipt",
+    };
+  });
+  return <ApprovedReview clientId={clientId} rows={approved} canMove={canMove} fyeMonth={fyeMonth} />;
 }
 
 /**
