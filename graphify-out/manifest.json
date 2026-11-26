@@ -3708,27 +3708,27 @@
     "semantic_hash": ""
   },
   "src/lib/esubmission/gmail.ts": {
-    "mtime": 1795646045.3582332,
-    "seen": 1795650536.9344962,
-    "ast_hash": "0edc327ae77fef1ced57e5f8121c3e41",
+    "mtime": 1795655373.8319483,
+    "seen": 1795657268.1493366,
+    "ast_hash": "d7ea659f69a5932e324dd38b4a197fd9",
     "semantic_hash": ""
   },
   "src/lib/esubmission/mime.test.ts": {
-    "mtime": 1795646045.3582332,
-    "seen": 1795650536.9344976,
-    "ast_hash": "f9602f1e85b8ca36d21af0f288a8c4bd",
+    "mtime": 1795655373.8319483,
+    "seen": 1795657268.1493385,
+    "ast_hash": "299f458f6ec7e4e1c31c1a61131f2db9",
     "semantic_hash": ""
   },
   "src/lib/esubmission/mime.ts": {
-    "mtime": 1795646045.3582332,
-    "seen": 1795650536.9344985,
-    "ast_hash": "c9716dcd5dc2dce3b29c4d664e36cb14",
+    "mtime": 1795655373.8319483,
+    "seen": 1795657268.1493404,
+    "ast_hash": "e59cb873dfa8c18fb293c93f5c14fb26",
     "semantic_hash": ""
   },
   "src/lib/esubmission/poll.ts": {
-    "mtime": 1795646045.3582332,
-    "seen": 1795650536.9344995,
-    "ast_hash": "3a82587dff9cac1178c00892c4206ebe",
+    "mtime": 1795655373.8319483,
+    "seen": 1795657268.1493425,
+    "ast_hash": "f0d4472af6e8335937f6db795c0de7b3",
     "semantic_hash": ""
   },
   "supabase/tests/returns-sign-off.test.ts": {
@@ -4068,9 +4068,9 @@
     "semantic_hash": ""
   },
   "src/app/app/calendar/page.tsx": {
-    "mtime": 1795648270.9389238,
-    "seen": 1795650536.9337978,
-    "ast_hash": "a774911a452ad110503a0211bcc89ab0",
+    "mtime": 1795657244.7887807,
+    "seen": 1795657268.136495,
+    "ast_hash": "6b9be20f10dfc574762f65f81f15ddfd",
     "semantic_hash": ""
   },
   "src/app/app/clients/[id]/year-end/actions.ts": {
@@ -4176,21 +4176,21 @@
     "semantic_hash": ""
   },
   "src/lib/calendar/week.test.ts": {
-    "mtime": 1795647204.9069433,
-    "seen": 1795650536.9344318,
-    "ast_hash": "9bc010a4d42e6e95a6b47cf1efc727aa",
+    "mtime": 1795657244.7893307,
+    "seen": 1795657268.1479242,
+    "ast_hash": "6a4d0743e8a74c0cfe2347a80809aeb8",
     "semantic_hash": ""
   },
   "src/lib/calendar/week.ts": {
-    "mtime": 1795647204.9050932,
-    "seen": 1795650536.9344332,
-    "ast_hash": "5d0e43571534158b59e4bf827297bf09",
+    "mtime": 1795657231.0022023,
+    "seen": 1795657268.1479278,
+    "ast_hash": "3969f4d762b1571b20373086923aec45",
     "semantic_hash": ""
   },
   "src/lib/google/calendar.ts": {
-    "mtime": 1795647138.1960182,
-    "seen": 1795650536.9345288,
-    "ast_hash": "9374cf7558ca9abd2de776ce9861fd06",
+    "mtime": 1795657231.0018682,
+    "seen": 1795657268.1499574,
+    "ast_hash": "1fa57ece47edb9abfdae81d9f400785b",
     "semantic_hash": ""
   },
   "src/lib/google/crypto.test.ts": {

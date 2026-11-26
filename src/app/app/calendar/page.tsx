@@ -3,7 +3,7 @@ import { AnchorButton, Badge, Card, LinkButton, Notice, PageHeader, Skeleton } f
 import { SectionTabs } from "@/app/app/nav/section-tabs";
 import { requireStaff } from "@/lib/auth";
 import { appBookedEvents, teamWeek, type PersonWeek } from "@/lib/calendar/staff";
-import { manilaTime, mondayOf, weekCells, weekDays, weekRange } from "@/lib/calendar/week";
+import { isTeamEvent, manilaTime, mondayOf, weekCells, weekDays, weekRange } from "@/lib/calendar/week";
 import { googleCalendarEnv } from "@/lib/env";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -54,19 +54,26 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
   const staff = (people ?? []) as { user_id: string; full_name: string; role: string }[];
   const linkOf = new Map(((links ?? []) as { user_id: string; google_email: string; last_error: string | null }[]).map((l) => [l.user_id, l]));
   const weeks = env ? await teamWeek(staff.filter((p) => linkOf.has(p.user_id)).map((p) => p.user_id), from, to) : new Map<string, PersonWeek>();
-  // Meetings the app booked for a client or a lead: in full only for staff who can see that client or lead.
+  // What colleagues see in full (Owner, 26 November 2026): meetings with someone else of the
+  // firm, and meetings the app booked for a client or lead the viewer can see. Everything
+  // else on another person's calendar is Busy. Your own row shows your calendar in full.
   const eventIds = [...weeks.values()].flatMap((w) => w.events.map((e) => e.id));
   const booked = await appBookedEvents(eventIds);
+  let visible = new Set<string>();
   if (booked.size) {
     const ids = [...booked];
     const [{ data: m }, { data: d }] = await Promise.all([
       supabase.from("client_meetings").select("calendar_event_id").in("calendar_event_id", ids),
       supabase.from("discovery_calls").select("calendar_event_id").in("calendar_event_id", ids),
     ]);
-    const visible = new Set([...(m ?? []), ...(d ?? [])].map((r) => (r as { calendar_event_id: string }).calendar_event_id));
-    for (const w of weeks.values()) {
-      w.events = w.events.map((e) => (booked.has(e.id) && !visible.has(e.id) ? { ...e, private: true, summary: null, meetUrl: null, htmlLink: null } : e));
-    }
+    visible = new Set([...(m ?? []), ...(d ?? [])].map((r) => (r as { calendar_event_id: string }).calendar_event_id));
+  }
+  for (const w of weeks.values()) {
+    if (w.userId === me.userId) continue;
+    w.events = w.events.map((e) => {
+      const shown = booked.has(e.id) ? visible.has(e.id) : env != null && isTeamEvent(e, env.domain);
+      return shown ? e : { ...e, private: true, summary: null, meetUrl: null, htmlLink: null };
+    });
   }
   const mine = linkOf.get(me.userId);
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
@@ -75,7 +82,7 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
     <>
       <PageHeader
         title="Team calendar"
-        description="Everyone's week from their Google Calendar. Tallo events in full; private and personal events as Busy. Times are Manila time."
+        description="Everyone's week from their Google Calendar. Meetings with the team, clients and leads in full; anything else of a colleague's as Busy. Your own row shows your calendar in full. Manila time."
         actions={
           mine ? (
             <div className="flex items-center gap-2">

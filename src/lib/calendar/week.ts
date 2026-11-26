@@ -43,6 +43,18 @@ export function weekCells(days: string[], events: CalendarEvent[], busy: Interva
   });
 }
 
+/**
+ * Whether an event is Tallo work that colleagues see in full (Owner, 26 November 2026): a
+ * meeting with someone else of the firm's domain. Everything else on a person's calendar
+ * (runs, webinars, errands, events with outsiders only) is Busy to the rest of the team.
+ * Meetings the app booked are decided separately (appBookedEvents).
+ */
+export function isTeamEvent(e: Pick<CalendarEvent, "others" | "private">, domain: string): boolean {
+  if (e.private) return false;
+  const d = `@${domain.toLowerCase()}`;
+  return e.others.some((email) => email.endsWith(d));
+}
+
 /** "09:30" in Manila. */
 export const manilaTime = (iso: string) => new Date(Date.parse(iso) + 8 * 3_600_000).toISOString().slice(11, 16);
 

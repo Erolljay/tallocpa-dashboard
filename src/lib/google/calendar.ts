@@ -107,6 +107,8 @@ export interface CalendarEvent {
   free: boolean;
   meetUrl: string | null;
   htmlLink: string | null;
+  /** Everyone on the event other than the calendar's owner: organizer and guests, lower-case emails. */
+  others: string[];
 }
 
 type RawEvent = {
@@ -119,6 +121,8 @@ type RawEvent = {
   end?: { dateTime?: string; date?: string };
   hangoutLink?: string;
   htmlLink?: string;
+  organizer?: { email?: string; self?: boolean };
+  attendees?: { email?: string; self?: boolean; resource?: boolean }[];
 };
 
 const instant = (t: { dateTime?: string; date?: string } | undefined) => (t?.dateTime ? new Date(t.dateTime).toISOString() : t?.date ? `${t.date}T00:00:00+08:00` : "");
@@ -139,6 +143,13 @@ export async function listEvents(access: string, from: string, to: string): Prom
       free: e.transparency === "transparent",
       meetUrl: e.hangoutLink ?? null,
       htmlLink: e.htmlLink ?? null,
+      others: [
+        ...new Set(
+          [e.organizer, ...(e.attendees ?? [])]
+            .filter((p): p is { email: string; self?: boolean; resource?: boolean } => !!p?.email && !p.self && !("resource" in p && p.resource))
+            .map((p) => p.email.toLowerCase()),
+        ),
+      ],
     }));
 }
 
