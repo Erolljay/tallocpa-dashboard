@@ -1,6 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendEmail } from "./email";
+import { loadEmailBrand } from "@/lib/email/brand";
+import { settingsUrlFor } from "@/lib/email/layout";
+import { sendBrandedEmail } from "./email";
 import { cycleMessage, type NoticeKind } from "./messages";
 
 interface Due {
@@ -25,7 +27,8 @@ export async function runDocumentCycles(admin: SupabaseClient, today: string, si
   if (dueError) throw new Error(`Monthly cycle notices: ${dueError.message}`);
   const notices = (due ?? []) as Due[];
 
-  const portalUrl = `${siteUrl.replace(/\/$/, "")}/portal/upload`;
+  const origin = siteUrl.replace(/\/+$/, "");
+  const portalUrl = `${origin}/portal/upload`;
   const emailCache = new Map<string, string | null>();
   const emailOf = async (userId: string) => {
     if (!emailCache.has(userId)) {
@@ -40,12 +43,18 @@ export async function runDocumentCycles(admin: SupabaseClient, today: string, si
   for (const n of notices) {
     try {
       const [{ data: client }, { data: users }] = await Promise.all([
-        admin.from("clients").select("name").eq("id", n.client_id).single(),
+        admin.from("clients").select("name, brand_id").eq("id", n.client_id).single(),
         admin.from("client_users").select("user_id").eq("client_id", n.client_id),
       ]);
       const to = (await Promise.all((users ?? []).map((u) => emailOf(u.user_id)))).filter((e): e is string => !!e);
-      const m = cycleMessage(n.kind, { clientName: client?.name ?? "your business", period: n.period, cutoff: n.cutoff_date, portalUrl });
-      if ((await sendEmail(to, m.subject, m.text)) === "sent") emailed += 1;
+      const clientName = client?.name ?? "your business";
+      const m = cycleMessage(n.kind, { clientName, period: n.period, cutoff: n.cutoff_date, portalUrl });
+      const sent = await sendBrandedEmail(to, m, {
+        brand: await loadEmailBrand(client?.brand_id ?? null, admin),
+        footerNote: `you are a portal user for ${clientName}`,
+        settingsUrl: settingsUrlFor(origin, "client"),
+      });
+      if (sent === "sent") emailed += 1;
       const { error: markError } = await admin.rpc("mark_cycle_notice", { p_cycle: n.cycle_id, p_kind: n.kind });
       if (markError) throw new Error(markError.message);
     } catch (e) {

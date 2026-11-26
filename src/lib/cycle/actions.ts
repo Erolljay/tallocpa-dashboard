@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { showMonth } from "@/lib/documents/labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { sendEmail } from "./email";
+import { loadEmailBrand, requestOrigin, siteOrigin } from "@/lib/email/brand";
+import { settingsUrlFor } from "@/lib/email/layout";
+import { sendBrandedEmail } from "./email";
 
 export type CycleState = { ok?: string; error?: string };
 
@@ -79,7 +81,7 @@ export async function undoMonthAction(clientId: string, period: string): Promise
 async function tellPreparer(clientId: string, period: string, count: number | null) {
   const admin = supabaseAdmin();
   const [{ data: client }, { data: team }] = await Promise.all([
-    admin.from("clients").select("name").eq("id", clientId).maybeSingle(),
+    admin.from("clients").select("name, brand_id").eq("id", clientId).maybeSingle(),
     admin.from("staff_assignments").select("user_id").eq("client_id", clientId).eq("role", "preparer"),
   ]);
   const to: string[] = [];
@@ -89,9 +91,16 @@ async function tellPreparer(clientId: string, period: string, count: number | nu
   }
   if (!client || to.length === 0) return;
   const month = showMonth(period);
-  await sendEmail(
+  const origin = siteOrigin() ?? (await requestOrigin());
+  const brand = await loadEmailBrand(client.brand_id, admin);
+  await sendBrandedEmail(
     to,
-    `${client.name}: ${month} documents are complete`,
-    `${client.name} confirmed they have sent everything for ${month}${count != null ? ` (${count} document${count === 1 ? "" : "s"})` : ""}. The documents step of their returns is done, so you can start now.\n\nAnything they send later for ${month} is marked late.`,
+    {
+      subject: `${client.name}: ${month} documents are complete`,
+      heading: `${client.name}: ${month} documents are complete`,
+      bodyText: `${client.name} confirmed they have sent everything for ${month}${count != null ? ` (${count} document${count === 1 ? "" : "s"})` : ""}. The documents step of their returns is done, so you can start now.\n\nAnything they send later for ${month} is marked late.`,
+      action: origin ? { label: "Open the client", url: `${origin}/app/clients/${clientId}` } : undefined,
+    },
+    { brand, footerNote: `you are the preparer for ${client.name}`, settingsUrl: origin ? settingsUrlFor(origin, "staff") : null },
   );
 }

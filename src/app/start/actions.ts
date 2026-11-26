@@ -1,7 +1,9 @@
 "use server";
 
+import { cookies } from "next/headers";
 import type { Quote } from "@/lib/fees/quote";
 import { FUNNEL_BRAND, instantQuote } from "@/lib/funnel/public";
+import { ATTR_COOKIE, firstTouch, parseAttrCookie, sanitize, type Attribution } from "@/lib/marketing/attribution";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type StartState = { error?: string; quote?: Quote | null; name?: string };
@@ -31,8 +33,26 @@ export async function requestQuoteAction(_: StartState, form: FormData): Promise
   q.bookkeeping = lead.services.includes("bookkeeping") ? text("bookkeeping", 20) || "standard" : "none";
   const { profile, quote } = await instantQuote(q);
 
+  // Where the lead came from: the first-touch cookie a campaign link set, else this page's utm_*, ref and referrer.
+  const attribution = firstTouch(parseAttrCookie((await cookies()).get(ATTR_COOKIE)?.value), pageAttribution(form));
+
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("submit_lead", { p_brand_code: FUNNEL_BRAND, p_lead: { ...lead, profile }, p_quote: quote });
+  const { error } = await supabase.rpc("submit_lead", {
+    p_brand_code: FUNNEL_BRAND,
+    p_lead: { ...lead, profile, ...(attribution ? { attribution } : {}) },
+    p_quote: quote,
+  });
   if (error) return { error: error.message === "Not found" ? "Quote requests are not open yet." : "We could not record your request. Please try again." };
   return { quote, name: lead.contact_name };
+}
+
+/** What the form's page knew (src/app/start/form.tsx sends it as JSON in "attribution"). */
+function pageAttribution(form: FormData): Attribution | null {
+  const raw = String(form.get("attribution") ?? "");
+  if (!raw || raw.length > 2000) return null;
+  try {
+    return sanitize(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }

@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { RiLogoutBoxRLine } from "@remixicon/react";
+import { Bell, BellFallback } from "@/components/application/notifications/bell";
+import { IdleWatcher } from "@/components/application/session/idle-watcher";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Skeleton } from "@/components/base/skeleton/skeleton";
@@ -34,7 +36,12 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
         <div className="flex h-full flex-col gap-4 border-b border-separator-border bg-background-secondary-default px-4 py-3 md:gap-6 md:overflow-x-clip md:rounded-3xl md:border md:border-border-button-white md:p-3 md:shadow-sidebar">
           <div className="flex items-center justify-between gap-3 md:px-1 md:pt-1 md:sidebar-collapsed:flex-col md:sidebar-collapsed:px-0">
             <Lockup wordmarkClassName="md:sidebar-collapsed:sr-only" taglineClassName="whitespace-normal text-balance" />
-            <ThemeToggle appearance="sidebar" collapsed className="md:hidden" />
+            <div className="flex items-center gap-1 md:hidden">
+              <Suspense fallback={<BellFallback variant="icon" />}>
+                <Bell audience="staff" variant="icon" />
+              </Suspense>
+              <ThemeToggle appearance="sidebar" collapsed />
+            </div>
             <SidebarToggle controls="app-sidebar" className="max-md:hidden" />
           </div>
           <nav aria-label="Main" className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] max-md:mask-r-from-85% md:mx-0 md:flex-1 md:flex-col md:overflow-y-auto md:px-0">
@@ -46,6 +53,9 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
             </Suspense>
           </nav>
           <div className="hidden flex-col gap-3 md:flex">
+            <Suspense fallback={<BellFallback variant="row" />}>
+              <Bell audience="staff" variant="row" />
+            </Suspense>
             <ThemeToggle appearance="sidebar" className="md:sidebar-collapsed:hidden" />
             <ThemeToggle appearance="sidebar" collapsed className="hidden md:sidebar-collapsed:flex md:sidebar-collapsed:self-center" />
             <Suspense fallback={<Skeleton className="h-12 w-full" />}>
@@ -62,6 +72,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
           <UserMenu />
         </Suspense>
       </div>
+      <IdleWatcher audience="staff" />
     </div>
   );
 }

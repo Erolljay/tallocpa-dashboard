@@ -28,7 +28,7 @@ const themeScript = `try{var t=localStorage.getItem("boardui:theme");if(t==="dar
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
+    <html lang="en-PH" suppressHydrationWarning className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {/* Staff sidebar collapse, from its cookie, so the rail paints at the right width. */}

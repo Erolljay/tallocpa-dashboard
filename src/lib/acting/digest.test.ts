@@ -12,8 +12,9 @@ describe("acting approver digest", () => {
       "https://app.example",
     );
     expect(m.subject).toBe("Acting approver: 2 returns approved on December 2, 2026");
-    expect(m.text).toContain("Direct Co · 1601-C 2026-11 · ₱12,500.50 · by Ana");
-    expect(m.text).toContain("https://app.example/app/filings/f1");
-    expect(m.text).toContain("Total tax due: ₱12,500.50");
+    expect(m.bodyText).toContain("Direct Co · 1601-C 2026-11 · ₱12,500.50 · by Ana");
+    expect(m.bodyText).toContain("https://app.example/app/filings/f1");
+    expect(m.bodyText).toContain("Total tax due: ₱12,500.50");
+    expect(m.action?.url).toBe("https://app.example/app/settings/acting-approver");
   });
 });

@@ -123,8 +123,16 @@ Each phase ships as its own pull request, with database tests for every new rule
 
 ## Needed from the Owner
 
-1. **Google (before Phase 3):** in Google Cloud under tallocpa.com, a project with an Internal consent screen, the Calendar and Gmail APIs on, and an OAuth client whose ID and secret go into Vercel. Set up the attachments@tallocpa.com mailbox. For the calendar, also `GOOGLE_TOKEN_KEY` and the redirect URI (docs/SETUP.md, Google Calendar); then each staff member connects their calendar on Home → Team calendar.
-2. **Payment channels:** each bank or e-wallet you accept, with its QR image, account name and number (Settings).
-3. **Tax codes:** the full list from your Manager.io (the screenshot started at "Input VAT 12% (Capital Goods)"), so the codes and their form lines match yours.
-4. **Loose-leaf details per client:** permit number and registered address, if not already on the COR.
-5. **1604-E DAT:** run the first 1604-E DAT through the BIR Alphalist validation module before the first eSubmission; the worksheet warns until then. Its layout follows the 1604-C DAT and the QAP and has not been checked against a file the BIR accepted.
+Status 26 November 2026:
+
+1. **Google:** done (Cloud project, Gmail and Calendar APIs, OAuth client, attachments@tallocpa.com).
+2. **Payment channels:** done (Settings).
+3. **Tax codes:** done.
+4. **Loose-leaf details per client:** not needed as a separate step; staff copy the permit number and registered address into each client's books.
+5. **1604-E DAT and every other DAT file:** tested during the simulation run, through the BIR validation module, before the first real eSubmission.
+
+## After the rework (Owner, 26 November 2026)
+
+- **Notifications:** a bell for staff and clients, and branded emails through Resend, for the return steps, payments and statements, requests, leads and bookings. Each person turns email kinds on or off in their Notifications settings. Events and recipients: migration 20261213000001_notifications.sql.
+- **Sign-out after no activity:** staff 30 minutes, clients 15, with a one-minute warning (src/lib/session/idle.ts).
+- Not built: cancelling a discovery call or a client meeting (no screen does it yet), so there is no cancellation notice.

@@ -1,0 +1,96 @@
+/* Hallmark · shape: Product ledger on brand grounds (navy hero with the portal, the filing flow, services on a wash, the BIR year on a navy band, safeguards, the practitioner, the quote close; inner pages open on navy) · genre: modern-minimal · theme: brand (BoardUI tokens, Tallo CPA accent ramp, Geist and Geist Mono) · job: hire · hero: Stage (head on 6 columns, the portal on 6, on the navy band) · inner pages: Banner on navy · nav: edge-aligned bar, the lockup, five links, Client log-in and the quote · footer: colophon block beside the service and firm indexes · imagery: the portal re-drawn from BoardUI components in data-slots, captioned as illustrations with sample figures; no photographs · signature: the months-ahead "What happens next" timeline on a navy band, and the BIR year as a due-day matrix
+ * axes: white and navy grounds / Geist display / navy-blue accent · posture: accent field on hero, calendar, timeline and close bands (declared surface, by the Owner's request for a tech-first look) · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: R, the Owner asked for gradient grounds; kept them to the brand's own navy-to-blue ramp, one dot grid, one glow behind the product, and white or wash grounds between */
+/* Hallmark · waive 42 · edge-aligned nav with the lockup, five links, Client log-in and Get a quote · clients come to log in and prospects to ask for a quote, the two actions this firm has */
+/* Hallmark · waive 26b · no form control is ever disabled on the site · the picker's selects and checkboxes are always enabled, and every other control is a link */
+/* Hallmark · waive 39b · the flagged controls are links inside running sentences (FAQ, BIR tax compliance services) · a link in a sentence takes the line height of its paragraph; every standalone control is 44px or taller */
+/* Hallmark · waive 44c · inner pages open on a Banner: breadcrumbs, head, one sentence, the quote action · service, calendar, contact and FAQ pages are references a visitor scans, not posters */
+/* Hallmark · waive 29 · one soft brand-blue glow behind the portal and the timeline, not animated · the Owner asked for the brand gradient and a glow so the site reads tech-first */
+/* Hallmark · waive 47c · a faint dot grid on the navy bands, fading out · the Owner asked for a pattern on the brand gradient; it sits under real content, never alone */
+
+/*
+ * The website shares the app's tokens and Tailwind utilities (AGENTS.md); this
+ * file holds only what the site adds: no sideways scroll on phones.
+ */
+html,
+body {
+  overflow-x: clip;
+}
+
+/*
+ * The site's faces (set in (site)/layout.tsx): BoardUI's components read
+ * --font-sans and --font-mono, so pointing those at Geist here re-faces every
+ * component inside the site and nothing in the app.
+ */
+.site {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-family: var(--font-sans);
+}
+
+/* Form codes, dates and amounts: tabular figures, the mono face. */
+.site .figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/*
+ * Brand grounds (round 3: "less white, more tech-first"). Every value comes from
+ * the theme's accent ramp (src/styles/theme.css, the same blues as the Mark and the
+ * link-preview image); nothing here is a literal colour.
+ *   --site-navy-0 / -1   the deep end of the brand gradient
+ *   --site-blue          the brand blue, for the glow
+ *   --site-wash          a 4% blue tint of the page ground; it follows dark mode
+ */
+.site {
+  --site-navy-0: var(--color-accent-950);
+  --site-navy-1: var(--color-accent-900);
+  --site-blue: var(--color-accent-500);
+  --site-wash: color-mix(in oklab, var(--color-accent-500) 4%, var(--color-background-full));
+}
+
+/* A faint blue wash, for alternating sections. */
+.site-wash {
+  background-color: var(--site-wash);
+}
+/* On the wash in light mode, secondary text steps one shade darker to stay above 4.5:1. */
+:root:not(.dark) .site-wash {
+  --color-text-secondary: var(--color-neutral-600);
+}
+
+/* The navy band: hero, the BIR year, the timeline. Navy to brand blue, darkest top left. */
+.site-navy {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip; /* the glow may not widen the page */
+  background-color: var(--site-navy-0);
+  background-image: linear-gradient(155deg, var(--site-navy-0) 0%, var(--site-navy-1) 58%, color-mix(in oklab, var(--site-navy-1) 72%, var(--site-blue)) 100%);
+}
+
+/* A dot grid over the band, fading out toward the bottom. Decoration only. */
+.site-navy.site-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(color-mix(in oklab, var(--color-accent-200) 26%, transparent) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 90%);
+}
+
+/* A soft brand-blue glow behind the product illustration. Decoration only. */
+.site-glow {
+  position: relative;
+  isolation: isolate;
+}
+.site-glow::before {
+  content: "";
+  position: absolute;
+  inset: -12% -8%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--site-blue) 45%, transparent), transparent);
+  filter: blur(24px);
+}

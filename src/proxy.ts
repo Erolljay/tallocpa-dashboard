@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { IDLE_COOKIE, IDLE_COOKIE_MAX_AGE, formatIdleCookie, idleAudienceFor, isIdle } from "@/lib/session/idle";
 
 const PROTECTED = ["/app", "/portal"];
 
@@ -30,7 +31,32 @@ export async function proxy(request: NextRequest) {
   const signedIn = Boolean(data?.claims);
   const path = request.nextUrl.pathname;
 
-  if (path === "/") {
+  // Sign-out after no activity (src/lib/session/idle.ts): staff 30 minutes, clients 15.
+  const audience = idleAudienceFor(path);
+  const sessionId = typeof data?.claims?.session_id === "string" ? data.claims.session_id : null;
+  if (signedIn && audience && sessionId) {
+    const now = Date.now();
+    if (isIdle(request.cookies.get(IDLE_COOKIE)?.value, sessionId, audience, now)) {
+      await supabase.auth.signOut({ scope: "local" });
+      response.cookies.delete(IDLE_COOKIE);
+      return redirectKeepingCookies(request, response, `/login?error=idle_${audience}&next=${encodeURIComponent(path)}`);
+    }
+    // A prefetch is the router guessing, not the person acting: it does not count as activity.
+    const prefetch = request.headers.has("next-router-prefetch") || /prefetch/i.test(request.headers.get("sec-purpose") ?? request.headers.get("purpose") ?? "");
+    if (!prefetch) {
+      response.cookies.set(IDLE_COOKIE, formatIdleCookie(sessionId, now), {
+        path: "/",
+        sameSite: "lax",
+        secure: request.nextUrl.protocol === "https:",
+        maxAge: IDLE_COOKIE_MAX_AGE,
+      });
+    }
+  }
+
+  // "/" is the app on the app's host (app.tallocpa.com, or APP_HOST) and the website everywhere else.
+  const host = (request.headers.get("host") ?? "").toLowerCase();
+  const appHost = process.env.APP_HOST?.toLowerCase();
+  if (path === "/" && (appHost ? host === appHost : host.startsWith("app."))) {
     return redirectKeepingCookies(request, response, signedIn ? "/app" : "/login");
   }
   if (!signedIn && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {

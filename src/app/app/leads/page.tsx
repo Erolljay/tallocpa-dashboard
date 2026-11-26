@@ -4,6 +4,7 @@ import { RiLayoutColumnLine, RiListUnordered } from "@remixicon/react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwnerOrReviewer } from "@/lib/auth";
 import { LEAD_STAGE_ORDER, LEAD_STAGES, type LeadStage } from "@/lib/funnel/labels";
+import { leadSourceLabel, type LeadSourceRow } from "@/lib/marketing/links";
 import { SERVICE_LABELS } from "@/lib/funnel/terms";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
@@ -24,7 +25,7 @@ export default function LeadsPage(props: PageProps<"/app/leads">) {
   );
 }
 
-type Row = {
+type Row = LeadSourceRow & {
   id: string;
   business_name: string;
   contact_name: string;
@@ -50,12 +51,12 @@ async function Leads({ searchParams }: Pick<PageProps<"/app/leads">, "searchPara
     supabase.from("brands").select("funnel_open").eq("id", me.staff.brandId).single(),
     supabase
       .from("leads")
-      .select("id, business_name, contact_name, services, quote, stage, test, reviewer_id, lost_reason, created_at, stage_changed_at")
+      .select("id, business_name, contact_name, services, quote, stage, test, reviewer_id, lost_reason, created_at, stage_changed_at, source, utm_source, utm_campaign, referrer, marketing_links(label, platform, campaign, code)")
       .order("stage_changed_at", { ascending: false })
       .limit(300),
     supabase.from("staff_profiles").select("user_id, full_name"),
   ]);
-  const rows = (leads ?? []) as Row[];
+  const rows = (leads ?? []) as unknown as Row[];
   const nameOf = new Map((staff ?? []).map((s) => [s.user_id as string, s.full_name as string]));
   const byStage = new Map(LEAD_STAGE_ORDER.map((s) => [s, rows.filter((r) => r.stage === s)]));
   const open = Boolean(brand?.funnel_open);
@@ -98,11 +99,12 @@ async function Leads({ searchParams }: Pick<PageProps<"/app/leads">, "searchPara
                 <p className="text-body-regular text-text-tertiary">None.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[44rem] text-body-regular">
+                  <table className="w-full min-w-[52rem] text-body-regular">
                     <thead className="text-body-medium text-text-tertiary">
                       <tr>
                         <th scope="col" className="pb-2 text-start">Business</th>
                         <th scope="col" className="pb-2 text-start">Services</th>
+                        <th scope="col" className="pb-2 text-start">Source</th>
                         <th scope="col" className="pb-2 text-start">Reviewer</th>
                         <th scope="col" className="pb-2 text-end">Quoted / month</th>
                         <th scope="col" className="pb-2 ps-3 text-start">Since</th>
@@ -118,6 +120,7 @@ async function Leads({ searchParams }: Pick<PageProps<"/app/leads">, "searchPara
                             {l.stage === "lost" && l.lost_reason && <p className="text-caption-1-regular text-text-secondary">{l.lost_reason}</p>}
                           </td>
                           <td className="py-2 pe-3 text-text-secondary">{l.services.map((x) => SERVICE_LABELS[x] ?? x).join(", ")}</td>
+                          <td className="py-2 pe-3 text-text-secondary">{leadSourceLabel(l)}</td>
                           <td className="py-2 pe-3 text-text-secondary">{l.reviewer_id ? nameOf.get(l.reviewer_id) ?? "—" : "Not assigned"}</td>
                           <td className="py-2 text-end tabular-nums">{l.quote?.monthlyRetainer != null ? peso.format(l.quote.monthlyRetainer) : "—"}</td>
                           <td className="py-2 ps-3 tabular-nums text-text-secondary">{day(l.stage_changed_at)}</td>
@@ -148,6 +151,7 @@ async function Leads({ searchParams }: Pick<PageProps<"/app/leads">, "searchPara
                     >
                       <span className="text-body-medium break-words text-text-primary">{l.business_name}</span>
                       <span className="text-caption-1-regular text-text-secondary">{l.contact_name}</span>
+                      <span className="text-caption-1-regular text-text-tertiary">From {leadSourceLabel(l)}</span>
                       {l.stage === "lost" && l.lost_reason && <span className="text-caption-1-regular text-text-secondary">{l.lost_reason}</span>}
                       <span className="flex flex-wrap items-center gap-1 pt-1">
                         <span className={cx("text-caption-1-regular", l.reviewer_id ? "text-text-tertiary" : "text-text-error-primary")}>

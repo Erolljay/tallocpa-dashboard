@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Fragment, Suspense, type ReactNode } from "react";
 import { RiCalendarScheduleLine } from "@remixicon/react";
 import { ProposalView, type ProposalData } from "@/components/funnel/proposal-view";
 import { NotesTimeline } from "@/components/leads/notes-timeline";
@@ -13,6 +13,7 @@ import { LEAD_STAGES, isOpenStage, type LeadStage } from "@/lib/funnel/labels";
 import { defaultTerms, SERVICE_LABELS } from "@/lib/funnel/terms";
 import { notesTimeline, type NoteRow } from "@/lib/leads/notes";
 import { manilaNowLocal } from "@/lib/leads/time";
+import { channelLabel, leadChannel, type LeadSourceRow } from "@/lib/marketing/links";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
 
@@ -33,7 +34,7 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const me = await requireOwnerOrReviewer();
   const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
-  const { data: lead } = await supabase.from("leads").select("*, brands(display_name, legal_name, tin)").eq("id", id).maybeSingle();
+  const { data: lead } = await supabase.from("leads").select("*, brands(display_name, legal_name, tin), marketing_links(label, platform, campaign, code)").eq("id", id).maybeSingle();
   if (!lead) notFound();
   const [{ data: proposals }, { data: notes }, { data: staffRows }, { data: booked }] = await Promise.all([
     supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
@@ -77,6 +78,8 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
               {stage === "lost" && <><dt className="text-text-tertiary">Lost</dt><dd>{lead.lost_reason}</dd></>}
             </dl>
           </Card>
+
+          <LeadSource lead={lead as LeadSourceRow & LeadTouch} />
 
           <Card title="Reviewer">
             {isOwner && stage !== "onboarding" ? (
@@ -157,5 +160,33 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
         </div>
       </div>
     </>
+  );
+}
+
+type LeadTouch = { utm_medium: string | null; utm_content: string | null; landing_path: string | null; first_touch_at: string | null };
+
+/** Where the lead came from: its first touch (migration 20261214000001_lead_attribution.sql). */
+function LeadSource({ lead }: { lead: LeadSourceRow & LeadTouch }) {
+  const link = lead.marketing_links;
+  const campaign = link?.campaign ?? lead.utm_campaign;
+  const rows: [string, ReactNode][] = [["Channel", channelLabel(leadChannel(lead))]];
+  if (campaign) rows.push(["Campaign", campaign]);
+  if (link) rows.push(["Link", <>{link.label} · <bdi dir="ltr">/go/{link.code}</bdi></>]);
+  if (lead.utm_medium) rows.push(["Medium", lead.utm_medium]);
+  if (lead.utm_content) rows.push(["Content", lead.utm_content]);
+  if (lead.referrer) rows.push(["Referred by", <bdi key="r" dir="ltr">{lead.referrer}</bdi>]);
+  if (lead.landing_path) rows.push(["Landed on", <bdi key="p" dir="ltr">{lead.landing_path}</bdi>]);
+  if (lead.first_touch_at) rows.push(["First visit", bookedTime.format(new Date(lead.first_touch_at))]);
+  return (
+    <Card title="Source">
+      <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-1.5 text-body-regular">
+        {rows.map(([k, v]) => (
+          <Fragment key={k}>
+            <dt className="text-text-tertiary">{k}</dt>
+            <dd className="min-w-0 break-words">{v}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    </Card>
   );
 }

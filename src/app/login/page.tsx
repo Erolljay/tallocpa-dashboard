@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Lockup } from "@/components/brand/lockup";
 import { Notice } from "@/components/ui";
 import { safeNextPath } from "@/lib/safe-redirect";
+import { IDLE_MINUTES } from "@/lib/session/idle";
 import { SignInForm } from "./sign-in-form";
 
 const errors: Record<string, string> = {
@@ -9,6 +10,12 @@ const errors: Record<string, string> = {
   link_expired: "That sign-in link has expired or was already used. Request a new one.",
   google: "Google sign-in did not finish. Try again, or use your email instead.",
   signin_failed: "Sign-in did not finish. The link may have expired or been opened in a different browser. Request a new one here.",
+};
+
+/** Not errors: the person was signed out to keep client data safe (src/lib/session/idle.ts). */
+const notices: Record<string, string> = {
+  idle_staff: `You were signed out after ${IDLE_MINUTES.staff} minutes without activity. Sign in again to continue.`,
+  idle_client: `You were signed out after ${IDLE_MINUTES.client} minutes without activity, to keep your records safe. Sign in again to continue.`,
 };
 
 export default function LoginPage(props: PageProps<"/login">) {
@@ -35,9 +42,11 @@ async function Form({ searchParams }: { searchParams: PageProps<"/login">["searc
   const sp = await searchParams;
   const next = safeNextPath(sp.next);
   const error = typeof sp.error === "string" ? errors[sp.error] : undefined;
+  const notice = typeof sp.error === "string" ? notices[sp.error] : undefined;
   return (
     <div className="flex flex-col gap-4">
       {error && <Notice tone="blocked">{error}</Notice>}
+      {notice && <Notice tone="waiting">{notice}</Notice>}
       <SignInForm next={next} />
     </div>
   );

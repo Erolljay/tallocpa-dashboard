@@ -2,13 +2,23 @@
 
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { fromPage } from "@/lib/marketing/attribution";
+import type { StartPrefill } from "@/lib/site/intake";
 import { requestQuoteAction, type StartState } from "./actions";
 
 const php = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 const checkbox = "size-4 rounded border-border-button-default accent-accent-600";
 
-export function StartForm() {
-  const [state, action, pending] = useActionState(requestQuoteAction, {} as StartState);
+/** `prefill` comes from the website's "Tell us about your business" picker (src/lib/site/intake.ts): default values only. */
+export function StartForm({ prefill }: { prefill?: StartPrefill } = {}) {
+  const services = prefill?.services.length ? prefill.services : ["tax_compliance"];
+  const [state, dispatch, pending] = useActionState(requestQuoteAction, {} as StartState);
+  // Where the visitor came from (the page's utm_* and ref, and the referrer), sent with the request.
+  const action = (form: FormData) => {
+    const { search, pathname, hostname } = window.location;
+    form.set("attribution", JSON.stringify(fromPage({ search, pathname, hostname, referrer: document.referrer })));
+    dispatch(form);
+  };
   if (state.name) {
     const q = state.quote;
     return (
@@ -43,7 +53,7 @@ export function StartForm() {
         <legend className="mb-2 text-headline-medium text-text-primary">Your business</legend>
         <Field label="Business name" htmlFor="s-biz"><Input id="s-biz" name="business_name" required autoComplete="organization" /></Field>
         <Field label="Type" htmlFor="s-type">
-          <Select id="s-type" name="taxpayer_type" defaultValue="individual">
+          <Select id="s-type" name="taxpayer_type" defaultValue={prefill?.taxpayerType ?? "individual"}>
             <option value="individual">Sole proprietor or professional</option>
             <option value="opc">One Person Corporation</option>
             <option value="partnership">Partnership</option>
@@ -55,15 +65,15 @@ export function StartForm() {
         <Field label="Employees" htmlFor="s-emp"><Input id="s-emp" name="employees" type="number" min={0} defaultValue={0} className="tabular-nums" /></Field>
         <Field label="Branches besides the main office" htmlFor="s-br"><Input id="s-br" name="branches" type="number" min={0} defaultValue={0} className="tabular-nums" /></Field>
         <div className="flex flex-col justify-end gap-2 text-body-regular">
-          <label className="flex items-center gap-2"><input type="checkbox" name="vat" value="1" className={checkbox} /> VAT-registered</label>
+          <label className="flex items-center gap-2"><input type="checkbox" name="vat" value="1" defaultChecked={prefill?.vat === true} className={checkbox} /> VAT-registered</label>
           <label className="flex items-center gap-2"><input type="checkbox" name="contributions" value="1" className={checkbox} /> We remit SSS, PhilHealth, Pag-IBIG</label>
         </div>
       </fieldset>
 
       <fieldset className="space-y-2">
         <legend className="mb-2 text-headline-medium text-text-primary">Services</legend>
-        <label className="flex items-center gap-2 text-body-regular"><input type="checkbox" name="services" value="tax_compliance" defaultChecked className={checkbox} /> Tax compliance (BIR returns)</label>
-        <label className="flex items-center gap-2 text-body-regular"><input type="checkbox" name="services" value="bookkeeping" className={checkbox} /> Bookkeeping</label>
+        <label className="flex items-center gap-2 text-body-regular"><input type="checkbox" name="services" value="tax_compliance" defaultChecked={services.includes("tax_compliance")} className={checkbox} /> Tax compliance (BIR returns)</label>
+        <label className="flex items-center gap-2 text-body-regular"><input type="checkbox" name="services" value="bookkeeping" defaultChecked={services.includes("bookkeeping")} className={checkbox} /> Bookkeeping</label>
         <label className="flex items-center gap-2 text-body-regular"><input type="checkbox" name="services" value="business_registration" className={checkbox} /> Business registration</label>
         <Field label="Bookkeeping load" htmlFor="s-books">
           <Select id="s-books" name="bookkeeping" defaultValue="standard">
@@ -73,9 +83,9 @@ export function StartForm() {
           </Select>
         </Field>
         <div className="flex flex-wrap gap-4 text-body-regular">
-          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="inventory" className={checkbox} /> Inventory</label>
-          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="manufacturing" className={checkbox} /> Manufacturing</label>
-          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="construction" className={checkbox} /> Construction</label>
+          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="inventory" defaultChecked={prefill?.complexity.includes("inventory")} className={checkbox} /> Inventory</label>
+          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="manufacturing" defaultChecked={prefill?.complexity.includes("manufacturing")} className={checkbox} /> Manufacturing</label>
+          <label className="flex items-center gap-2"><input type="checkbox" name="complexity" value="construction" defaultChecked={prefill?.complexity.includes("construction")} className={checkbox} /> Construction</label>
         </div>
       </fieldset>
 
@@ -85,7 +95,7 @@ export function StartForm() {
         <Field label="Email" htmlFor="s-email"><Input id="s-email" name="email" type="email" required autoComplete="email" /></Field>
         <Field label="Mobile (optional)" htmlFor="s-mobile"><Input id="s-mobile" name="mobile" type="tel" autoComplete="tel" /></Field>
         <div className="sm:col-span-2">
-          <Field label="Anything we should know (optional)" htmlFor="s-msg"><Textarea id="s-msg" name="message" rows={3} /></Field>
+          <Field label="Anything we should know (optional)" htmlFor="s-msg"><Textarea id="s-msg" name="message" rows={3} defaultValue={prefill?.message} /></Field>
         </div>
       </fieldset>
 

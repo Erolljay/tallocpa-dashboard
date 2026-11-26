@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { RiArrowRightSLine, RiBarChartBoxLine, RiFilter3Line, RiScales3Line, RiSettings4Line, RiTeamLine, RiWallet3Line } from "@remixicon/react";
+import { RiArrowRightSLine, RiBarChartBoxLine, RiFilter3Line, RiMegaphoneLine, RiScales3Line, RiSettings4Line, RiTeamLine, RiWallet3Line } from "@remixicon/react";
 import { PageHeader, Skeleton } from "@/components/ui";
 import { requireOwnerOrReviewer } from "@/lib/auth";
 
@@ -8,6 +8,7 @@ import { requireOwnerOrReviewer } from "@/lib/auth";
 const REVIEWER_PLACES = new Set(["/app/leads"]);
 const PLACES = [
   { href: "/app/leads", label: "Leads", hint: "Inquiries, discovery calls, quotes and proposals until the client signs.", icon: RiFilter3Line },
+  { href: "/app/firm/marketing", label: "Marketing", hint: "Campaign links for Facebook posts and ads, and which ones bring leads and clients.", icon: RiMegaphoneLine },
   { href: "/app/collections", label: "Collections", hint: "Retainers billed, payment proofs to verify, and what is overdue.", icon: RiWallet3Line },
   { href: "/app/staff", label: "Staff", hint: "Who works on which clients, and each person's load.", icon: RiTeamLine },
   { href: "/app/firm/parallel-run", label: "Parallel run", hint: "Old register beside the Books, client by client and month by month, before the old screens go.", icon: RiScales3Line },

@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { RiLogoutBoxRLine } from "@remixicon/react";
+import { Bell, BellFallback } from "@/components/application/notifications/bell";
+import { IdleWatcher } from "@/components/application/session/idle-watcher";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Lockup } from "@/components/brand/lockup";
 import { portalContext } from "./client-context";
@@ -12,7 +14,10 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
       <header className="sticky top-0 z-10 border-b border-separator-border bg-background-secondary-default/90 backdrop-blur-xl print:hidden">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <Lockup />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Suspense fallback={<BellFallback variant="icon" />}>
+              <Bell audience="client" variant="icon" />
+            </Suspense>
             <ThemeToggle appearance="sidebar" collapsed />
             <form action="/auth/signout" method="post">
               <button className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-body-medium text-text-secondary transition-colors hover:bg-background-secondary-hover hover:text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring pointer-coarse:min-h-11">
@@ -34,6 +39,7 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
           <Nav variant="bottom" />
         </Suspense>
       </nav>
+      <IdleWatcher audience="client" />
     </div>
   );
 }
