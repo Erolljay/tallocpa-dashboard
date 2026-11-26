@@ -1,16 +1,17 @@
 import "server-only";
 /**
  * Checks the eSubmission mailbox for the BIR's replies (decision 15): for each send
- * still waiting, reads its Gmail thread; the first message not from the mailbox is the
- * reply. Its attachment (or, without one, the message itself) is stored as the
+ * still waiting, reads its Gmail thread; the first message the mailbox did not send is
+ * the reply (or, when a Google Group delivered it outside the thread, a received message
+ * that answers the sent one). Its attachment (or, without one, the message itself) is stored as the
  * return's validation report and the send is marked validated or errors. A reply the
  * app cannot read is recorded as errors with a note, for staff to check and correct.
  * Runs with the service role (cron) or for one return from the filing page.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { esubmissionMailEnv } from "@/lib/env";
-import { headerOf, partsOf, readAttachment, readThread, textOf } from "./gmail";
-import { classifyReply, fromMailbox } from "./mime";
+import { findReplies, headerOf, partsOf, readAttachment, readThread, textOf } from "./gmail";
+import { classifyReply, isOwnMessage } from "./mime";
 
 interface Waiting {
   id: string;
@@ -36,7 +37,14 @@ export async function pollEsubmissions(admin: SupabaseClient, filingId?: string)
   for (const w of waiting) {
     try {
       const { token, messages } = await readThread(env, w.gmail_thread_id!);
-      const reply = messages.find((m) => m.id !== w.gmail_message_id && !fromMailbox(headerOf(m, "From"), env.mailbox));
+      const own = (m: (typeof messages)[number]) => isOwnMessage({ labelIds: m.labelIds, from: headerOf(m, "From") }, env.mailbox);
+      let reply = messages.find((m) => m.id !== w.gmail_message_id && !own(m));
+      if (!reply) {
+        // Through a Google Group the reply can land outside the thread: look for it by its reply headers.
+        const sent = messages.find((m) => m.id === w.gmail_message_id);
+        const msgId = sent ? headerOf(sent, "Message-ID") || headerOf(sent, "Message-Id") : "";
+        if (sent && msgId) reply = (await findReplies(env, token, headerOf(sent, "Subject"), msgId)).find((m) => !own(m));
+      }
       if (!reply) {
         await admin.rpc("esubmission_checked", { p_esubmission: w.id });
         continue;

@@ -91,7 +91,19 @@ export function classifyReply(text: string): "validated" | "errors" | null {
 
 /** Whether a Gmail From header is the firm's own mailbox (our sent message, not the BIR's reply). */
 export function fromMailbox(fromHeader: string, mailbox: string): boolean {
-  return fromHeader.toLowerCase().includes(mailbox.toLowerCase());
+  const from = fromHeader.toLowerCase();
+  // A Google Group rewrites an outside sender as "'BIR' via eSubmission <group address>": that is a reply.
+  if (/\bvia\b/.test(from)) return false;
+  return from.includes(mailbox.toLowerCase());
+}
+
+/**
+ * Whether a message in the thread is one the firm sent: Gmail's SENT label when present
+ * (the mailbox may be a person's account sending as a group address), else its sender.
+ */
+export function isOwnMessage(m: { labelIds?: string[]; from: string }, mailbox: string): boolean {
+  if (m.labelIds) return m.labelIds.includes("SENT");
+  return fromMailbox(m.from, mailbox);
 }
 
 /** The DAT attachments of a worksheet (kinds such as "qap-dat", "sls_dat_2027-01", "alphalist_dat"). */
