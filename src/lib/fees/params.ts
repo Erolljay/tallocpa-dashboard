@@ -3,7 +3,7 @@
  * profile. The preview form is a plain GET form so a quote can be bookmarked or
  * shared with staff.
  *
- * Fields: taxpayer_type, vat, ewt, employees, contributions, documents (a month),
+ * Fields: taxpayer_type, vat, ewt (none, rental, tamp_regular), employees, contributions, documents (a month),
  * complexity (repeated), branches, behind (months of backlog).
  */
 import { TAXPAYER_TYPES, type TaxpayerType } from "@/lib/clients/obligations";
@@ -15,6 +15,16 @@ export type QuerySource = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const all = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v === undefined ? [] : [v]);
 const pick = <T extends string>(v: string, options: readonly T[], fallback: T): T => ((options as readonly string[]).includes(v) ? (v as T) : fallback);
+
+/**
+ * The website's withholding question ("Do you withhold tax on payments to others?"),
+ * in plain words, and the kind it means. Anything else reads as "none".
+ */
+export const EWT_CHOICES: readonly { value: EwtKind; label: string }[] = [
+  { value: "none", label: "No" },
+  { value: "rental", label: "Only on rent" },
+  { value: "tamp_regular", label: "On rent, suppliers or contractors" },
+];
 
 /** Months of backlog a quote takes at most. */
 export const MAX_MONTHS_BEHIND = 120;

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { fromPage } from "@/lib/marketing/attribution";
+import { EWT_CHOICES } from "@/lib/fees/params";
 import type { InstantQuote } from "@/lib/fees/quote";
 import type { StartPrefill } from "@/lib/site/intake";
 import { requestQuoteAction, type StartState } from "./actions";
@@ -37,6 +38,11 @@ export function StartForm({ prefill }: { prefill?: StartPrefill } = {}) {
         </Field>
         <Field label="Documents a month" htmlFor="s-docs" hint="Sales invoices, receipts, purchases and 2307s, about how many a month.">
           <Input id="s-docs" name="documents" type="number" min={0} defaultValue={30} className="tabular-nums" />
+        </Field>
+        <Field label="Do you withhold tax on payments to others?" htmlFor="s-ewt" hint="Expanded withholding: 0619-E, 1601-EQ and the 2307s you issue.">
+          <Select id="s-ewt" name="ewt" defaultValue={prefill?.ewt ?? "none"}>
+            {EWT_CHOICES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </Select>
         </Field>
         <Field label="Employees" htmlFor="s-emp"><Input id="s-emp" name="employees" type="number" min={0} defaultValue={0} className="tabular-nums" /></Field>
         <Field label="Branches besides the main office" htmlFor="s-br"><Input id="s-br" name="branches" type="number" min={0} defaultValue={0} className="tabular-nums" /></Field>

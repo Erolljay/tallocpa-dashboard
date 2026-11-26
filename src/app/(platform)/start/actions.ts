@@ -29,7 +29,7 @@ export async function requestQuoteAction(_: StartState, form: FormData): Promise
   // The same fields as the Owner's quote preview (src/lib/fees/params.ts). Every client is
   // charged bookkeeping by documents a month, so there is no bookkeeping question.
   const q: Record<string, string | string[]> = {};
-  for (const k of ["taxpayer_type", "vat", "employees", "contributions", "documents", "branches", "behind"]) q[k] = text(k, 20);
+  for (const k of ["taxpayer_type", "vat", "ewt", "employees", "contributions", "documents", "branches", "behind"]) q[k] = text(k, 20);
   q.complexity = form.getAll("complexity").map(String);
   const { profile, quote, view } = await instantQuote(q);
 

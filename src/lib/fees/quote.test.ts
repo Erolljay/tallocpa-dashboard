@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OWNER_PRICES, OWNER_SETTINGS } from "./owner-prices.fixture";
+import { profileFromQuery } from "./params";
 import { buildQuote, documentBand, EWT_NOTE, instantView, matches, notIncludedItems, type QuoteInput } from "./quote";
 import { FEE_TEMPLATE } from "./template";
 import type { ClientProfile, FeeItem, ScheduleSettings } from "./types";
@@ -100,6 +101,20 @@ describe("the Owner's examples (26 Nov 2026), monthly cap ₱6,000, catch-up at 
   it("at the cap is still priced", () => {
     expect(withSettings({ documentsPerMonth: 40 }, { monthlyCap: 2000 })).toMatchObject({ overCap: false, complete: true });
     expect(withSettings({ documentsPerMonth: 40 }, { monthlyCap: 1999.99 })).toMatchObject({ overCap: true, complete: false });
+  });
+});
+
+describe("the instant quote from /start's answers", () => {
+  it("prices expanded withholding from the withholding question: the Owner's VAT corporation with 'Only on rent' includes ₱300", () => {
+    const q = (ewt: string) =>
+      buildQuote({
+        profile: profileFromQuery({ taxpayer_type: "corporation", vat: "1", ewt, employees: "5", contributions: "1", documents: "120", behind: "2" }).profile,
+        items: priced(), settings: OWNER_SETTINGS, taxOnFee: "percentage_tax_3", quoteDate: "2026-11-26",
+      });
+    expect(q("rental").monthly.find((l) => l.component === "C")).toMatchObject({ code: "C.rental", amount: 300 });
+    expect(q("rental")).toMatchObject({ monthlyRetainer: 4900, oneTimeTotal: 4900 });
+    expect(q("none")).toMatchObject({ monthlyRetainer: 4600 });
+    expect(q("tamp_regular")).toMatchObject({ monthlyRetainer: 5100 });
   });
 });
 

@@ -423,6 +423,8 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | Catch-up (one time) | per month behind | 0.5 × monthly retainer |
 | J. Late-submission surcharge | documents after cutoff | schedule setting |
 
+Confirmed by the Owner on 26 Nov 2026: the 3% percentage tax is included in the prices; annual jobs are billed with the ITR with AFS and the SAWT in April, the 1604-C and the inventory list in January, and the 1604-E in February; every client pays the bookkeeping-by-documents line. The website quote form asks "Do you withhold tax on payments to others?" (No / Only on rent / On rent, suppliers or contractors), so the instant quote prices expanded withholding (C).
+
 Worked examples: non-VAT sole proprietor, ≤50 documents: ₱2,000. VAT corporation, 5 employees, rent withholding, contributions remitted, ~120 documents: ₱4,900, plus catch-up for 2 months ₱4,900. VAT online seller (individual), inventory, ~200 documents: ₱4,500. VAT corporation, 25 employees, regular withholding, inventory, contributions, ~250 documents: ₱7,200 — over the cap, so quoted on request.
 
 **Annual jobs (in the proposal, billed once a year)**: ITR with AFS (preparation) individual ₱5,000 / partnership ₱7,500 / corporation, OPC or non-stock ₱10,000; 1604-C ₱1,500; 1604-E ₱1,500; SAWT ₱500; inventory list ₱1,000.

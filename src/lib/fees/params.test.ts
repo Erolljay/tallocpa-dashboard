@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { count, profileFromQuery, profileFromStored } from "./params";
+import { count, EWT_CHOICES, profileFromQuery, profileFromStored } from "./params";
 
 describe("profileFromQuery", () => {
   it("defaults to a plain individual, not behind", () => {
@@ -27,6 +27,15 @@ describe("profileFromQuery", () => {
   it("ignores values it does not know", () => {
     const { profile } = profileFromQuery({ q: "1", taxpayer_type: "alien", ewt: "x", behind: "-2" });
     expect(profile).toMatchObject({ taxpayerType: "individual", ewt: "none", monthsBehind: 0 });
+  });
+});
+
+describe("the withholding question on /start", () => {
+  it("maps each plain-language answer to its kind, and anything else to none", () => {
+    expect(EWT_CHOICES.map((c) => [c.label, c.value])).toEqual([["No", "none"], ["Only on rent", "rental"], ["On rent, suppliers or contractors", "tamp_regular"]]);
+    for (const c of EWT_CHOICES) expect(profileFromQuery({ ewt: c.value }).profile.ewt).toBe(c.value);
+    expect(profileFromQuery({ ewt: "Only on rent" }).profile.ewt).toBe("none");
+    expect(profileFromQuery({ ewt: ["rental", "tamp_regular"] }).profile.ewt).toBe("rental");
   });
 });
 
