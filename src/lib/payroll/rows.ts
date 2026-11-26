@@ -6,7 +6,7 @@ import { categoryTotals, type BirCategory, type ItemKind, type PayrollItem } fro
 import type { Employee, EmploymentStatus, PayAmounts, PayrollEntry, PriorEmployer, SeparationReason } from "./types";
 
 export const EMPLOYEE_COLUMNS =
-  "id, employee_no, last_name, first_name, middle_name, tin, tin_branch, birth_date, address, zip_code, region, nationality, employment_status, is_mwe, mwe_daily_rate, mwe_monthly_rate, hire_date, separation_date, separation_reason, substituted_filing, active, needs_details, pay_account_id";
+  "id, employee_no, last_name, first_name, middle_name, tin, tin_branch, birth_date, address, zip_code, region, nationality, employment_status, is_mwe, mwe_daily_rate, mwe_monthly_rate, hire_date, separation_date, separation_reason, substituted_filing, active, needs_details, pay_account_id, sss_no, philhealth_no, pagibig_no";
 export const ITEM_COLUMNS = "id, name, kind, bir_category, sort_order, active";
 /** payroll_entries with their lines embedded. */
 export const ENTRY_COLUMNS = "employee_id, pay_month, adjustment, note, payroll_entry_lines(item_id, amount)";
@@ -24,6 +24,9 @@ export function employeeFromRow(r: Row): Employee {
     middleName: str(r.middle_name),
     tin: str(r.tin),
     tinBranch: str(r.tin_branch) ?? "0000",
+    sssNo: str(r.sss_no),
+    philhealthNo: str(r.philhealth_no),
+    pagibigNo: str(r.pagibig_no),
     birthDate: str(r.birth_date),
     address: str(r.address),
     zipCode: str(r.zip_code),

@@ -1,6 +1,6 @@
 /**
  * Approving a document and posting it to the Books together (migration
- * 20261216000002): either both happen or neither; a sale or purchase dated in a
+ * 20261217000002): either both happen or neither; a sale or purchase dated in a
  * locked month is offered the first open month after it and, when staff choose it,
  * posted on that month's first day; a month cannot be locked while an approved sale
  * or purchase dated in it is not in the Books.

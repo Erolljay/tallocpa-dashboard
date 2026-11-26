@@ -4,7 +4,7 @@
  * on public.notifications.
  */
 
-export type NotificationGroup = "returns" | "payments" | "requests" | "leads";
+export type NotificationGroup = "returns" | "remittances" | "payments" | "requests" | "leads";
 export type NotificationAudience = "staff" | "client";
 
 export interface NotificationKindInfo {
@@ -33,6 +33,9 @@ export const NOTIFICATION_KINDS = {
   return_for_client_approval: { group: "returns", audience: "client", label: "A return is ready for my approval", action: "Review and approve" },
   return_query_answered: { group: "returns", audience: "client", label: "My question on a return was answered", action: "Read the answer" },
 
+  remittance_ready_for_approval: { group: "remittances", audience: "staff", label: "An SSS, PhilHealth or Pag-IBIG remittance is ready for approval", action: "Approve the remittance", ownerOnly: true },
+  remittance_remitted: { group: "remittances", audience: "client", label: "An SSS, PhilHealth or Pag-IBIG remittance was paid", action: "See the proof of payment" },
+
   payment_proof_submitted: { group: "payments", audience: "staff", label: "A client sent proof of payment", action: "Verify the payment", ownerOnly: true },
   payment_verified: { group: "payments", audience: "client", label: "My payment was verified", action: "See billing" },
   payment_rejected: { group: "payments", audience: "client", label: "My payment could not be verified", action: "See billing" },
@@ -40,6 +43,8 @@ export const NOTIFICATION_KINDS = {
 
   request_from_client: { group: "requests", audience: "staff", label: "A client opened a request or replied", action: "Open the request" },
   request_from_firm: { group: "requests", audience: "client", label: "Tallo CPA sent a request or replied", action: "Open the request" },
+  request_assigned: { group: "requests", audience: "staff", label: "A request or ticket was handed to me", action: "Open the request" },
+  task_assigned: { group: "requests", audience: "staff", label: "Someone gave me a task", action: "Open the task" },
 
   lead_new: { group: "leads", audience: "staff", label: "A new inquiry from the website", action: "Open the lead", ownerOnly: true },
   discovery_call_booked: { group: "leads", audience: "staff", label: "A discovery call was booked", action: "Open the lead" },
@@ -50,8 +55,9 @@ export type NotificationKind = keyof typeof NOTIFICATION_KINDS;
 
 export const NOTIFICATION_GROUPS: Record<NotificationGroup, string> = {
   returns: "Returns",
+  remittances: "SSS, PhilHealth and Pag-IBIG",
   payments: "Payments and billing",
-  requests: "Requests",
+  requests: "Requests and tasks",
   leads: "Leads and calendar",
 };
 

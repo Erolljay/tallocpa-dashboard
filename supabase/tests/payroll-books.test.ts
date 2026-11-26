@@ -85,7 +85,7 @@ describe.skipIf(!url)("payroll to the books", () => {
   it("totals a run and its dues to SSS, PhilHealth and Pag-IBIG", async () => {
     const r = await run("2027-03-31");
     expect(r).toMatchObject({ employees: 2, gross: 19000, tax_withheld: 600, employer: 1060, problems: [] });
-    expect(r.dues).toEqual({ sss: { ee: 360, er: 760 }, phic: { ee: 200, er: 200 }, hdmf: { ee: 100, er: 100 }, sss_loan: 0, hdmf_loan: 0 });
+    expect(r.dues).toEqual({ sss: { ee: 360, er: 760, ec: 0 }, phic: { ee: 200, er: 200 }, hdmf: { ee: 100, er: 100 }, sss_loan: 0, hdmf_loan: 0 });
     expect(r.net).toBe(19000 - 600 - 660);
   });
 
@@ -129,7 +129,7 @@ describe.skipIf(!url)("payroll to the books", () => {
     await as(`update public.payroll_items set bir_category = 'sss_loan' where id = $1`, [item.sss_loan]);
     await expect(as(`update public.payroll_items set bir_category = 'sss_ee' where id = $1`, [item.sss_loan])).rejects.toThrow(/cannot change/);
     const r = await run("2027-03-20");
-    expect(r.dues).toEqual({ sss: { ee: 100, er: 200 }, phic: { ee: 50, er: 50 }, hdmf: { ee: 40, er: 40 }, sss_loan: 700, hdmf_loan: 300 });
+    expect(r.dues).toEqual({ sss: { ee: 100, er: 200, ec: 0 }, phic: { ee: 50, er: 50 }, hdmf: { ee: 40, er: 40 }, sss_loan: 700, hdmf_loan: 300 });
     const e = (await as(`select public.post_payroll($1, '2027-03-01', '2027-03-20') as id`, [client])).rows[0].id;
     const lines = (await db.query(
       `select a.template_key as acct, l.debit, l.credit from public.journal_lines l join public.ledger_accounts a on a.id = l.account_id where l.entry_id = $1 order by a.template_key`, [e],

@@ -11,6 +11,8 @@ import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { monthName } from "@/lib/lock/month-lock";
 import { supabaseServer } from "@/lib/supabase/server";
+import { monthLabel, REMITTANCE_KINDS, remittanceBadge, type RemittanceKind, type RemittanceStatus } from "@/lib/remittances/labels";
+import { addDays } from "@/lib/deadlines/dates";
 import { cx } from "@/utils/cx";
 import { GenerateButton } from "./generate-button";
 import { StepProgress } from "./step-progress";
@@ -120,6 +122,8 @@ async function Deadlines({ searchParams }: Pick<PageProps<"/app/deadlines">, "se
       ) : (
         (["overdue", "this_week", "later"] as const).map((g) => <FilingGroup key={g} group={g} rows={groups[g]} today={today} flagOf={flagOf} />)
       )}
+
+      <RemittancesDue supabase={supabase} today={today} clients={mine ? myClients : null} />
 
       {shownFlags.length > 0 && <AmendmentCard flags={shownFlags} clientName={clientName} />}
 
@@ -294,5 +298,40 @@ function BooksStillOpen({ rows, today, held }: { rows: OpenRow[]; today: string;
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * SSS, PhilHealth and Pag-IBIG remittances still open (migration 20261216000003): made from
+ * the posted payroll beside the month's 1601-C, due soonest first.
+ */
+async function RemittancesDue({ supabase, today, clients }: { supabase: Awaited<ReturnType<typeof supabaseServer>>; today: string; clients: Set<string> | null }) {
+  const { data } = await supabase
+    .from("contribution_remittances")
+    .select("id, client_id, kind, period_month, due_date, status, total, clients(name)")
+    .in("status", ["not_started", "prepared", "approved"])
+    .lte("due_date", addDays(today, 60))
+    .order("due_date")
+    .limit(200);
+  const rows = ((data ?? []) as unknown as { id: string; client_id: string; kind: RemittanceKind; period_month: string; due_date: string; status: RemittanceStatus; total: string; clients: { name: string } | null }[])
+    .filter((r) => !clients || clients.has(r.client_id));
+  if (rows.length === 0) return null;
+  return (
+    <Card title={`SSS, PhilHealth and Pag-IBIG (${rows.length})`} actions={<Link href="/app/remittances?queue=open" className="text-body-regular text-button-ghost-foreground hover:underline">All remittances</Link>}>
+      <ul className="divide-y divide-separator-border text-body-regular">
+        {rows.map((r) => {
+          const badge = remittanceBadge(r.status, r.due_date, today);
+          return (
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">
+              <span className="min-w-0">
+                <Link href={`/app/remittances/${r.id}`} className="text-text-primary hover:underline">{r.clients?.name} · {REMITTANCE_KINDS[r.kind].option}</Link>
+                <span className="block text-caption-1-regular text-text-tertiary">{monthLabel(r.period_month)} · due {showDate(r.due_date)}{Number(r.total) > 0 ? ` · ${peso.format(Number(r.total))}` : ""}</span>
+              </span>
+              <Badge tone={badge.tone}>{badge.label}</Badge>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }

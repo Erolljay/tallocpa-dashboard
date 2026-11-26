@@ -58,6 +58,12 @@ export function EmployeeForm({ clientId, employee, payAccounts }: { clientId: st
         <Field label="Nationality" htmlFor="nationality" error={e.nationality}><Input id="nationality" name="nationality" defaultValue={v?.nationality ?? "FILIPINO"} /></Field>
       </fieldset>
       <fieldset className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <legend className="mb-2 text-body-medium text-text-primary">SSS, PhilHealth and Pag-IBIG</legend>
+        <Field label="SSS number" htmlFor="sss_no" error={e.sss_no}><Input id="sss_no" name="sss_no" inputMode="numeric" defaultValue={v?.sssNo ?? ""} /></Field>
+        <Field label="PhilHealth number" htmlFor="philhealth_no" error={e.philhealth_no}><Input id="philhealth_no" name="philhealth_no" inputMode="numeric" defaultValue={v?.philhealthNo ?? ""} /></Field>
+        <Field label="Pag-IBIG MID number" htmlFor="pagibig_no" error={e.pagibig_no}><Input id="pagibig_no" name="pagibig_no" inputMode="numeric" defaultValue={v?.pagibigNo ?? ""} /></Field>
+      </fieldset>
+      <fieldset className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <legend className="mb-2 text-body-medium text-text-primary">Address</legend>
         <div className="sm:col-span-2"><Field label="Address" htmlFor="address" error={e.address}><Input id="address" name="address" defaultValue={v?.address ?? ""} /></Field></div>
         <Field label="ZIP code" htmlFor="zip_code" error={e.zip_code}><Input id="zip_code" name="zip_code" inputMode="numeric" defaultValue={v?.zipCode ?? ""} /></Field>
