@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51), Phases 1–2 (PR #53) and Phase 3 with Portal Billing and the Leads pipeline (PR #54) merged. Phase 4 (PR #55) merged. Phase 5 built: Year-end page with the Owner's closing entry, 1604-E from the year's QAP, final 2316s, the client's missing-2307 decision, Google Calendar team calendar and booking pages. eSubmission and the calendar wait on the Google setup. |
+| **Status** | Every area approved by the Owner, 25 November 2026. Week 1 (PR #51), Phases 1–2 (PR #53) and Phase 3 with Portal Billing and the Leads pipeline (PR #54) merged. Phase 4 (PR #55) merged. Phase 5 built: Year-end page with the Owner's closing entry, 1604-E from the year's QAP, final 2316s, the client's missing-2307 decision, Google Calendar team calendar and booking pages. The Google setup is done (26 Nov 2026); eSubmission has not been run live yet, and every DAT file goes through the BIR validation module first. |
 | **Screens** | Clickable mockup per user (Owner, Reviewer, Preparer, Client), shared as a claude.ai artifact |
 | **Target** | Monthly work and the client portal live before 31 December 2026; year-end and the annual returns ready before their January deadlines |
 
