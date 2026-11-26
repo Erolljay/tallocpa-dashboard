@@ -54,11 +54,10 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
   const calendarYear = Number(yearEnd.slice(0, 4));
 
   const calendarYears = [...new Set([Number(yearStart.slice(0, 4)), calendarYear])];
-  const [{ data: client2 }, { data: team }, { data: engagements }, monthRows, { count: suggested }, { data: tb }, { data: closing }, { data: ticks }, { data: obligations }, { data: release }, { data: filingRows }, { data: missing }, accounts] =
+  const [{ data: client2 }, { data: team }, monthRows, { count: suggested }, { data: tb }, { data: closing }, { data: ticks }, { data: obligations }, { data: release }, { data: filingRows }, { data: missing }, accounts] =
     await Promise.all([
       supabase.from("clients").select("code").eq("id", id).maybeSingle(),
       supabase.from("staff_assignments").select("user_id").eq("client_id", id),
-      supabase.from("engagements").select("service_line, status").eq("client_id", id),
       books ? Promise.all(calendarYears.map((y) => booksMonthStatus(id, y, supabase))).then((r) => r.flat()) : Promise.resolve([]),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", id).eq("status", "suggested").lte("entry_date", yearEnd),
       books ? supabase.rpc("trial_balance", { p_client: id, p_from: yearStart, p_to: yearEnd }) : Promise.resolve({ data: [] }),
@@ -79,7 +78,6 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
     ]);
 
   const work = owner || (team ?? []).some((a) => a.user_id === me.userId);
-  const hasBookkeeping = (engagements ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active");
 
   const inYear = (d: string) => d >= yearStart && d <= yearEnd;
   const openMonths = (monthRows as { month: string; status: string; in_books: boolean }[])
@@ -115,7 +113,7 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
     clientId: id,
     yearEnd,
     today,
-    hasBooks: !!books && hasBookkeeping,
+    hasBooks: !!books,
     openMonths,
     suggestedEntries: suggested ?? 0,
     trialBalanceDifference: tbDifference,
@@ -137,7 +135,7 @@ async function YearEnd({ params, searchParams }: Pick<PageProps<"/app/clients/[i
   return (
     <>
       <PageHeader title={client.name} description={<span className="tabular-nums">{client2?.code} · Year-end {fmtYear(yearEnd)}</span>} />
-      <ClientTabs clientId={id} active="year-end" work={work} books={hasBookkeeping} />
+      <ClientTabs clientId={id} active="year-end" work={work} />
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <nav aria-label="Taxable year" className="flex flex-wrap gap-1">

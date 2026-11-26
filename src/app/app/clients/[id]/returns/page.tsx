@@ -43,9 +43,8 @@ async function Returns({ params }: Pick<PageProps<"/app/clients/[id]/returns">, 
 
   const { data: client } = await supabase.from("clients").select("id, name, code").eq("id", id).maybeSingle();
   if (!client) notFound();
-  const [{ data: team }, { data: engagements }, { data: filingRows }, flags, stillOpen] = await Promise.all([
+  const [{ data: team }, { data: filingRows }, flags, stillOpen] = await Promise.all([
     supabase.from("staff_assignments").select("user_id").eq("client_id", id),
-    supabase.from("engagements").select("service_line, status").eq("client_id", id),
     supabase.from("filing_instances").select("id, form, period_label, period_end, due_date, status, tax_due").eq("client_id", id).order("due_date", { ascending: false }).order("form").limit(300),
     filingsNeedingAmendment(id),
     booksStillOpen(today),
@@ -64,7 +63,6 @@ async function Returns({ params }: Pick<PageProps<"/app/clients/[id]/returns">, 
         clientId={id}
         active="returns"
         work={owner || (team ?? []).some((a) => a.user_id === me.userId)}
-        books={(engagements ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active")}
       />
       <div className="space-y-4">
         <Card title={`Returns (${shown.length})`} actions={<Link href={`/app/clients/${id}/books/months`} className="text-body-regular text-button-ghost-foreground hover:underline">Month locks</Link>}>
