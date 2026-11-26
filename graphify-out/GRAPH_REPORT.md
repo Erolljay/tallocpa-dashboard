@@ -1,7 +1,7 @@
 # Graph Report - tallocpa-dashboard  (2026-11-26)
 
 ## Corpus Check
-- 897 files · ~709,994 words
+- 897 files · ~710,101 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: .css 10, (none) 4, .woff2 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a0903bfa`
+- Built from commit: `42c1492e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
