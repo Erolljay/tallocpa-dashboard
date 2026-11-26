@@ -67,7 +67,12 @@ export async function finishUpload(documentId: string): Promise<{ ok: true } | {
   return { ok: true };
 }
 
-export type DocActionState = { ok?: string; error?: string };
+export type DocActionState = {
+  ok?: string;
+  error?: string;
+  /** Approving a sale or purchase dated in a locked month: the first open month after it ("YYYY-MM-01"). */
+  lockedMonth?: { message: string; openMonth: string };
+};
 
 /** Staff: accept for review, mark posted, or return to the client with a reason. */
 export async function reviewDocumentAction(documentId: string, action: "accept" | "post" | "return", _: DocActionState, form: FormData): Promise<DocActionState> {

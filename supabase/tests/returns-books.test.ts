@@ -165,15 +165,15 @@ describe.skipIf(!url)("returns from the Books by tax code", () => {
   });
 
   describe("figures by tax code", () => {
-    it("gives each Sales Invoice's VATable, exempt and zero-rated sales, the discount off exempt sales, and leaves out void invoices", async () => {
+    it("gives each Sales Invoice's VATable, exempt and zero-rated sales gross (the SC/PWD discount kept apart), and leaves out void invoices", async () => {
       const rows = await sources(filing["2550Q-Q1"]);
       const sales = rows.filter((r) => r.source === "sales_invoice");
       expect(sales.map((r) => r.invoice_id).sort()).toEqual([inv.s1, inv.s2].sort());
-      expect(sales.find((r) => r.invoice_id === inv.s1)).toMatchObject({ month: expect.anything(), vatable: 1000, vat: 120, vat_exempt: 400, zero_rated: 0, non_vat: 0, total: 1520, uncoded: 0, reference: "SI-1" });
+      expect(sales.find((r) => r.invoice_id === inv.s1)).toMatchObject({ month: expect.anything(), vatable: 1000, vat: 120, vat_exempt: 500, zero_rated: 0, non_vat: 0, total: 1520, uncoded: 0, reference: "SI-1" });
       expect(sales.find((r) => r.invoice_id === inv.s2)).toMatchObject({ vatable: 2000, vat: 240, vat_exempt: 0 });
       // 2550Q Part IV and the SLS: VATable sales, output VAT, exempt sales.
       const sum = (k: string, xs: Row[]) => xs.reduce((a, r) => a + Number(r[k]), 0);
-      expect([sum("vatable", sales), sum("vat", sales), sum("vat_exempt", sales)]).toEqual([3000, 360, 400]);
+      expect([sum("vatable", sales), sum("vat", sales), sum("vat_exempt", sales)]).toEqual([3000, 360, 500]);
     });
 
     it("splits each Purchase Invoice into its SLP columns and leaves ND and NR lines off every list", async () => {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { postDocumentToBooks, unpostDocumentFromBooks, type DocumentCodes } from "@/lib/books/actions";
+import type { DocumentCodes } from "@/lib/books/actions";
 import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import type { DocActionState } from "@/lib/documents/actions";
 import { streamOf, type DocType } from "@/lib/documents/labels";
@@ -47,38 +47,29 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
       return { error: (e as Error).message };
     }
   }
-  // Correcting a document already in the Books: void its invoice (and receipt or payment) first, then post it again below.
-  let unposted = false;
-  if (mode === "edit" && form.has("ledger_account")) {
-    const { data: inBooks } = await supabase.from("book_invoices").select("id").eq("document_id", documentId).is("voided_at", null).maybeSingle();
-    if (inBooks) {
-      try {
-        await unpostDocumentFromBooks(documentId, "Document figures corrected", supabase);
-        unposted = true;
-      } catch (e) {
-        return { error: `The Books could not be corrected: ${(e as Error).message}` };
-      }
-    }
-  }
-  const { data, error } = await supabase.rpc("approve_document", { p_document: documentId, p_fields: fields });
+  // Approved and posted to the Books together (bookkeeping clients): a Sales or Purchase
+  // Invoice, with its Receipt or Payment when cash; a 2307 received marks the CWT it
+  // supports. When it cannot be posted (a locked month, no account), nothing is approved.
+  // Correcting a document already in the Books voids its invoice first, in the same step.
+  const books = form.has("ledger_account");
+  const account = String(form.get("ledger_account") ?? "");
+  const { data, error } = await supabase.rpc("approve_and_post_document", {
+    p_document: documentId,
+    p_fields: fields,
+    p_post: books,
+    p_account: books ? account || null : null,
+    p_cash_account: books && fields.payment_terms === "cash" ? fields.payment_account ?? null : null,
+    p_codes: books ? codes : null,
+    p_redate: form.get("redate") === "1",
+  });
   if (error) {
-    // Put the document back in the Books as it was.
-    if (unposted) await postDocumentToBooks(documentId, {}, supabase).catch(() => null);
-    return { error: error.message };
+    // Dated in a locked month: offer the first open month after it (the late-document practice).
+    if (error.code === "TL001" && error.hint) return { lockedMonth: { message: error.message, openMonth: error.hint } };
+    return { error: books ? `Not approved: it could not be posted to the Books. ${error.message}` : error.message };
   }
   revalidatePath("/app", "layout");
   revalidatePath("/portal", "layout");
   const clientId = (data as { client_id?: string } | null)?.client_id;
-  // Bookkeeping clients: the approved document goes to the Books (a Sales or Purchase Invoice,
-  // with its Receipt or Payment when cash; a 2307 received marks the CWT it supports).
-  if (form.has("ledger_account")) {
-    const account = String(form.get("ledger_account") ?? "");
-    try {
-      await postDocumentToBooks(documentId, { accountId: account || null, cashAccountId: fields.payment_terms === "cash" ? fields.payment_account ?? null : null, codes }, supabase);
-    } catch (e) {
-      return { error: `The figures were approved, but the document was not posted to the Books: ${(e as Error).message}` };
-    }
-  }
   // Back to the Inbox tab the document came from (Sales, Purchases & Expenses, Other):
   // its Approved list after a correction, else what is still waiting.
   const stream = streamOf((data as { doc_type?: string } | null)?.doc_type as DocType);

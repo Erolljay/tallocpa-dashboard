@@ -193,26 +193,48 @@ describe.skipIf(!url)("books transactions", () => {
       expect(await lines(pv.journal_entry_id)).toEqual([["office_supplies", "1000.00", "0.00"], ["accounts_payable", "0.00", "1000.00"]]);
     });
 
-    it("splits VATable and exempt lines, and books the SC/PWD discount and VAT withheld by a government customer", async () => {
+    it("splits VATable and exempt lines, and books VAT withheld by a government customer on its total net sales", async () => {
       const id = await saveInvoice({
-        kind: "sales", party_name: "City of Iloilo", issue_date: "2026-03-03", withholding_code_id: code.WC160, vat_withholding_code_id: code.WV020, discount: "100",
+        kind: "sales", party_name: "City of Iloilo", issue_date: "2026-03-03", withholding_code_id: code.WC160, vat_withholding_code_id: code.WV020,
         lines: [
           { account_id: acct.service_income, amount: "10000", tax_code_id: code.OVAT12 },
           { account_id: acct.service_income, amount: "1000", tax_code_id: code.VES },
         ],
       });
       const inv = await invoice(id);
-      // total 11000 + 1200 − 100; CWT 2% of 10900; VAT withheld 5% of 11000.
-      expect(inv).toMatchObject({ total: "12100.00", withholding: "218.00", vat_withheld: "550.00", amount_due: "11332.00" });
+      // total 11000 + 1200; CWT 2% of 11000; VAT withheld 5% of the total net sales 11000.
+      expect(inv).toMatchObject({ total: "12200.00", withholding: "220.00", vat_withheld: "550.00", amount_due: "11430.00" });
       expect(await lines(inv.journal_entry_id)).toEqual([
-        ["accounts_receivable", "11332.00", "0.00"],
-        ["cwt", "218.00", "0.00"],
+        ["accounts_receivable", "11430.00", "0.00"],
+        ["cwt", "220.00", "0.00"],
         ["vat_withheld", "550.00", "0.00"],
-        ["sales_discount_scpwd", "100.00", "0.00"],
         ["service_income", "0.00", "10000.00"],
         ["service_income", "0.00", "1000.00"],
         ["output_vat", "0.00", "1200.00"],
       ]);
+    });
+
+    it("books the SC/PWD discount only on VAT-exempt sales, and never with VAT withheld by a government customer", async () => {
+      const id = await saveInvoice({
+        kind: "sales", party_name: "Walk-in senior citizen", issue_date: "2026-03-03", discount: "200",
+        lines: [{ account_id: acct.service_income, amount: "1000", tax_code_id: code.VES }],
+      });
+      const inv = await invoice(id);
+      expect(inv).toMatchObject({ total: "800.00", discount: "200.00", amount_due: "800.00" });
+      expect(await lines(inv.journal_entry_id)).toEqual([
+        ["accounts_receivable", "800.00", "0.00"],
+        ["sales_discount_scpwd", "200.00", "0.00"],
+        ["service_income", "0.00", "1000.00"],
+      ]);
+      // More than the exempt sales, or on VATable sales only: refused.
+      await expect(saveInvoice({
+        kind: "sales", party_name: "Walk-in", issue_date: "2026-03-03", discount: "100",
+        lines: [{ account_id: acct.service_income, amount: "1000", tax_code_id: code.OVAT12 }],
+      })).rejects.toThrow(/SC\/PWD discount on VAT-exempt sales/);
+      await expect(saveInvoice({
+        kind: "sales", party_name: "City of Iloilo", issue_date: "2026-03-03", vat_withholding_code_id: code.WV020, discount: "100",
+        lines: [{ account_id: acct.service_income, amount: "1000", tax_code_id: code.VES }],
+      })).rejects.toThrow(/SC\/PWD discount is for individuals/);
     });
 
     it("takes tax codes only on invoices, and only codes of the invoice's side", async () => {

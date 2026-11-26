@@ -24,6 +24,9 @@ const ONLY_FOR: Partial<Record<string, readonly string[]>> = {
   payment_account: ["sales_invoice", "purchase_receipt"],
 };
 
+const fmtDay = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`));
+const fmtMonthOf = (iso: string) => new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`));
+
 const typeLabel: Record<string, string> = {
   sales_invoice: "Sales invoice / OR",
   purchase_receipt: "Purchase / expense receipt",
@@ -182,6 +185,16 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" disabled={pending}>{props.mode === "edit" ? (pending ? "Saving…" : "Save changes") : pending ? "Approving…" : "Approve figures"}</Button>
             {state.error && <Notice tone="blocked">{state.error}</Notice>}
+          </div>
+        )}
+        {props.canAct && state.lockedMonth && (
+          <div role="alert" className="space-y-2 rounded-xl bg-status-yellow-background p-3">
+            <p className="text-body-medium text-status-yellow-text">
+              {state.lockedMonth.message}: it cannot be posted in that month. Approve it dated {fmtDay(state.lockedMonth.openMonth)} instead? It is reported and posted in {fmtMonthOf(state.lockedMonth.openMonth)}; the document keeps its own date, and the move is recorded.
+            </p>
+            <Button type="submit" name="redate" value="1" size="sm" disabled={pending}>
+              {pending ? "Approving…" : `Approve dated ${fmtDay(state.lockedMonth.openMonth)}`}
+            </Button>
           </div>
         )}
       </form>

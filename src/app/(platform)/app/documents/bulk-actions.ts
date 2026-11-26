@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { postDocumentToBooks, type DocumentCodes } from "@/lib/books/actions";
+import type { DocumentCodes } from "@/lib/books/actions";
 import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import { bulkReadiness } from "@/lib/documents/bulk";
 import { manilaToday } from "@/lib/filings/run";
@@ -91,21 +91,21 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
       const slp = await slpCategoryFromCodes(supabase, item.codes).catch(() => null);
       if (slp) approvedFields.slp_category = slp;
     }
-    const a = await supabase.rpc("approve_document", { p_document: d.id, p_fields: approvedFields });
+    // Approved and posted to the Books together: when it cannot be posted, it is not approved.
+    const a = await supabase.rpc("approve_and_post_document", {
+      p_document: d.id,
+      p_fields: approvedFields,
+      p_post: booked,
+      p_account: booked ? item.accountId : null,
+      p_cash_account: invoiced && item.terms === "cash" ? item.cashAccountId ?? null : null,
+      p_codes: invoiced ? item.codes ?? null : null,
+    });
     if (a.error) {
-      skipped.push(`${d.file_name} (${a.error.message})`);
+      const open = a.error.code === "TL001" && a.error.hint ? new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${a.error.hint}T00:00:00Z`)) : null;
+      skipped.push(`${d.file_name} (${a.error.message}${open ? `: open it to approve it dated ${open}` : ""})`);
       continue;
     }
     if (k) seen.add(k);
-    if (booked) {
-      try {
-        await postDocumentToBooks(d.id, { accountId: item.accountId, cashAccountId: invoiced && item.terms === "cash" ? item.cashAccountId ?? null : null, codes: invoiced ? item.codes ?? null : null }, supabase);
-      } catch (err) {
-        skipped.push(`${d.file_name} (approved, not posted to the Books: ${(err as Error).message})`);
-        done += 1;
-        continue;
-      }
-    }
     done += 1;
   }
   revalidatePath("/app", "layout");
