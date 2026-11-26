@@ -50,6 +50,7 @@ const CATEGORY_ALIASES: Partial<Record<BirCategory, string[]>> = {
   sss_loan: ["sss loan", "sss loans", "sss salary loan", "sss calamity loan", "sss loan payment"],
   hdmf_loan: ["pag ibig loan", "pagibig loan", "hdmf loan", "pag ibig loans", "hdmf loans", "pag ibig mpl", "hdmf mpl", "pag ibig salary loan", "pag ibig calamity loan"],
   sss_er: ["sss er", "sss employer", "sss er share"],
+  sss_ec: ["sss ec", "ec", "employees compensation", "sss ec share"],
   phic_er: ["philhealth er", "phic er", "philhealth employer"],
   hdmf_er: ["pag ibig er", "hdmf er", "pagibig er", "pag ibig employer"],
 };

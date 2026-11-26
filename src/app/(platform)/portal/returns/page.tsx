@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Notice, peso, Skeleton } from "@/components/ui";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
@@ -49,7 +50,10 @@ async function Returns() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-title-1-medium text-text-primary">Returns</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-title-1-medium text-text-primary">Returns</h1>
+        <Link href="/portal/remittances" className="text-body-medium text-button-ghost-foreground hover:underline">SSS, PhilHealth and Pag-IBIG</Link>
+      </div>
       <section className="space-y-3">
         <h2 className="text-title-3-semibold text-text-primary">Waiting for your approval</h2>
         {waiting.length === 0 ? (

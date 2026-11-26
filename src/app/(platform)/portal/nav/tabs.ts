@@ -7,7 +7,7 @@ export const mainTabs: readonly Tab[] = [
   { href: "/portal", label: "Home", icon: RiHome5Line },
   { href: "/portal/upload", label: "Upload", icon: RiUploadCloud2Line, also: ["/portal/documents"] },
   { href: "/portal/billing", label: "Billing", icon: RiBankCardLine },
-  { href: "/portal/returns", label: "Returns", icon: RiFileTextLine },
+  { href: "/portal/returns", label: "Returns", icon: RiFileTextLine, also: ["/portal/remittances"] },
   { href: "/portal/reports", label: "Reports", icon: RiBarChartBoxLine },
 ];
 export const requestsTab: Tab = { href: "/portal/requests", label: "Requests", icon: RiQuestionAnswerLine };
