@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
   const admin = supabaseAdmin();
   const result = await runFilingGeneration(admin);
-  const remittances = await admin.rpc("generate_contribution_remittances", {}).then((r) => (r.error ? { error: r.error.message } : { added: r.data as number }));
+  const remittances = await admin.rpc("generate_contribution_remittances", {}).then((r) => (r.error ? { error: r.error.message } : { remittances: r.data as number }));
   const cycle = await runDocumentCycles(admin, manilaToday(), new URL(request.url).origin).catch((e: Error) => ({ error: e.message }));
   const ocr = await runPendingOcr(admin).catch((e: Error) => ({ error: e.message }));
   const acting = await runActingDigest(admin, manilaToday(), new URL(request.url).origin).catch((e: Error) => ({ error: e.message }));

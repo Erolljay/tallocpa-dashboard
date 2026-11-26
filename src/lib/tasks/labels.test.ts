@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPriority, sortTasks, taskDue } from "./labels";
+import { isPriority, sortTasks, taskBadge, taskDue } from "./labels";
 
 describe("taskDue", () => {
   it("compares an open task's due date with today", () => {
@@ -21,5 +21,13 @@ describe("sortTasks", () => {
   it("knows the priorities", () => {
     expect(isPriority("high")).toBe(true);
     expect(isPriority("urgent")).toBe(false);
+  });
+});
+
+describe("taskBadge", () => {
+  it("shows the stage of an open task, red when overdue", () => {
+    expect(taskBadge("open", "client", "2026-12-01", "2026-11-26")).toEqual({ label: "Waiting on client", tone: "waiting" });
+    expect(taskBadge("open", "reviewer", "2026-11-20", "2026-11-26")).toEqual({ label: "With reviewer · overdue", tone: "blocked" });
+    expect(taskBadge("done", "preparer", null, "2026-11-26")).toEqual({ label: "Done", tone: "done" });
   });
 });

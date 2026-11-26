@@ -1,6 +1,7 @@
 /**
- * SSS, PhilHealth and Pag-IBIG remittances (migration 20261216000002_contribution_remittances.sql),
- * run like a return: Not started → Prepared → Approved → Remitted (or Not required).
+ * SSS, PhilHealth and Pag-IBIG remittances (migrations 20261216000002 and 20261216000003),
+ * run like a return from the posted payroll: Not started → Prepared (PRN) → Approved →
+ * Remitted (or Not required).
  */
 import { CONTRIBUTIONS, type Contribution } from "@/lib/collections/collections";
 
@@ -49,8 +50,8 @@ export function remittanceBadge(status: RemittanceStatus, dueDate: string, today
 }
 
 export const FILE_KINDS: Record<RemittanceFileKind, string> = {
-  report: "Contribution report",
-  prn: "PRN / payment slip",
+  report: "Agency report (optional)",
+  prn: "PRN from the agency's site",
   proof: "Proof of payment",
 };
 
@@ -80,23 +81,6 @@ export function deadlineRule(k: RemittanceKind, employerNumber: string | null, r
   if (!letter) return "By the first letter of the employer's name: A–D the 14th, E–L the 19th, M–Q the 24th, R–Z the last day of the following month.";
   const when = letter <= "D" ? "14th" : letter <= "L" ? "19th" : letter <= "Q" ? "24th" : "last day";
   return `${when === "last day" ? "Last day" : when} of the following month (employer name starts with ${letter}).`;
-}
-
-/** Shares from the payroll for a month (payroll_run's dues), as the starting amounts. */
-export interface PayrollDues {
-  sss: { ee: number; er: number };
-  phic: { ee: number; er: number };
-  hdmf: { ee: number; er: number };
-  sss_loan: number;
-  hdmf_loan: number;
-}
-export function fromPayroll(k: RemittanceKind, dues: PayrollDues | null): { ee: number; er: number } | null {
-  if (!dues) return null;
-  const pick = { sss: dues.sss, philhealth: dues.phic, pagibig: dues.hdmf }[k as Agency];
-  if (pick) return { ee: Number(pick.ee) || 0, er: Number(pick.er) || 0 };
-  if (k === "sss_loan") return { ee: Number(dues.sss_loan) || 0, er: 0 };
-  if (k === "pagibig_loan") return { ee: Number(dues.hdmf_loan) || 0, er: 0 };
-  return null;
 }
 
 /** "November 2026" for a month's first day (YYYY-MM-DD) or YYYY-MM. */

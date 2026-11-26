@@ -10,6 +10,7 @@ import { manilaToday } from "@/lib/filings/run";
 import { missingRanges, monthTimeline, type MissingNumber } from "@/lib/cycle/month";
 import { financialPosition, monthlySeries, monthsBack, streamProgress, todoList, type BooksSummaryRaw } from "@/lib/portal/home";
 import { formatPeso, toCentavos } from "@/lib/returns/money";
+import { monthLabel, REMITTANCE_KINDS, type RemittanceKind } from "@/lib/remittances/labels";
 import { cx } from "@/utils/cx";
 import { BooksChart } from "./_home/books-chart";
 import { portalContext, type PortalClient } from "./client-context";
@@ -61,6 +62,8 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     summaries,
     { data: team },
     decisions,
+    { data: steps },
+    { data: toPay },
   ] = await Promise.all([
     supabase.from("document_cycles").select("client_id, period, cutoff_date, nothing_to_submit_at, closed_at, client_confirmed_at, confirmed_documents").in("client_id", ids).in("period", periods),
     supabase.from("documents").select("client_id, document_month, doc_type, status").in("client_id", ids).in("document_month", periods).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof)").limit(5000),
@@ -75,6 +78,9 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     Promise.all(clients.map((c) => supabase.rpc("portal_books_summary", { p_client: c.id, p_from: from, p_to: today }))),
     supabase.rpc("portal_client_team", { p_client: business.id }),
     Promise.all(clients.map((c) => supabase.rpc("missing_2307s", { p_client: c.id }))),
+    // Registration steps waiting on the client, and remittances to pay with the PRN.
+    supabase.from("registration_steps").select("id, label, registration_cases!inner(client_id, status)").eq("status", "waiting_client").eq("registration_cases.status", "open").in("registration_cases.client_id", ids).limit(20),
+    supabase.from("contribution_remittances").select("id, client_id, kind, period_month, due_date, total, due_id").in("client_id", ids).eq("status", "approved").is("due_id", null).order("due_date"),
   ]);
   const undecided = decisions.flatMap((d) => (d.data ?? []) as { claim: string | null; closed: boolean; year_ended: boolean }[]).filter((r) => r.year_ended && !r.closed && !r.claim).length;
 
@@ -91,6 +97,12 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     dues: openDues,
     duesLabel: `${formatPeso(openDues)} open${pendingProofs ? " · a payment is being verified" : ""}`,
     missing2307Decisions: undecided,
+    registrationSteps: ((steps ?? []) as unknown as { id: string; label: string; registration_cases: { client_id: string } }[]).map((s) => ({ id: s.id, label: `${prefix(s.registration_cases.client_id)}${s.label}` })),
+    remittancesToPay: (toPay ?? []).map((r) => ({
+      id: r.id,
+      label: `${prefix(r.client_id)}${REMITTANCE_KINDS[r.kind as RemittanceKind].item}, ${monthLabel(r.period_month)}`,
+      detail: `${formatPeso(cents(r.total))} by ${showDate(r.due_date)}, with the PRN we sent`,
+    })),
     missing2307: months.flatMap((m, i) => ((checks[i].data as { cwt?: { party: string; amount: number }[] } | null)?.cwt ?? []).map((w) => ({ party: w.party, amount: cents(w.amount) }))),
   });
 
@@ -121,7 +133,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
         <p className="mt-1 text-body-regular text-text-secondary">{clients.map((x) => x.name).join(" · ")}</p>
       </div>
 
-      <Card title="To do">
+      <Card title="Your tasks">
         {todos.length === 0 ? (
           <p className="flex items-center gap-2 text-body-regular text-text-secondary">
             <RiCheckboxCircleLine aria-hidden className="size-5 text-status-lime-text" /> Nothing is waiting on you. Thank you.

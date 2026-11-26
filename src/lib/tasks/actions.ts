@@ -22,6 +22,10 @@ const taskSchema = z.object({
   client_id: z.union([z.literal(""), z.uuid()]),
   period: optionalMonth,
   request_id: z.union([z.literal(""), z.uuid()]),
+  reviewer: z.union([z.literal(""), z.uuid()]),
+  job_code: z.union([z.literal(""), z.string().regex(/^[A-K]\.[a-z0-9_+-]+$/)]),
+  job_price: z.union([z.literal(""), z.string().regex(/^\d{1,13}(\.\d{1,2})?$/, "Enter the price, at most two decimals.")]),
+  ask_client: z.string().trim().max(4000),
 });
 
 function parse(form: FormData) {
@@ -34,6 +38,10 @@ function parse(form: FormData) {
     client_id: text(form.get("client_id")),
     period: text(form.get("period")),
     request_id: text(form.get("request_id")),
+    reviewer: text(form.get("reviewer")),
+    job_code: text(form.get("job_code")),
+    job_price: text(form.get("job_price")).replace(/,/g, ""),
+    ask_client: text(form.get("ask_client")),
   });
 }
 
@@ -66,6 +74,10 @@ export async function createTaskAction(_: TaskFormState, form: FormData): Promis
     p_client: v.client_id || null,
     p_period: v.period ? `${v.period}-01` : null,
     p_request: v.request_id || null,
+    p_reviewer: v.reviewer || null,
+    p_job_code: v.job_code || null,
+    p_job_price: v.job_price === "" ? null : Number(v.job_price),
+    p_ask_client: v.ask_client || null,
   });
   if (error) return { error: error.message };
   refresh((data as { id: string }).id, v.request_id || undefined);
@@ -89,9 +101,51 @@ export async function updateTaskAction(_: TaskFormState, form: FormData): Promis
     p_priority: v.priority,
     p_notes: v.notes || null,
     p_period: v.period ? `${v.period}-01` : null,
+    p_reviewer: v.reviewer || null,
+    p_job_code: v.job_code || null,
+    p_job_price: v.job_price === "" ? null : Number(v.job_price),
   });
   if (error) return { error: error.message };
   refresh(taskId);
+  return { ok: true };
+}
+
+/** The preparer hands the work in: to the reviewer, or done. */
+export async function submitTaskAction(_: TaskFormState, form: FormData): Promise<TaskFormState> {
+  await requireStaff();
+  const taskId = text(form.get("task_id"));
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("submit_staff_task", { p_task: taskId, p_note: text(form.get("note")).slice(0, 2000) || null });
+  if (error) return { error: error.message };
+  refresh(taskId, (data as { request_id: string | null }).request_id ?? undefined);
+  return { ok: true };
+}
+
+/** The reviewer approves, or sends it back with what to fix. */
+export async function reviewTaskAction(_: TaskFormState, form: FormData): Promise<TaskFormState> {
+  await requireStaff();
+  const taskId = text(form.get("task_id"));
+  const approve = text(form.get("decision")) === "approve";
+  const note = text(form.get("note")).slice(0, 2000);
+  if (!approve && !note) return { error: "Say what to fix.", fieldErrors: { note: "Say what to fix." } };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("review_staff_task", { p_task: taskId, p_approve: approve, p_note: note || null });
+  if (error) return { error: error.message };
+  refresh(taskId, (data as { request_id: string | null }).request_id ?? undefined);
+  return { ok: true };
+}
+
+/** The preparer asks the client for something; the task waits on the client. */
+export async function askClientAction(_: TaskFormState, form: FormData): Promise<TaskFormState> {
+  await requireStaff();
+  const taskId = text(form.get("task_id"));
+  const message = text(form.get("message")).slice(0, 4000);
+  if (!message) return { error: "Write what you need from the client.", fieldErrors: { message: "Write what you need from the client." } };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("ask_client_on_task", { p_task: taskId, p_message: message });
+  if (error) return { error: error.message };
+  refresh(taskId, (data as { request_id: string | null }).request_id ?? undefined);
+  revalidatePath("/portal");
   return { ok: true };
 }
 

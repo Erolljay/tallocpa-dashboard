@@ -34,3 +34,22 @@ export function sortTasks<T extends { status: TaskStatus; due_date: string | nul
     || RANK[a.priority] - RANK[b.priority]
     || a.created_at.localeCompare(b.created_at));
 }
+
+/** Where an open task is in its workflow: Client → Preparer → Reviewer → Done. */
+export type TaskStage = "client" | "preparer" | "reviewer";
+export const STAGE_LABELS: Record<TaskStage, string> = { client: "Waiting on client", preparer: "With preparer", reviewer: "With reviewer" };
+
+/** The badge for a task: its stage while open (red when overdue), else Done or Cancelled. */
+export function taskBadge(status: TaskStatus, stage: TaskStage, dueDate: string | null, today: string): { label: string; tone: Tone } {
+  if (status !== "open") return taskDue(status, dueDate, today);
+  const late = dueDate !== null && dueDate < today;
+  const label = late ? `${STAGE_LABELS[stage]} · overdue` : STAGE_LABELS[stage];
+  return { label, tone: late ? "blocked" : stage === "client" ? "waiting" : stage === "reviewer" ? "progress" : "neutral" };
+}
+
+/** A job from the active fee schedule. */
+export interface Job {
+  code: string;
+  label: string;
+  price: number | null;
+}

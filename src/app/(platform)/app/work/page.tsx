@@ -8,7 +8,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { loadMyWork } from "@/lib/work/load";
 import { nextActions, URGENCY_LABELS, type Urgency, type WorkItem } from "@/lib/work/next-actions";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
-import { sortTasks, taskDue, type Priority, type TaskStatus } from "@/lib/tasks/labels";
+import { sortTasks, taskBadge, type Priority, type TaskStage, type TaskStatus } from "@/lib/tasks/labels";
 import { cx } from "@/utils/cx";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
 
@@ -41,10 +41,12 @@ async function MyWork({ searchParams }: Pick<PageProps<"/app/work">, "searchPara
   const today = manilaToday();
   // Tasks given to me, and requests and tickets I answer for that wait on us.
   const [{ data: taskData }, { data: requestData }] = await Promise.all([
-    supabase.from("staff_tasks").select("id, title, status, priority, due_date, created_at, clients(name)").eq("assigned_to", me.userId).eq("status", "open").limit(50),
+    supabase.from("staff_tasks").select("id, title, status, stage, assigned_to, reviewer_id, priority, due_date, created_at, clients(name)").eq("status", "open").or(`assigned_to.eq.${me.userId},reviewer_id.eq.${me.userId}`).limit(80),
     supabase.from("client_requests").select("id, direction, subject, status, due_date, clients(name)").eq("assigned_to", me.userId).neq("status", "closed").limit(100),
   ]);
-  const tasks = sortTasks((taskData ?? []) as unknown as { id: string; title: string; status: TaskStatus; priority: Priority; due_date: string | null; created_at: string; clients: { name: string } | null }[]);
+  // Mine to do, and mine to review once handed in.
+  const tasks = sortTasks(((taskData ?? []) as unknown as { id: string; title: string; status: TaskStatus; stage: TaskStage; assigned_to: string; reviewer_id: string | null; priority: Priority; due_date: string | null; created_at: string; clients: { name: string } | null }[])
+    .filter((t) => (t.assigned_to === me.userId && t.stage !== "reviewer") || (t.reviewer_id === me.userId && t.stage === "reviewer")));
   const requests = ((requestData ?? []) as unknown as { id: string; direction: Direction; subject: string; status: RequestStatus; due_date: string | null; clients: { name: string } | null }[])
     .map((r) => ({ ...r, view: statusFor("firm", r.direction, r.status) }))
     .filter((r) => r.view.actionNeeded);
@@ -76,7 +78,7 @@ async function MyWork({ searchParams }: Pick<PageProps<"/app/work">, "searchPara
             ) : (
               <ul className="divide-y divide-separator-border">
                 {tasks.slice(0, 8).map((t) => {
-                  const due = taskDue(t.status, t.due_date, today);
+                  const due = t.stage === "reviewer" ? { label: "To review", tone: "progress" as const } : taskBadge(t.status, t.stage, t.due_date, today);
                   return (
                     <li key={t.id} className="flex items-start justify-between gap-3 py-2">
                       <span className="min-w-0">

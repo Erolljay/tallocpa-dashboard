@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { Badge, Card, peso } from "@/components/ui";
-import { AddRemittanceForm, EmployerNumberForm } from "@/components/remittances/forms";
+import { EmployerNumberForm, HandlesContributionsSwitch } from "@/components/remittances/forms";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { AGENCIES, AGENCY_KEYS, monthLabel, REMITTANCE_KINDS, remittanceBadge, type Agency, type RemittanceKind, type RemittanceStatus } from "@/lib/remittances/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /**
- * A client's SSS, PhilHealth and Pag-IBIG employer numbers, which decide its monthly
- * remittances and their deadlines, and its latest remittances (migration 20261216000002).
+ * Whether we handle a client's SSS, PhilHealth and Pag-IBIG (its posted payroll then makes
+ * the monthly remittances), its employer numbers (deadlines, lists), and its latest
+ * remittances (migrations 20261216000002 and 20261216000003).
  */
-export async function EmployerCard({ clientId, canWork }: { clientId: string; canWork: boolean }) {
+export async function EmployerCard({ clientId, canWork, owner, handles }: { clientId: string; canWork: boolean; owner: boolean; handles: boolean }) {
   const supabase = await supabaseServer();
   const [{ data: numbers }, { data: recent }] = await Promise.all([
     supabase.from("client_employer_numbers").select("agency, employer_number, registered_name, start_month, end_month").eq("client_id", clientId),
@@ -22,6 +23,7 @@ export async function EmployerCard({ clientId, canWork }: { clientId: string; ca
   return (
     <Card title="SSS, PhilHealth and Pag-IBIG" actions={<Link href="/app/remittances?queue=open" className="text-body-regular text-button-ghost-foreground hover:underline">Remittances</Link>}>
       <div className="flex flex-col gap-4">
+        <HandlesContributionsSwitch clientId={clientId} on={handles} owner={owner} />
         {(recent ?? []).length > 0 && (
           <ul className="divide-y divide-separator-border">
             {(recent ?? []).map((r) => {
@@ -41,7 +43,7 @@ export async function EmployerCard({ clientId, canWork }: { clientId: string; ca
         {AGENCY_KEYS.map((a) => {
           const n = byAgency.get(a);
           return (
-            <details key={a} className="rounded-xl border border-border-button-default px-3 py-2" open={canWork && !n && byAgency.size === 0 && a === "sss"}>
+            <details key={a} className="rounded-xl border border-border-button-default px-3 py-2" open={canWork && handles && !n && byAgency.size === 0 && a === "sss"}>
               <summary className="flex cursor-pointer items-center justify-between gap-3 text-body-medium text-text-primary">
                 <span>{AGENCIES[a].name}</span>
                 <span className="text-caption-1-regular text-text-tertiary" dir="ltr">{n ? `${n.employer_number}${n.end_month ? " · ended" : ""}` : "Not registered"}</span>
@@ -56,12 +58,6 @@ export async function EmployerCard({ clientId, canWork }: { clientId: string; ca
             </details>
           );
         })}
-        {canWork && byAgency.size > 0 && (
-          <details className="rounded-xl border border-border-button-default px-3 py-2">
-            <summary className="cursor-pointer text-body-medium text-text-primary">Add a loan or an earlier month</summary>
-            <div className="mt-3"><AddRemittanceForm clientId={clientId} agencies={[...byAgency.keys()]} thisMonth={today.slice(0, 7)} /></div>
-          </details>
-        )}
       </div>
     </Card>
   );

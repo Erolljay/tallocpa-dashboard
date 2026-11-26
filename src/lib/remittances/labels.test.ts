@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agencyOf, deadlineRule, fromPayroll, monthLabel, remittanceBadge, reportName } from "./labels";
+import { agencyOf, deadlineRule, monthLabel, remittanceBadge, reportName } from "./labels";
 
 describe("remittance labels", () => {
   it("names the agency of a loan", () => {
@@ -23,12 +23,7 @@ describe("remittance labels", () => {
     expect(deadlineRule("pagibig_loan", "x", "Zeta")).toBe("Last day of the following month (employer name starts with Z).");
   });
 
-  it("takes the starting amounts from the payroll", () => {
-    const dues = { sss: { ee: 1125, er: 2375 }, phic: { ee: 500, er: 500 }, hdmf: { ee: 200, er: 200 }, sss_loan: 1500, hdmf_loan: 0 };
-    expect(fromPayroll("sss", dues)).toEqual({ ee: 1125, er: 2375 });
-    expect(fromPayroll("philhealth", dues)).toEqual({ ee: 500, er: 500 });
-    expect(fromPayroll("sss_loan", dues)).toEqual({ ee: 1500, er: 0 });
-    expect(fromPayroll("sss", null)).toBeNull();
+  it("names the month", () => {
     expect(monthLabel("2026-11-01")).toBe("November 2026");
   });
 });

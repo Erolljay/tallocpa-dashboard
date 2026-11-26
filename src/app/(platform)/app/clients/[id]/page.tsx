@@ -135,7 +135,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         </Card>
 
         <Suspense fallback={<Card title="SSS, PhilHealth and Pag-IBIG"><Skeleton rows={3} /></Card>}>
-          <EmployerCard clientId={id} canWork={canWork} />
+          <EmployerCard clientId={id} canWork={canWork} owner={isOwner} handles={Boolean(client.handles_contributions)} />
         </Suspense>
 
         <Card title="Engagements" actions={<span className="text-body-regular tabular-nums text-text-secondary">{peso.format(retainerTotal)} / month</span>}>

@@ -36,6 +36,10 @@ export interface Employee {
   /** "123-456-789" (9 digits); the branch is separate. */
   tin: string | null;
   tinBranch: string;
+  /** Agency numbers for the SSS, PhilHealth and Pag-IBIG contribution lists. */
+  sssNo?: string | null;
+  philhealthNo?: string | null;
+  pagibigNo?: string | null;
   birthDate: string | null;
   address: string | null;
   zipCode: string | null;

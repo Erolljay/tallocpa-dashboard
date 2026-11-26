@@ -8,7 +8,8 @@ import { AssignRequestForm } from "@/components/requests/assign-form";
 import { TaskForm } from "@/components/tasks/task-form";
 import { requireStaff } from "@/lib/auth";
 import { manilaToday } from "@/lib/filings/run";
-import { taskDue, type Priority, type TaskStatus } from "@/lib/tasks/labels";
+import { loadJobs } from "@/lib/tasks/jobs";
+import { taskBadge, type Priority, type TaskStage, type TaskStatus } from "@/lib/tasks/labels";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -30,11 +31,12 @@ async function RequestDetail({ params }: Pick<PageProps<"/app/requests/[id]">, "
     .eq("id", id)
     .maybeSingle();
   if (!r) notFound();
-  const [{ data: messages }, { data: staff }, { data: onClient }, { data: tasks }] = await Promise.all([
+  const [{ data: messages }, { data: staff }, { data: onClient }, { data: tasks }, jobs] = await Promise.all([
     supabase.from("client_request_messages").select("id, from_firm, body, file_name, storage_path, created_at").eq("request_id", id).order("created_at"),
     supabase.from("staff_profiles").select("user_id, full_name, role").eq("active", true).order("full_name"),
     supabase.from("staff_assignments").select("user_id").eq("client_id", r.client_id),
-    supabase.from("staff_tasks").select("id, title, status, due_date, assigned_to").eq("request_id", id).order("created_at"),
+    supabase.from("staff_tasks").select("id, title, status, stage, due_date, assigned_to").eq("request_id", id).order("created_at"),
+    loadJobs(supabase),
   ]);
   // Who may answer for it or take a task on it: the Owner and staff on the client.
   const onIt = (staff ?? []).filter((s) => s.role === "owner" || (onClient ?? []).some((a) => a.user_id === s.user_id));
@@ -77,7 +79,7 @@ async function RequestDetail({ params }: Pick<PageProps<"/app/requests/[id]">, "
             {(tasks ?? []).length > 0 && (
               <ul className="mb-4 divide-y divide-separator-border">
                 {(tasks ?? []).map((t) => {
-                  const due = taskDue(t.status as TaskStatus, t.due_date, today);
+                  const due = taskBadge(t.status as TaskStatus, t.stage as TaskStage, t.due_date, today);
                   return (
                     <li key={t.id} className="flex items-start justify-between gap-3 py-2">
                       <span className="min-w-0">
@@ -91,8 +93,8 @@ async function RequestDetail({ params }: Pick<PageProps<"/app/requests/[id]">, "
               </ul>
             )}
             <details open={(tasks ?? []).length === 0}>
-              <summary className="mb-3 cursor-pointer text-body-medium text-button-ghost-foreground hover:underline">Make a task</summary>
-              <TaskForm staff={onIt} me={me.userId} requestId={id} fixedClient={{ id: r.client_id, name: client?.name ?? "" }} defaults={{ title: r.subject, priority: r.priority as Priority }} />
+              <summary className="mb-3 cursor-pointer text-body-medium text-button-ghost-foreground hover:underline">Make a task (a job)</summary>
+              <TaskForm staff={onIt} me={me.userId} jobs={jobs} requestId={id} fixedClient={{ id: r.client_id, name: client?.name ?? "" }} defaults={{ title: r.subject, priority: r.priority as Priority }} />
             </details>
           </Card>
         </div>

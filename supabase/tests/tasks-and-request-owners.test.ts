@@ -133,4 +133,83 @@ describe.skipIf(!url)("tasks and request owners", () => {
     const [t] = await as<{ client_id: string; request_id: string }>(PREPARER, `select * from public.create_staff_task('Prepare Q3 2307s', $1, null, 'normal', null, null, null, $2)`, [PREPARER, ticket.id]);
     expect(t).toMatchObject({ client_id: client, request_id: ticket.id });
   });
+
+  /** An active fee schedule with the ad hoc jobs used below. */
+  async function activeSchedule() {
+    const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+    const sid = (await db.query(`insert into public.fee_schedules (brand_id, name, effective_from) values ($1, 'Test jobs', '2026-01-01') returning id`, [brand])).rows[0].id;
+    await db.query(
+      `insert into public.fee_items (schedule_id, code, component, label, billing, price) values
+         ($1, 'I.orus', 'I', 'ORUS and BIR registration updates', 'one_time', 1500),
+         ($1, 'I.closure', 'I', 'Closure of business', 'one_time', 20000),
+         ($1, 'I.registration_non_individual', 'I', 'New business registration', 'one_time', 12500),
+         ($1, 'I.sss_registration', 'I', 'SSS registration', 'one_time', 1500),
+         ($1, 'I.philhealth_registration', 'I', 'PhilHealth registration', 'one_time', 1500),
+         ($1, 'I.pagibig_registration', 'I', 'Pag-IBIG (HDMF) registration', 'one_time', 1500)`, [sid]);
+    await db.query(`update public.fee_schedules set status = 'active' where id = $1`, [sid]);
+  }
+  const unbilled = () => db.query(`select description, amount::text from public.client_dues where client_id = $1 and kind = 'other' and soa_id is null order by created_at, description`, [client]).then((r) => r.rows);
+
+  it("runs a job Client → Preparer → Reviewer → Done, and bills it at the schedule price", async () => {
+    await activeSchedule();
+    await expect(as(OWNER, `select public.create_staff_task('1905 update', $1, null, 'normal', null, $2, null, null, $1)`, [PREPARER, client])).rejects.toThrow(/someone other/);
+    await expect(as(OWNER, `select public.create_staff_task('x', $1, null, 'normal', null, null, null, null, null, 'I.orus')`, [PREPARER])).rejects.toThrow(/choose the client/);
+    const [t] = await as<{ id: string; stage: string; job_label: string; job_price: string; request_id: string }>(OWNER,
+      `select * from public.create_staff_task('BIR 1905: new address', $1, '2027-01-15', 'normal', null, $2, null, null, $3, 'I.orus', null, 'Please send the new lease contract')`,
+      [PREPARER, client, REVIEWER]);
+    expect(t).toMatchObject({ stage: "client", job_label: "ORUS and BIR registration updates", job_price: "1500.00" });
+    // The client's task is the request in the portal.
+    const rq = (await db.query(`select direction, status, assigned_to from public.client_requests where id = $1`, [t.request_id])).rows[0];
+    expect(rq).toEqual({ direction: "to_client", status: "open", assigned_to: PREPARER });
+    await expect(as(PREPARER, `select public.submit_staff_task($1)`, [t.id])).rejects.toThrow(/not with the preparer/);
+    await as(CLIENT_USER, `select public.reply_client_request($1, 'Attached')`, [t.request_id]);
+    const stageOf = async () => (await db.query(`select stage, status from public.staff_tasks where id = $1`, [t.id])).rows[0];
+    expect(await stageOf()).toEqual({ stage: "preparer", status: "open" });
+    expect((await notes(PREPARER, "task_assigned")).at(-1)).toBe("Alpha Trading answered: BIR 1905: new address is back with you");
+    // Done straight away is refused: it has a reviewer.
+    await expect(as(PREPARER, `select public.set_staff_task_status($1, 'done')`, [t.id])).rejects.toThrow(/reviewer/);
+    await as(PREPARER, `select public.submit_staff_task($1, 'Filed 1905')`, [t.id]);
+    expect(await stageOf()).toEqual({ stage: "reviewer", status: "open" });
+    await expect(as(PREPARER, `select public.review_staff_task($1, true)`, [t.id])).rejects.toThrow(/reviewer or the Owner/);
+    await expect(as(REVIEWER, `select public.review_staff_task($1, false, ' ')`, [t.id])).rejects.toThrow(/what to fix/);
+    await as(REVIEWER, `select public.review_staff_task($1, false, 'Attach the stamped copy')`, [t.id]);
+    expect((await db.query(`select stage, return_note from public.staff_tasks where id = $1`, [t.id])).rows[0]).toEqual({ stage: "preparer", return_note: "Attach the stamped copy" });
+    // Asking the client again puts it back with them.
+    await as(PREPARER, `select public.ask_client_on_task($1, 'Please send the stamped 1905')`, [t.id]);
+    expect((await stageOf()).stage).toBe("client");
+    await as(CLIENT_USER, `select public.reply_client_request($1, 'Here')`, [t.request_id]);
+    await as(PREPARER, `select public.submit_staff_task($1)`, [t.id]);
+    expect(await unbilled()).toEqual([]);
+    await as(REVIEWER, `select public.review_staff_task($1, true)`, [t.id]);
+    expect(await stageOf()).toMatchObject({ status: "done" });
+    expect(await unbilled()).toEqual([{ description: "ORUS and BIR registration updates: BIR 1905: new address", amount: "1500.00" }]);
+    // Reopened before billing: the job comes off; done again: back on.
+    await as(OWNER, `select public.set_staff_task_status($1, 'open')`, [t.id]);
+    expect(await unbilled()).toEqual([]);
+    await as(OWNER, `select public.set_staff_task_status($1, 'done')`, [t.id]);
+    expect(await unbilled()).toHaveLength(1);
+    await db.query(`delete from public.client_dues where client_id = $1 and kind = 'other'`, [client]);
+  });
+
+  it("bills a completed registration case as one job, plus the employer registrations", async () => {
+    const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
+    const k = (await db.query(`insert into public.registration_cases (client_id, kind, lgu_served, employer) values ($1, 'new_business', true, true) returning id`, [client])).rows[0].id;
+    await db.query(`update public.registration_cases set status = 'completed', closed_at = now() where id = $1`, [k]);
+    expect(await unbilled()).toEqual([
+      { description: "New business registration", amount: "12500.00" },
+      { description: "Pag-IBIG (HDMF) registration", amount: "1500.00" },
+      { description: "PhilHealth registration", amount: "1500.00" },
+      { description: "SSS registration", amount: "1500.00" },
+    ]);
+    // Billed once only.
+    await db.query(`update public.registration_cases set status = 'open', closed_at = null where id = $1`, [k]);
+    await db.query(`update public.registration_cases set status = 'completed', closed_at = now() where id = $1`, [k]);
+    expect(await unbilled()).toHaveLength(4);
+    // No price in the schedule: a task for the Owner to price and bill.
+    const k2 = (await db.query(`insert into public.registration_cases (client_id, kind, lgu_served, employer, period_year) values ($1, 'renewal', true, false, 2027) returning id`, [client])).rows[0].id;
+    await db.query(`update public.registration_cases set status = 'completed', closed_at = now() where id = $1`, [k2]);
+    const task = (await db.query(`select title, assigned_to, job_price from public.staff_tasks where title like 'Price and bill%'`)).rows;
+    expect(task).toEqual([{ title: "Price and bill: I.business_permit (permit renewal 2027)", assigned_to: OWNER, job_price: null }]);
+    expect(brand).toBeTruthy();
+  });
 });

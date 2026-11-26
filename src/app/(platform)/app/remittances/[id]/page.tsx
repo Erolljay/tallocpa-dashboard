@@ -11,13 +11,11 @@ import {
   agencyOf,
   deadlineRule,
   FILE_KINDS,
-  fromPayroll,
   isLoan,
   monthLabel,
   REMITTANCE_KINDS,
   remittanceBadge,
   reportName,
-  type PayrollDues,
   type RemittanceFileKind,
   type RemittanceKind,
   type RemittanceStatus,
@@ -34,7 +32,18 @@ export default function RemittancePage(props: PageProps<"/app/remittances/[id]">
 
 const STEPS: [RemittanceStatus, string][] = [["prepared", "Prepared"], ["approved", "Approved"], ["remitted", "Remitted"]];
 const ORDER: Record<RemittanceStatus, number> = { not_started: 0, not_required: 0, prepared: 1, approved: 2, remitted: 3 };
-const amount = (v: string | number) => (Number(v) ? String(Number(v)) : "");
+interface ListRow {
+  employee_id: string;
+  employee_no: string | null;
+  last_name: string;
+  first_name: string;
+  middle_name: string | null;
+  agency_no: string | null;
+  ee: string;
+  er: string;
+  ec: string;
+  total: string;
+}
 
 async function Remittance({ params }: Pick<PageProps<"/app/remittances/[id]">, "params">) {
   const { id } = await params;
@@ -62,16 +71,11 @@ async function Remittance({ params }: Pick<PageProps<"/app/remittances/[id]">, "
   const names = new Map((people ?? []).map((p) => [p.user_id, p.full_name]));
   const today = manilaToday();
   const badge = remittanceBadge(status, r.due_date, today);
-  const open = status === "not_started" || status === "prepared" || status === "not_required";
 
-  // Starting amounts from the month's payroll, when nothing is entered yet.
-  let payroll: { ee: number; er: number } | null = null;
-  if (canWork && open && Number(r.total) === 0) {
-    const { data: run } = await supabase.rpc("payroll_run", { p_client: r.client_id, p_month: r.period_month, p_period_end: null });
-    const dues = (run as { dues?: PayrollDues } | null)?.dues ?? null;
-    const p = fromPayroll(kind, dues);
-    payroll = p && p.ee + p.er > 0 ? p : null;
-  }
+  // The month's contribution list from the posted payroll, to copy into the agency's site.
+  const { data: list } = await supabase.rpc("remittance_employees", { p_id: id });
+  const employees = (list ?? []) as ListRow[];
+  const loan = isLoan(kind);
   const byKind = (k: RemittanceFileKind) => (files ?? []).filter((f) => f.kind === k);
   const canRemit = status === "approved" && (firmRemits || r.due_id ? owner : canWork);
 
@@ -108,33 +112,67 @@ async function Remittance({ params }: Pick<PageProps<"/app/remittances/[id]">, "
         <div className="flex flex-col gap-6">
           {status === "not_required" && <Notice tone="waiting">Not required: {r.note}</Notice>}
 
-          <Card title="Amounts and PRN">
-            {open && canWork ? (
-              <>
-                {byKind("report").length === 0 && <div className="mb-4"><Notice tone="waiting">Attach the {reportName(kind)} first (Files), then mark it prepared.</Notice></div>}
-                <PrepareForm
-                  id={id}
-                  kind={kind}
-                  fromPayroll={Boolean(payroll)}
-                  defaults={{
-                    ee: payroll ? amount(payroll.ee) : amount(r.ee_share),
-                    er: payroll ? amount(payroll.er) : amount(r.er_share),
-                    ec: amount(r.ec_share),
-                    employees: r.employees == null ? "" : String(r.employees),
-                    prn: r.prn ?? "",
-                  }}
-                />
-              </>
+          {r.note && status !== "not_required" && <Notice tone="waiting">{r.note}</Notice>}
+          <Card
+            title={`From the payroll · ${monthLabel(r.period_month)}`}
+            actions={employees.length > 0 ? <a href={`/app/remittances/${id}/list`} className="text-body-medium text-button-ghost-foreground hover:underline">Download Excel</a> : undefined}
+          >
+            {Number(r.total) === 0 ? (
+              <p className="text-body-regular text-text-secondary">Nothing posted yet. Post the month&rsquo;s payroll in the client&rsquo;s books: the amounts and the employee list come from it.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[36rem] text-body-regular">
+                    <thead>
+                      <tr className="border-b border-border-table text-caption-1-semibold text-text-tertiary">
+                        <th className="py-2 pe-3 text-start">Employee</th>
+                        <th className="py-2 pe-3 text-start">{AGENCIES[agencyOf(kind)].name} no.</th>
+                        <th className="py-2 pe-3 text-end">{loan ? "Loan payment" : "EE"}</th>
+                        {!loan && <th className="py-2 pe-3 text-end">ER</th>}
+                        {kind === "sss" && <th className="py-2 pe-3 text-end">EC</th>}
+                        <th className="py-2 text-end">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-separator-border">
+                      {employees.map((e) => (
+                        <tr key={e.employee_id}>
+                          <td className="py-2 pe-3 text-text-primary">{e.last_name}, {e.first_name}{e.middle_name ? ` ${e.middle_name.slice(0, 1)}.` : ""}</td>
+                          <td className="py-2 pe-3 font-mono text-text-secondary" dir="ltr">{e.agency_no ?? <span className="font-sans text-text-error-primary">missing</span>}</td>
+                          <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(e.ee))}</td>
+                          {!loan && <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(e.er))}</td>}
+                          {kind === "sss" && <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(e.ec))}</td>}
+                          <td className="py-2 text-end tabular-nums text-text-primary">{peso.format(Number(e.total))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-border-table text-body-medium text-text-primary">
+                        <td className="py-2 pe-3" colSpan={2}>{r.employees ?? employees.length} employee{(r.employees ?? employees.length) === 1 ? "" : "s"}</td>
+                        <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(r.ee_share))}</td>
+                        {!loan && <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(r.er_share))}</td>}
+                        {kind === "sss" && <td className="py-2 pe-3 text-end tabular-nums">{peso.format(Number(r.ec_share))}</td>}
+                        <td className="py-2 text-end tabular-nums">{peso.format(Number(r.total))}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                {employees.some((e) => !e.agency_no) && <p className="text-caption-1-regular text-text-tertiary">Add the missing numbers on the employees&rsquo; records (Payroll → Employees).</p>}
+                {(status === "approved" || status === "remitted") && employees.reduce((t, e) => t + Number(e.total), 0).toFixed(2) !== Number(r.total).toFixed(2) && (
+                  <Notice tone="blocked">The posted payroll now adds up to {peso.format(employees.reduce((t, e) => t + Number(e.total), 0))}, not the approved {peso.format(Number(r.total))}. Step back to bring it in line.</Notice>
+                )}
+              </div>
+            )}
+          </Card>
+
+          <Card title="PRN">
+            {(status === "not_started" || status === "prepared") && canWork ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-body-regular text-text-secondary">Enter the list on the {AGENCIES[agencyOf(kind)].name} site, generate the PRN for {peso.format(Number(r.total))}, attach it under Files, then enter it here.</p>
+                {byKind("prn").length === 0 && <Notice tone="waiting">Attach the PRN from the agency&rsquo;s site first (Files).</Notice>}
+                <PrepareForm id={id} prn={r.prn ?? ""} ready={byKind("prn").length > 0 && Number(r.total) > 0} />
+              </div>
             ) : (
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-body-regular">
-                <dt className="text-text-secondary">{isLoan(kind) ? "Loan payments" : "Employee share"}</dt>
-                <dd className="text-end tabular-nums text-text-primary">{peso.format(Number(r.ee_share))}</dd>
-                {!isLoan(kind) && (<><dt className="text-text-secondary">Employer share</dt><dd className="text-end tabular-nums text-text-primary">{peso.format(Number(r.er_share))}</dd></>)}
-                {kind === "sss" && (<><dt className="text-text-secondary">EC</dt><dd className="text-end tabular-nums text-text-primary">{peso.format(Number(r.ec_share))}</dd></>)}
-                <dt className="text-body-medium text-text-primary">Total</dt>
-                <dd className="text-end text-body-medium tabular-nums text-text-primary">{peso.format(Number(r.total))}</dd>
-                <dt className="text-text-secondary">Employees</dt>
-                <dd className="text-end text-text-primary">{r.employees ?? "—"}</dd>
                 <dt className="text-text-secondary">PRN</dt>
                 <dd className="text-end font-mono text-text-primary" dir="ltr">{r.prn ?? "—"}</dd>
                 {r.remitted_on && (<><dt className="text-text-secondary">Paid</dt><dd className="text-end text-text-primary">{showDate(r.remitted_on)}{r.remit_reference ? ` · ${r.remit_reference}` : ""}</dd></>)}
@@ -176,7 +214,7 @@ async function Remittance({ params }: Pick<PageProps<"/app/remittances/[id]">, "
             <div className="flex flex-col gap-4">
               {(["report", "prn", "proof"] as RemittanceFileKind[]).map((k) => (
                 <div key={k} className="flex flex-col gap-2">
-                  <p className="text-body-medium text-text-primary">{k === "report" ? reportName(kind) : FILE_KINDS[k]}</p>
+                  <p className="text-body-medium text-text-primary">{k === "report" ? `${reportName(kind)} (optional)` : FILE_KINDS[k]}</p>
                   {byKind(k).length > 0 ? (
                     <ul className="flex flex-col gap-1">
                       {byKind(k).map((f) => (
@@ -190,7 +228,7 @@ async function Remittance({ params }: Pick<PageProps<"/app/remittances/[id]">, "
                     <p className="text-caption-1-regular text-text-tertiary">None yet.</p>
                   )}
                   {canWork && status !== "remitted" && status !== "not_required" && (k !== "proof" || status === "approved") && (
-                    <RemittanceFileUpload id={id} kind={k} hint={k === "proof" ? "The agency's receipt, bank or e-wallet confirmation." : undefined} />
+                    <RemittanceFileUpload id={id} kind={k} hint={k === "proof" ? "The agency's receipt, bank or e-wallet confirmation." : k === "prn" ? "The PRN page or slip generated on the agency's site." : undefined} />
                   )}
                 </div>
               ))}

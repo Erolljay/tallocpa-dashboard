@@ -64,8 +64,8 @@ async function Remittances({ searchParams }: Pick<PageProps<"/app/remittances">,
     <>
       <PageHeader
         title="SSS, PhilHealth and Pag-IBIG"
-        description="Each client's monthly contributions and loan payments, run like a return: prepare the PRN and amounts, the Owner approves, then remit with the proof of payment."
-        actions={<RemittanceButton id="" action="generate" label="Create this month's" busyLabel="Creating…" variant="secondary" />}
+        description="Each client's monthly contributions (EE, ER and EC) and loan payments from its posted payroll, beside the 1601-C: generate the PRN, the Owner approves, then remit with the proof of payment."
+        actions={<RemittanceButton id="" action="generate" label="Refresh from payroll" busyLabel="Refreshing…" variant="secondary" />}
       />
       <FilingsTabs active="remittances" />
       <div className="mb-4 flex flex-wrap gap-1 text-body-medium">
@@ -79,7 +79,7 @@ async function Remittances({ searchParams }: Pick<PageProps<"/app/remittances">,
       {rows.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
           <p className="text-body-medium text-text-primary">Nothing here</p>
-          <p className="mt-1 text-body-regular text-text-secondary">Months appear once a client&rsquo;s employer numbers are entered on its page (Overview → SSS, PhilHealth and Pag-IBIG).</p>
+          <p className="mt-1 text-body-regular text-text-secondary">Remittances appear when a client&rsquo;s payroll is posted, for clients we handle SSS, PhilHealth and Pag-IBIG for (switched on in the client&rsquo;s Overview).</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">

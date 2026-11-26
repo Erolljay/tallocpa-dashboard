@@ -7,7 +7,8 @@ import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { monthLabel } from "@/lib/remittances/labels";
 import { supabaseServer } from "@/lib/supabase/server";
-import { PRIORITIES, sortTasks, taskDue, type Priority, type TaskStatus } from "@/lib/tasks/labels";
+import { loadJobs } from "@/lib/tasks/jobs";
+import { PRIORITIES, sortTasks, taskBadge, type Priority, type TaskStage, type TaskStatus } from "@/lib/tasks/labels";
 import { cx } from "@/utils/cx";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
 
@@ -23,6 +24,9 @@ export interface TaskRow {
   id: string;
   title: string;
   status: TaskStatus;
+  stage: TaskStage;
+  reviewer_id: string | null;
+  job_label: string | null;
   priority: Priority;
   due_date: string | null;
   period_month: string | null;
@@ -34,7 +38,7 @@ export interface TaskRow {
   clients: { name: string } | null;
 }
 
-const VIEWS = { mine: "Assigned to me", given: "I gave others", all: "Everyone's" } as const;
+const VIEWS = { mine: "Assigned to me", review: "To review", given: "I gave others", all: "Everyone's" } as const;
 type View = keyof typeof VIEWS;
 
 /**
@@ -44,21 +48,24 @@ type View = keyof typeof VIEWS;
 async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchParams">) {
   const me = await requireStaff();
   const sp = await searchParams;
-  const view: View = sp.view === "given" || sp.view === "all" ? sp.view : "mine";
+  const view: View = sp.view === "given" || sp.view === "all" || sp.view === "review" ? sp.view : "mine";
   const done = sp.show === "done";
   const supabase = await supabaseServer();
   let q = supabase
     .from("staff_tasks")
-    .select("id, title, status, priority, due_date, period_month, client_id, request_id, assigned_to, created_by, created_at, clients(name)")
+    .select("id, title, status, stage, reviewer_id, job_label, priority, due_date, period_month, client_id, request_id, assigned_to, created_by, created_at, clients(name)")
     .order("due_date", { ascending: true, nullsFirst: false })
     .limit(300);
   q = done ? q.neq("status", "open") : q.eq("status", "open");
   if (view === "mine") q = q.eq("assigned_to", me.userId);
   if (view === "given") q = q.eq("created_by", me.userId).neq("assigned_to", me.userId);
-  const [{ data, error }, { data: staff }, { data: clients }] = await Promise.all([
+  if (view === "review") q = done ? q.eq("reviewer_id", me.userId) : q.eq("reviewer_id", me.userId).eq("stage", "reviewer");
+  const [{ data, error }, { data: staff }, { data: clients }, jobs, steps] = await Promise.all([
     q,
     supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name"),
     supabase.from("clients").select("id, name").in("status", ["onboarding", "active"]).order("name"),
+    loadJobs(supabase),
+    view === "mine" && !done ? registrationSteps(supabase, me.userId, me.staff.role === "owner") : Promise.resolve([]),
   ]);
   if (error) throw error;
   const today = manilaToday();
@@ -91,7 +98,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
         ) : (
           <ul className="divide-y divide-separator-border self-start rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
             {rows.map((t) => {
-              const due = taskDue(t.status, t.due_date, today);
+              const due = taskBadge(t.status, t.stage, t.due_date, today);
               return (
                 <li key={t.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
@@ -99,6 +106,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
                     <p className="text-caption-1-regular text-text-tertiary">
                       {[
                         t.clients?.name,
+                        t.job_label,
                         t.period_month && monthLabel(t.period_month),
                         view !== "mine" && `for ${names.get(t.assigned_to) ?? "someone"}`,
                         t.due_date && `due ${showDate(t.due_date)}`,
@@ -108,7 +116,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <Badge tone={due.tone}>{due.label}</Badge>
-                    <TaskStatusButtons taskId={t.id} status={t.status} compact />
+                    {(t.status !== "open" || (t.stage === "preparer" && !t.reviewer_id)) && <TaskStatusButtons taskId={t.id} status={t.status} compact />}
                   </div>
                 </li>
               );
@@ -116,9 +124,49 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
           </ul>
         )}
         <Card title="New task">
-          <TaskForm staff={staff ?? []} clients={clients ?? []} me={me.userId} />
+          <TaskForm staff={staff ?? []} clients={clients ?? []} me={me.userId} jobs={jobs} />
         </Card>
       </div>
+      {steps.length > 0 && (
+        <section className="mt-8 flex flex-col gap-3" aria-labelledby="reg-steps">
+          <h2 id="reg-steps" className="text-title-3-semibold text-text-primary">Registration steps</h2>
+          <p className="text-body-regular text-text-secondary">Open steps of the registrations on your clients. The case is billed as one job when it is completed.</p>
+          <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">
+            {steps.map((st) => (
+              <li key={st.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+                <span className="min-w-0">
+                  <Link href={`/app/registrations/${st.case_id}`} className="text-body-medium text-text-primary hover:underline">{st.label}</Link>
+                  <span className="block text-caption-1-regular text-text-tertiary">{st.client} · {STEP_STATUS[st.status] ?? st.status}{st.target_date ? ` · target ${showDate(st.target_date)}` : ""}</span>
+                </span>
+                <Badge tone={st.status === "waiting_client" ? "waiting" : st.status === "waiting_agency" ? "neutral" : "progress"}>{st.status === "waiting_client" ? "Client's task" : st.status === "waiting_agency" ? "At the agency" : "Our task"}</Badge>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   );
+}
+
+const STEP_STATUS: Record<string, string> = { pending: "Not started", in_progress: "In progress", waiting_client: "Waiting on the client", waiting_agency: "Waiting on the agency" };
+
+/** Registration steps as tasks: the open steps of open cases on the person's clients (every client for the Owner). */
+async function registrationSteps(supabase: Awaited<ReturnType<typeof supabaseServer>>, userId: string, owner: boolean) {
+  let clientIds: string[] | null = null;
+  if (!owner) {
+    const { data } = await supabase.from("staff_assignments").select("client_id").eq("user_id", userId);
+    clientIds = [...new Set((data ?? []).map((a) => a.client_id))];
+    if (clientIds.length === 0) return [];
+  }
+  let q = supabase
+    .from("registration_steps")
+    .select("id, label, status, case_id, registration_cases!inner(client_id, status, target_date, clients(name))")
+    .in("status", ["pending", "in_progress", "waiting_client", "waiting_agency"])
+    .eq("registration_cases.status", "open")
+    .order("sort_order")
+    .limit(100);
+  if (clientIds) q = q.in("registration_cases.client_id", clientIds);
+  const { data } = await q;
+  return ((data ?? []) as unknown as { id: string; label: string; status: string; case_id: string; registration_cases: { target_date: string | null; clients: { name: string } | null } }[])
+    .map((s) => ({ id: s.id, label: s.label, status: s.status, case_id: s.case_id, target_date: s.registration_cases.target_date, client: s.registration_cases.clients?.name ?? "" }));
 }

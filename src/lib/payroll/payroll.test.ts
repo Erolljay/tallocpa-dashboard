@@ -289,7 +289,7 @@ describe("payslip items", () => {
       ...ID_HEADERS,
       "Basic Pay", "Overtime Pay", "Holiday Pay", "Night Differential", "13th Month Pay", "Rice Allowance",
       "Withholding Tax", "SSS (Employee)", "PhilHealth (Employee)", "Pag-IBIG (Employee)", "SSS Loan",
-      "SSS (Employer)", "PhilHealth (Employer)", "Pag-IBIG (Employer)",
+      "SSS (Employer)", "SSS EC", "PhilHealth (Employer)", "Pag-IBIG (Employer)",
       ...TOTAL_HEADERS,
     ]);
   });
@@ -366,9 +366,9 @@ describe("payroll register", () => {
     expect(ws.getCell("E1").value).toBe("EARNINGS");
     expect(ws.getCell("K1").value).toBe("DEDUCTIONS");
     expect(ws.getCell("P1").value).toBe("EMPLOYER CONTRIBUTIONS");
-    expect(ws.getCell("S1").value).toBe("TOTALS (FOR VALIDATION)");
-    expect(ws.getCell("S3").value).toEqual({ formula: "SUM(E3:J3)" });
-    expect(ws.getCell("T3").value).toEqual({ formula: "SUM(K3:O3)" });
+    expect(ws.getCell("T1").value).toBe("TOTALS (FOR VALIDATION)");
+    expect(ws.getCell("T3").value).toEqual({ formula: "SUM(E3:J3)" });
+    expect(ws.getCell("U3").value).toEqual({ formula: "SUM(K3:O3)" });
     expect(ws.getCell("B4").dataValidation?.formulae).toEqual(["'Employees'!$B$2:$B$3"]);
     ws.getCell("E4").value = 12000; // Ana's basic pay
     ws.getCell("K4").value = 150.5; // withholding tax
@@ -387,7 +387,7 @@ describe("payroll register", () => {
     expect(checked.entries.get("a")!.get(B)).toBe(P(1000));
     expect(Object.fromEntries(checked.entries.get("b")!)).toEqual({ [B]: P(12000), [W]: P(150.5), loan: P(1000), [item("Overtime Pay")]: P(300) });
 
-    ws.getCell("S4").value = 99; // typed over the gross pay formula
+    ws.getCell("T4").value = 99; // typed over the gross pay formula
     const tampered = await readRegister((await wb.xlsx.writeBuffer()) as ArrayBuffer, ITEMS);
     if (!("rows" in tampered)) throw new Error("unreadable");
     expect(checkRegister(tampered.rows, [juan, ana], ITEMS, "2026-01-01").errors[0]).toEqual({ line: 4, message: "Gross Pay shows 99.00 but the amounts add up to 12,300.00; do not type over the computed columns" });

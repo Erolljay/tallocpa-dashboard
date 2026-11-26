@@ -139,6 +139,10 @@ export function todoList(input: {
   missing2307: { party: string; amount: Centavos }[];
   /** Missing 2307s of an ended taxable year waiting for the client's keep-or-stop decision (decision 12). */
   missing2307Decisions?: number;
+  /** Registration steps waiting on the client (their tasks on the routing slip). */
+  registrationSteps?: { id: string; label: string }[];
+  /** SSS, PhilHealth and Pag-IBIG approved for the client to pay with the PRN (clients who pay the agencies). */
+  remittancesToPay?: { id: string; label: string; detail: string }[];
 }): Todo[] {
   const t: Todo[] = [];
   if (input.returnedDocuments > 0) {
@@ -150,6 +154,12 @@ export function todoList(input: {
   }
   for (const r of input.requests) {
     t.push({ key: `request-${r.id}`, title: r.subject, detail: "We asked you for this", href: `/portal/requests/${r.id}`, tone: "waiting" });
+  }
+  for (const s of input.registrationSteps ?? []) {
+    t.push({ key: `step-${s.id}`, title: s.label, detail: "Your step on the registration", href: "/portal/registration", tone: "waiting" });
+  }
+  for (const r of input.remittancesToPay ?? []) {
+    t.push({ key: `remit-${r.id}`, title: `Pay ${r.label}`, detail: r.detail, href: "/portal/remittances", tone: "waiting" });
   }
   if (input.dues > 0) {
     t.push({ key: "dues", title: "Pay your statement", detail: input.duesLabel, href: "/portal/billing", tone: "waiting" });

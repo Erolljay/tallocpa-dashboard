@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { requireOwner, requireStaff } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isAgency, type RemittanceFileKind } from "./labels";
@@ -9,8 +8,6 @@ import { isAgency, type RemittanceFileKind } from "./labels";
 export type RemittanceState = { error?: string; ok?: string; fieldErrors?: Record<string, string> };
 
 const text = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
-const money = z.union([z.literal(""), z.string().regex(/^\d{1,13}(\.\d{1,2})?$/, "Enter an amount, at most two decimals.")]);
-const peso = (v: string) => (v === "" ? 0 : Number(v));
 
 function refresh(id?: string, clientId?: string) {
   revalidatePath("/app/remittances");
@@ -44,54 +41,38 @@ export async function setEmployerNumberAction(_: RemittanceState, form: FormData
     p_registered_name: text(form.get("registered_name")).slice(0, 200) || null,
   });
   if (error) return { error: error.message };
-  const made = await supabase.rpc("generate_contribution_remittances", {});
-  if (made.error) return { error: made.error.message };
   refresh(undefined, clientId);
   return { ok: "Saved." };
 }
 
-/** Creates the months not there yet for every client the person sees. */
+/** Brings the remittances of the last three months in line with the posted payroll. */
 export async function generateRemittancesAction(): Promise<RemittanceState> {
   await requireStaff();
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.rpc("generate_contribution_remittances", {});
+  const { error } = await supabase.rpc("generate_contribution_remittances", {});
   if (error) return { error: error.message };
   refresh();
-  const n = Number(data ?? 0);
-  return { ok: n ? `Added ${n} remittance${n === 1 ? "" : "s"}.` : "Every month is already there." };
+  return { ok: "Remittances match the posted payroll." };
 }
 
-/** Adds one month by hand: a loan, or an earlier month. */
-export async function addRemittanceAction(_: RemittanceState, form: FormData): Promise<RemittanceState> {
-  await requireStaff();
-  const clientId = text(form.get("client_id"));
-  const kind = text(form.get("kind"));
-  const month = text(form.get("month"));
-  if (!/^\d{4}-\d{2}$/.test(month)) return { error: "Choose the month.", fieldErrors: { month: "Choose the month." } };
+/** The Owner turns handling a client's SSS, PhilHealth and Pag-IBIG on or off. */
+export async function setHandlesContributionsAction(clientId: string, on: boolean): Promise<RemittanceState> {
+  await requireOwner();
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("add_contribution_remittance", { p_client: clientId, p_kind: kind, p_month: `${month}-01` });
+  const { error } = await supabase.rpc("set_handles_contributions", { p_client: clientId, p_on: on });
   if (error) return { error: error.message };
   refresh(undefined, clientId);
-  return { ok: "Added." };
+  return { ok: on ? "On: remittances now come from each posted payroll." : "Off: no new remittances for this client." };
 }
 
-const prepareSchema = z.object({ ee: money, er: money, ec: money, employees: z.union([z.literal(""), z.string().regex(/^\d{1,6}$/, "Enter a whole number.")]), prn: z.string().trim().min(1, "Enter the PRN.").max(60) });
-
-/** Staff prepare: shares, headcount, PRN (the contribution report must already be attached). */
+/** Staff prepare: the PRN generated on the agency's site (attached first). The amounts are the posted payroll's. */
 export async function prepareRemittanceAction(_: RemittanceState, form: FormData): Promise<RemittanceState> {
   await requireStaff();
   const id = text(form.get("id"));
-  const parsed = prepareSchema.safeParse({ ee: text(form.get("ee")), er: text(form.get("er")), ec: text(form.get("ec")), employees: text(form.get("employees")), prn: text(form.get("prn")) });
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const i of parsed.error.issues) fieldErrors[String(i.path[0])] ??= i.message;
-    return { error: "Check the highlighted fields.", fieldErrors };
-  }
-  const v = parsed.data;
+  const prn = text(form.get("prn"));
+  if (!prn) return { error: "Enter the PRN.", fieldErrors: { prn: "Enter the PRN." } };
   const supabase = await supabaseServer();
-  const { error } = await supabase.rpc("prepare_contribution_remittance", {
-    p_id: id, p_ee: peso(v.ee), p_er: peso(v.er), p_ec: peso(v.ec), p_employees: v.employees === "" ? null : Number(v.employees), p_prn: v.prn,
-  });
+  const { error } = await supabase.rpc("prepare_contribution_remittance", { p_id: id, p_prn: prn.slice(0, 60) });
   if (error) return { error: error.message };
   refresh(id);
   return { ok: "Prepared. The Owner is notified to approve it." };

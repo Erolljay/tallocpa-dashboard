@@ -3,9 +3,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState, useTransition } from "react";
-import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
+import { Button, Field, Input, Notice, Textarea } from "@/components/ui";
 import {
-  addRemittanceAction,
   addRemittanceFile,
   approveRemittanceAction,
   generateRemittancesAction,
@@ -15,11 +14,12 @@ import {
   reopenRemittanceAction,
   setDueDateAction,
   setEmployerNumberAction,
+  setHandlesContributionsAction,
   skipRemittanceAction,
   startRemittanceUpload,
   type RemittanceState,
 } from "@/lib/remittances/actions";
-import { AGENCIES, FILE_KINDS, KIND_ORDER, REMITTANCE_KINDS, type Agency, type RemittanceFileKind, type RemittanceKind } from "@/lib/remittances/labels";
+import { AGENCIES, FILE_KINDS, type Agency, type RemittanceFileKind } from "@/lib/remittances/labels";
 
 function Result({ state }: { state: RemittanceState }) {
   if (state.error && !state.fieldErrors) return <Notice tone="blocked">{state.error}</Notice>;
@@ -106,47 +106,48 @@ export function RemittanceButton({ id, action, label, busyLabel, variant = "prim
   );
 }
 
-/** Prepared: the shares, headcount and PRN. */
-export function PrepareForm({ id, kind, defaults, fromPayroll }: {
-  id: string;
-  kind: RemittanceKind;
-  defaults: { ee: string; er: string; ec: string; employees: string; prn: string };
-  fromPayroll: boolean;
-}) {
+/** Prepared: the PRN from the agency's site (the amounts are the posted payroll's). */
+export function PrepareForm({ id, prn, ready }: { id: string; prn: string; ready: boolean }) {
   const [state, action, pending] = useActionState(prepareRemittanceAction, {} as RemittanceState);
-  const e = state.fieldErrors ?? {};
-  const loan = kind === "sss_loan" || kind === "pagibig_loan";
-  const f = (k: string) => `${id}-${k}`;
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-3">
+    <form action={action} className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
       <input type="hidden" name="id" value={id} />
-      <Field label={loan ? "Loan payments" : "Employee share (EE)"} htmlFor={f("ee")} error={e.ee}>
-        <Input id={f("ee")} name="ee" inputMode="decimal" defaultValue={defaults.ee} />
+      <Field label="PRN (payment reference number)" htmlFor={`${id}-prn`} error={state.fieldErrors?.prn}>
+        <Input id={`${id}-prn`} name="prn" maxLength={60} defaultValue={prn} required dir="ltr" />
       </Field>
-      {loan ? <input type="hidden" name="er" value="" /> : (
-        <Field label="Employer share (ER)" htmlFor={f("er")} error={e.er}>
-          <Input id={f("er")} name="er" inputMode="decimal" defaultValue={defaults.er} />
-        </Field>
-      )}
-      {kind === "sss" ? (
-        <Field label="EC" htmlFor={f("ec")} error={e.ec} hint="Employees' Compensation, paid by the employer.">
-          <Input id={f("ec")} name="ec" inputMode="decimal" defaultValue={defaults.ec} />
-        </Field>
-      ) : <input type="hidden" name="ec" value="" />}
-      <Field label="Employees" htmlFor={f("employees")} error={e.employees}>
-        <Input id={f("employees")} name="employees" inputMode="numeric" defaultValue={defaults.employees} />
-      </Field>
-      <div className="sm:col-span-2">
-        <Field label="PRN (payment reference number)" htmlFor={f("prn")} error={e.prn}>
-          <Input id={f("prn")} name="prn" maxLength={60} defaultValue={defaults.prn} required />
-        </Field>
-      </div>
-      {fromPayroll && <p className="text-caption-1-regular text-text-tertiary sm:col-span-3">The amounts start from this month&rsquo;s payroll. Check them against the agency&rsquo;s report.</p>}
-      <div className="flex justify-end sm:col-span-3">
-        <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Mark prepared"}</Button>
-      </div>
-      <div className="sm:col-span-3"><Result state={state} /></div>
+      <Button type="submit" disabled={pending || !ready}>{pending ? "Saving…" : "Mark prepared"}</Button>
+      <div className="sm:col-span-2"><Result state={state} /></div>
     </form>
+  );
+}
+
+/** The Owner's switch: we handle this client's SSS, PhilHealth and Pag-IBIG. */
+export function HandlesContributionsSwitch({ clientId, on, owner }: { clientId: string; on: boolean; owner: boolean }) {
+  const router = useRouter();
+  const [state, setState] = useState<RemittanceState>({});
+  const [pending, start] = useTransition();
+  if (!owner) return <p className="text-body-regular text-text-secondary">{on ? "We prepare and remit this client's SSS, PhilHealth and Pag-IBIG from its payroll." : "We do not handle this client's SSS, PhilHealth and Pag-IBIG. The Owner turns it on."}</p>;
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex items-start gap-3 text-body-regular text-text-primary">
+        <input
+          type="checkbox"
+          className="mt-1 size-4 accent-accent-600"
+          checked={on}
+          disabled={pending}
+          onChange={(e) => start(async () => {
+            const r = await setHandlesContributionsAction(clientId, e.target.checked);
+            setState(r);
+            if (r.ok) router.refresh();
+          })}
+        />
+        <span>
+          We handle this client&rsquo;s SSS, PhilHealth and Pag-IBIG
+          <span className="block text-caption-1-regular text-text-tertiary">Each posted payroll makes the month&rsquo;s remittances (contributions with EC, and loan payments), beside the 1601-C.</span>
+        </span>
+      </label>
+      <Result state={state} />
+    </div>
   );
 }
 
@@ -233,25 +234,3 @@ export function EmployerNumberForm({ clientId, agency, current }: {
     </form>
   );
 }
-
-/** Adds a month by hand: a loan, or an earlier month. */
-export function AddRemittanceForm({ clientId, agencies, thisMonth }: { clientId: string; agencies: Agency[]; thisMonth: string }) {
-  const [state, action, pending] = useActionState(addRemittanceAction, {} as RemittanceState);
-  const kinds = KIND_ORDER.filter((k) => agencies.includes(k === "sss_loan" ? "sss" : k === "pagibig_loan" ? "pagibig" : (k as Agency)));
-  return (
-    <form action={action} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-      <input type="hidden" name="client_id" value={clientId} />
-      <Field label="What" htmlFor={`${clientId}-add-kind`}>
-        <Select id={`${clientId}-add-kind`} name="kind" defaultValue={kinds.find((k) => k.endsWith("_loan")) ?? kinds[0]}>
-          {kinds.map((k) => <option key={k} value={k}>{REMITTANCE_KINDS[k].option}</option>)}
-        </Select>
-      </Field>
-      <Field label="Month" htmlFor={`${clientId}-add-month`} error={state.fieldErrors?.month}>
-        <Input id={`${clientId}-add-month`} name="month" type="month" max={thisMonth} defaultValue={thisMonth} required />
-      </Field>
-      <Button type="submit" variant="secondary" disabled={pending}>Add</Button>
-      <div className="sm:col-span-3"><Result state={state} /></div>
-    </form>
-  );
-}
-
