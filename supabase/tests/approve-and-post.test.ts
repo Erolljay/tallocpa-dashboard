@@ -98,11 +98,14 @@ describe.skipIf(!url)("approving and posting together", () => {
   it("offers the first open month for a purchase dated in a locked month, and posts it there when chosen", async () => {
     const d = await upload("2026-06-01");
     const err = await approve(d, "2026-06-28").then(() => null, (e) => e);
-    expect(err).toMatchObject({ code: "TL001", hint: "2026-07-01" });
+    expect(err).toMatchObject({ code: "TL001", hint: "2026-07-01", detail: "reviewer_redates" });
     expect(err.message).toMatch(/June 2026 is locked \(locked by the reviewer\)/);
     expect(await docOf(d)).toMatchObject({ status: "under_review", document_month: "2026-06-01" });
 
-    expect((await approve(d, "2026-06-28", true)).rows[0].r).toMatchObject({ moved_to: "2026-07-01" });
+    // Only the client's reviewer or the Owner moves it to a later month.
+    await expect(approve(d, "2026-06-28", true)).rejects.toMatchObject({ code: "TL001", detail: "reviewer_redates" });
+    expect(await docOf(d)).toMatchObject({ status: "under_review", document_month: "2026-06-01" });
+    expect((await as(REVIEWER, `select public.approve_and_post_document($1, $2, true, $3, null, null, true) as r`, [d, fields("2026-06-28"), acct.office_supplies])).rows[0].r).toMatchObject({ moved_to: "2026-07-01" });
     expect(await docOf(d)).toMatchObject({ status: "posted", document_month: "2026-07-01", deferred_from: "2026-06-01", deferred_reason: "June 2026 was locked when it was approved" });
     expect(await invoiceOf(d)).toEqual({ issue_date: "2026-07-01" });
     // The register keeps the document's own date, reported in July.

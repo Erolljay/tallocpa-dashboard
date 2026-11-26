@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { DocumentCodes } from "@/lib/books/actions";
+import { missingForApproval, missingMessage } from "@/lib/documents/required";
 import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import { bulkReadiness } from "@/lib/documents/bulk";
 import { manilaToday } from "@/lib/filings/run";
@@ -69,7 +70,7 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
     const e = d.extractions as unknown as { status: string; fields: OcrFields; confidence: OcrConfidence } | null;
     const fields = normalizeFields(e?.fields ?? {});
     const k = key(fields);
-    const r = bulkReadiness(e && { ...e, fields }, { today, priorYear: d.prior_year, duplicate: Boolean(k && seen.has(k)) });
+    const r = bulkReadiness(e && { ...e, fields }, { today, priorYear: d.prior_year, duplicate: Boolean(k && seen.has(k)), docType: d.doc_type });
     if (!r.ready) {
       skipped.push(`${d.file_name} (${r.reason})`);
       continue;
@@ -91,6 +92,21 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
       const slp = await slpCategoryFromCodes(supabase, item.codes).catch(() => null);
       if (slp) approvedFields.slp_category = slp;
     }
+    // What the Books and the BIR lists need: a document still missing one is opened, not bulk-approved.
+    const missing = missingForApproval(d.doc_type, approvedFields, booked ? {
+      accountId: item.accountId ?? (d.doc_type === "bir_2307_issued" || d.doc_type === "bir_2307_received" ? "by rule" : null),
+      invoice: invoiced ? {
+        lineCodes: (item.codes?.lines ?? []).map((l) => l.tax_code_id),
+        withholdingCode: item.codes?.withholding_code_id ?? null,
+        vatWithholdingCode: item.codes?.vat_withholding_code_id ?? null,
+        terms: item.terms === "charge" ? "charge" : "cash",
+        cashAccountId: item.cashAccountId ?? null,
+      } : null,
+    } : null);
+    if (missing.length) {
+      skipped.push(`${d.file_name} (${missingMessage(missing)})`);
+      continue;
+    }
     // Approved and posted to the Books together: when it cannot be posted, it is not approved.
     const a = await supabase.rpc("approve_and_post_document", {
       p_document: d.id,
@@ -102,7 +118,8 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
     });
     if (a.error) {
       const open = a.error.code === "TL001" && a.error.hint ? new Intl.DateTimeFormat("en-PH", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${a.error.hint}T00:00:00Z`)) : null;
-      skipped.push(`${d.file_name} (${a.error.message}${open ? `: open it to approve it dated ${open}` : ""})`);
+      const how = a.error.details === "can_redate" ? "open it to approve it dated" : "the reviewer or the Owner can approve it dated";
+      skipped.push(`${d.file_name} (${a.error.message}${open ? `: ${how} ${open}` : ""})`);
       continue;
     }
     if (k) seen.add(k);

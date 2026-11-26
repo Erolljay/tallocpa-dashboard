@@ -266,7 +266,9 @@ revoke execute on function private.books_sources(uuid, date, date) from public, 
  * A sale or purchase dated in a locked month (reviewer lock or filed return) cannot be
  * posted there. Without p_redate it is refused with SQLSTATE TL001 and the first open
  * month after it in the hint ("YYYY-MM-01"), so the screen can ask "June 2026 is locked:
- * approve it dated 1 July 2026?". With p_redate it is moved to that month (as
+ * approve it dated 1 July 2026?" (detail 'can_redate'; 'reviewer_redates' when only the
+ * client's reviewer or the Owner may move it). With p_redate, by the reviewer or the
+ * Owner, it is moved to that month (as
  * defer_document records a move) and posted on its first day; its own date stays on
  * the register. Returns {client_id, doc_type, posting, moved_to}.
  */
@@ -284,6 +286,7 @@ declare
   v_month date;
   v_open date;
   why text;
+  mover boolean;
   i integer := 0;
 begin
   select * into d from public.documents where id = p_document;
@@ -307,10 +310,12 @@ begin
           i := i + 1;
           exit when private.books_locked_by(d.client_id, v_open) is null or i > 36;
         end loop;
-        if not p_redate then
+        -- Moving it to a later month changes what a return declares: the client's reviewer or the Owner decides.
+        mover := private.is_owner() or private.is_assigned(d.client_id, 'reviewer');
+        if not p_redate or not mover then
           raise exception '% is locked (%)', to_char(v_month, 'FMMonth YYYY'),
             case when why = 'locked by the reviewer' then why else why || ' filed' end
-            using errcode = 'TL001', hint = to_char(v_open, 'YYYY-MM-DD');
+            using errcode = 'TL001', hint = to_char(v_open, 'YYYY-MM-DD'), detail = case when mover then 'can_redate' else 'reviewer_redates' end;
         end if;
         update public.documents
           set deferred_from = coalesce(deferred_from, v_month),

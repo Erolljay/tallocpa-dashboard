@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { DocumentCodes } from "@/lib/books/actions";
 import { slpCategoryFromCodes } from "@/lib/books/slp-from-codes";
 import type { DocActionState } from "@/lib/documents/actions";
+import { missingForApproval, missingMessage } from "@/lib/documents/required";
 import { streamOf, type DocType } from "@/lib/documents/labels";
 import { normalizeFields, OCR_FIELDS, type OcrFields } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -39,6 +40,20 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
     codes = null;
   }
   const supabase = await supabaseServer();
+  // What the Books and the BIR lists (SLS, SLP, QAP, SAWT) need, checked before anything is approved.
+  const { data: docRow } = await supabase.from("documents").select("doc_type").eq("id", documentId).maybeSingle();
+  const inBooks = form.has("ledger_account");
+  const missing = missingForApproval(String(fields.doc_type ?? docRow?.doc_type ?? ""), fields, inBooks ? {
+    accountId: String(form.get("ledger_account") ?? "") || null,
+    invoice: codes ? {
+      lineCodes: (codes.lines ?? []).map((l) => l.tax_code_id),
+      withholdingCode: codes.withholding_code_id ?? null,
+      vatWithholdingCode: codes.vat_withholding_code_id ?? null,
+      terms: fields.payment_terms === "charge" ? "charge" : "cash",
+      cashAccountId: fields.payment_account ?? null,
+    } : null,
+  } : null);
+  if (missing.length) return { error: missingMessage(missing) };
   // Books clients choose the SLP category once, on the Input VAT tax code: the register follows it.
   if (codes) {
     try {
@@ -64,7 +79,7 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
   });
   if (error) {
     // Dated in a locked month: offer the first open month after it (the late-document practice).
-    if (error.code === "TL001" && error.hint) return { lockedMonth: { message: error.message, openMonth: error.hint } };
+    if (error.code === "TL001" && error.hint) return { lockedMonth: { message: error.message, openMonth: error.hint, canRedate: error.details === "can_redate" } };
     return { error: books ? `Not approved: it could not be posted to the Books. ${error.message}` : error.message };
   }
   revalidatePath("/app", "layout");

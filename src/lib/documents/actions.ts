@@ -71,7 +71,7 @@ export type DocActionState = {
   ok?: string;
   error?: string;
   /** Approving a sale or purchase dated in a locked month: the first open month after it ("YYYY-MM-01"). */
-  lockedMonth?: { message: string; openMonth: string };
+  lockedMonth?: { message: string; openMonth: string; canRedate: boolean };
 };
 
 /** Staff: accept for review, mark posted, or return to the client with a reason. */

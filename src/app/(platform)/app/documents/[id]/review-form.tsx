@@ -12,6 +12,7 @@ import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
 import type { TaxCode } from "@/lib/books/tax-codes";
 import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices } from "@/lib/books/ui";
 import { formatAmount } from "@/lib/returns/money";
+import { missingForApproval } from "@/lib/documents/required";
 import { approveDocumentAction } from "./actions";
 
 /** Which document types each slice 4 field applies to (others always show). */
@@ -83,6 +84,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
   const [usedDirectory, setUsedDirectory] = useState(false);
   // Last, first and middle name show only for an individual (the BIR lists need them).
   const [partyKind, setPartyKind] = useState(props.fields.party_kind ?? "");
+  const requiredKeys = new Set(missingForApproval(props.docType, { party_kind: partyKind || null }).map((m) => m.field));
   const dir = props.directory;
   /** Copies the directory's registered name, TIN and address into the party fields. */
   const applyDirectory = () => {
@@ -103,6 +105,8 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {OCR_FIELDS.map((f) => {
+            // Fields the Books and the BIR lists always need for this document (marked *, required on approval).
+            const required = props.mode === "approve" && requiredKeys.has(f.key);
             if (f.kind === "person" && partyKind !== "individual") return null;
             const only = ONLY_FOR[f.key];
             if (only && !only.includes(props.docType)) return null;
@@ -119,7 +123,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
             const wide = f.key === "party_name" || f.key === "party_address";
             return (
               <div key={f.key} className={`${wide ? "sm:col-span-2" : ""} ${low ? "rounded-lg bg-status-yellow-background p-2" : ""}`}>
-                <Field label={`${f.label}${low ? ` · ${Math.round((conf ?? 0) * 100)}% sure` : ""}`} htmlFor={id} error={issue || undefined}>
+                <Field label={`${f.label}${required ? " *" : ""}${low ? ` · ${Math.round((conf ?? 0) * 100)}% sure` : ""}`} htmlFor={id} error={issue || undefined}>
                   {f.kind === "doc_type" ? (
                     <Select id={id} name={f.key} defaultValue={props.fields[f.key] ?? ""} disabled={!props.canAct}>
                       <option value="">—</option>
@@ -155,6 +159,7 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
                       inputMode={f.kind === "amount" ? "decimal" : undefined}
                       defaultValue={props.fields[f.key] ?? ""}
                       disabled={!props.canAct}
+                      required={required}
                       className={f.kind === "amount" ? "text-end tabular-nums" : undefined}
                     />
                   )}
@@ -190,11 +195,16 @@ export function ReviewForm(props: { documentId: string; docType: string; mode: "
         {props.canAct && state.lockedMonth && (
           <div role="alert" className="space-y-2 rounded-xl bg-status-yellow-background p-3">
             <p className="text-body-medium text-status-yellow-text">
-              {state.lockedMonth.message}: it cannot be posted in that month. Approve it dated {fmtDay(state.lockedMonth.openMonth)} instead? It is reported and posted in {fmtMonthOf(state.lockedMonth.openMonth)}; the document keeps its own date, and the move is recorded.
+              {state.lockedMonth.message}: it cannot be posted in that month.{" "}
+              {state.lockedMonth.canRedate
+                ? `Approve it dated ${fmtDay(state.lockedMonth.openMonth)} instead? It is reported and posted in ${fmtMonthOf(state.lockedMonth.openMonth)}; the document keeps its own date, and the move is recorded.`
+                : `The client's reviewer or the Owner can approve it dated ${fmtDay(state.lockedMonth.openMonth)} (reported in ${fmtMonthOf(state.lockedMonth.openMonth)}). Ask them to open this document.`}
             </p>
-            <Button type="submit" name="redate" value="1" size="sm" disabled={pending}>
-              {pending ? "Approving…" : `Approve dated ${fmtDay(state.lockedMonth.openMonth)}`}
-            </Button>
+            {state.lockedMonth.canRedate && (
+              <Button type="submit" name="redate" value="1" size="sm" disabled={pending}>
+                {pending ? "Approving…" : `Approve dated ${fmtDay(state.lockedMonth.openMonth)}`}
+              </Button>
+            )}
           </div>
         )}
       </form>
