@@ -33,7 +33,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
       >
         <div className="flex h-full flex-col gap-4 border-b border-separator-border bg-background-secondary-default px-4 py-3 md:gap-6 md:overflow-x-clip md:rounded-3xl md:border md:border-border-button-white md:p-3 md:shadow-sidebar">
           <div className="flex items-center justify-between gap-3 md:px-1 md:pt-1 md:sidebar-collapsed:flex-col md:sidebar-collapsed:px-0">
-            <Lockup wordmarkClassName="md:sidebar-collapsed:sr-only" />
+            <Lockup wordmarkClassName="md:sidebar-collapsed:sr-only" taglineClassName="whitespace-normal text-balance" />
             <ThemeToggle appearance="sidebar" collapsed className="md:hidden" />
             <SidebarToggle controls="app-sidebar" className="max-md:hidden" />
           </div>
