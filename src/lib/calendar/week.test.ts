@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarEvent } from "@/lib/google/calendar";
 import { manilaInstant } from "./slots";
-import { manilaTime, mondayOf, weekCells, weekDays, weekRange } from "./week";
+import { isTeamEvent, manilaTime, mondayOf, weekCells, weekDays, weekRange } from "./week";
 
 const ev = (over: Partial<CalendarEvent>): CalendarEvent => ({
   id: "e", summary: "Review: Molo Hardware 2550Q", start: manilaInstant("2026-12-01", 10), end: manilaInstant("2026-12-01", 11),
-  allDay: false, private: false, free: false, meetUrl: null, htmlLink: null, ...over,
+  allDay: false, private: false, free: false, meetUrl: null, htmlLink: null, others: [], ...over,
 });
 
 describe("team calendar week", () => {
@@ -29,5 +29,15 @@ describe("team calendar week", () => {
     // A personal block from 07:00 to 09:00 on Thursday, Manila time.
     expect(cells[3].map((c) => [manilaTime(c.start), manilaTime(c.end), c.title])).toEqual([["07:00", "09:00", null]]);
     expect(cells[0]).toEqual([]);
+  });
+});
+
+describe("what colleagues see in full", () => {
+  it("is a meeting with someone else of the firm; solo, outside-only and private events are Busy", () => {
+    expect(isTeamEvent(ev({ others: ["ana@tallocpa.com"] }), "tallocpa.com")).toBe(true);
+    expect(isTeamEvent(ev({ others: ["client@gmail.com", "Ben@TalloCPA.com".toLowerCase()] }), "tallocpa.com")).toBe(true);
+    expect(isTeamEvent(ev({ summary: "Easy run – 3 km", others: [] }), "tallocpa.com")).toBe(false);
+    expect(isTeamEvent(ev({ summary: "Webinar", others: ["events@ontheDot.ph".toLowerCase()] }), "tallocpa.com")).toBe(false);
+    expect(isTeamEvent(ev({ others: ["ana@tallocpa.com"], private: true }), "tallocpa.com")).toBe(false);
   });
 });
