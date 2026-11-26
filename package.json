@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "db:seed:generate": "tsx scripts/generate-seed.ts",
+    "email:auth-templates": "tsx scripts/generate-auth-emails.ts",
     "test:db": "bash scripts/test-db.sh",
     "postinstall": "node scripts/copy-opencv.mjs"
   },

@@ -31,13 +31,7 @@ To check or catch up by hand: **Actions → Apply database migrations → Run wo
 - **Turn off "Allow new users to sign up".** Only people the Owner invites can sign in. Anyone else who tries — by email or Google — gets no account.
 - **Email:** keep enabled. **The standard Magic Link email works as is** — its link returns to `/auth/callback` and signs the person in (open it in the same browser that asked for it).
 - **Sending email to clients and staff needs custom SMTP.** Supabase's built-in sender only delivers to members of the Supabase organization and a few messages an hour, and it does not let you edit the email templates. Set up **Resend** (Project Settings → Authentication → SMTP Settings) with a verified `tallocpa.com` domain; after that, the templates become editable.
-- **Optional, after SMTP:** edit the **Magic Link** template so the email also carries a 6-digit code (useful when someone opens the email on their phone but signs in on a computer):
-  ```html
-  <h2>Sign in to Tallo CPA</h2>
-  <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
-  <p>Or type this code: <strong>{{ .Token }}</strong></p>
-  <p>The link and code expire in one hour. If you did not ask to sign in, ignore this email.</p>
-  ```
+- **Branded sign-in emails, after SMTP:** Supabase sends the sign-in link, invitation and other account emails itself, from its own templates, so they do not get the app's branded layout on their own. Paste the firm's versions in: open each file in `supabase/templates/` (raw view on GitHub), copy all of it, and paste it into the matching template under **Authentication → Emails → Templates** (Magic Link, Invite user, Confirm signup, Change Email Address, Reset Password, Reauthentication), with the subject listed in `supabase/templates/README.md`. The Magic Link email carries the link and a 6-digit code (for signing in on another device). After changing the layout, run `pnpm email:auth-templates` and paste them again.
 - **URL Configuration:** Site URL `https://app.tallocpa.com`; add `http://localhost:3000/**` to Redirect URLs for development.
 
 ## 3. Google sign-in

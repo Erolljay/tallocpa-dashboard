@@ -56,6 +56,8 @@ export interface RenderEmailInput {
   footerNote?: string;
   /** Absolute link to the notification settings (see settingsUrlFor). */
   settingsUrl?: string | null;
+  /** Leave out "Change which emails you get…": sign-in emails cannot be turned off. */
+  hideSettings?: boolean;
 }
 
 // Brand inks (theme.css accent ramp; the mark's navy field).
@@ -244,7 +246,7 @@ ${button}
 <tr><td class="em-pad" style="padding:24px 32px 8px 32px;">
 <p class="em-muted" style="margin:0 0 6px 0;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};font-weight:600;">${escapeHtml(brand.legalName)}</p>
 ${contact.map((c) => `<p class="em-muted" style="margin:0 0 6px 0;font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">${c}</p>`).join("\n")}
-<p class="em-muted em-rule" style="margin:14px 0 0 0;padding-top:14px;border-top:1px solid ${RULE};font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">${escapeHtml(recv.because)} Change which emails you get in ${settingsLink}.</p>
+<p class="em-muted em-rule" style="margin:14px 0 0 0;padding-top:14px;border-top:1px solid ${RULE};font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};">${escapeHtml(recv.because)}${input.hideSettings ? "" : ` Change which emails you get in ${settingsLink}.`}</p>
 </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -266,7 +268,7 @@ ${contact.map((c) => `<p class="em-muted" style="margin:0 0 6px 0;font-family:${
     ...[brand.businessAddress, brand.phone, brand.replyTo, brand.website].filter((v): v is string => !!v),
     "",
     recv.because,
-    settingsUrl ? `${recv.change.replace(/\.$/, "")}: ${settingsUrl}` : recv.change,
+    ...(input.hideSettings ? [] : [settingsUrl ? `${recv.change.replace(/\.$/, "")}: ${settingsUrl}` : recv.change]),
   ].join("\n");
 
   return { html, text };
