@@ -22,6 +22,8 @@ export interface ApprovedRow {
   lock: string | null;
   /** A sale or purchase (can be moved or taken back). */
   titled: boolean;
+  /** Its month in the Books: locked by the reviewer, an unlock requested, or open (null). */
+  books: "locked" | "requested" | null;
 }
 
 /**
@@ -49,7 +51,7 @@ export function ApprovedReview({ clientId, rows, canMove = false, fyeMonth = 12 
         <p className="text-body-regular text-text-secondary">No approved documents for this period.</p>
       ) : (
         <>
-          {canMove && <MoveBar clientId={clientId} selected={picked.map((r) => ({ id: r.id, month: r.documentMonth }))} approved fyeMonth={fyeMonth} />}
+          {canMove && <MoveBar clientId={clientId} selected={picked.map((r) => ({ id: r.id, month: r.documentMonth, label: r.label, books: r.books }))} approved fyeMonth={fyeMonth} />}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[44rem] text-body-regular">
               <thead className="text-start text-body-medium text-text-tertiary">
