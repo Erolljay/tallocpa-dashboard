@@ -343,7 +343,7 @@ describe.skipIf(!url)("December 2026 rehearsal: one client's month, end to end",
         "1601-C 2026-11 due 2026-12-10",
         // The seed rule (marked UNVERIFIED) puts December's 1601-C on the 10th, moved to Monday the 11th;
         // the BIR's guidelines give 15 January for December's taxes withheld (reported, not changed here).
-        "1601-C 2026-12 due 2027-01-11",
+        "1601-C 2026-12 due 2027-01-15",
         "1601-EQ FY2026-Q4 due 2027-02-01",
         "2550Q FY2026-Q4 due 2027-01-25",
       ]);
@@ -562,7 +562,7 @@ describe.skipIf(!url)("December 2026 rehearsal: one client's month, end to end",
       expect(await one(PREPARER, `select public.filing_books_ready($1) as r`, [filing["2550Q 2026-12-31"]])).toEqual({ r: false });
       // Filings lists December under "Books still open" with its nearest BIR date.
       const stillOpen = () => as<Row>(PREPARER, `select month::text, status, form, nearest_due_date::text, filings from public.books_still_open() where client_id = $1 and month < '2027-01-01'`, [client]);
-      expect(await stillOpen()).toEqual([{ month: "2026-12-01", status: "open", form: "1601-C", nearest_due_date: "2027-01-11", filings: 3 }]);
+      expect(await stillOpen()).toEqual([{ month: "2026-12-01", status: "open", form: "1601-C", nearest_due_date: "2027-01-15", filings: 3 }]);
       await as(PREPARER, `select public.request_books_lock($1, '2026-12-01')`, [client]);
       expect((await stillOpen())[0].status).toBe("lock_requested");
       await expect(as(PREPARER, `select public.lock_books_month($1, '2026-12-01')`, [client])).rejects.toThrow(/Only the client's reviewer or the Owner locks/);

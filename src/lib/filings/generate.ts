@@ -4,6 +4,7 @@
  */
 import { addDays, type IsoDate } from "@/lib/deadlines/dates";
 import {
+  formYearEndMonth,
   generateFilingInstances,
   nextWorkingDay,
   selectRule,
@@ -184,7 +185,8 @@ export function recomputeDueDates(input: {
     const client = clients.get(f.client_id);
     if (!frequency || !client) continue;
     const period = { frequency, start: f.period_start, end: f.period_end, label: f.period_label };
-    const rule = selectRule(rules, f.form, frequency, period, client.filing_channel, client.efps_group ?? undefined);
+    const yearEndMonth = formYearEndMonth(rules, f.form, frequency, client.fiscal_year_end_month);
+    const rule = selectRule(rules, f.form, frequency, period, yearEndMonth, client.filing_channel, client.efps_group ?? undefined);
     if (!rule) continue;
     const statutory = statutoryDueDate(rule.due, f.period_end);
     const due = nextWorkingDay(statutory, holidays);

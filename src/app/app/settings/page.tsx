@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { describeDue, FREQUENCY_SECTIONS, taxTypeOfForm } from "@/lib/deadlines/describe";
-import type { DueRule, Frequency } from "@/lib/deadlines/engine";
+import type { DueRule, Frequency, PeriodFilter } from "@/lib/deadlines/engine";
 import { supabaseServer } from "@/lib/supabase/server";
 import { HolidayForm, RemoveHolidayButton, RuleEditor } from "./forms";
 import { AddPaymentAccountForm, EditPaymentAccountForm, MoveAccountButtons, PaymentDaysForm, ReplaceQrForm, ToggleAccountButton } from "./payment-forms";
@@ -48,7 +48,7 @@ interface Rule {
   channel: "efps" | "ebirforms" | null;
   efps_group: string | null;
   calendar_year: boolean;
-  period_filter: "all" | "exclude_quarter_end_months" | "exclude_last_quarter";
+  period_filter: PeriodFilter;
   effective_from: string;
   source: string;
   verified_at: string | null;
@@ -58,11 +58,17 @@ const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "me
 const kindLabel: Record<string, string> = { regular: "Regular", special: "Special non-working", suspension: "Work suspension" };
 
 /** Which periods the rule files for, when it is not every period. */
-const periodNote: Record<Rule["period_filter"], string> = {
-  all: "",
-  exclude_quarter_end_months: " · 1st and 2nd month of each quarter only",
-  exclude_last_quarter: " · Q1 to Q3 only",
-};
+function periodNote(r: Rule): string {
+  const lastMonth = r.calendar_year ? "December" : "the year's last month";
+  const notes: Record<PeriodFilter, string> = {
+    all: "",
+    exclude_quarter_end_months: " · 1st and 2nd month of each quarter only",
+    exclude_last_quarter: " · Q1 to Q3 only",
+    exclude_year_end_month: ` · every month except ${lastMonth}`,
+    year_end_month_only: ` · ${lastMonth} only`,
+  };
+  return notes[r.period_filter];
+}
 
 function appliesTo(r: Rule) {
   if (r.channel === "efps") return `eFPS · Group ${r.efps_group}`;
@@ -103,7 +109,7 @@ async function DeadlineSettings() {
                     <tr key={r.id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
                       <td className="py-3 pr-4">
                         <p className="font-medium text-text-primary">{r.form}</p>
-                        <p className="text-caption-1-regular text-text-tertiary">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}{periodNote[r.period_filter]}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">{taxTypeOfForm(r.form)}{r.calendar_year ? " · calendar year" : ""}{periodNote(r)}</p>
                       </td>
                       <td className="py-3 pr-4 text-text-secondary">{appliesTo(r)}</td>
                       <td className="py-3 pr-4 text-text-primary">

@@ -80,4 +80,20 @@ describe("recomputeDueDates", () => {
       { id: "f1", rule_id: "1601C", statutory_due_date: "2026-12-10", due_date: "2026-12-11" },
     ]);
   });
+  it("moves an open December 1601-C made under the old rule to 15 January", () => {
+    const december = filing({ id: "f2", period_label: "2026-12", period_start: "2026-12-01", period_end: "2026-12-31", statutory_due_date: "2027-01-10", due_date: "2027-01-11" });
+    expect(recomputeDueDates({ filings: [filing(), december], obligations: [ob()], clients: [client({ fiscal_year_end_month: 6 })], rules, holidays: [] })).toEqual([
+      { id: "f2", rule_id: "1601C-DEC", statutory_due_date: "2027-01-15", due_date: "2027-01-15" },
+    ]);
+  });
+});
+
+describe("December 1601-C", () => {
+  it("is generated with the December rule, due 15 January", () => {
+    const { rows } = buildFilingRows({ obligations: [ob({ start_date: "2026-01-01" })], clients: [client()], rules, holidays: [], today: "2026-12-01" });
+    expect(rows.filter((r) => ["2026-11", "2026-12"].includes(r.period_label)).map((r) => [r.period_label, r.rule_id, r.due_date])).toEqual([
+      ["2026-11", "1601C", "2026-12-10"],
+      ["2026-12", "1601C-DEC", "2027-01-15"],
+    ]);
+  });
 });

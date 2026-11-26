@@ -8,7 +8,7 @@ import {
   type DeadlineRule,
   type Obligation,
 } from "./engine";
-import { seedDeadlineRules } from "./seed";
+import { seedDeadlineRules, seedHolidays } from "./seed";
 
 const none = new Set<string>();
 
@@ -87,6 +87,34 @@ describe("seed rules", () => {
   it("1601-C due on a Saturday moves to Monday", () => {
     expect(dueDates(ob("1601-C", "monthly"), "2027-04-01", "2027-04-30")).toEqual([["2027-03", "2027-04-12"]]);
   });
+  it("December's 1601-C is due 15 January; November's stays the 10th", () => {
+    const holidays = new Set(seedHolidays.map((h) => h.date));
+    const r = generateFilingInstances([ob("1601-C", "monthly")], seedDeadlineRules, holidays, "2026-12-01", "2027-02-28").instances;
+    expect(r.map((i) => [i.period.label, i.ruleId, i.statutoryDueDate, i.dueDate])).toEqual([
+      ["2026-11", "1601C", "2026-12-10", "2026-12-10"],
+      ["2026-12", "1601C-DEC", "2027-01-15", "2027-01-15"],
+      ["2027-01", "1601C", "2027-02-10", "2027-02-10"],
+    ]);
+  });
+  it("December's 1601-C rolls off a weekend and is December for a fiscal-year client too", () => {
+    // 15 January 2028 is a Saturday.
+    expect(dueDates(ob("1601-C", "monthly", { fiscalYearEndMonth: 6 }), "2027-12-01", "2028-01-31")).toEqual([
+      ["2027-11", "2027-12-10"],
+      ["2027-12", "2028-01-17"],
+    ]);
+  });
+  it("0619-E keeps the 10th and is still not filed for December", () => {
+    expect(dueDates(ob("0619-E", "monthly"), "2026-12-01", "2027-02-28")).toEqual([
+      ["2026-11", "2026-12-10"],
+      ["2027-01", "2027-02-10"],
+    ]);
+  });
+  it("a December-only rule with no rule for the other months reports them missing", () => {
+    const decOnly = seedDeadlineRules.filter((r) => r.id !== "1601C");
+    const r = generateFilingInstances([ob("1601-C", "monthly")], decOnly, none, "2026-11-01", "2027-01-31");
+    expect(r.instances.map((i) => i.period.label)).toEqual(["2026-12"]);
+    expect(r.missingRules.map((m) => m.period.label)).toEqual(["2026-11", "2027-01"]);
+  });
   it("eFPS filers follow the same manual due date as everyone else", () => {
     expect(dueDates(ob("1601-C", "monthly", { channel: "efps", efpsGroup: "A" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-10"]]);
     expect(dueDates(ob("0619-E", "monthly", { channel: "efps", efpsGroup: "E" }), "2027-02-01", "2027-02-28")).toEqual([["2027-01", "2027-02-10"]]);
@@ -148,7 +176,7 @@ describe("rules over time", () => {
   it("throws when two equally specific rules overlap", () => {
     const clash = [changed[1], { ...changed[1], id: "dup" }];
     const period = periodsBetween("monthly", 12, "2027-01-01", "2027-01-31")[0];
-    expect(() => selectRule(clash, "X", "monthly", period, "ebirforms")).toThrow(/Conflicting/);
+    expect(() => selectRule(clash, "X", "monthly", period, 12, "ebirforms")).toThrow(/Conflicting/);
   });
 });
 
@@ -158,7 +186,7 @@ describe("obligation dates", () => {
   });
   it("stops after the obligation ends", () => {
     expect(dueDates(ob("1601-C", "monthly", { endDate: "2027-01-31" }), "2027-01-01", "2027-03-31")).toEqual([
-      ["2026-12", "2027-01-11"],
+      ["2026-12", "2027-01-15"], // December's 1601-C: 15 January
       ["2027-01", "2027-02-10"],
     ]);
   });
