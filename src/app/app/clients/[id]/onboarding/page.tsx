@@ -36,10 +36,9 @@ async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboardi
   const supabase = await supabaseServer();
   const { data: client } = await supabase.from("clients").select("id, name, code, status, fiscal_year_end_month").eq("id", id).maybeSingle();
   if (!client) notFound();
-  const [{ facts, files, accepted }, { data: team }, { data: bookkeeping }, { data: staff }, { data: openCase }] = await Promise.all([
+  const [{ facts, files, accepted }, { data: team }, { data: staff }, { data: openCase }] = await Promise.all([
     loadOnboarding(supabase, id, client.fiscal_year_end_month),
     supabase.from("staff_assignments").select("user_id").eq("client_id", id),
-    supabase.from("engagements").select("id").eq("client_id", id).eq("service_line", "bookkeeping").eq("status", "active").limit(1),
     supabase.from("staff_profiles").select("user_id, full_name"),
     supabase.from("registration_cases").select("id").eq("client_id", id).eq("kind", "new_business").eq("status", "open").limit(1),
   ]);
@@ -61,7 +60,7 @@ async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboardi
           </div>
         }
       />
-      <ClientTabs clientId={id} active="onboarding" work={canWork} books={(bookkeeping ?? []).length > 0} onboarding={progress} />
+      <ClientTabs clientId={id} active="onboarding" work={canWork} onboarding={progress} />
 
       <div className="space-y-6">
         {client.status === "onboarding" && (

@@ -64,7 +64,7 @@ export async function BooksFrame({
           <BooksLockBar clientId={clientId} month={month} />
         </div>
       </div>
-      <ClientTabs clientId={clientId} active="books" work books />
+      <ClientTabs clientId={clientId} active="books" work />
       <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <nav aria-label="Books modules" className="min-w-0">
           <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">

@@ -56,7 +56,6 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const openNewBusiness = cases.some((c) => c.kind === "new_business" && c.status === "open");
   const taxTypes = ((registration.data?.tax_types ?? []) as TaxType[]).map((t) => TAX_TYPES[t] ?? t);
   const canWork = isOwner || (team.data ?? []).some((a) => a.user_id === me.userId);
-  const hasBooks = (engagements.data ?? []).some((e) => e.service_line === "bookkeeping" && e.status === "active");
   const retainerTotal = (engagements.data ?? []).filter((e) => e.status === "active").reduce((s, e) => s + Number(e.monthly_retainer), 0);
 
   return (
@@ -72,7 +71,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           </div>
         }
       />
-      <ClientTabs clientId={id} active="overview" work={canWork} books={hasBooks} />
+      <ClientTabs clientId={id} active="overview" work={canWork} />
       <nav aria-label="Work areas" className="mb-6 flex flex-wrap gap-2">
         <LinkButton href={`/app/clients/${id}/onboarding`} variant="secondary" size="sm">Onboarding</LinkButton>
         {canWork && (

@@ -16,19 +16,20 @@ const UNDER: Partial<Record<ClientTab, ClientTab>> = {
 /**
  * The tabs across a client's pages (docs/REWORK.md, Navigation): Overview · Inbox ·
  * Books · Returns · Year-end. The work tabs show to the Owner and the staff assigned
- * to the client; Books and Year-end only with an active bookkeeping engagement.
+ * to the client, for every client: tax compliance needs the books too, so Books and
+ * Year-end do not wait on a bookkeeping engagement.
  * Onboarding, the register, batch upload and workpapers are reached from the
  * Overview; payroll and fixed assets from the Books.
  */
-export function ClientTabs({ clientId, active, work, books }: { clientId: string; active: ClientTab; work: boolean; books: boolean; onboarding?: { done: number; total: number } }) {
+export function ClientTabs({ clientId, active, work }: { clientId: string; active: ClientTab; work: boolean; onboarding?: { done: number; total: number } }) {
   const c = `/app/clients/${clientId}`;
   const current = UNDER[active] ?? active;
   const tabs: [ClientTab, string, string, boolean][] = [
     ["overview", "Overview", c, true],
     ["inbox", "Inbox", `/app/documents?client=${clientId}`, work],
-    ["books", "Books", `${c}/books`, work && books],
+    ["books", "Books", `${c}/books`, work],
     ["returns", "Returns", `${c}/returns`, work],
-    ["year-end", "Year-end", `${c}/year-end`, work && books],
+    ["year-end", "Year-end", `${c}/year-end`, work],
   ];
   return (
     <nav aria-label="Client" className="mb-6 flex gap-1 overflow-x-auto border-b border-separator-border">
