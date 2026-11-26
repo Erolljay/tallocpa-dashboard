@@ -10,6 +10,7 @@ import { manilaToday } from "@/lib/filings/run";
 import { monthName } from "@/lib/lock/month-lock";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ClientTabs } from "../client-tabs";
+import { PastReturnsForm } from "./past-returns-form";
 
 /**
  * A client's returns (docs/REWORK.md, decision 10): only those whose Books period is
@@ -121,6 +122,11 @@ async function Returns({ params }: Pick<PageProps<"/app/clients/[id]/returns">, 
             {openMonths.length > 0 ? `. The Books are still open for ${openMonths.map(monthName).join(", ")}.` : ". Their Books months are not locked yet."}{" "}
             <Link href={`/app/clients/${id}/books/months`} className="text-button-ghost-foreground underline">Lock the months</Link>
           </p>
+        )}
+        {owner && (
+          <Card title="Create past returns">
+            <PastReturnsForm clientId={id} defaultMonth={`${today.slice(0, 4)}-01`} />
+          </Card>
         )}
       </div>
     </>

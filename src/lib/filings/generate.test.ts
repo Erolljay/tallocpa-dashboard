@@ -119,3 +119,16 @@ describe("local holidays", () => {
     expect(updates).toEqual([{ id: "f1", rule_id: "1601C", statutory_due_date: "2027-02-10", due_date: "2027-02-11" }]);
   });
 });
+
+describe("past returns", () => {
+  it("creates a client's returns from the period chosen, whatever their due date", () => {
+    const { rows } = buildFilingRows({ obligations: [ob({ start_date: "2025-01-01" })], clients: [client()], rules, holidays: [], today: "2026-11-26", periodsFrom: "2026-01-01" });
+    const labels = rows.map((r) => r.period_label);
+    expect(labels[0]).toBe("2026-01");
+    expect(labels).toContain("2026-06");
+    expect(labels.some((l) => l.startsWith("2025"))).toBe(false);
+    // Without it, only deadlines from 60 days back.
+    const usual = buildFilingRows({ obligations: [ob({ start_date: "2025-01-01" })], clients: [client()], rules, holidays: [], today: "2026-11-26" });
+    expect(usual.rows[0].period_label).toBe("2026-09");
+  });
+});
