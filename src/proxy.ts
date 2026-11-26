@@ -53,7 +53,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (path === "/") {
+  // "/" is the app on the app's host (app.tallocpa.com, or APP_HOST) and the website everywhere else.
+  const host = (request.headers.get("host") ?? "").toLowerCase();
+  const appHost = process.env.APP_HOST?.toLowerCase();
+  if (path === "/" && (appHost ? host === appHost : host.startsWith("app."))) {
     return redirectKeepingCookies(request, response, signedIn ? "/app" : "/login");
   }
   if (!signedIn && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {
