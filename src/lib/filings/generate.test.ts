@@ -97,3 +97,25 @@ describe("December 1601-C", () => {
     ]);
   });
 });
+
+describe("local holidays", () => {
+  const local = [{ date: "2027-02-10", rdo_codes: ["074"] }];
+
+  it("move a due date only for clients registered in the holiday's RDO", () => {
+    const iloilo = buildFilingRows({ obligations: [ob()], clients: [client({ rdo_code: "74" })], rules, holidays: [], localHolidays: local, today: "2027-02-01" });
+    const elsewhere = buildFilingRows({ obligations: [ob()], clients: [client({ rdo_code: "075" })], rules, holidays: [], localHolidays: local, today: "2027-02-01" });
+    const none = buildFilingRows({ obligations: [ob()], clients: [client()], rules, holidays: [], localHolidays: local, today: "2027-02-01" });
+    expect(iloilo.rows[0].due_date).toBe("2027-02-11");
+    expect(elsewhere.rows[0].due_date).toBe("2027-02-10");
+    expect(none.rows[0].due_date).toBe("2027-02-10");
+  });
+
+  it("are applied when due dates are recomputed", () => {
+    const filing: OpenFilingRow = {
+      id: "f1", obligation_id: "o1", client_id: "c1", form: "1601-C", period_label: "2027-01", period_start: "2027-01-01", period_end: "2027-01-31",
+      rule_id: "1601C", statutory_due_date: "2027-02-10", due_date: "2027-02-10",
+    };
+    const updates = recomputeDueDates({ filings: [filing], obligations: [ob()], clients: [client({ rdo_code: "074" })], rules, holidays: [], localHolidays: local });
+    expect(updates).toEqual([{ id: "f1", rule_id: "1601C", statutory_due_date: "2027-02-10", due_date: "2027-02-11" }]);
+  });
+});

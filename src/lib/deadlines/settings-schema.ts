@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { DueRule } from "./engine";
+import { parseRdoList } from "./holiday-list";
 
 const checkbox = z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean());
 
@@ -28,11 +29,31 @@ export const ruleEditSchema = z
     allEfpsGroups: v.all_efps_groups,
   }));
 
-export const holidaySchema = z.object({
-  date: z.iso.date("Enter the date."),
-  name: z.string().trim().min(2, "Enter the holiday's name.").max(120),
-  kind: z.enum(["regular", "special", "suspension"]),
-  source: z.preprocess((v) => (typeof v === "string" && v.trim() ? v.trim() : "UNVERIFIED"), z.string().max(120)),
+export const holidaySchema = z
+  .object({
+    date: z.iso.date("Enter the date."),
+    name: z.string().trim().min(2, "Enter the holiday's name.").max(120),
+    kind: z.enum(["regular", "special", "suspension", "local"]),
+    source: z.preprocess((v) => (typeof v === "string" && v.trim() ? v.trim() : "UNVERIFIED"), z.string().max(120)),
+    place: z.preprocess((v) => (typeof v === "string" ? v.trim() : ""), z.string().max(120)),
+    rdo_codes: z.preprocess((v) => (typeof v === "string" ? parseRdoList(v) : []), z.array(z.string())),
+  })
+  .refine((v) => v.kind !== "local" || v.place.length >= 2, { path: ["place"], message: "Name the city or province." })
+  .refine((v) => v.kind !== "local" || v.rdo_codes.length > 0, { path: ["rdo_codes"], message: "Enter the RDO code(s) it covers, e.g. 074." })
+  .transform((v) => ({
+    date: v.date,
+    name: v.name,
+    kind: v.kind,
+    source: v.source,
+    place: v.kind === "local" ? v.place : null,
+    rdo_codes: v.kind === "local" ? v.rdo_codes : [],
+  }));
+
+/** One row of a year's standard list, as the Owner ticks it. */
+export const holidayYearRowSchema = z.object({
+  date: z.iso.date(),
+  name: z.string().trim().min(2).max(120),
+  kind: z.enum(["regular", "special"]),
 });
 
 /** The day before an ISO date. */

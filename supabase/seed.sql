@@ -59,4 +59,4 @@ insert into public.holidays (date, name, kind, source) values
   ('2027-12-25', 'Christmas Day', 'regular', 'UNVERIFIED'),
   ('2027-12-30', 'Rizal Day', 'regular', 'UNVERIFIED'),
   ('2027-12-31', 'Last Day of the Year', 'special', 'UNVERIFIED')
-on conflict (date) do nothing;
+on conflict (date) where kind <> 'local' do nothing;

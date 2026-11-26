@@ -17,6 +17,14 @@ async function all<T>(admin: SupabaseClient, table: string, columns: string): Pr
   }
 }
 
+/** National days for everyone; local ones only for clients of their RDOs. */
+function splitHolidays(rows: { date: string; kind: string; rdo_codes: string[] | null }[]) {
+  return {
+    holidays: rows.filter((h) => h.kind !== "local").map((h) => String(h.date).slice(0, 10)),
+    localHolidays: rows.filter((h) => h.kind === "local").map((h) => ({ date: String(h.date).slice(0, 10), rdo_codes: h.rdo_codes ?? [] })),
+  };
+}
+
 const RULE_COLUMNS = "id, form, frequency, period_filter, due, channel, efps_group, effective_from, effective_to, calendar_year";
 
 /**
@@ -26,11 +34,11 @@ const RULE_COLUMNS = "id, form, frequency, period_filter, due, channel, efps_gro
 export async function runFilingGeneration(admin: SupabaseClient, today = manilaToday()) {
   const [obligations, clients, rules, holidays] = await Promise.all([
     all<ObligationRow>(admin, "obligations", "id, client_id, form, frequency, start_date, end_date"),
-    all<ClientRow>(admin, "clients", "id, status, fiscal_year_end_month, filing_channel, efps_group"),
+    all<ClientRow>(admin, "clients", "id, status, fiscal_year_end_month, filing_channel, efps_group, rdo_code"),
     all<RuleRow>(admin, "deadline_rules", RULE_COLUMNS),
-    all<{ date: string }>(admin, "holidays", "date"),
+    all<{ date: string; kind: string; rdo_codes: string[] | null }>(admin, "holidays", "date, kind, rdo_codes"),
   ]);
-  const { rows, missing } = buildFilingRows({ obligations, clients, rules, holidays: holidays.map((h) => h.date), today });
+  const { rows, missing } = buildFilingRows({ obligations, clients, rules, ...splitHolidays(holidays), today });
 
   let created = 0;
   for (let i = 0; i < rows.length; i += 500) {
@@ -60,11 +68,11 @@ export async function refreshDueDates(admin: SupabaseClient) {
       return (data ?? []) as OpenFilingRow[];
     })(),
     all<Pick<ObligationRow, "id" | "frequency">>(admin, "obligations", "id, frequency"),
-    all<ClientRow>(admin, "clients", "id, status, fiscal_year_end_month, filing_channel, efps_group"),
+    all<ClientRow>(admin, "clients", "id, status, fiscal_year_end_month, filing_channel, efps_group, rdo_code"),
     all<RuleRow>(admin, "deadline_rules", RULE_COLUMNS),
-    all<{ date: string }>(admin, "holidays", "date"),
+    all<{ date: string; kind: string; rdo_codes: string[] | null }>(admin, "holidays", "date, kind, rdo_codes"),
   ]);
-  const updates = recomputeDueDates({ filings, obligations, clients, rules, holidays: holidays.map((h) => h.date) });
+  const updates = recomputeDueDates({ filings, obligations, clients, rules, ...splitHolidays(holidays) });
   for (const u of updates) {
     const { error } = await admin.from("filing_instances").update({ rule_id: u.rule_id, statutory_due_date: u.statutory_due_date, due_date: u.due_date }).eq("id", u.id);
     if (error) throw new Error(`Updating filing due dates: ${error.message}`);
