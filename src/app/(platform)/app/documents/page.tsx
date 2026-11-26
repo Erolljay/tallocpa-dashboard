@@ -8,7 +8,7 @@ import { DOC_TYPES, docStatusTone, showMonth, STREAMS, streamOf, type DocType, t
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
-import { pendingDocumentTaxCodes, type PendingTaxCodes } from "@/lib/books/actions";
+import { booksMonthStatus, pendingDocumentTaxCodes, type BooksMonthRow, type PendingTaxCodes } from "@/lib/books/actions";
 import { loadTaxCodes } from "@/lib/books/data";
 import { LOW_CONFIDENCE, normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -423,6 +423,19 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
     .in("status", LOCKED_STATUSES);
   const filings = (data ?? []) as LockFiling[];
   const sorted = [...rows].sort((a, b) => (b.extractions?.approved_at ?? b.created_at).localeCompare(a.extractions?.approved_at ?? a.created_at));
+  // The Books lock of each month shown: a reviewer's lock must be lifted before a document in it moves.
+  const years = [...new Set(rows.map((r) => Number(r.document_month.slice(0, 4))))];
+  const months = new Map<string, BooksMonthRow>();
+  if (canMove) {
+    const all = await Promise.all(years.map((y) => booksMonthStatus(clientId, y, supabase).catch(() => [] as BooksMonthRow[])));
+    for (const m of all.flat()) months.set(String(m.month).slice(0, 10), m);
+  }
+  const booksOf = (month: string): ApprovedRow["books"] => {
+    const m = months.get(month.slice(0, 10));
+    if (!m) return null;
+    if (m.status === "unlock_requested") return "requested";
+    return m.status === "locked" && m.lock_source === "reviewer" ? "locked" : null;
+  };
   const approved: ApprovedRow[] = sorted.map((r) => {
     const f = r.extractions?.approved_fields ?? {};
     const total = f.total != null && f.total !== "" ? Number(f.total) : null;
@@ -433,11 +446,16 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       label: `${DOC_TYPES[r.doc_type]}${f.number ? ` ${f.number}` : ""}`,
       party: f.party_name ?? r.file_name,
       month: showMonth(r.period),
-      flags: monthFlags(r),
+      flags: [
+        ...monthFlags(r),
+        ...(booksOf(r.document_month) === "locked" ? [{ label: "Books locked", title: "Request the unlock before moving or taking it back", tone: "warn" as const }] : []),
+        ...(booksOf(r.document_month) === "requested" ? [{ label: "unlock requested", title: "Waiting for the Owner to unlock the month", tone: "warn" as const }] : []),
+      ],
       documentMonth: r.document_month,
       total: total == null || Number.isNaN(total) ? "—" : peso.format(total),
       lock: lock ? `${lock.form} ${lock.period_label}` : null,
       titled: r.doc_type === "sales_invoice" || r.doc_type === "purchase_receipt",
+      books: booksOf(r.document_month),
     };
   });
   return <ApprovedReview clientId={clientId} rows={approved} canMove={canMove} fyeMonth={fyeMonth} />;

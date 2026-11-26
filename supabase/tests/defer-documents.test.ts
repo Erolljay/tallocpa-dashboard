@@ -171,6 +171,35 @@ describe.skipIf(!url)("documents: moving to a later period and taking an approva
     await expect(unapprove(OWNER, posted)).rejects.toThrow(/2550Q Q2 2026 return for its month has been filed/);
   });
 
+  it("in a locked month: refused until the Owner unlocks it, which sends the client-approved return back", async () => {
+    const d = await waiting("sales_invoice", "2026-08-01", { ...SALE, number: "SI-80", date: "2026-08-14" });
+    await approve(d, { ...SALE, number: "SI-80", date: "2026-08-14" });
+    await post(d, "sales");
+    // Nothing else of August waits in the Inbox; the reviewer locks it and the Q3 return reaches the client.
+    await db.query(`update public.documents set status = 'returned', return_reason = 'test' where client_id = $1 and document_month = '2026-08-01' and status in ('received', 'under_review')`, [client]);
+    await as(REVIEWER, `select public.lock_books_month($1, '2026-08-01')`, [client]);
+    const ob = (await db.query(`select id from public.obligations where client_id = $1 and form = '2550Q'`, [client])).rows[0].id;
+    const q3 = (await db.query(
+      `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date, status, tax_due)
+       values ($1, $2, '2550Q', 'Q3 2026', '2026-07-01', '2026-09-30', '2550Q', '2026-10-25', '2026-10-25', 'client_approved', 1200) returning id`,
+      [ob, client],
+    )).rows[0].id;
+
+    await expect(defer(REVIEWER, d, "2026-10-01")).rejects.toThrow(/August 2026 is locked by the reviewer/);
+    // The reviewer asks with the client's reason; it waits for the Owner.
+    const reason = "To move to a later period (Sales Invoice SI-80): Client requests deferral";
+    await as(REVIEWER, `select public.request_books_unlock($1, '2026-08-01', $2)`, [client, reason]);
+    await expect(defer(REVIEWER, d, "2026-10-01")).rejects.toThrow(/locked by the reviewer/);
+    const req = (await db.query(`select id from public.books_lock_requests where client_id = $1 and month = '2026-08-01' and kind = 'unlock' and status = 'requested'`, [client])).rows[0].id;
+    await as(OWNER, `select public.decide_books_unlock($1, true)`, [req]);
+    expect((await db.query(`select status from public.filing_instances where id = $1`, [q3])).rows[0].status).toBe("not_started");
+
+    // Now it moves; August is locked again for the return to be prepared afresh.
+    expect((await defer(REVIEWER, d, "2026-10-01")).rows[0]).toMatchObject({ document_month: "2026-10-01", status: "under_review" });
+    await as(REVIEWER, `select public.lock_books_month($1, '2026-08-01')`, [client]);
+    expect((await db.query(`select count(*)::int as n from public.books_month_locks where client_id = $1 and month = '2026-08-01'`, [client])).rows[0].n).toBe(1);
+  });
+
   it("moves only sales and purchases", async () => {
     const d = await waiting("bir_2307_received", "2026-09-01", { date: "2026-09-10", party_tin: CUSTOMER, withholding: "100.00" });
     await expect(defer(OWNER, d, "2026-10-01")).rejects.toThrow(/Only a sale or purchase/);
