@@ -62,7 +62,12 @@ describe("prior figures", () => {
     const figures = flattenFigures({
       sections: [{ title: "x", lines: [{ key: "a", line: "1", label: "A", amount: 5 }, { key: "t", line: "2", label: "T", amount: null, basis: "text" }] }],
     });
-    expect(figures).toEqual({ a: 5 });
+    expect(figures).toEqual({ a: 5, __tax_due: 0 });
+    expect(
+      flattenFigures({ sections: [{ title: "y", lines: [{ key: "total_amount_payable", line: "26", label: "TOTAL", amount: 123_45, emphasis: "payable" }] }] }).__tax_due,
+    ).toBe(123_45);
+    // An overpayment is nothing to collect.
+    expect(flattenFigures({ sections: [{ title: "z", lines: [{ key: "p", line: "1", label: "P", amount: -500, emphasis: "payable" }] }] }).__tax_due).toBe(0);
     const prior = buildPriorFigures([
       { form: "0619-E", periodStart: "2026-02-01", figures: { amount_of_remittance: 200 } },
       { form: "0619-E", periodStart: "2026-01-01", figures: { amount_of_remittance: 100 } },

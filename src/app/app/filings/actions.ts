@@ -7,6 +7,9 @@ import { getIdentity } from "@/lib/auth";
 import type { SignOffAction } from "@/lib/filings/sign-off";
 import { showMonth } from "@/lib/documents/labels";
 import { datFiles } from "@/lib/esubmission/dat";
+import { moduleForForm } from "@/lib/returns/registry";
+import { TAX_DUE_FIGURE, taxDueOf } from "@/lib/returns/source";
+import type { WorksheetResult } from "@/lib/returns/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadPeriodFile } from "@/lib/workpapers/load";
 import { BOOKS_GO_LIVE } from "@/lib/ledger/types";
@@ -15,6 +18,21 @@ import { blockingTies, monthsOf, TIES_FOR_FORM } from "@/lib/workpapers/tieouts"
 
 export type SignOffState = { ok?: string; error?: string };
 
+/**
+ * The tax due from the return's saved worksheet, in pesos; "missing" when the form has a
+ * worksheet that has not been saved yet; null when the app has no worksheet for the form.
+ */
+async function worksheetTaxDue(supabase: Awaited<ReturnType<typeof supabaseServer>>, filingId: string): Promise<number | "missing" | null> {
+  const [{ data: f }, { data: w }] = await Promise.all([
+    supabase.from("filing_instances").select("form").eq("id", filingId).maybeSingle(),
+    supabase.from("return_worksheets").select("figures, result").eq("filing_instance_id", filingId).maybeSingle(),
+  ]);
+  if (!f || !moduleForForm(f.form as string)) return null;
+  if (!w?.result) return "missing";
+  const figures = (w.figures ?? {}) as Record<string, number>;
+  return (figures[TAX_DUE_FIGURE] ?? taxDueOf(w.result as WorksheetResult)) / 100;
+}
+
 const text = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
 const amount = z.coerce.number("Enter the tax due (0 if none).").min(0, "Enter zero or more.").multipleOf(0.01, "Use at most two decimals.");
 
@@ -22,6 +40,8 @@ const amount = z.coerce.number("Enter the tax due (0 if none).").min(0, "Enter z
 function stepData(action: SignOffAction, form: FormData): { data: Record<string, unknown> } | { error: string } {
   switch (action) {
     case "prepare": {
+      // Forms with a worksheet: the tax due is taken from it in advanceFilingAction.
+      if (form.get("tax_due_from_worksheet") === "1") return { data: {} };
       const r = amount.safeParse(text(form.get("tax_due")) || undefined);
       return r.success ? { data: { tax_due: r.data } } : { error: r.error.issues[0].message };
     }
@@ -52,6 +72,11 @@ export async function advanceFilingAction(filingId: string, action: SignOffActio
   if (action === "prepare") {
     const blocked = await tieOutsBlocking(supabase, filingId);
     if (blocked) return { error: blocked };
+    // The tax due comes from the saved worksheet (Owner, 26 November 2026); the database
+    // takes it from there too. Typed only for forms the app has no worksheet for.
+    const fromWorksheet = await worksheetTaxDue(supabase, filingId);
+    if (fromWorksheet === "missing") return { error: "Compute and save the worksheet first: the tax due comes from it." };
+    if (fromWorksheet != null) parsed.data.tax_due = fromWorksheet;
   }
   if (action === "review") {
     const held = await reviewHolding(supabase, filingId);
