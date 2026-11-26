@@ -15,18 +15,19 @@ export interface NotificationKindInfo {
   label: string;
   /** The email's button. */
   action: string;
-  /** Staff kinds only the Owner (or the acting approver) receives. */
+  /** Staff kinds only the Owner receives; with `approver`, a reviewer acting for the Owner too. */
   ownerOnly?: boolean;
+  approver?: boolean;
 }
 
 export const NOTIFICATION_KINDS = {
   return_ready_for_review: { group: "returns", audience: "staff", label: "A return is ready for my review", action: "Review the return" },
-  return_ready_for_approval: { group: "returns", audience: "staff", label: "A return is ready for final approval", action: "Approve the return", ownerOnly: true },
+  return_ready_for_approval: { group: "returns", audience: "staff", label: "A return is ready for final approval", action: "Approve the return", ownerOnly: true, approver: true },
   return_sent_back: { group: "returns", audience: "staff", label: "My return was sent back", action: "See what to fix" },
   return_client_query: { group: "returns", audience: "staff", label: "A client asked a question on a return", action: "Answer the question" },
   return_approved: { group: "returns", audience: "staff", label: "A return is approved and ready to file", action: "File the return" },
   esubmission_result: { group: "returns", audience: "staff", label: "eSubmission validated or came back with errors", action: "Open the return" },
-  unlock_requested: { group: "returns", audience: "staff", label: "Someone asked to lock or unlock a month", action: "Decide the request", ownerOnly: true },
+  unlock_requested: { group: "returns", audience: "staff", label: "Someone asked to lock or unlock a month", action: "Decide the request", ownerOnly: true, approver: true },
   unlock_decided: { group: "returns", audience: "staff", label: "My lock or unlock request was decided", action: "Open the books" },
   return_filed: { group: "returns", audience: "client", label: "A return was filed", action: "See your returns" },
   return_for_client_approval: { group: "returns", audience: "client", label: "A return is ready for my approval", action: "Review and approve" },
@@ -58,10 +59,15 @@ export function isNotificationKind(v: string): v is NotificationKind {
   return Object.hasOwn(NOTIFICATION_KINDS, v);
 }
 
-/** The kinds a person can receive, for their settings page. */
-export function kindsFor(audience: NotificationAudience, isOwner: boolean): NotificationKind[] {
+/**
+ * The kinds a person can receive, for their settings page. Reviewers also get the
+ * approver kinds: whoever the Owner names acting approver receives those.
+ */
+export function kindsFor(audience: NotificationAudience, role: "owner" | "reviewer" | "staff" | null): NotificationKind[] {
   return (Object.keys(NOTIFICATION_KINDS) as NotificationKind[]).filter((k) => {
     const info: NotificationKindInfo = NOTIFICATION_KINDS[k];
-    return info.audience === audience && (!info.ownerOnly || isOwner || audience === "client");
+    if (info.audience !== audience) return false;
+    if (audience === "client" || !info.ownerOnly) return true;
+    return role === "owner" || (role === "reviewer" && info.approver === true);
   });
 }

@@ -40,6 +40,8 @@ function Links({ keys, path }: { keys: readonly NavKey[]; path: string | null })
   const active = (key: NavKey) => {
     if (path === null) return false;
     const { href, also } = items[key];
+    // Personal notification settings sit under /app/settings for every staff member; they are not Firm's.
+    if (under(path, "/app/settings/notifications")) return false;
     return (href === "/app" ? path === "/app" : under(path, href)) || also.some((a) => under(path, a));
   };
   return keys.map((key) => {
