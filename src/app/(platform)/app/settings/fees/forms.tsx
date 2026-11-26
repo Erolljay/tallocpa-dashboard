@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState, useTransition } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
-import { auditNote, isAuditItem } from "@/lib/fees/template";
+import { PRICE_SECTIONS, priceSection } from "@/lib/fees/sections";
 import { COMPONENTS, type ComponentLetter } from "@/lib/fees/types";
 import {
   activateAction,
@@ -161,14 +161,6 @@ const billingHint: Record<string, string> = {
   multiplier: "factor",
 };
 
-/** The editor's sections: monthly components, annual jobs, ad hoc jobs, and the separate audit. */
-export const PRICE_SECTIONS = [
-  { key: "monthly", title: "Monthly", hint: "The monthly retainer on every quote. Each needs a price before activating (0 if included)." },
-  { key: "annual", title: "Annual jobs", hint: "Not on the quote: priced in the proposal, billed once a year. A price is optional; it fills in the proposal." },
-  { key: "ad_hoc", title: "Ad hoc jobs", hint: "Not on the quote: priced in the proposal, billed when done. A price is optional; it fills in the proposal." },
-  { key: "audit", title: "Audit (separate engagement)", hint: auditNote(null) + " Priced by taxpayer type and annual gross sales." },
-] as const;
-export const priceSection = (r: Pick<PriceRow, "billing" | "code">) => (isAuditItem(r) ? "audit" : r.billing === "annual" ? "annual" : r.billing === "one_time" ? "ad_hoc" : "monthly");
 
 /** Every price of a draft in one form, in sections and grouped by component; one Save for all. */
 export function PricesForm({ scheduleId, rows }: { scheduleId: string; rows: PriceRow[] }) {
