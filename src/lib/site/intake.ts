@@ -5,15 +5,19 @@
  *
  *   taxpayer_type  → the Type select (same values as the fee model)
  *   tax=vat        → VAT-registered checked (tax=pt leaves it unchecked)
+ *   tax=ewt        → the withholding question answered "Yes, on rent or
+ *                    contractors" (rental); a TAMP changes it to TAMP
  *   industry       → a complexity checkbox where one fits (inventory, manufacturing,
  *                    construction); otherwise only the note
  *   service        → the Services checkboxes (tax_compliance, bookkeeping)
  *   industry + tax → a short editable note in "Anything we should know", because
- *                    /start has no field for industry, 1601-C, expanded withholding
- *                    or income tax (the fee model counts employees instead)
+ *                    /start has no field for industry, 1601-C or income tax (the
+ *                    fee model counts employees instead). Expanded withholding is
+ *                    left out of the note: it is answered by the question.
  *
  * Nothing is submitted for the visitor: these are default values they can change.
  */
+import type { EwtKind } from "@/lib/fees/types";
 
 export const INDUSTRIES = [
   { id: "retail", label: "Retail or trading", complexity: "inventory" },
@@ -67,6 +71,8 @@ export function startHref(a: { industry: IndustryId | null; taxpayerType: Picker
 export interface StartPrefill {
   taxpayerType?: PickerTaxpayerType;
   vat?: boolean;
+  /** The withholding question's answer (src/lib/fees/types.ts EwtKind). */
+  ewt?: EwtKind;
   complexity: string[];
   services: PickerService[];
   message?: string;
@@ -81,6 +87,8 @@ export function prefillFromQuery(q: Query): StartPrefill {
   const taxes = all(q.tax).filter((t): t is TaxChoice => known(TAX_CHOICES.map((c) => c.id), t));
   if (taxes.includes("vat")) out.vat = true;
   else if (taxes.includes("pt")) out.vat = false;
+  // The picker cannot tell rent from suppliers; the broader answer, which the visitor can narrow.
+  if (taxes.includes("ewt")) out.ewt = "rental";
 
   const industry = INDUSTRIES.find((i) => i.id === first(q.industry));
   if (industry && "complexity" in industry) out.complexity.push(industry.complexity);
@@ -90,7 +98,7 @@ export function prefillFromQuery(q: Query): StartPrefill {
 
   const parts: string[] = [];
   if (industry) parts.push(`Industry: ${industry.label}.`);
-  const listed = TAX_CHOICES.filter((c) => taxes.includes(c.id) && !(c.id === "pt" && taxes.includes("vat")));
+  const listed = TAX_CHOICES.filter((c) => taxes.includes(c.id) && c.id !== "ewt" && !(c.id === "pt" && taxes.includes("vat")));
   if (listed.length) parts.push(`Tax types on our COR: ${listed.map((c) => `${c.label} (${c.form})`).join("; ")}.`);
   if (parts.length) out.message = parts.join(" ");
   return out;

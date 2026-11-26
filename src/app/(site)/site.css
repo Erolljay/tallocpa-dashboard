@@ -9,7 +9,8 @@
 /* Hallmark · waive 47c · a faint dot grid on the navy bands, fading out · the Owner asked for a pattern on the brand gradient; it sits under real content, never alone */
 
 /*
- * The website shares the app's tokens and Tailwind utilities (AGENTS.md); this
+ * The website shares the app's BoardUI tokens, type scale and base layer (AGENTS.md)
+ * through its own Tailwind entry (site-globals.css, which imports this file); this
  * file holds only what the site adds: no sideways scroll on phones.
  */
 html,
@@ -18,7 +19,7 @@ body {
 }
 
 /*
- * The site's faces (set in (site)/layout.tsx): BoardUI's components read
+ * The site's faces (set in (site)/site-document.tsx): BoardUI's components read
  * --font-sans and --font-mono, so pointing those at Geist here re-faces every
  * component inside the site and nothing in the app.
  */

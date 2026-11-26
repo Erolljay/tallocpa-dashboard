@@ -104,13 +104,13 @@ describe.skipIf(!url)("fee schedule database", () => {
     }
   });
 
-  it("activation needs every price, except items quoted on request", async () => {
+  it("activation needs every monthly price, but not items quoted on request or annual and ad hoc jobs", async () => {
     await as(OWNER, async () => {
       const id = await draft("2027", "2027-01-01", false);
       await fails(`update public.fee_schedules set status = 'active' where id = $1`, [id], /Not priced yet: Base \(Individual\); Base \(Corporation, OPC or partnership\);/);
-      await db.query(`update public.fee_items set price = case when billing = 'multiplier' then 1 else 0 end where schedule_id = $1 and not is_custom_quote and code <> 'G.heavy'`, [id]);
-      await fails(`update public.fee_schedules set status = 'active' where id = $1`, [id], /Not priced yet: Bookkeeping \(Heavy\)$/);
-      await db.query(`update public.fee_items set price = 8000 where schedule_id = $1 and code = 'G.heavy'`, [id]);
+      await db.query(`update public.fee_items set price = 0 where schedule_id = $1 and not is_custom_quote and billing not in ('annual', 'one_time') and code <> 'F.151-300'`, [id]);
+      await fails(`update public.fee_schedules set status = 'active' where id = $1`, [id], /Not priced yet: Bookkeeping, by documents a month \(151–300 a month\)$/);
+      await db.query(`update public.fee_items set price = 2500 where schedule_id = $1 and code = 'F.151-300'`, [id]);
       const active = (await db.query(`update public.fee_schedules set status = 'active' where id = $1 returning status, activated_by, activated_at is not null as stamped`, [id])).rows[0];
       expect(active).toEqual({ status: "active", activated_by: OWNER, stamped: true });
     });
@@ -152,11 +152,15 @@ describe.skipIf(!url)("fee schedule database", () => {
     expect(idx).toMatch(/UNIQUE INDEX .* \(brand_id\) WHERE \(status = 'active'::text\)/);
   });
 
-  it("rejects a price on an item quoted on request and a factor below 1", async () => {
+  it("rejects a price on an item quoted on request, a factor below 1 and a bad catch-up factor or cap", async () => {
     await as(OWNER, async () => {
       const id = await draft("Checks", "2027-01-01", false);
-      await fails(`update public.fee_items set price = 1000 where schedule_id = $1 and code = 'K.fs_audit'`, [id], /check constraint/);
-      await fails(`update public.fee_items set price = 0.5 where schedule_id = $1 and code = 'G.x_inventory'`, [id], /check constraint/);
+      await fails(`update public.fee_items set price = 1000 where schedule_id = $1 and code = 'K.aup'`, [id], /check constraint/);
+      await fails(`insert into public.fee_items (schedule_id, code, component, label, billing, price) values ($1, 'I.backlog_month', 'I', 'Old', 'multiplier', 0.5)`, [id], /check constraint/);
+      await fails(`update public.fee_schedules set catch_up_factor = 0 where id = $1`, [id], /check constraint/);
+      await fails(`update public.fee_schedules set catch_up_factor = 11 where id = $1`, [id], /check constraint/);
+      await fails(`update public.fee_schedules set monthly_cap = -1 where id = $1`, [id], /check constraint/);
+      await db.query(`update public.fee_schedules set catch_up_factor = 0.5, monthly_cap = 6000 where id = $1`, [id]);
       await fails(`update public.fee_items set price = -1 where schedule_id = $1 and code = 'A.individual'`, [id], /check constraint/);
     });
   });

@@ -94,7 +94,7 @@ function storedTheme(): ThemeMode {
   } catch {
     // Storage blocked: fall through to the device setting.
   }
-  // Tallo CPA: with no saved choice, follow the device (matches app/layout.tsx's pre-paint script).
+  // Tallo CPA: with no saved choice, follow the device (matches the pre-paint script in src/lib/theme-script.ts).
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 

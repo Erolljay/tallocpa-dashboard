@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
     ];
   },
   partialPrefetching: true,
+  experimental: {
+    // Two root layouts (the website's and the app's) leave no single layout for an
+    // unmatched URL's 404: src/app/global-not-found.tsx renders it with the website's document.
+    globalNotFound: true,
+  },
   turbopack: {
     rules: {
       "*.css": {

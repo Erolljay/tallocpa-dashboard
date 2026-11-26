@@ -47,7 +47,7 @@ export const SERVICES: Service[] = [
     slug: "bookkeeping",
     keyword: "bookkeeping services Philippines",
     seoTitle: "Bookkeeping Services in the Philippines | Tallo CPA",
-    metaDescription: "Monthly bookkeeping services for Philippine businesses: books of accounts kept in BIR form, reconciled to the bank, ready for your returns.",
+    metaDescription: "Bookkeeping services from our Iloilo City office, for businesses in Iloilo and nationwide: books of accounts kept in BIR form, reconciled monthly.",
     h1: "Bookkeeping services",
     opening: "Bookkeeping services for Philippine businesses: your sales, purchases and bank activity recorded every month, in books of accounts kept the way the BIR requires.",
     related: ["tax-compliance", "cas-implementation", "accounting-outsourcing"],
@@ -72,7 +72,7 @@ export const SERVICES: Service[] = [
     seoTitle: "BIR Tax Compliance Services | Tallo CPA",
     metaDescription: "BIR tax compliance services: VAT or percentage tax, withholding, income tax and annual information returns, prepared from your books and filed for you.",
     h1: "BIR tax compliance services",
-    opening: "BIR tax compliance services: we prepare each return from your books, you approve it in the client portal, and we file it on the BIR's schedule.",
+    opening: "BIR tax compliance services from our office in Iloilo City, for businesses in Iloilo and nationwide: we prepare each return from your books, you approve it in the client portal, and we file it on the BIR's schedule.",
     related: ["bookkeeping", "accounting-outsourcing", "audit"],
     group: "accounting",
     short: "VAT, withholding and income tax returns",
@@ -115,11 +115,11 @@ export const SERVICES: Service[] = [
   },
   {
     slug: "audit",
-    keyword: "financial statement audit Philippines",
-    seoTitle: "Financial Statement Audit, Philippines | Tallo CPA",
-    metaDescription: "Audit of financial statements under the Philippine Standards on Auditing, with the auditor's report for your annual BIR return and SEC filing.",
+    keyword: "auditor in Iloilo City",
+    seoTitle: "Auditor in Iloilo City | Financial Statement Audit",
+    metaDescription: "Financial statement audit by an independent auditor in Iloilo City, under the Philippine Standards on Auditing, for your BIR return and SEC filing.",
     h1: "Financial statement audit",
-    opening: "A financial statement audit under the Philippine Standards on Auditing, with the auditor's report for your annual income tax return and SEC filing.",
+    opening: "A financial statement audit under the Philippine Standards on Auditing, by an independent auditor in Iloilo City, with the auditor's report for your annual income tax return and SEC filing.",
     related: ["agreed-upon-procedures", "accounting-outsourcing", "tax-compliance"],
     group: "assurance",
     short: "Financial statements, audited",
@@ -230,7 +230,7 @@ export const FAQ_GROUPS: { title: string; items: Faq[] }[] = [
     items: [
       {
         q: "How do I get a quote?",
-        a: ["Press Get a quote and tell us your industry, how your business is registered, and the taxes you file: VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, and income tax. The quote form works out the fee for those answers from our fee schedule and sends your request to us."],
+        a: ["Press Get a quote and tell us your industry, how your business is registered, and the taxes you file: VAT or percentage tax, 1601-C, 0619-E and 1601-EQ, and income tax. The quote form works out the fee for those answers from our fee schedule and sends your request to us.", "The quote shows your monthly fee, and a one-time catch-up if your books and returns are behind. Annual work (your annual income tax return with financial statements, 1604-C, 1604-E, SAWT) and one-off jobs such as registrations and permits are priced in your proposal."],
       },
       {
         q: "What do you need to start?",

@@ -1,0 +1,186 @@
+/* ---------------------------------------------------------------------------
+ * BoardUI base: the dark/rtl variants, the document reset, theme-aware
+ * assets, the dark elevation shadows and form-control resets. It holds no
+ * Tailwind entry and no component effects, so the app (globals.css) and the
+ * public website's lean entry (src/app/(site)/site-globals.css) share it.
+ * --------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * Dark mode strategy
+ *
+ * We use a class-based dark variant. Toggle dark mode by adding the `.dark`
+ * class to <html> (a theme provider like `next-themes` can do this later).
+ *
+ *   <html class="dark">  →  every `dark:*` utility activates
+ *
+ * Components should NOT use `dark:` prefixes directly. Instead they reference
+ * semantic color tokens (e.g. `bg-bg-primary`, `text-text-primary`) that flip
+ * under `.dark` in styles/theme.css.
+ * --------------------------------------------------------------------------- */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Resolve the nearest direction boundary, including nested LTR regions.
+ * Tailwind's ancestor-based defaults also match inside an opposing region. */
+@custom-variant rtl (&:dir(rtl));
+@custom-variant ltr (&:dir(ltr));
+
+/* The next theme is revealed by ThemeToggle from the exact interaction point.
+ * Native view-transition crossfades are disabled so only the soft circular
+ * clip-path animation runs; unsupported browsers simply ignore these rules. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* Components often have their own hover/focus color transitions. Freeze them
+ * while the browser captures the next theme so the expanding circle contains
+ * the fully resolved new palette instead of a frame that is still fading from
+ * the old one. This is what makes the click-origin reveal read clearly. */
+.theme-transitioning,
+.theme-transitioning * {
+  transition: none !important;
+}
+
+/* Reset + base */
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-ligatures: contextual;
+  font-kerning: normal;
+}
+
+html {
+  color-scheme: light;
+  background-color: var(--color-background-full);
+}
+html.dark {
+  color-scheme: dark;
+}
+body {
+  background-color: var(--color-background-full);
+  color: var(--color-text-primary);
+}
+
+/* Theme-aware monochrome BoardUI mark. Both images keep their intrinsic
+ * dimensions while the root theme class decides which one participates in
+ * layout, avoiding a light-logo flash during hydration. */
+.theme-logo-dark,
+.theme-asset-dark {
+  display: none;
+}
+.dark .theme-logo-light,
+.dark .theme-asset-light {
+  display: none;
+}
+.dark .theme-logo-dark,
+.dark .theme-asset-dark {
+  display: block;
+}
+
+/* Tailwind expands shadow utilities into `--tw-shadow` at build time. Point
+ * those generated utilities back to the live dark elevation tokens so the
+ * class-based theme can adjust opacity without component-level overrides.
+ *
+ * Each override is part of its utility (`@utility`), so Tailwind emits it in
+ * the utilities layer right after the base utilities and before every variant:
+ * a later variant such as `disabled:shadow-none` wins in dark as it does in
+ * light. (Written as plain rules outside the layers, they outranked every
+ * variant, and a disabled button kept its shadow in dark.) The `:where()`
+ * keeps the utility's own specificity and matches only an element that has
+ * the base class inside `.dark`, so a variant on its own (`hover:shadow-xs`)
+ * keeps its value as before. One change in dark: a shadow variant on an
+ * element that also has a base shadow class (`shadow-sm hover:shadow-md`) now
+ * takes effect, with its light value, where the base class's dark value used
+ * to win in every state. */
+@utility shadow-2xs {
+  &:where(.dark .shadow-2xs) {
+    --tw-shadow: var(--shadow-2xs);
+  }
+}
+@utility shadow-xs {
+  &:where(.dark .shadow-xs) {
+    --tw-shadow: var(--shadow-xs);
+  }
+}
+@utility shadow-sm {
+  &:where(.dark .shadow-sm) {
+    --tw-shadow: var(--shadow-sm);
+  }
+}
+@utility shadow-md {
+  &:where(.dark .shadow-md) {
+    --tw-shadow: var(--shadow-md);
+  }
+}
+@utility shadow-lg {
+  &:where(.dark .shadow-lg) {
+    --tw-shadow: var(--shadow-lg);
+  }
+}
+@utility shadow-xl {
+  &:where(.dark .shadow-xl) {
+    --tw-shadow: var(--shadow-xl);
+  }
+}
+@utility shadow-card {
+  &:where(.dark .shadow-card) {
+    --tw-shadow: var(--shadow-card);
+  }
+}
+@utility shadow-dropdown {
+  &:where(.dark .shadow-dropdown) {
+    --tw-shadow: var(--shadow-dropdown);
+  }
+}
+@utility shadow-sidebar {
+  &:where(.dark .shadow-sidebar) {
+    --tw-shadow: var(--shadow-sidebar);
+  }
+}
+@utility shadow-waitlist {
+  &:where(.dark .shadow-waitlist) {
+    --tw-shadow: var(--shadow-waitlist);
+  }
+}
+
+/* Hide default expand arrow on Safari */
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Hide default number-input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Hide default search clear button */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* iOS Safari auto-zooms the page when a focused form field's font-size is
+ * under 16px — our text-body-regular/medium tokens are 14px by design, so
+ * bump just the font-size (not the whole token) on small screens instead of
+ * changing the design system's type scale. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

@@ -4,7 +4,7 @@
  * these give the Owner a clear sentence before a save is attempted.
  */
 import { z } from "zod";
-import { BILLINGS, COMPONENT_LETTERS, COMPLEXITY_FLAGS, type Conditions, type FeeItem, type ScheduleSettings } from "./types";
+import { BILLINGS, COMPONENT_LETTERS, COMPLEXITY_FLAGS, isProposalOnly, type Conditions, type FeeItem, type ScheduleSettings } from "./types";
 
 export type ScheduleStatus = "draft" | "active" | "retired";
 
@@ -37,6 +37,8 @@ export interface FeeScheduleRow {
   minimum_monthly_retainer: string | number | null;
   late_surcharge_amount: string | number | null;
   late_surcharge_auto: boolean;
+  monthly_cap: string | number | null;
+  catch_up_factor: string | number | null;
   notes: string | null;
   activated_at: string | null;
   retired_at: string | null;
@@ -44,7 +46,7 @@ export interface FeeScheduleRow {
 }
 
 export const FEE_SCHEDULE_COLUMNS =
-  "id, brand_id, name, effective_from, status, prices_include_tax, quote_valid_days, minimum_monthly_retainer, late_surcharge_amount, late_surcharge_auto, notes, activated_at, retired_at, created_at";
+  "id, brand_id, name, effective_from, status, prices_include_tax, quote_valid_days, minimum_monthly_retainer, late_surcharge_amount, late_surcharge_auto, monthly_cap, catch_up_factor, notes, activated_at, retired_at, created_at";
 
 const range = z.object({ min: z.number().int().min(0), max: z.number().int().min(0).nullable() });
 export const conditionsSchema = z
@@ -55,8 +57,10 @@ export const conditionsSchema = z
     employees: range.optional(),
     remits_contributions: z.boolean().optional(),
     documents: range.optional(),
+    annual_sales: range.optional(),
+    /** Schedules made before 26 Nov 2026 only (component G). */
     bookkeeping: z.enum(["light", "standard", "heavy", "any"]).optional(),
-    complexity: z.enum(COMPLEXITY_FLAGS).optional(),
+    complexity: z.enum([...COMPLEXITY_FLAGS, "any"]).optional(),
     per: z.enum(["employee", "branch"]).optional(),
     above: z.number().int().min(0).optional(),
     of: z.enum(["bookkeeping", "monthly_retainer"]).optional(),
@@ -89,12 +93,18 @@ export function toSettings(s: FeeScheduleRow): ScheduleSettings {
     minimumMonthlyRetainer: num(s.minimum_monthly_retainer),
     lateSurchargeAmount: num(s.late_surcharge_amount),
     lateSurchargeAuto: s.late_surcharge_auto,
+    monthlyCap: num(s.monthly_cap ?? null),
+    catchUpFactor: num(s.catch_up_factor ?? null),
   };
 }
 
-/** Items that still need a price before the schedule can be activated. */
-export function unpricedItems<T extends Pick<FeeItem, "price" | "isCustomQuote">>(items: readonly T[]): T[] {
-  return items.filter((i) => i.price === null && !i.isCustomQuote);
+/**
+ * Items that still need a price before the schedule can be activated. Items quoted
+ * on request never take one; annual and one-time items are not on quotes (26 Nov
+ * 2026), so their price is optional: it only fills in the proposal.
+ */
+export function unpricedItems<T extends Pick<FeeItem, "price" | "isCustomQuote" | "billing">>(items: readonly T[]): T[] {
+  return items.filter((i) => i.price === null && !i.isCustomQuote && !isProposalOnly(i));
 }
 
 /** "A.individual — Base (Individual)" style label for messages. */
@@ -132,6 +142,13 @@ export const settingsSchema = z.object({
   minimum_monthly_retainer: optionalAmount,
   late_surcharge_amount: optionalAmount,
   late_surcharge_auto: z.boolean(),
+  monthly_cap: optionalAmount,
+  catch_up_factor: z
+    .string()
+    .transform((s) => s.replace(/[×x%\s]/gi, ""))
+    .refine((s) => s === "" || /^\d+(\.\d{1,2})?$/.test(s), "Enter the catch-up factor as a number, e.g. 0.5 for half the monthly retainer, or leave it empty.")
+    .transform((s) => (s === "" ? null : Number(s)))
+    .refine((n) => n === null || (n > 0 && n <= 10), "The catch-up factor is more than 0 and at most 10."),
   notes: z.string().trim().max(2000).transform((s) => (s === "" ? null : s)),
 });
 export type SettingsInput = z.input<typeof settingsSchema>;
