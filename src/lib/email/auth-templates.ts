@@ -9,6 +9,19 @@
  */
 import { renderEmail, type EmailBrand } from "./layout";
 
+/**
+ * The firm's footer for these emails. Supabase cannot read Settings → Brand, so the
+ * details are written in here; keep them in step with Settings → Brand.
+ */
+export const AUTH_EMAIL_BRAND: Partial<EmailBrand> = {
+  displayName: "Tallo CPA",
+  legalName: "EJ Tallo Cloud Accounting and Auditing Services",
+  businessAddress: "Rm. 11, Mezzanine Floor, Red Plaza Building, JM Basa St., Iloilo City",
+  phone: "0917 135 4486",
+  replyTo: "support@tallocpa.com",
+  website: "https://www.tallocpa.com",
+};
+
 const LINK = "https://link.placeholder.invalid/";
 const CODE = "__SIGN_IN_CODE__";
 const FONT = "'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
@@ -112,7 +125,7 @@ const afterButton = (lines: string[]) => lines.map((l) => (l === CODE ? `<p styl
 const codeBlock = `<span style="display:inline-block;padding:10px 16px;border-radius:10px;background-color:#f3f5fa;font-family:${FONT};font-size:28px;line-height:34px;font-weight:700;letter-spacing:6px;color:#1b2333;">{{ .Token }}</span>`;
 
 /** The sign-in email templates for Supabase, in the firm's layout. */
-export function authEmailTemplates(brand?: Partial<EmailBrand>): AuthTemplate[] {
+export function authEmailTemplates(brand: Partial<EmailBrand> = AUTH_EMAIL_BRAND): AuthTemplate[] {
   return SPECS.map((s) => {
     const { html } = renderEmail({
       brand,

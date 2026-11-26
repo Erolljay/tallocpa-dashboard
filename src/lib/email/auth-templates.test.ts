@@ -15,6 +15,9 @@ describe("Supabase sign-in email templates", () => {
   it("carry the brand and Supabase's variables, not the placeholders", () => {
     const magic = templates.find((t) => t.file === "magic_link.html")!.html;
     expect(magic).toContain("Tallo CPA");
+    expect(magic).toContain("EJ Tallo Cloud Accounting and Auditing Services");
+    expect(magic).toContain("Red Plaza Building, JM Basa St., Iloilo City");
+    expect(magic).toContain("0917 135 4486");
     expect(magic).toContain('href="{{ .ConfirmationURL }}"');
     expect(magic).toContain("{{ .Token }}");
     for (const t of templates) {
