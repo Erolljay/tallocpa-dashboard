@@ -122,11 +122,16 @@ export function buildFilingRows(input: {
   holidays: readonly IsoDate[];
   localHolidays?: readonly LocalHoliday[];
   today: IsoDate;
+  /**
+   * Past returns (the Owner's "Create past returns"): periods starting on or after this
+   * date, whatever their due date; the usual window still bounds the future.
+   */
+  periodsFrom?: IsoDate;
 }): { rows: FilingRow[]; missing: MissingRule[] } {
   const clients = new Map(input.clients.map((c) => [c.id, c]));
   const rules = input.rules.map(toDeadlineRule);
   const holidaysOf = holidaysByClient(input.holidays, input.localHolidays);
-  const from = addDays(input.today, -WINDOW.back);
+  const from = input.periodsFrom && input.periodsFrom < addDays(input.today, -WINDOW.back) ? input.periodsFrom : addDays(input.today, -WINDOW.back);
   const to = addDays(input.today, WINDOW.ahead);
   const rows: FilingRow[] = [];
   const missing: MissingRule[] = [];
@@ -153,6 +158,7 @@ export function buildFilingRows(input: {
       to,
     );
     for (const i of result.instances) {
+      if (input.periodsFrom && i.period.start < input.periodsFrom) continue;
       rows.push({
         obligation_id: ob.id,
         client_id: ob.client_id,
