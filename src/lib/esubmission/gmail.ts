@@ -48,7 +48,10 @@ export interface MailPart {
 }
 export interface MailMessage {
   id: string;
+  threadId?: string;
   internalDate?: string;
+  /** Gmail labels; "SENT" marks a message the mailbox sent. */
+  labelIds?: string[];
   payload?: MailPart;
 }
 
@@ -57,6 +60,19 @@ export async function readThread(env: EsubmissionMailEnv, threadId: string): Pro
   const token = await accessToken(env);
   const t = await call<{ messages?: MailMessage[] }>(env, token, `/threads/${encodeURIComponent(threadId)}?format=full`);
   return { token, messages: t.messages ?? [] };
+}
+
+/**
+ * Replies to a sent message that Gmail filed outside its thread (e.g. delivered through a
+ * Google Group that rewrote the sender): received messages whose In-Reply-To or References
+ * name `messageIdHeader`, found by subject in the last 60 days.
+ */
+export async function findReplies(env: EsubmissionMailEnv, token: string, subject: string, messageIdHeader: string): Promise<MailMessage[]> {
+  const q = `subject:"${subject.replace(/"/g, "")}" -in:sent newer_than:60d`;
+  const list = await call<{ messages?: { id: string }[] }>(env, token, `/messages?maxResults=20&q=${encodeURIComponent(q)}`);
+  const full = await Promise.all((list.messages ?? []).map((m) => call<MailMessage>(env, token, `/messages/${encodeURIComponent(m.id)}?format=full`)));
+  const id = messageIdHeader.trim();
+  return full.filter((m) => `${headerOf(m, "In-Reply-To")} ${headerOf(m, "References")}`.includes(id));
 }
 
 /** An attachment's bytes. */

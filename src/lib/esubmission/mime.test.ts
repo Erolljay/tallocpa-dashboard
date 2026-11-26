@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMime, classifyReply, esubmissionSubject, fromMailbox, isDatKind, toRaw } from "./mime";
+import { buildMime, classifyReply, esubmissionSubject, fromMailbox, isDatKind, isOwnMessage, toRaw } from "./mime";
 
 describe("buildMime", () => {
   it("builds a multipart message with the DAT files attached in base64", () => {
@@ -36,6 +36,12 @@ describe("helpers", () => {
     expect(esubmissionSubject({ form: "1601-EQ", periodLabel: "Q1 2027", clientName: "Jaro Trading", tin: "123-456-789-000" })).toBe("1601-EQ Q1 2027 - Jaro Trading (TIN 123-456-789-000)");
     expect(fromMailbox("Tallo CPA <Attachments@tallocpa.com>", "attachments@tallocpa.com")).toBe(true);
     expect(fromMailbox("eSubmission <esubmission@bir.gov.ph>", "attachments@tallocpa.com")).toBe(false);
+    // A Google Group rewrites the BIR's reply as sent "via" the group: still a reply.
+    expect(fromMailbox("'eSubmission' via eSubmission <attachments@tallocpa.com>", "attachments@tallocpa.com")).toBe(false);
+    // Sending as the group from a person's account: Gmail's SENT label decides.
+    expect(isOwnMessage({ labelIds: ["SENT"], from: "Tallo CPA <attachments@tallocpa.com>" }, "attachments@tallocpa.com")).toBe(true);
+    expect(isOwnMessage({ labelIds: ["INBOX", "UNREAD"], from: "'BIR' via eSubmission <attachments@tallocpa.com>" }, "attachments@tallocpa.com")).toBe(false);
+    expect(isOwnMessage({ from: "Tallo CPA <attachments@tallocpa.com>" }, "attachments@tallocpa.com")).toBe(true);
     expect(["qap-dat", "qap-csv", "sls_dat_2027-01", "sawt_csv", "alphalist_dat", "sawt_dat_2027-03"].filter(isDatKind)).toEqual(["qap-dat", "sls_dat_2027-01", "alphalist_dat", "sawt_dat_2027-03"]);
   });
 });
