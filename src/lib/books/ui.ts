@@ -53,6 +53,58 @@ export function monthRange(ym: string): { from: string; to: string } {
   return { from: `${ym}-01`, to };
 }
 
+/**
+ * How much the Books lists cover: the month in the header, the quarter of the
+ * client's taxable year that holds it, or the taxable year to the end of it.
+ */
+export const BOOKS_VIEWS = [
+  { key: "month", label: "Month" },
+  { key: "quarter", label: "Quarter" },
+  { key: "ytd", label: "Year to date" },
+] as const;
+export type BooksView = (typeof BOOKS_VIEWS)[number]["key"];
+export const BOOKS_VIEW_COOKIE = "books_view";
+
+export function booksView(raw: unknown): BooksView {
+  return BOOKS_VIEWS.some((v) => v.key === raw) ? (raw as BooksView) : "month";
+}
+
+export interface BooksRange {
+  view: BooksView;
+  /** First and last day covered (never before the books start). */
+  from: string;
+  to: string;
+  /** The last month covered ("YYYY-MM"): the quarter's end month, else the header month. */
+  endMonth: string;
+  /** "November 2026", "Oct – Dec 2026 (quarter)", "Jan – Nov 2026 (year to date)". */
+  label: string;
+}
+
+const shortMonth = (ym: string) => new Intl.DateTimeFormat("en-PH", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${ym}-01T00:00:00Z`));
+const longMonth = (ym: string) => new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${ym}-01T00:00:00Z`));
+const span = (a: string, b: string) => (a === b ? longMonth(a) : a.slice(0, 4) === b.slice(0, 4) ? `${shortMonth(a).split(" ")[0]} – ${shortMonth(b)}` : `${shortMonth(a)} – ${shortMonth(b)}`);
+
+/** The months the view covers for a header month, for a taxable year ending in `fyeMonth` (12: calendar year). */
+export function booksRange(month: string, view: BooksView, fyeMonth: number, booksStart: string | null): BooksRange {
+  const startMonth = (fyeMonth % 12) + 1;
+  const [y, m] = month.split("-").map(Number);
+  const yearStart = `${m >= startMonth ? y : y - 1}-${String(startMonth).padStart(2, "0")}`;
+  const idx = (y - Number(yearStart.slice(0, 4))) * 12 + m - startMonth;
+  let first = month;
+  let last = month;
+  if (view === "quarter") {
+    first = shiftMonth(yearStart, Math.floor(idx / 3) * 3);
+    last = shiftMonth(first, 2);
+  } else if (view === "ytd") {
+    first = yearStart;
+  }
+  const bs = booksStart?.slice(0, 7);
+  const shownFirst = bs && first < bs ? bs : first;
+  const from = bs && first < bs ? booksStart!.slice(0, 10) : `${first}-01`;
+  const label = view === "month" ? longMonth(month) : `${span(shownFirst, last)} (${view === "quarter" ? "quarter" : "year to date"})`;
+  return { view, from, to: monthRange(last).to, endMonth: last, label };
+}
+
 /** "YYYY-MM" n months from ym (n may be negative). */
 export function shiftMonth(ym: string, n: number): string {
   const [y, m] = ym.split("-").map(Number);

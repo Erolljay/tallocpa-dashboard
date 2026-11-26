@@ -8,7 +8,8 @@ import { BOOK_LOCK_FORMS, BOOKS, ENTRY_SOURCES, TEMPLATES } from "@/lib/ledger/t
 import { formatAmount } from "@/lib/returns/money";
 import { OpeningChecklist } from "../opening-checklist";
 import { BooksFrame } from "../books-frame";
-import { booksMonth } from "@/lib/books/ui";
+import { booksViewFor } from "../books-context";
+import { booksMonth, booksRange } from "@/lib/books/ui";
 import { manilaToday } from "@/lib/filings/run";
 import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, RelockForm, ReverseForm } from "../forms";
 
@@ -102,9 +103,10 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const openingAsOf = dayBefore(books.booksStart);
 
   const month = booksMonth(typeof q.month === "string" ? q.month : "", manilaToday(), books.booksStart);
+  const range = booksRange(month, await booksViewFor(q), client.fiscal_year_end_month, books.booksStart);
 
   return (
-    <BooksFrame supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="settings" at="/tools">
+    <BooksFrame range={range} supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="settings" at="/tools">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-title-2-medium text-text-primary">Ledger tools</h2>

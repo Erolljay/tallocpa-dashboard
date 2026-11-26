@@ -24,7 +24,7 @@ async function Certificates({ params, searchParams }: Pick<PageProps<"/app/clien
   const { set, by, supplier, period } = await load2307Staff(c);
   const path = `/app/clients/${c.id}/books/reports/2307`;
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports" sub="/2307" query={{ by, supplier }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports" sub="/2307" query={{ by, supplier }}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-title-2-medium text-text-primary">BIR 2307 to suppliers</h2>

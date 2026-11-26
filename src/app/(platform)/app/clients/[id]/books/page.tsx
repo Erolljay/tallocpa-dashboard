@@ -5,12 +5,12 @@ import { COA_TEMPLATES } from "@/lib/ledger/coa";
 import { booksAccess, loadStatements } from "@/lib/ledger/data";
 import type { Statement } from "@/lib/ledger/statements";
 import { TEMPLATE_FOR_TAXPAYER, TEMPLATES, type TemplateCode } from "@/lib/ledger/types";
-import { booksHref, booksMonth, fsLineOfLabel, moduleForFsLine } from "@/lib/books/ui";
+import { booksHref, booksMonth, booksRange, fsLineOfLabel, moduleForFsLine } from "@/lib/books/ui";
 import { manilaToday } from "@/lib/filings/run";
 import { formatAmount } from "@/lib/returns/money";
 import { cx } from "@/utils/cx";
 import { BooksFrame } from "./books-frame";
-import { fmtMonth } from "./books-context";
+import { booksViewFor, fmtMonth } from "./books-context";
 import { SetupForm } from "./forms";
 
 export default function BooksSummaryPage(props: PageProps<"/app/clients/[id]/books">) {
@@ -41,10 +41,12 @@ async function Summary({ params, searchParams }: Pick<PageProps<"/app/clients/[i
   }
 
   const month = booksMonth(typeof q.month === "string" ? q.month : "", manilaToday(), books.booksStart);
-  const result = await loadStatements(supabase, client, "monthly", month);
+  const range = booksRange(month, await booksViewFor(q), client.fiscal_year_end_month, books.booksStart);
+  // A quarter shows the quarter beside the year to date; a month (and the year to date) the month beside it.
+  const result = await loadStatements(supabase, client, range.view === "quarter" ? "quarterly" : "monthly", range.endMonth);
 
   return (
-    <BooksFrame supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="summary">
+    <BooksFrame range={range} supabase={supabase} clientId={id} clientName={client.name} booksStart={books.booksStart} month={month} active="summary">
       {"error" in result ? (
         <Notice tone="blocked">{result.error}</Notice>
       ) : (
@@ -57,8 +59,8 @@ async function Summary({ params, searchParams }: Pick<PageProps<"/app/clients/[i
             </Notice>
           )}
           <div className="grid gap-6 2xl:grid-cols-2">
-            <SummaryCard title="Balance Sheet" subtitle={`As of the end of ${fmtMonth(month)}`} statement={result.fs.position} clientId={id} month={month} />
-            <SummaryCard title="Profit and Loss" subtitle={fmtMonth(month)} statement={result.fs.income} clientId={id} month={month} />
+            <SummaryCard title="Balance Sheet" subtitle={`As of the end of ${fmtMonth(range.endMonth)}`} statement={result.fs.position} clientId={id} month={month} />
+            <SummaryCard title="Profit and Loss" subtitle={range.label} statement={result.fs.income} clientId={id} month={month} />
           </div>
           <p className="text-caption-1-regular text-text-tertiary">
             Full statements, notes and release to the client: <Link href={booksHref(id, "reports", month, {}, "/statements")} className="text-button-ghost-foreground hover:underline">Financial statements</Link>.

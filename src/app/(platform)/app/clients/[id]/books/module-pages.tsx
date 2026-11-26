@@ -5,6 +5,7 @@ import { payslips } from "@/lib/books/actions";
 import { loadEntryLines, loadTaxCodes } from "@/lib/books/data";
 import { formsFor, TAX_CODE_KIND_LABELS, appliesTo, type InvoiceKind } from "@/lib/books/tax-codes";
 import { booksHref, cents, journalRows, matches, monthRange } from "@/lib/books/ui";
+import { BOOK_TITLES } from "@/lib/ledger/books";
 import { loadAccounts, loadTrialBalance } from "@/lib/ledger/data";
 import { BOOKS, ENTRY_SOURCES, type Book, type EntrySource } from "@/lib/ledger/types";
 import { loadEmployees } from "@/lib/payroll/data";
@@ -24,21 +25,21 @@ const dayBefore = (iso: string) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86_
 /** Bank and Cash Accounts: each cash or bank account with its balance from the ledger at the end of the month. */
 export async function BankAccounts({ params, searchParams }: Props) {
   const c = await booksContext(params, searchParams);
-  const { from, to } = monthRange(c.month);
+  const { from, to } = c.range;
   const [accounts, tb] = await Promise.all([loadAccounts(c.supabase, c.id), loadTrialBalance(c.supabase, c.id, from < c.books.booksStart ? dayBefore(c.books.booksStart) : from, to)]);
   const cash = accounts.filter((a) => a.control === "cash" || a.control === "bank").filter((a) => matches(c.q, a.code, a.name));
   const row = new Map(tb.map((r) => [r.accountId, r]));
   const sum = (f: "opening" | "debit" | "credit" | "closing") => cash.reduce((s, a) => s + (row.get(a.id)?.[f] ?? 0), 0);
   const gl = (id: string) => `/app/clients/${c.id}/books/print?book=general_ledger&from=${from}&to=${to}#${id}`;
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="bank-accounts" query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="bank-accounts" query={{ q: c.q }}>
       <BooksList
         title="Bank and Cash Accounts"
         newHref={`/app/clients/${c.id}/books/accounts`}
         newLabel="New account"
         search={{ action: booksHref(c.id, "bank-accounts"), q: c.q, keep: { month: c.month } }}
-        note={<>Actual balances from the ledger for {fmtMonth(c.month)}. Bank reconciliation is not in the app yet; the general ledger of each account lists its entries.</>}
-        columns={[{ label: "Code" }, { label: "Name" }, { label: "Start of month", align: "end" }, { label: "Received", align: "end" }, { label: "Paid", align: "end" }, { label: "Actual balance", align: "end" }]}
+        note={<>Actual balances from the ledger for {c.range.label}. Bank reconciliation is not in the app yet; the general ledger of each account lists its entries.</>}
+        columns={[{ label: "Code" }, { label: "Name" }, { label: c.range.view === "month" ? "Start of month" : "Start of period", align: "end" }, { label: "Received", align: "end" }, { label: "Paid", align: "end" }, { label: "Actual balance", align: "end" }]}
         rows={cash.map((a) => {
           const r = row.get(a.id);
           return {
@@ -68,7 +69,7 @@ export async function Employees({ params, searchParams }: Props) {
   const list = (await loadEmployees(c.supabase, c.id)).sort(byName).filter((e) => matches(c.q, displayName(e), e.employeeNo, e.tin));
   const pay = `/app/clients/${c.id}/payroll`;
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="employees" query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="employees" query={{ q: c.q }}>
       <BooksList
         title="Employees"
         newHref={`${pay}/employees/new`}
@@ -103,7 +104,7 @@ export async function Payslips({ params, searchParams }: Props) {
   const monthPage = `/app/clients/${c.id}/payroll/month/${c.month}`;
   const { to } = monthRange(c.month);
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="payslips" query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="payslips" query={{ q: c.q }}>
       <BooksList
         title="Payslips"
         newHref={monthPage}
@@ -135,7 +136,7 @@ export async function Payslips({ params, searchParams }: Props) {
 /** Journal Entries: the month's manual entries (adjustments, depreciation, accruals, corrections). */
 export async function JournalList({ params, searchParams }: Props) {
   const c = await booksContext(params, searchParams);
-  const { from, to } = monthRange(c.month);
+  const { from, to } = c.range;
   const { data, error } = await c.supabase
     .from("journal_entries")
     .select("id, entry_date, reference, memo, status, journal_lines(debit)")
@@ -151,7 +152,7 @@ export async function JournalList({ params, searchParams }: Props) {
     .map((e) => ({ ...e, total: ((e.journal_lines ?? []) as { debit: string }[]).reduce((s, l) => s + cents(l.debit), 0) }))
     .filter((e) => matches(c.q, e.reference, e.memo));
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="journal" query={{ q: c.q }}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="journal" query={{ q: c.q }}>
       <BooksList
         title="Journal Entries"
         newHref={`/app/clients/${c.id}/books/journal/new`}
@@ -172,7 +173,7 @@ export async function JournalList({ params, searchParams }: Props) {
           ],
         }))}
         totals={["Total", null, null, formatAmount(rows.filter((e) => e.status !== "reversed").reduce((s, e) => s + e.total, 0)), null]}
-        empty={c.q ? "Nothing matches the search." : `No journal entries dated in ${fmtMonth(c.month)}.`}
+        empty={c.q ? "Nothing matches the search." : `No journal entries dated in ${c.range.label}.`}
       />
     </BooksFrame>
   );
@@ -188,7 +189,7 @@ export async function JournalView({ params, searchParams }: { params: Promise<{ 
   const name = new Map(accounts.map((a) => [a.id, a.name]));
   const rows = journalRows(lines, { accountName: (id) => name.get(id) ?? "Account" });
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="journal" sub={`/${e.id}`}>
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="journal" sub={`/${e.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <LinkButton href={booksHref(c.id, "journal", c.month)} variant="ghost" size="sm">Back to Journal Entries</LinkButton>
       </div>
@@ -206,24 +207,39 @@ export async function JournalView({ params, searchParams }: { params: Promise<{ 
   );
 }
 
+/** What each book of account holds, for the Reports list. */
+const BOOK_NOTES = {
+  sales: "Every Sales Invoice (cash or on account), on ruled pages, for",
+  purchases: "Every Purchase Invoice (cash or on account), on ruled pages, for",
+  cash_receipts: "Receipts from customers and other cash received, for",
+  cash_disbursements: "Payments to suppliers and other cash paid out (and purchases posted as cash before Purchase Invoices), for",
+  general_journal: "Journal entries, payroll and other non-cash entries, for",
+} as const;
+
 /** Reports: the existing report pages, and the books of account. */
 export async function ReportsIndex({ params, searchParams }: Props) {
   const c = await booksContext(params, searchParams);
-  const { from, to } = monthRange(c.month);
+  const { from, to } = c.range;
   const b = `/app/clients/${c.id}/books`;
   const book = (kind: string) => `${b}/print?book=${kind}&from=${from}&to=${to}`;
   const xlsx = (kind: string) => `${b}/export?kind=book&book=${kind}&from=${from}&to=${to}`;
   const items: { title: string; text: string; href: string; extra?: { label: string; href: string } }[] = [
-    { title: "Balance Sheet and Profit and Loss", text: `Side by side for ${fmtMonth(c.month)}.`, href: booksHref(c.id, "summary", c.month) },
+    { title: "Balance Sheet and Profit and Loss", text: `Side by side for ${c.range.label}.`, href: booksHref(c.id, "summary", c.month) },
     { title: "Financial statements", text: "Monthly, quarterly or annual, with notes; release to the client's portal.", href: booksHref(c.id, "reports", c.month, {}, "/statements") },
     { title: "Trial Balance", text: "As of the end of any month.", href: `${b}/tools?to=${c.month}#trial-balance` },
-    { title: "General Ledger", text: `Every account's entries for ${fmtMonth(c.month)}.`, href: book("general_ledger"), extra: { label: "Excel", href: xlsx("general_ledger") } },
+    { title: "General Ledger", text: `Every account's entries for ${c.range.label}.`, href: book("general_ledger"), extra: { label: "Excel", href: xlsx("general_ledger") } },
+    ...(["sales", "purchases", "cash_receipts", "cash_disbursements", "general_journal"] as const).map((k) => ({
+      title: BOOK_TITLES[k],
+      text: `${BOOK_NOTES[k]} ${c.range.label}.`,
+      href: book(k),
+      extra: { label: "Excel", href: xlsx(k) },
+    })),
     { title: "BIR 2307 to suppliers", text: "Certificates for the EWT on Purchase Invoices, per quarter, month or transaction; print one or all.", href: booksHref(c.id, "reports", c.month, {}, "/2307") },
     { title: "Old register beside the Books", text: "Parallel run: the returns' figures from the register and from the Books by tax code, to the centavo.", href: booksHref(c.id, "reports", c.month, {}, "/parallel-run") },
-    { title: "Books of account (loose-leaf / manual)", text: "Sales, Purchase, Cash Receipts, Cash Disbursements and General Journals, printed on ruled pages.", href: `${b}/tools#books-of-account` },
+    { title: "Books of account, any dates (loose-leaf / manual)", text: "Any book for any date range, printed on ruled pages; the loose-leaf permit.", href: `${b}/tools#books-of-account` },
   ];
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports">
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="reports">
       <section className="min-w-0 rounded-3xl border border-border-button-default bg-background-primary-default">
         <h2 className="border-b border-separator-border px-5 py-4 text-title-3-semibold text-text-secondary">Reports</h2>
         <ul className="divide-y divide-separator-border">
@@ -250,7 +266,7 @@ export async function SettingsPage({ params, searchParams }: Props) {
   const c = await booksContext(params, searchParams);
   const codes = await loadTaxCodes(c.supabase);
   return (
-    <BooksFrame supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="settings">
+    <BooksFrame range={c.range} supabase={c.supabase} clientId={c.id} clientName={c.client.name} booksStart={c.books.booksStart} month={c.month} active="settings">
       <Card title="Settings">
         <ul className="divide-y divide-separator-border">
           <li className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0">
