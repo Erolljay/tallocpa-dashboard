@@ -105,7 +105,7 @@ describe("the Owner's examples (26 Nov 2026), monthly cap ₱6,000, catch-up at 
 });
 
 describe("the instant quote from /start's answers", () => {
-  it("prices expanded withholding from the withholding question: the Owner's VAT corporation with 'Only on rent' includes ₱300", () => {
+  it("prices expanded withholding from the withholding question: the Owner's VAT corporation withholding on rent or contractors includes ₱300", () => {
     const q = (ewt: string) =>
       buildQuote({
         profile: profileFromQuery({ taxpayer_type: "corporation", vat: "1", ewt, employees: "5", contributions: "1", documents: "120", behind: "2" }).profile,

@@ -122,8 +122,8 @@ export const FEE_TEMPLATE: readonly FeeItemTemplate[] = [
   item("B.non_individual", "B", "VAT returns", "Non-individual", "monthly", { vat: true, taxpayer_types: [...NON_INDIVIDUAL] }),
 
   // C. Expanded withholding
-  item("C.rental", "C", "Expanded withholding", "Rental only", "monthly", { ewt: "rental" }),
-  item("C.regular", "C", "Expanded withholding", "TAMP or regular", "monthly", { ewt: "tamp_regular" }),
+  item("C.rental", "C", "Expanded withholding", "Rent or contractors", "monthly", { ewt: "rental" }),
+  item("C.regular", "C", "Expanded withholding", "Top withholding agent (TAMP)", "monthly", { ewt: "tamp_regular" }),
 
   // D. Payroll 1601-C, E. Contributions
   ...employeeItems("D", "Payroll withholding (1601-C)", {}),

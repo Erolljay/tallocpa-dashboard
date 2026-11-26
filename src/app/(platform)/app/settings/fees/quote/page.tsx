@@ -97,8 +97,8 @@ function ProfileForm({ profile, scheduleId, schedules }: { profile: ClientProfil
       <Field label="Expanded withholding" htmlFor="qp-ewt">
         <Select id="qp-ewt" name="ewt" defaultValue={profile.ewt}>
           <option value="none">None</option>
-          <option value="rental">Rental only</option>
-          <option value="tamp_regular">TAMP or regular</option>
+          <option value="rental">Rent or contractors</option>
+          <option value="tamp_regular">Top withholding agent (TAMP)</option>
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">

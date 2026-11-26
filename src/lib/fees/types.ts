@@ -73,7 +73,7 @@ export interface Range {
 export interface Conditions {
   taxpayer_types?: TaxpayerType[];
   vat?: boolean;
-  /** "any" = rental or TAMP/regular. */
+  /** "any" = rent or contractors (rental) or TAMP (tamp_regular). */
   ewt?: Exclude<EwtKind, "none"> | "any";
   employees?: Range;
   remits_contributions?: boolean;

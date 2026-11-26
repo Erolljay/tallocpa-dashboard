@@ -19,7 +19,7 @@ describe("prefillFromQuery", () => {
     expect(p.vat).toBe(true);
     expect(p.complexity).toEqual(["inventory"]);
     expect(p.services).toEqual(["bookkeeping"]);
-    expect(p.ewt).toBe("tamp_regular");
+    expect(p.ewt).toBe("rental");
     expect(p.message).toBe("Industry: Retail or trading. Tax types on our COR: VAT (2550Q); Withholding on compensation (1601-C).");
   });
   it("treats percentage tax as non-VAT", () => {
@@ -29,7 +29,7 @@ describe("prefillFromQuery", () => {
     const p = prefillFromQuery({ tax: ["pt", "it"] });
     expect(p.ewt).toBeUndefined();
     expect(p.message).toBe("Tax types on our COR: Percentage tax (2551Q); Income tax (1701Q/1701 or 1702Q/1702).");
-    expect(prefillFromQuery({ tax: "ewt" })).toEqual({ ewt: "tamp_regular", complexity: [], services: [] });
+    expect(prefillFromQuery({ tax: "ewt" })).toEqual({ ewt: "rental", complexity: [], services: [] });
   });
   it("ignores unknown values", () => {
     const p = prefillFromQuery({ taxpayer_type: "alien", industry: "<script>", tax: ["x"], service: "audit" });

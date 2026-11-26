@@ -414,7 +414,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 |---|---|---|
 | A. Base | Individual / Corporation, OPC, partnership / Non-stock | 1,000 / 1,500 / 1,500 |
 | B. VAT (2550Q + SLSP) | Individual / Non-individual | 500 / 1,000 |
-| C. Expanded withholding | Rental only / TAMP or regular | 300 / 500 |
+| C. Expanded withholding | Rent or contractors / Top withholding agent (TAMP) | 300 / 500 |
 | D. Payroll 1601-C | 1–9 / 10–29 / 30–49 / 50+ employees | 300 / 600 / 1,000 / on request |
 | E. SSS, PhilHealth, Pag-IBIG (when we remit) | same bands | 300 / 600 / 1,000 / on request |
 | F. Bookkeeping, by documents a month | ≤50 / 51–150 / 151–300 / 301+ | 1,000 / 1,500 / 2,500 / on request |
@@ -423,7 +423,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 | Catch-up (one time) | per month behind | 0.5 × monthly retainer |
 | J. Late-submission surcharge | documents after cutoff | schedule setting |
 
-Confirmed by the Owner on 26 Nov 2026: the 3% percentage tax is included in the prices; annual jobs are billed with the ITR with AFS and the SAWT in April, the 1604-C and the inventory list in January, and the 1604-E in February; every client pays the bookkeeping-by-documents line. The website quote form asks "Do you withhold tax on payments to others?" (No / Only on rent / On rent, suppliers or contractors), so the instant quote prices expanded withholding (C).
+Confirmed by the Owner on 26 Nov 2026: the 3% percentage tax is included in the prices; annual jobs are billed with the ITR with AFS and the SAWT in April, the 1604-C and the inventory list in January, and the 1604-E in February; every client pays the bookkeeping-by-documents line. The website quote form asks "Do you withhold tax on payments to others?" (No / Yes, on rent or contractors / Yes, we are a Top Withholding Agent (TAMP)), so the instant quote prices expanded withholding (C).
 
 Worked examples: non-VAT sole proprietor, ≤50 documents: ₱2,000. VAT corporation, 5 employees, rent withholding, contributions remitted, ~120 documents: ₱4,900, plus catch-up for 2 months ₱4,900. VAT online seller (individual), inventory, ~200 documents: ₱4,500. VAT corporation, 25 employees, regular withholding, inventory, contributions, ~250 documents: ₱7,200 — over the cap, so quoted on request.
 

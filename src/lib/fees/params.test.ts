@@ -32,9 +32,9 @@ describe("profileFromQuery", () => {
 
 describe("the withholding question on /start", () => {
   it("maps each plain-language answer to its kind, and anything else to none", () => {
-    expect(EWT_CHOICES.map((c) => [c.label, c.value])).toEqual([["No", "none"], ["Only on rent", "rental"], ["On rent, suppliers or contractors", "tamp_regular"]]);
+    expect(EWT_CHOICES.map((c) => [c.label, c.value])).toEqual([["No", "none"], ["Yes, on rent or contractors", "rental"], ["Yes, we are a Top Withholding Agent (TAMP)", "tamp_regular"]]);
     for (const c of EWT_CHOICES) expect(profileFromQuery({ ewt: c.value }).profile.ewt).toBe(c.value);
-    expect(profileFromQuery({ ewt: "Only on rent" }).profile.ewt).toBe("none");
+    expect(profileFromQuery({ ewt: "Yes, on rent or contractors" }).profile.ewt).toBe("none");
     expect(profileFromQuery({ ewt: ["rental", "tamp_regular"] }).profile.ewt).toBe("rental");
   });
 });

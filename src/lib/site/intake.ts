@@ -5,8 +5,8 @@
  *
  *   taxpayer_type  → the Type select (same values as the fee model)
  *   tax=vat        → VAT-registered checked (tax=pt leaves it unchecked)
- *   tax=ewt        → the withholding question answered "On rent, suppliers or
- *                    contractors" (tamp_regular); the visitor can change it
+ *   tax=ewt        → the withholding question answered "Yes, on rent or
+ *                    contractors" (rental); a TAMP changes it to TAMP
  *   industry       → a complexity checkbox where one fits (inventory, manufacturing,
  *                    construction); otherwise only the note
  *   service        → the Services checkboxes (tax_compliance, bookkeeping)
@@ -88,7 +88,7 @@ export function prefillFromQuery(q: Query): StartPrefill {
   if (taxes.includes("vat")) out.vat = true;
   else if (taxes.includes("pt")) out.vat = false;
   // The picker cannot tell rent from suppliers; the broader answer, which the visitor can narrow.
-  if (taxes.includes("ewt")) out.ewt = "tamp_regular";
+  if (taxes.includes("ewt")) out.ewt = "rental";
 
   const industry = INDUSTRIES.find((i) => i.id === first(q.industry));
   if (industry && "complexity" in industry) out.complexity.push(industry.complexity);

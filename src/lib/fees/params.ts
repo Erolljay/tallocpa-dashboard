@@ -22,8 +22,8 @@ const pick = <T extends string>(v: string, options: readonly T[], fallback: T): 
  */
 export const EWT_CHOICES: readonly { value: EwtKind; label: string }[] = [
   { value: "none", label: "No" },
-  { value: "rental", label: "Only on rent" },
-  { value: "tamp_regular", label: "On rent, suppliers or contractors" },
+  { value: "rental", label: "Yes, on rent or contractors" },
+  { value: "tamp_regular", label: "Yes, we are a Top Withholding Agent (TAMP)" },
 ];
 
 /** Months of backlog a quote takes at most. */

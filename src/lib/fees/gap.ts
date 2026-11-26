@@ -36,7 +36,7 @@ export function estimateProfile(c: ExistingClient): EstimatedProfile {
   const months = c.monthlyDocuments.length;
   const averageDocuments = months ? Math.round(c.monthlyDocuments.reduce((s, n) => s + n, 0) / months) : 0;
 
-  if (ewt) assumptions.push("Expanded withholding priced as rental only (the lower band); the kind is not recorded.");
+  if (ewt) assumptions.push("Expanded withholding priced at the rent-or-contractors band (the lower band); the kind is not recorded.");
   if (payroll) assumptions.push("Payroll priced at 1–9 employees and without SSS, PhilHealth, Pag-IBIG; headcount is not recorded.");
   if (!months) assumptions.push("No document history yet; volume taken as 0.");
 
