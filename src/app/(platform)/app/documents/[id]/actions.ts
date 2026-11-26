@@ -79,9 +79,9 @@ export async function approveDocumentAction(documentId: string, mode: "approve" 
       return { error: `The figures were approved, but the document was not posted to the Books: ${(e as Error).message}` };
     }
   }
-  if (mode === "edit" && clientId) redirect(`/app/documents?tab=approved&client=${clientId}`);
-  // Back to the Inbox tab the document came from (Sales, Purchases & Expenses, Other).
+  // Back to the Inbox tab the document came from (Sales, Purchases & Expenses, Other):
+  // its Approved list after a correction, else what is still waiting.
   const stream = streamOf((data as { doc_type?: string } | null)?.doc_type as DocType);
-  const tab = stream && stream !== "sales" ? `&tab=${stream}` : "";
+  const tab = (stream && stream !== "sales" ? `&tab=${stream}` : "") + (mode === "edit" ? "&view=approved" : "");
   redirect(clientId ? `/app/documents?client=${clientId}${tab}` : "/app/documents");
 }
