@@ -11,7 +11,7 @@ import { BooksFrame } from "../books-frame";
 import { booksViewFor } from "../books-context";
 import { booksMonth, booksRange } from "@/lib/books/ui";
 import { manilaToday } from "@/lib/filings/run";
-import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, PermitForm, RelockForm, ReverseForm } from "../forms";
+import { AmendmentDecision, AmendmentRequestForm, ArapDecision, ArapUpload, BookPicker, ConfirmAllButton, ConfirmButton, OpeningUpload, RepostRegisterButton, PermitForm, RelockForm, ReverseForm } from "../forms";
 
 export default function BooksToolsPage(props: PageProps<"/app/clients/[id]/books/tools">) {
   return (
@@ -102,6 +102,8 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
   const totalCr = shown.reduce((s, r) => s + Math.max(-r.closing, 0), 0);
   const openingAsOf = dayBefore(books.booksStart);
 
+  // Cash sales and purchases from the register, still booked in the cash books only.
+  const { count: registerCash } = await supabase.from("book_settlements").select("id", { count: "exact", head: true }).eq("client_id", id).eq("legacy", true).is("voided_at", null);
   const month = booksMonth(typeof q.month === "string" ? q.month : "", manilaToday(), books.booksStart);
   const range = booksRange(month, await booksViewFor(q), client.fiscal_year_end_month, books.booksStart);
 
@@ -144,6 +146,17 @@ async function Books({ params, searchParams }: Pick<PageProps<"/app/clients/[id]
                 </li>
               ))}
             </ul>
+          </Card>
+        )}
+
+        {(registerCash ?? 0) > 0 && (
+          <Card title="Register sales and purchases to move into the journals">
+            <div className="space-y-3">
+              <p className="text-body-regular text-text-secondary">
+                {registerCash} cash sale{registerCash === 1 ? "" : "s"} or purchase{registerCash === 1 ? "" : "s"} came across from the register booked only in the Cash Receipts or Cash Disbursements Book. Every sale and purchase with a customer or supplier belongs in the Sales or Purchase Journal, with its receipt or payment in the cash book. Moving them reverses each old entry on its own date and posts the invoice and its receipt or payment with the same account title, tax codes and cash account; every account keeps its total. A locked month must be unlocked first.
+              </p>
+              <RepostRegisterButton clientId={id} count={registerCash ?? 0} />
+            </div>
           </Card>
         )}
 

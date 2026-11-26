@@ -150,4 +150,49 @@ describe.skipIf(!url)("books: moving the approved documents across", () => {
     expect(before["4010"]).toBe("-30000.00");
     expect(after["4010"]).toBe("-20000.00");
   });
+
+  it("leaves a cash purchase in a locked month where it is and says why", async () => {
+    const d = await approved("purchase_receipt", { date: "2026-03-02", number: "OR-10", party_tin: SUPPLIER, vatable: "1000.00", vat: "120.00", total: "1120.00" });
+    await db.query(`update public.documents set period = '2026-03-01', document_month = '2026-03-01' where id = $1`, [d]);
+    await confirm(await book(d, "office_supplies"));
+    await db.query(`select * from private.migrate_documents_to_books($1)`, [client]);
+    await db.query(`insert into public.books_month_locks (client_id, month, locked_by) values ($1, '2026-03-01', $2)`, [client, STAFF]);
+    const before = await totals();
+    const rows = (await as(`select * from public.repost_register_cash_invoices($1)`, [client])).rows.filter((r) => r.reference === "OR-10");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].outcome).toMatch(/^skipped: .*locked/);
+    expect((await db.query(`select legacy from public.book_invoices where document_id = $1 and voided_at is null`, [d])).rows[0].legacy).toBe(true);
+    expect(await totals()).toEqual(before);
+    await db.query(`delete from public.books_month_locks where client_id = $1 and month = '2026-03-01'`, [client]);
+  });
+
+  it("moves the register's cash purchases into the Purchase Journal with their payments, keeping every total", async () => {
+    // A cash purchase booked the old way: one entry in the Cash Disbursements Book.
+    const d = await approved("purchase_receipt", { date: "2026-02-08", number: "OR-9", party_tin: SUPPLIER, vatable: "2000.00", vat: "240.00", total: "2240.00", withholding: "20.00", atc: "WC158" });
+    const old = await book(d, "office_supplies");
+    await confirm(old);
+    expect((await db.query(`select book from public.journal_entries where id = $1`, [old])).rows[0].book).toBe("cash_disbursements");
+    await db.query(`select * from private.migrate_documents_to_books($1)`, [client]);
+    const legacy = (await db.query(`select id, withholding_code_id from public.book_invoices where document_id = $1 and voided_at is null`, [d])).rows[0];
+    const codesBefore = (await db.query(`select tax_code_id from public.book_invoice_lines where invoice_id = $1 order by line_no`, [legacy.id])).rows;
+    const before = await totals();
+
+    const result = (await as(`select * from public.repost_register_cash_invoices($1)`, [client])).rows;
+    // Only the cash one: the cash sale was voided above, the charge sale and purchase are already in the journals.
+    expect(result.map((r) => [r.reference, r.outcome])).toEqual([["OR-9", "moved"], ["OR-10", "moved"]]);
+
+    const inv = (await db.query(`select * from public.book_invoices where document_id = $1 and voided_at is null`, [d])).rows[0];
+    expect(inv).toMatchObject({ legacy: false, kind: "purchase", withholding: "20.00", withholding_code_id: legacy.withholding_code_id });
+    expect((await db.query(`select tax_code_id from public.book_invoice_lines where invoice_id = $1 order by line_no`, [inv.id])).rows).toEqual(codesBefore);
+    expect((await db.query(`select book from public.journal_entries where id = $1`, [inv.journal_entry_id])).rows[0].book).toBe("purchases");
+    const pay = (await db.query(`select s.*, e.book from public.book_settlements s join public.journal_entries e on e.id = s.journal_entry_id where s.document_id = $1 and s.voided_at is null`, [d])).rows[0];
+    expect(pay).toMatchObject({ kind: "payment", legacy: false, amount: "2220.00", cash_account_id: acct.cash_on_hand, book: "cash_disbursements" });
+    expect((await db.query(`select status from public.journal_entries where id = $1`, [old])).rows[0].status).toBe("reversed");
+    expect((await db.query(`select balance_due from public.book_invoice_list where id = $1`, [inv.id])).rows[0].balance_due).toBe("0.00");
+    // Every account keeps its total (AP nets to zero).
+    const after = await totals();
+    for (const c of new Set([...Object.keys(before), ...Object.keys(after)])) expect(Number(after[c] ?? 0), c).toBeCloseTo(Number(before[c] ?? 0), 2);
+
+    expect((await as(`select * from public.repost_register_cash_invoices($1)`, [client])).rows).toEqual([]);
+  });
 });

@@ -11,6 +11,7 @@ import { ACCOUNT_TYPES, CONTROLS, NORMAL_SIDE, TEMPLATES, type AccountType, type
 import { formatAmount, toCentavos } from "@/lib/returns/money";
 import {
   confirmAllAction,
+  repostRegisterCashAction,
   decideAmendmentAction,
   relockAmendmentAction,
   closeYearAction,
@@ -309,6 +310,18 @@ export function ConfirmAllButton({ clientId, count }: { clientId: string; count:
       <Button type="submit" size="sm" disabled={pending || count === 0}>{pending ? "Posting…" : `Confirm all ${count}`}</Button>
       {state.ok && <span className="text-body-regular text-text-secondary">{state.ok}</span>}
       {state.error && <span className="text-body-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+/** Moves the register's cash sales and purchases into the Sales and Purchase Journals. */
+export function RepostRegisterButton({ clientId, count }: { clientId: string; count: number }) {
+  const [state, action, pending] = useActionState(async () => repostRegisterCashAction(clientId), {} as FormState);
+  return (
+    <form action={action} className="space-y-2">
+      <Button type="submit" size="sm" disabled={pending || count === 0}>{pending ? "Moving…" : `Move ${count} into the journals`}</Button>
+      {state.ok && <p role="status" className="text-body-regular text-text-secondary">{state.ok}</p>}
+      {state.error && <p role="alert" className="text-body-regular text-text-error-primary">{state.error}</p>}
     </form>
   );
 }

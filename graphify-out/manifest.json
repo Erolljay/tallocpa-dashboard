@@ -2238,9 +2238,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/books-migration.test.ts": {
-    "mtime": 1795618725.7842128,
-    "seen": 1795690663.3224669,
-    "ast_hash": "9bf346edb78e525842770f810cf388fc",
+    "mtime": 1795694320.8623853,
+    "seen": 1795694410.7491157,
+    "ast_hash": "8587d8c08c0b285b42765424e9625064",
     "semantic_hash": ""
   },
   "supabase/tests/books.test.ts": {
@@ -2298,9 +2298,9 @@
     "semantic_hash": ""
   },
   "src/components/books/pick.tsx": {
-    "mtime": 1795692248.5265012,
-    "seen": 1795692377.8679724,
-    "ast_hash": "6b5b4c4ccd30b8218c0d107c51577649",
+    "mtime": 1795692778.9941862,
+    "seen": 1795694410.7398105,
+    "ast_hash": "d575d095780293c38e7a12e5d1b426f6",
     "semantic_hash": ""
   },
   "src/lib/books/data.ts": {
@@ -3234,9 +3234,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/actions.ts": {
-    "mtime": 1795691706.685024,
-    "seen": 1795692377.8657587,
-    "ast_hash": "d84284899fcc46984c46887317a56395",
+    "mtime": 1795694257.5010264,
+    "seen": 1795694410.7260654,
+    "ast_hash": "e9f387fef0e2f0c89058406f666e34bc",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/bank-accounts/page.tsx": {
@@ -3282,9 +3282,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/forms.tsx": {
-    "mtime": 1795692097.2693892,
-    "seen": 1795692377.8657768,
-    "ast_hash": "e0d679e1cb6845af5cad27835e1d7c48",
+    "mtime": 1795694265.1358216,
+    "seen": 1795694410.7263935,
+    "ast_hash": "634cc9dd8dbbe6cb2d0d7781a434d781",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/invoice-form.tsx": {
@@ -3552,9 +3552,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/tools/page.tsx": {
-    "mtime": 1795692574.3551328,
-    "seen": 1795692738.1130893,
-    "ast_hash": "a6c0769c89d64887f66f58aebdf4a4b0",
+    "mtime": 1795694265.1363232,
+    "seen": 1795694410.7286465,
+    "ast_hash": "1acba7ac4dfc9a65e4c6d6254ddac48f",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/transaction-journal.tsx": {
