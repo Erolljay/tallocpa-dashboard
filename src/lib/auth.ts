@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -17,8 +18,12 @@ interface IdentityRow {
   clients: { client_id: string; full_name: string; client_name: string }[];
 }
 
-/** The signed-in person, or a redirect to sign-in. */
-export async function getIdentity(): Promise<Identity> {
+/**
+ * The signed-in person, or a redirect to sign-in. Wrapped in React's cache() so one
+ * request looks it up once: the staff layout (bell, Firm link, user menu) and the page
+ * all ask, and each lookup is two calls to Supabase.
+ */
+export const getIdentity = cache(async (): Promise<Identity> => {
   const supabase = await supabaseServer();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims) redirect("/login");
@@ -31,7 +36,7 @@ export async function getIdentity(): Promise<Identity> {
     staff: row.staff ? { fullName: row.staff.full_name, role: row.staff.role, brandId: row.staff.brand_id } : null,
     clients: row.clients.map((c) => ({ clientId: c.client_id, fullName: c.full_name, clientName: c.client_name })),
   };
-}
+});
 
 /** Staff only; client users go to their portal. */
 export async function requireStaff(): Promise<Identity & { staff: NonNullable<Identity["staff"]> }> {
