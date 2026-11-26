@@ -15,12 +15,14 @@ interface Run {
   employer: number;
   net: number;
   tax_withheld: number;
-  dues: Record<"sss" | "phic" | "hdmf", { ee: number; er: number }>;
+  dues: Record<"sss" | "phic" | "hdmf", { ee: number; er: number }> & { sss_loan?: number; hdmf_loan?: number };
   lines: { account_id: string; code: string | null; name: string | null; debit: number; credit: number }[];
   problems: string[];
 }
 
 const AGENCIES = { sss: "SSS", phic: "PhilHealth", hdmf: "Pag-IBIG" } as const;
+/** Loan payments withheld from pay: each to its own loans payable. */
+const LOANS = { sss_loan: "SSS loans", hdmf_loan: "Pag-IBIG loans" } as const;
 
 /**
  * Payroll to the books (Owner, 25 November 2026): each payroll run of the month — the
@@ -47,7 +49,7 @@ export async function PayrollRuns({ supabase, clientId, month }: { supabase: Db;
   return (
     <Card title="Payroll runs and the books">
       <p className="mb-4 text-body-regular text-text-secondary">
-        Check each run&apos;s totals and the dues to SSS, PhilHealth and Pag-IBIG, then post it. Pay goes to each employee&apos;s pay account (Salaries and Wages unless set on the employee), employer shares of cost-of-services staff to the direct contributions account, and net pay to Cash.
+        Check each run&apos;s totals and the dues to SSS, PhilHealth and Pag-IBIG (each to its own payable, loan payments to SSS or Pag-IBIG Loans Payable), then post it. Pay goes to each employee&apos;s pay account (Salaries and Wages unless set on the employee), employer shares of cost-of-services staff to the direct contributions account, and net pay to Cash.
       </p>
       <div className="space-y-6">
         {runs.map(({ period, run, error, posted }) => (
@@ -77,6 +79,14 @@ export async function PayrollRuns({ supabase, clientId, month }: { supabase: Db;
                           <td className="py-1.5 text-end tabular-nums">{p(run.dues[k].ee)}</td>
                           <td className="py-1.5 text-end tabular-nums">{p(run.dues[k].er)}</td>
                           <td className="py-1.5 text-end tabular-nums font-medium">{p(run.dues[k].ee + run.dues[k].er)}</td>
+                        </tr>
+                      ))}
+                      {(Object.keys(LOANS) as (keyof typeof LOANS)[]).filter((k) => (run.dues[k] ?? 0) !== 0).map((k) => (
+                        <tr key={k} className="border-t border-separator-border">
+                          <td className="py-1.5">{LOANS[k]}</td>
+                          <td className="py-1.5 text-end tabular-nums">{p(run.dues[k])}</td>
+                          <td />
+                          <td className="py-1.5 text-end tabular-nums font-medium">{p(run.dues[k])}</td>
                         </tr>
                       ))}
                       <tr className="border-t border-separator-border">

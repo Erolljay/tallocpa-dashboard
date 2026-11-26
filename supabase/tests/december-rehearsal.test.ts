@@ -704,7 +704,12 @@ describe.skipIf(!url)("December 2026 rehearsal: one client's month, end to end",
       ]);
       // The payroll's withholding and contributions for December are paid off.
       expect(await balance("wtc_payable")).toBe("0.00");
-      expect(await balance("government_contributions_payable", "2027-01-31")).toBe(String((-9350 * 2).toFixed(2)));
+      // Each agency has its own payable (migration 20261212000004); October's and November's are still unpaid.
+      expect(await balance("sss_payable", "2027-01-31")).toBe((-6300 * 2).toFixed(2));
+      expect(await balance("philhealth_payable", "2027-01-31")).toBe((-2250 * 2).toFixed(2));
+      expect(await balance("pagibig_payable", "2027-01-31")).toBe((-800 * 2).toFixed(2));
+      // New charts have no combined account.
+      expect(await balance("government_contributions_payable", "2027-01-31")).toBe("0");
     });
 
     it("gives the Owner's approval once each return's own item is paid", async () => {

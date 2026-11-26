@@ -24,7 +24,11 @@ export interface Category {
   help: string;
 }
 
-/** taxify PH_CAT (ph-bir-earn-01…12, ph-bir-ded-01…05, ph-bir-con-01…03), with "none" for items that are not BIR figures. */
+/**
+ * taxify PH_CAT (ph-bir-earn-01…12, ph-bir-ded-01…05, ph-bir-con-01…03), with "none" for items
+ * that are not BIR figures. SSS and Pag-IBIG loan payments are not BIR figures either, but
+ * each has its own category so the payroll credits its own loans payable in the Books.
+ */
 export const CATEGORIES = {
   basic: { label: "Basic salary", kind: "earning", field: "basic", help: "Regular pay for time worked (net of tardiness / absences if entered as negative items). Exempt for minimum wage earners." },
   overtime: { label: "Overtime pay", kind: "earning", field: "overtime", help: "Exempt for minimum wage earners; taxable for others." },
@@ -42,7 +46,9 @@ export const CATEGORIES = {
   sss_ee: { label: "SSS — employee share", kind: "deduction", field: "sssEmployee", help: "Mandatory contribution; non-taxable (item 19)." },
   phic_ee: { label: "PhilHealth — employee share", kind: "deduction", field: "philhealthEmployee", help: "Mandatory contribution; non-taxable (item 19)." },
   hdmf_ee: { label: "Pag-IBIG — employee share", kind: "deduction", field: "pagibigEmployee", help: "Mandatory contribution; non-taxable (item 19). Voluntary extra Pag-IBIG goes under “Not a BIR figure”." },
-  none_deduction: { label: "Not a BIR figure (loans, cash advances…)", kind: "deduction", field: "otherDeductions", help: "Reduces net pay only; no effect on tax." },
+  sss_loan: { label: "SSS loan payment", kind: "deduction", field: "otherDeductions", help: "SSS salary or calamity loan amortization withheld from pay; goes to SSS Loans Payable. Reduces net pay only; no effect on tax." },
+  hdmf_loan: { label: "Pag-IBIG loan payment", kind: "deduction", field: "otherDeductions", help: "Pag-IBIG multi-purpose, calamity or housing loan amortization withheld from pay; goes to Pag-IBIG Loans Payable. Reduces net pay only; no effect on tax." },
+  none_deduction: { label: "Not a BIR figure (company loans, cash advances…)", kind: "deduction", field: "otherDeductions", help: "Reduces net pay only; no effect on tax." },
   sss_er: { label: "SSS — employer share", kind: "employer_contribution", field: "sssEmployer", help: "Employer cost; not compensation." },
   phic_er: { label: "PhilHealth — employer share", kind: "employer_contribution", field: "philhealthEmployer", help: "Employer cost; not compensation." },
   hdmf_er: { label: "Pag-IBIG — employer share", kind: "employer_contribution", field: "pagibigEmployer", help: "Employer cost; not compensation." },

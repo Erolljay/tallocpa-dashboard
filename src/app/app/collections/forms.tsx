@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Button, Field, Input, Notice, peso, Select, Textarea } from "@/components/ui";
-import { CONTRIBUTIONS, methodLabel, type DepositMethod } from "@/lib/collections/collections";
+import { CONTRIBUTION_KEYS, CONTRIBUTIONS, methodLabel, type DepositMethod } from "@/lib/collections/collections";
 import {
   addChargeAction,
   applyCreditAction,
@@ -154,7 +154,7 @@ export function RecordDepositForm(props: { clientId: string; today: string; item
   );
 }
 
-/** Adds an SSS / PhilHealth / Pag-IBIG contribution or a one-off charge for the next statement. */
+/** Adds one item per agency and kind (SSS, PhilHealth, Pag-IBIG contributions, SSS or Pag-IBIG loan payments) or a one-off charge for the next statement. */
 export function AddChargeForm({ clientId, today }: { clientId: string; today: string }) {
   const [state, run, pending] = useActionState(addChargeAction.bind(null, clientId), {} as MoneyState);
   const [kind, setKind] = useState<"contribution" | "other">("contribution");
@@ -167,16 +167,16 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Kind" htmlFor="kind">
           <Select id="kind" name="kind" value={kind} onChange={(e) => setKind(e.target.value as "contribution" | "other")}>
-            <option value="contribution">Contribution (SSS, PhilHealth, Pag-IBIG)</option>
+            <option value="contribution">Contribution or loan payment (SSS, PhilHealth, Pag-IBIG)</option>
             <option value="other">Other charge</option>
           </Select>
         </Field>
         {kind === "contribution" ? (
           <>
             <Field label="Agency" htmlFor="agency">
-              <Select id="agency" name="agency" required defaultValue="SSS">
-                {CONTRIBUTIONS.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+              <Select id="agency" name="agency" required defaultValue="sss">
+                {CONTRIBUTION_KEYS.map((c) => (
+                  <option key={c} value={c}>{CONTRIBUTIONS[c].option}</option>
                 ))}
               </Select>
             </Field>

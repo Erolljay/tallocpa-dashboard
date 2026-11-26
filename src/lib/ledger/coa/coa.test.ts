@@ -46,6 +46,15 @@ describe.each(codes)("%s template", (code) => {
     }
   });
 
+  it("keeps each agency's contributions and loans payable apart, with no combined account", () => {
+    const keys = accounts.map((a) => a.key);
+    for (const k of ["sss_payable", "philhealth_payable", "pagibig_payable", "sss_loans_payable", "pagibig_loans_payable"]) {
+      expect(accounts.find((a) => a.key === k), k).toMatchObject({ type: "liability", normalSide: "credit", fsLine: "accrued_liabilities" });
+    }
+    expect(keys).not.toContain("government_contributions_payable");
+    expect(keys).not.toContain("government_loans_payable");
+  });
+
   it("builds the setup payload in chart order", () => {
     const p = templatePayload(code);
     expect(p).toHaveLength(accounts.length);

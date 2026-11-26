@@ -21,8 +21,30 @@ export const methodLabel: Record<DepositMethod, string> = {
   cash: "Cash (deposited by staff)",
 };
 
-/** Kinds of contribution the firm remits for clients, offered when adding a charge. */
-export const CONTRIBUTIONS = ["SSS", "PhilHealth", "Pag-IBIG"] as const;
+/**
+ * What the firm remits for clients' payrolls, one statement item per agency and kind
+ * (client_dues.contribution). Each item settles its own payable in the client's Books:
+ * SSS, PhilHealth and Pag-IBIG Payable, SSS and Pag-IBIG Loans Payable.
+ */
+export const CONTRIBUTIONS = {
+  sss: { option: "SSS", item: "SSS contributions" },
+  philhealth: { option: "PhilHealth", item: "PhilHealth contributions" },
+  pagibig: { option: "Pag-IBIG", item: "Pag-IBIG contributions" },
+  sss_loan: { option: "SSS loans", item: "SSS loan payments" },
+  pagibig_loan: { option: "Pag-IBIG loans", item: "Pag-IBIG loan payments" },
+} as const;
+export type Contribution = keyof typeof CONTRIBUTIONS;
+export const CONTRIBUTION_KEYS = Object.keys(CONTRIBUTIONS) as Contribution[];
+
+export function isContribution(v: string): v is Contribution {
+  return Object.hasOwn(CONTRIBUTIONS, v);
+}
+
+/** "SSS loan payments, December 2026": the statement item's description for a month (YYYY-MM). */
+export function contributionDescription(c: Contribution, month: string): string {
+  const label = new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));
+  return `${CONTRIBUTIONS[c].item}, ${label}`;
+}
 
 export const AGING_BUCKETS = ["current", "1-30", "31-60", "61-90", "90+"] as const;
 export type AgingBucket = (typeof AGING_BUCKETS)[number];

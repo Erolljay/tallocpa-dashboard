@@ -119,12 +119,12 @@ export async function Payslips({ params, searchParams }: Props) {
             <span key="n" className="text-text-primary">{p.employee_name}</span>,
             p.pay_period_end ? `Until ${fmtDate(p.pay_period_end)}` : fmtMonth(p.pay_month),
             formatAmount(cents(p.gross)),
-            formatAmount(cents(p.deductions) + cents(p.other_deductions)),
+            formatAmount(cents(p.deductions) + cents(p.sss_loan) + cents(p.pagibig_loan) + cents(p.other_deductions)),
             formatAmount(cents(p.net)),
             p.journal_entry_id ? <Badge key="b" tone="done">Posted</Badge> : <Badge key="b">Not posted</Badge>,
           ],
         }))}
-        totals={["Total", null, null, formatAmount(t((p) => p.gross)), formatAmount(t((p) => p.deductions) + t((p) => p.other_deductions)), formatAmount(t((p) => p.net)), null]}
+        totals={["Total", null, null, formatAmount(t((p) => p.gross)), formatAmount(t((p) => p.deductions) + t((p) => p.sss_loan) + t((p) => p.pagibig_loan) + t((p) => p.other_deductions)), formatAmount(t((p) => p.net)), null]}
         empty={c.q ? "Nothing matches the search." : `No payslips for ${fmtMonth(c.month)}.`}
         minWidth="52rem"
       />
