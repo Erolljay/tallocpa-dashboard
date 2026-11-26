@@ -13,6 +13,8 @@ import { moduleForForm } from "@/lib/returns/registry";
 import { TAX_DUE_FIGURE, taxDueOf } from "@/lib/returns/source";
 import type { WorksheetResult } from "@/lib/returns/types";
 import { supabaseServer } from "@/lib/supabase/server";
+import { manilaToday } from "@/lib/filings/run";
+import { REMITTANCE_KINDS, remittanceBadge, type RemittanceKind, type RemittanceStatus } from "@/lib/remittances/labels";
 import { filingsBooksReady, filingsNeedingAmendment } from "@/lib/books/actions";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
@@ -296,6 +298,8 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             </Card>
           )}
 
+          {f.form === "1601-C" && <MonthRemittances clientId={f.client_id} month={`${f.period_start.slice(0, 7)}-01`} />}
+
           <Card title="History">
             {history.length === 0 ? (
               <p className="text-body-regular text-text-secondary">No steps taken yet.</p>
@@ -376,5 +380,38 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
         </Card>
       </div>
     </>
+  );
+}
+
+/** The month's SSS, PhilHealth and Pag-IBIG remittances, made from the same posted payroll as this 1601-C. */
+async function MonthRemittances({ clientId, month }: { clientId: string; month: string }) {
+  const supabase = await supabaseServer();
+  const [{ data: c }, { data }] = await Promise.all([
+    supabase.from("clients").select("handles_contributions").eq("id", clientId).maybeSingle(),
+    supabase.from("contribution_remittances").select("id, kind, due_date, status, total").eq("client_id", clientId).eq("period_month", month).order("kind"),
+  ]);
+  if (!c?.handles_contributions && (data ?? []).length === 0) return null;
+  const today = manilaToday();
+  return (
+    <Card title="SSS, PhilHealth and Pag-IBIG">
+      {(data ?? []).length === 0 ? (
+        <p className="text-body-regular text-text-secondary">They come in when this month&rsquo;s payroll is posted.</p>
+      ) : (
+        <ul className="divide-y divide-separator-border text-body-regular">
+          {(data ?? []).map((r) => {
+            const badge = remittanceBadge(r.status as RemittanceStatus, r.due_date, today);
+            return (
+              <li key={r.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="min-w-0">
+                  <Link href={`/app/remittances/${r.id}`} className="text-text-primary hover:underline">{REMITTANCE_KINDS[r.kind as RemittanceKind].option}</Link>
+                  <span className="block text-caption-1-regular text-text-tertiary">{peso.format(Number(r.total))} · due {showDate(r.due_date)}</span>
+                </span>
+                <Badge tone={badge.tone}>{badge.label}</Badge>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
   );
 }

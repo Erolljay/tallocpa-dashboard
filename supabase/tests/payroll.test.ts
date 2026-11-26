@@ -241,7 +241,7 @@ describe.skipIf(!url)("payroll database", () => {
   it("payslip items: defaults once, readable by client users, category fixed once used", async () => {
     await as(STAFF, async () => {
       expect((await db.query(`select public.ensure_payroll_items($1) as n`, [clientA])).rows[0].n).toBe(0);
-      expect((await db.query(`select count(*)::int as n from public.payroll_items`)).rows[0].n).toBe(13);
+      expect((await db.query(`select count(*)::int as n from public.payroll_items`)).rows[0].n).toBe(14); // with SSS EC (20261216000003)
       await fails(`insert into public.payroll_items (client_id, name, kind, bir_category) values ($1, 'basic pay', 'earning', 'basic')`, [clientA], /payroll_items_client_name_key/);
       await fails(`insert into public.payroll_items (client_id, name, kind, bir_category) values ($1, 'Loan', 'earning', 'none')`, [clientA], /check constraint/);
       await db.query(`insert into public.payroll_items (client_id, name, kind, bir_category) values ($1, 'Cash Advance', 'deduction', 'none')`, [clientA]);
@@ -255,7 +255,7 @@ describe.skipIf(!url)("payroll database", () => {
       expect((await db.query(`delete from public.payroll_items where id = $1 returning id`, [items["Night Differential"]])).rows).toHaveLength(1);
     });
     await as(CLIENT_USER, async () => {
-      expect((await db.query(`select count(*)::int as n from public.payroll_items`)).rows[0].n).toBe(13);
+      expect((await db.query(`select count(*)::int as n from public.payroll_items`)).rows[0].n).toBe(14);
       expect((await db.query(`update public.payroll_items set name = 'X' returning id`)).rows).toEqual([]);
       expect((await db.query(`select id from public.payroll_entry_lines`)).rows).toEqual([]);
     });

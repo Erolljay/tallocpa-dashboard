@@ -160,7 +160,8 @@ describe.skipIf(!url)("notifications", () => {
   it("notifies the other side of a request or ticket", async () => {
     const t = (await as(CLIENT_USER, `select * from public.open_client_ticket($1, 'When is my COR ready?', 'Just checking')`, [client])).rows[0];
     const fromClient = await latest("request_from_client");
-    expect(fromClient.map((r) => r.user_id).sort()).toEqual([PREPARER, REVIEWER].sort());
+    // The ticket goes to the client's preparer, who answers for it (20261216000001).
+    expect(fromClient.map((r) => r.user_id)).toEqual([PREPARER]);
     expect(fromClient[0]).toMatchObject({ title: "Jaro Foods opened a request: When is my COR ready?", href: `/app/requests/${t.id}`, body: "Just checking" });
 
     await as(PREPARER, `select * from public.reply_client_request($1, 'Next week', null, null, null)`, [t.id]);

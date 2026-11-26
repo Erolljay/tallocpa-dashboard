@@ -50,6 +50,7 @@ export const CATEGORIES = {
   hdmf_loan: { label: "Pag-IBIG loan payment", kind: "deduction", field: "otherDeductions", help: "Pag-IBIG multi-purpose, calamity or housing loan amortization withheld from pay; goes to Pag-IBIG Loans Payable. Reduces net pay only; no effect on tax." },
   none_deduction: { label: "Not a BIR figure (company loans, cash advances…)", kind: "deduction", field: "otherDeductions", help: "Reduces net pay only; no effect on tax." },
   sss_er: { label: "SSS — employer share", kind: "employer_contribution", field: "sssEmployer", help: "Employer cost; not compensation." },
+  sss_ec: { label: "SSS — EC (Employees' Compensation)", kind: "employer_contribution", field: "sssEmployer", help: "Employer cost paid with the SSS contributions (₱10 or ₱30 per employee); goes to SSS Payable. Not compensation." },
   phic_er: { label: "PhilHealth — employer share", kind: "employer_contribution", field: "philhealthEmployer", help: "Employer cost; not compensation." },
   hdmf_er: { label: "Pag-IBIG — employer share", kind: "employer_contribution", field: "pagibigEmployer", help: "Employer cost; not compensation." },
   none_employer: { label: "Not a BIR figure (HMO…)", kind: "employer_contribution", field: "otherEmployer", help: "Employer cost shown on the register only." },
@@ -80,6 +81,7 @@ export const DEFAULT_ITEMS: { name: string; kind: ItemKind; category: BirCategor
   { name: "PhilHealth (Employee)", kind: "deduction", category: "phic_ee" },
   { name: "Pag-IBIG (Employee)", kind: "deduction", category: "hdmf_ee" },
   { name: "SSS (Employer)", kind: "employer_contribution", category: "sss_er" },
+  { name: "SSS EC", kind: "employer_contribution", category: "sss_ec" },
   { name: "PhilHealth (Employer)", kind: "employer_contribution", category: "phic_er" },
   { name: "Pag-IBIG (Employer)", kind: "employer_contribution", category: "hdmf_er" },
 ];

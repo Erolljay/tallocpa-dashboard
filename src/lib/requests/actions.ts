@@ -118,3 +118,18 @@ export async function closeRequestAction(requestId: string): Promise<RequestForm
   refresh(requestId);
   return { ok: true };
 }
+
+/** Staff on the client hand a request or ticket to someone else and set its priority. */
+export async function assignRequestAction(_: RequestFormState, form: FormData): Promise<RequestFormState> {
+  await requireStaff();
+  const requestId = text(form.get("request_id"));
+  const assignee = text(form.get("assignee"));
+  const priority = text(form.get("priority"));
+  if (!z.uuid().safeParse(assignee).success) return { error: "Choose who answers for it.", fieldErrors: { assignee: "Choose who answers for it." } };
+  if (!["low", "normal", "high"].includes(priority)) return { error: "Choose the priority." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("assign_client_request", { p_request: requestId, p_assignee: assignee, p_priority: priority });
+  if (error) return { error: error.message };
+  refresh(requestId);
+  return { ok: true };
+}
