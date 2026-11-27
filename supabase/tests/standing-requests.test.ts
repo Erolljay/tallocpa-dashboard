@@ -119,6 +119,29 @@ describe.skipIf(!url)("standing monthly requests", () => {
     expect((await standing(NEXT)).map((r) => r.subject)).toContain("Bank statement for November 2026: Cash in Bank - BPI");
   });
 
+  it("tells the client once per month for what opened, not once per request", async () => {
+    const notices = (
+      await db.query(
+        `select title, body, href from public.notifications where user_id = $1 and kind = 'request_from_firm' order by title, body`,
+        [CLIENT_USER],
+      )
+    ).rows;
+    expect(notices.map((n) => n.title)).toEqual([
+      "Tallo CPA needs your November 2026 AR/AP update and bank statement", // the November cycle opened both
+      "Tallo CPA needs your November 2026 bank statement", // BPI, added later
+      "Tallo CPA needs your October 2026 AR/AP update", // switched on
+      "Tallo CPA needs your October 2026 bank statement", // switched on (BDO)
+      "Tallo CPA needs your October 2026 bank statement", // BPI, added later
+    ]);
+    expect(notices[0]).toEqual({
+      title: "Tallo CPA needs your November 2026 AR/AP update and bank statement",
+      body: "Please upload by February 5, 2099.\nAR/AP update for November 2026\nBank statement for November 2026: Cash in Bank - BDO",
+      href: "/portal/requests",
+    });
+    // Only the client's own users hear about it.
+    expect((await db.query(`select count(*)::int as n from public.notifications where user_id = $1`, [OTHER_CLIENT_USER])).rows[0].n).toBe(0);
+  });
+
   it("uses the accounts staff list instead of the books when given", async () => {
     await expect(setStanding(STAFF, "bank_statements", true, ["x".repeat(81)])).rejects.toThrow(/under 80/);
     expect(await setStanding(STAFF, "bank_statements", true, ["Metrobank Savings", " metrobank savings ", "", "BDO Checking"])).toBe(4);

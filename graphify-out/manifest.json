@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795760241.979816,
-    "seen": 1795760252.723197,
-    "ast_hash": "5f1656d07764a1c9f320993635526cbb",
+    "mtime": 1795760559.7543845,
+    "seen": 1795760562.9092681,
+    "ast_hash": "2adabcbd324d9c989db308c903ad6474",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000005_calendar_year_rules_and_2026_holidays.sql": {
@@ -5292,9 +5292,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/standing-requests.test.ts": {
-    "mtime": 1795760242.0409002,
-    "seen": 1795760252.7231355,
-    "ast_hash": "b1b740d53dcc0e8626ed9f54a664fbfa",
+    "mtime": 1795760426.968327,
+    "seen": 1795760562.9087944,
+    "ast_hash": "7765dc31d85ca2a9266fd41a981a0566",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
