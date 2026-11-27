@@ -10,6 +10,7 @@ import {
   waiveLateSurchargeAction,
   clearRemittedAction,
   markRemittedAction,
+  newBillAction,
   recordDepositAction,
   runBillingAction,
   voidDepositAction,
@@ -171,8 +172,9 @@ const CHARGE_SUGGESTIONS = [
   "Transportation expenses",
 ];
 
-export function AddChargeForm({ clientId, today }: { clientId: string; today: string }) {
-  const [state, run, pending] = useActionState(addChargeAction.bind(null, clientId), {} as MoneyState);
+/** `clients`: on New Bill (no client yet), the Owner picks the client first. */
+export function AddChargeForm({ clientId, today, clients }: { clientId: string | null; today: string; clients?: { id: string; label: string }[] }) {
+  const [state, run, pending] = useActionState(clientId ? addChargeAction.bind(null, clientId) : newBillAction, {} as MoneyState);
   const [kind, setKind] = useState<"contribution" | "other">("other");
   const lastMonth = (() => {
     const [y, m] = today.split("-").map(Number);
@@ -181,6 +183,18 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
   return (
     <form action={run} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
+        {!clientId && (
+          <div className="sm:col-span-2">
+            <Field label="Client" htmlFor="client_id" hint="Not listed? Add the client under Clients first.">
+              <Select id="client_id" name="client_id" required defaultValue="">
+                <option value="" disabled>Choose the client…</option>
+                {(clients ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        )}
         <Field label="Kind" htmlFor="kind">
           <Select id="kind" name="kind" value={kind} onChange={(e) => setKind(e.target.value as "contribution" | "other")}>
             <option value="other">Fee or other charge (consultation, appearance, ad hoc job)</option>
