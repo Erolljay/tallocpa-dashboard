@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui";
+import { ShareLink } from "@/components/statement/share-link";
 import { StatementView } from "@/components/statement/statement-view";
+import { shareMessage } from "@/lib/collections/share-message";
 import { requireOwner } from "@/lib/auth";
 import { loadStatement } from "@/lib/collections/statement";
 import { manilaToday } from "@/lib/filings/run";
@@ -24,7 +26,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/statements/[i
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link href={`/app/collections/${s.client.id}`} className="text-body-regular text-button-ghost-foreground hover:underline print:hidden">← {s.client.name}</Link>
-      <StatementView s={s} today={manilaToday()} owner />
+      <StatementView s={s} today={manilaToday()} owner actions={<ShareLink soaId={s.soa.id} message={shareMessage(s)} />} />
     </div>
   );
 }
