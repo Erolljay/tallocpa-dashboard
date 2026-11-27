@@ -58,3 +58,44 @@ describe("geminiProvider when Gemini is busy", () => {
     expect(bad).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("geminiProvider.extractMany (a PDF bundling several invoices)", () => {
+  const pdf = { bytes: new Uint8Array([1, 2, 3]), mimeType: "application/pdf", docTypeHint: "Sales invoice / official receipt" };
+  const many = {
+    page_count: 2,
+    documents: [
+      { page: 1, position: "top", fields: { number: "SI-1", total: "1,000" }, confidence: { total: 0.95 } },
+      { page: 2, position: null, fields: { number: "SI-2" }, confidence: {} },
+    ],
+  };
+  const answer = (body: unknown) => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(body) }] } }] });
+
+  it("asks for an array of documents with their pages, and tidies each like a single read", async () => {
+    const fetch = reply(answer(many));
+    const out = await geminiProvider({ apiKey: "k", model: "test-model", fetch }).extractMany!(pdf);
+    expect(out.pages).toBe(2);
+    expect(out.model).toBe("test-model");
+    expect(out.documents.map((d) => [d.page, d.position, d.fields.number, d.fields.total])).toEqual([[1, "top", "SI-1", "1000.00"], [2, null, "SI-2", null]]);
+    const body = JSON.parse((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    const schema = body.generationConfig.responseSchema;
+    expect(schema.properties.documents.type).toBe("ARRAY");
+    expect(schema.properties.documents.items.required).toEqual(["page", "fields", "confidence"]);
+    expect(schema.properties.documents.items.properties.fields.properties).toHaveProperty("total");
+    // The usual field instructions, then how to list several documents.
+    expect(body.contents[0].parts[0].text).toMatch(/Return every field you can read[\s\S]*EACH separate document/);
+    expect(body.contents[0].parts[1].inline_data.mime_type).toBe("application/pdf");
+  });
+
+  it("rejects a reply in the wrong shape", async () => {
+    await expect(geminiProvider({ apiKey: "k", fetch: reply(answer({ fields: {}, confidence: {} })) }).extractMany!(pdf)).rejects.toThrow(/Unexpected shape/);
+  });
+
+  it("retries a busy model and falls back, as a single read does", async () => {
+    const busy = () => new Response(JSON.stringify({ error: { code: 503 } }), { status: 503 });
+    const ok = () => new Response(JSON.stringify(answer(many)), { status: 200 });
+    const fetch = vi.fn().mockResolvedValueOnce(busy()).mockResolvedValueOnce(busy()).mockResolvedValueOnce(busy()).mockResolvedValueOnce(ok());
+    const out = await geminiProvider({ apiKey: "k", model: "main", fallbackModel: "backup", fetch, sleep: async () => {} }).extractMany!(pdf);
+    expect(out.model).toBe("backup");
+    expect(out.documents).toHaveLength(2);
+  });
+});

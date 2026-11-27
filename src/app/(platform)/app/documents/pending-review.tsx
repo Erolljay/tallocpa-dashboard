@@ -16,6 +16,8 @@ export interface PendingRow {
   received: string;
   typeLabel: string;
   fileName: string;
+  /** An invoice of a bundled PDF: "Invoice 3 of 25 · page 4". */
+  bundle: string | null;
   /** How it came in and who sent it, e.g. "Telegram · Maria Molo". */
   via: string;
   telegram: boolean;
@@ -190,7 +192,10 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                       <td className="py-2 pe-4 tabular-nums text-text-secondary">{r.received}</td>
                       <td className="py-2 pe-4">
                         <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{r.typeLabel}{r.number ? ` ${r.number}` : ""}</Link>
-                        <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.party ?? r.fileName}</p>
+                        <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary" title={r.bundle ? `${r.bundle} of ${r.fileName}` : undefined}>
+                          {r.bundle && <span className="text-text-secondary">{r.bundle} · </span>}
+                          {r.party ?? r.fileName}
+                        </p>
                         <p className="mt-0.5 flex max-w-56 items-center gap-1 text-caption-1-regular text-text-tertiary">
                           {r.telegram && <RiTelegram2Line aria-hidden className="size-3.5 shrink-0 text-foreground-icon-tertiary" />}
                           <span className="truncate">via {r.via}</span>

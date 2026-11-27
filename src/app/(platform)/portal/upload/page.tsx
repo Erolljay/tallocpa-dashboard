@@ -48,7 +48,7 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
   const periods = [...new Set(months.map((m) => m.month))];
   const [{ data: cycles }, { data: sent }, { count: returned }] = await Promise.all([
     supabase.from("document_cycles").select("client_id, period, closed_at, nothing_to_submit_at, client_confirmed_at").in("client_id", ids).in("period", periods),
-    supabase.from("documents").select("client_id, document_month").in("client_id", ids).in("document_month", periods).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof)").limit(2000),
+    supabase.from("documents").select("client_id, document_month").in("client_id", ids).in("document_month", periods).not("status", "in", "(uploading,split)").not("doc_type", "in", "(filed_return,payment_proof)").limit(2000),
     supabase.from("documents").select("id", { count: "exact", head: true }).in("client_id", ids).eq("status", "returned"),
   ]);
   const status = months.map(({ client, month, cutoff, daysLeft }) => {

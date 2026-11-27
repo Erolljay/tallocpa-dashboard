@@ -66,7 +66,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     { data: toPay },
   ] = await Promise.all([
     supabase.from("document_cycles").select("client_id, period, cutoff_date, nothing_to_submit_at, closed_at, client_confirmed_at, confirmed_documents").in("client_id", ids).in("period", periods),
-    supabase.from("documents").select("client_id, document_month, doc_type, status").in("client_id", ids).in("document_month", periods).neq("status", "uploading").not("doc_type", "in", "(filed_return,payment_proof)").limit(5000),
+    supabase.from("documents").select("client_id, document_month, doc_type, status").in("client_id", ids).in("document_month", periods).not("status", "in", "(uploading,split)").not("doc_type", "in", "(filed_return,payment_proof)").limit(5000),
     supabase.from("payroll_submissions").select("client_id, pay_month, status").in("client_id", ids).in("pay_month", periods),
     supabase.from("documents").select("id", { count: "exact", head: true }).in("client_id", ids).eq("status", "returned"),
     // Returns waiting for the client's approval (Prepared → Reviewed → Client approved).
@@ -348,7 +348,7 @@ async function MonthCard(props: { client: PortalClient; several: boolean; period
   const { client, period } = props;
   const [check, { data: docs }, { data: payroll }, { data: filings }, { data: hols }] = await Promise.all([
     supabase.rpc("month_check", { p_client: client.id, p_period: period }),
-    supabase.from("documents").select("doc_type, status").eq("client_id", client.id).eq("document_month", period).not("status", "in", "(uploading)").not("doc_type", "in", "(filed_return,payment_proof,cor)").limit(5000),
+    supabase.from("documents").select("doc_type, status").eq("client_id", client.id).eq("document_month", period).not("status", "in", "(uploading,split)").not("doc_type", "in", "(filed_return,payment_proof,cor)").limit(5000),
     supabase.from("payroll_submissions").select("status").eq("client_id", client.id).eq("pay_month", period),
     supabase.from("filing_instances").select("form, period_label, period_start, period_end, due_date, status").eq("client_id", client.id).lte("period_start", period).gte("period_end", period).neq("status", "proof_uploaded"),
     supabase.from("holidays").select("date").neq("kind", "local"),

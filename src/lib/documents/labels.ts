@@ -50,6 +50,8 @@ export const docStatusLabel: Record<string, string> = {
   under_review: "Under review",
   posted: "Posted",
   returned: "Returned",
+  /** A bundled PDF, split into one line per invoice. */
+  split: "Split into invoices",
 };
 
 export const docStatusTone = {
@@ -58,7 +60,23 @@ export const docStatusTone = {
   under_review: "progress",
   posted: "done",
   returned: "blocked",
+  split: "done",
 } as const;
+
+/** Invoices and receipts are "Invoice n of N"; 2307s are "Form n of N". */
+const bundleNoun = (docType: string) => (docType.startsWith("bir_2307") ? "Form" : "Invoice");
+
+/** An invoice of a bundled PDF: "Invoice 3 of 25 · page 4". */
+export function bundleLabel(docType: string, index: number, count: number | null | undefined, page: number): string {
+  return `${bundleNoun(docType)} ${index}${count ? ` of ${count}` : ""} · page ${page}`;
+}
+
+/** A bundled PDF: "25 invoices found on 10 pages". */
+export function bundleSummary(docType: string, count: number | null | undefined, pages: number | null | undefined): string {
+  const n = count ?? 0;
+  const noun = docType.startsWith("bir_2307") ? (n === 1 ? "2307" : "2307s") : n === 1 ? "invoice" : "invoices";
+  return `${n} ${noun} found${pages ? ` on ${pages} page${pages === 1 ? "" : "s"}` : ""}`;
+}
 
 const monthFmt = new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" });
 /** "2026-11-01" → "November 2026". */
