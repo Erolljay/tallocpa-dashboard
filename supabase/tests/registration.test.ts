@@ -184,7 +184,7 @@ describe.skipIf(!url)("business registration", () => {
   it("opens one renewal per client and year, and completing it only closes the case", async () => {
     const client = await activeClient("Renew Corp");
     const steps = stepsPayload(renewalStepsFor("corporation", { lguServed: true, dtiDue: false }));
-    await expect(openClientCase(STAFF, client, "renewal", { period_year: 2027 }, steps)).rejects.toThrow(/Only the Owner opens renewals/);
+    await expect(openClientCase(STAFF, client, "renewal", { period_year: 2027 }, steps)).rejects.toThrow(/Only the Owner opens cases/);
     await expect(openClientCase(OWNER, client, "renewal", {}, steps)).rejects.toThrow(/Choose the year/);
     const k = await openClientCase(OWNER, client, "renewal", { period_year: 2027, lgu_served: true, target_date: "2027-01-20" }, steps);
     expect(k).toMatchObject({ kind: "renewal", period_year: 2027 });

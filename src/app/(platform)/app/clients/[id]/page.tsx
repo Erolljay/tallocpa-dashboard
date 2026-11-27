@@ -197,8 +197,11 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           {isOwner && (client.status === "active" || client.status === "onboarding") && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-separator-border pt-4">
               <LinkButton href={`/app/registrations/new?client=${id}&kind=renewal`} variant="secondary" size="sm">Annual renewal</LinkButton>
-              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update (1905)</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update / SEC amendment</LinkButton>
               <LinkButton href={`/app/registrations/new?client=${id}&kind=branch`} variant="secondary" size="sm">New branch</LinkButton>
+              {client.taxpayer_type !== "individual" && <LinkButton href={`/app/registrations/new?client=${id}&kind=sec_filing`} variant="secondary" size="sm">SEC filings (GIS, AFS)</LinkButton>}
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=certificate`} variant="secondary" size="sm">BIR certificate</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=employer`} variant="secondary" size="sm">Employer registration</LinkButton>
               <LinkButton href={`/app/registrations/new?client=${id}&kind=closure`} variant="secondary" size="sm">Close the business</LinkButton>
             </div>
           )}

@@ -11,13 +11,16 @@ import { ClientCaseForm, NewRegistrationForm } from "../forms";
 import { manilaDate } from "@/lib/registration/slip";
 
 const clientCase: Record<ClientCaseKind, { title: string; description: string }> = {
-  renewal: { title: "Annual renewal", description: "barangay, fire, sanitary and mayor's permits, and the year's SEC or DTI filings." },
-  bir_update: { title: "BIR update (Form 1905)", description: "change of address or RDO, tax types, name or line of business, with the DTI/SEC and City Hall changes that go with it." },
+  renewal: { title: "Annual renewal", description: "barangay, fire, sanitary and mayor's permits, and the DTI business name when due." },
+  bir_update: { title: "BIR update / SEC amendment", description: "change of address or RDO, tax types, name or line of business (Form 1905), and SEC amendments such as primary purpose, capital stock, directors or fiscal year, with the DTI/SEC and City Hall changes that go with them." },
   branch: { title: "New branch", description: "the branch's barangay clearance and mayor's permit, and BIR registration with a branch code, COR, books and invoices." },
+  sec_filing: { title: "SEC annual filings", description: "the General Information Sheet and annual financial statements through eFAST." },
+  certificate: { title: "BIR certificate or clearance", description: "e.g. a tax clearance: the application, requirements, fees and the BIR's release." },
+  employer: { title: "Employer registration", description: "SSS, PhilHealth and Pag-IBIG employer registration and the first employees reported." },
   closure: { title: "Close the business", description: "barangay and City Hall retirement, BIR cancellation, DTI or SEC, and the employer numbers." },
 };
 
-/** /app/registrations/new — a new business; ?client=…&kind=renewal|bir_update|branch|closure — a case for an existing client. */
+/** /app/registrations/new — a new business; ?client=…&kind=renewal|bir_update|branch|sec_filing|certificate|employer|closure — a case for an existing client. */
 export default function NewRegistrationPage(props: PageProps<"/app/registrations/new">) {
   return (
     <Suspense fallback={<><PageHeader title="New registration" /><Skeleton rows={8} /></>}>
@@ -35,6 +38,7 @@ async function OwnerOnly({ searchParams }: Pick<PageProps<"/app/registrations/ne
     const k = kind as ClientCaseKind;
     const { data: client } = await supabase.from("clients").select("id, name, taxpayer_type").eq("id", clientId).maybeSingle();
     if (!client) notFound();
+    if (k === "sec_filing" && client.taxpayer_type === "individual") notFound();
     const today = manilaDate(new Date());
     // From October on, the renewal being prepared is next year's.
     const year = Number(today.slice(0, 4)) + (Number(today.slice(5, 7)) >= 10 ? 1 : 0);

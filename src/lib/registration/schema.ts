@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TAXPAYER_TYPES } from "@/lib/clients/obligations";
-import { STEP_STATUSES, UPDATE_CHANGES, type StepStatus, type UpdateChange } from "./steps";
+import { CERTIFICATES, STEP_STATUSES, UPDATE_CHANGES, type Certificate, type StepStatus, type UpdateChange } from "./steps";
 
 const optional = <T extends z.ZodType>(s: T) => z.preprocess((v) => (v === "" || v == null ? undefined : v), s.optional());
 const checkbox = z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean());
@@ -60,6 +60,36 @@ export const updateSchema = z.object({
   target_date: optional(z.iso.date("Enter a valid date.")),
   notes: optional(z.string().trim().max(1000)),
 });
+
+/** SEC annual filings (GIS, AFS) for a partnership, corporation, OPC or non-stock corporation. */
+export const secFilingSchema = z
+  .object({
+    period_year: z.coerce.number().int().min(2000).max(2100),
+    gis: checkbox,
+    afs: checkbox,
+    target_date: optional(z.iso.date("Enter a valid date.")),
+    notes: optional(z.string().trim().max(1000)),
+  })
+  .refine((v) => v.gis || v.afs, { path: ["gis"], message: "Choose the GIS, the AFS or both." });
+
+/** A BIR certificate or clearance (e.g. tax clearance). */
+export const certificateSchema = z.object({
+  certificate: z.enum(Object.keys(CERTIFICATES) as [Certificate, ...Certificate[]], "Choose the certificate."),
+  purpose: optional(z.string().trim().max(200)),
+  target_date: optional(z.iso.date("Enter a valid date.")),
+  notes: optional(z.string().trim().max(1000)),
+});
+
+/** Employer registration (SSS, PhilHealth, Pag-IBIG) for a client that starts hiring. */
+export const employerSchema = z
+  .object({
+    sss: checkbox,
+    philhealth: checkbox,
+    pagibig: checkbox,
+    target_date: optional(z.iso.date("Enter a valid date.")),
+    notes: optional(z.string().trim().max(1000)),
+  })
+  .refine((v) => v.sss || v.philhealth || v.pagibig, { path: ["sss"], message: "Choose at least one agency." });
 
 /** New branch of an existing client. */
 export const branchSchema = z.object({

@@ -4,8 +4,22 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireStaff } from "@/lib/auth";
 import { formToObject } from "@/lib/clients/schema";
-import { branchSchema, closureSchema, newRegistrationSchema, renewalSchema, stepUpdateSchema, updateSchema } from "@/lib/registration/schema";
-import { branchStepsFor, closureStepsFor, dtiRenewalDue, renewalStepsFor, stepsFor, stepsPayload, updateStepsFor, type CaseKind } from "@/lib/registration/steps";
+import { branchSchema, certificateSchema, closureSchema, employerSchema, newRegistrationSchema, renewalSchema, secFilingSchema, stepUpdateSchema, updateSchema } from "@/lib/registration/schema";
+import {
+  branchStepsFor,
+  certificateStepsFor,
+  closureStepsFor,
+  dtiRenewalDue,
+  employerStepsFor,
+  registersWithSec,
+  renewalStepsFor,
+  SEC_ONLY_CHANGES,
+  secFilingStepsFor,
+  stepsFor,
+  stepsPayload,
+  updateStepsFor,
+  type CaseKind,
+} from "@/lib/registration/steps";
 import type { TaxpayerType } from "@/lib/clients/obligations";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -117,6 +131,9 @@ export async function openClientCaseAction(clientId: string, kind: ClientCaseKin
     const parsed = updateSchema.safeParse(formToObject(form));
     if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
     const v = parsed.data;
+    if (!registersWithSec(type) && v.changes.some((c) => SEC_ONLY_CHANGES.includes(c))) {
+      return { error: "Check the highlighted fields.", fieldErrors: { changes: "A sole proprietorship has no SEC amendments." } };
+    }
     caseData = { effective_date: v.effective_date, changes: v.changes, lgu_served: v.lgu_served, employer: v.employer, lgu: v.lgu ?? "", target_date: v.target_date ?? "", notes: v.notes ?? "" };
     steps = updateStepsFor(type, v.changes, { lguServed: v.lgu_served, employer: v.employer });
   } else if (kind === "branch") {
@@ -125,6 +142,25 @@ export async function openClientCaseAction(clientId: string, kind: ClientCaseKin
     const v = parsed.data;
     caseData = { branch_name: v.branch_name, lgu: v.lgu ?? "", lgu_served: v.lgu_served, target_date: v.target_date ?? "", notes: v.notes ?? "" };
     steps = branchStepsFor(type, { lguServed: v.lgu_served });
+  } else if (kind === "sec_filing") {
+    if (!registersWithSec(type)) return { error: "SEC filings are for partnerships and corporations." };
+    const parsed = secFilingSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { period_year: v.period_year, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = secFilingStepsFor(type, { gis: v.gis, afs: v.afs });
+  } else if (kind === "certificate") {
+    const parsed = certificateSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { certificate: v.certificate, purpose: v.purpose ?? "", target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = certificateStepsFor(v.certificate);
+  } else if (kind === "employer") {
+    const parsed = employerSchema.safeParse(formToObject(form));
+    if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
+    const v = parsed.data;
+    caseData = { target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    steps = employerStepsFor({ sss: v.sss, philhealth: v.philhealth, pagibig: v.pagibig });
   } else {
     const parsed = closureSchema.safeParse(formToObject(form));
     if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
@@ -135,12 +171,58 @@ export async function openClientCaseAction(clientId: string, kind: ClientCaseKin
   const { data, error } = await supabase.rpc("open_client_case", { p_client: clientId, p_kind: kind, p_case: caseData, p_steps: stepsPayload(steps) });
   if (error) {
     if (error.message.includes("registration_cases_renewal_idx")) return { error: "This client already has a renewal for that year." };
+    if (error.message.includes("registration_cases_sec_filing_idx")) return { error: "This client already has SEC filings for that year." };
     if (error.message.includes("registration_cases_open_idx")) return { error: "This client already has an open case of this kind." };
     return { error: error.message };
   }
   revalidatePath("/app/registrations");
   revalidatePath(`/app/clients/${clientId}`);
   redirect(`/app/registrations/${(data as { id: string }).id}`);
+}
+
+/* --------------------------------------------------------- Proof files on a step */
+
+/** What staff may attach as proof: a PDF or a photo, up to 25 MB. */
+const PROOF_TYPES: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const PROOF_MAX = 25 * 1024 * 1024;
+
+/** Step 1 of an upload: a one-time link under <client>/<case>/. */
+export async function startStepFileUpload(input: { stepId: string; mimeType: string; size: number }): Promise<{ path: string; token: string } | { error: string }> {
+  await requireStaff();
+  const ext = PROOF_TYPES[input.mimeType];
+  if (!ext) return { error: "Attach a PDF or a photo (JPEG, PNG or WebP)." };
+  if (input.size > PROOF_MAX) return { error: "The file is over 25 MB." };
+  const supabase = await supabaseServer();
+  const { data: s } = await supabase.from("registration_steps").select("id, case_id, registration_cases!inner(client_id)").eq("id", input.stepId).maybeSingle();
+  if (!s) return { error: "Step not found." };
+  const clientId = (s.registration_cases as unknown as { client_id: string }).client_id;
+  const path = `${clientId}/${s.case_id}/${crypto.randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage.from("registration-files").createSignedUploadUrl(path);
+  if (error || !data) return { error: `Could not start the upload: ${error?.message ?? "no link"}` };
+  return { path: data.path, token: data.token };
+}
+
+/** Step 2: record the uploaded file on the step. */
+export async function addStepFile(input: { caseId: string; stepId: string; path: string; fileName: string; mimeType: string; size: number }): Promise<FormState> {
+  await requireStaff();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("add_registration_step_file", {
+    p_step: input.stepId, p_path: input.path, p_file_name: input.fileName.slice(0, 200), p_mime: input.mimeType, p_size: input.size,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/registrations/${input.caseId}`);
+  revalidatePath("/portal/registration");
+  return { ok: true };
+}
+
+export async function removeStepFile(caseId: string, fileId: string): Promise<FormState> {
+  await requireStaff();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("remove_registration_step_file", { p_file: fileId });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/registrations/${caseId}`);
+  revalidatePath("/portal/registration");
+  return { ok: true };
 }
 
 /** When each client's DTI business name was registered through us (the DTI step of a completed new-business case). */
