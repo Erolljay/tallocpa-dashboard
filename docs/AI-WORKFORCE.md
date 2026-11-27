@@ -173,7 +173,7 @@ AI callers. Summary is served only through summary functions, never the entry ta
 1. **Endpoint**: one route on the app, e.g. `/api/mcp`, added in Cowork as a custom
    connector.
 2. **Sign-in**: per AI employee (§5). OAuth for Cowork; a plain bearer credential for
-   tests and n8n.
+   tests and scheduled jobs.
 3. **Permissions**: each AI employee sees only the tools granted to it and only its
    assigned clients; books access per §6.
 4. **Tools**: read, search and save-draft actions (§7.2).

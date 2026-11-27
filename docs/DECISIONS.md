@@ -6,7 +6,7 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 |---|---|---|
 | Q1 | Core job | BIR compliance engine + staff work management; the client-facing core is **document intake with OCR** |
 | Q2 | Users | Owner, staff **and clients** (client portal in v1) |
-| Q3 | Systems | The OS **replaces Moxie and Manager.io**; **n8n** added as the automation layer |
+| Q3 | Systems | The OS **replaces Moxie and Manager.io**; **n8n** added as the automation layer (n8n superseded by Q81) |
 | Q4 | Receivership & liquidation | ~~Later, after tax compliance and bookkeeping~~ **Superseded by Q66:** handled on another platform, not in the OS |
 | Q5 | Build approach | Custom build (Next.js + Supabase + Vercel) |
 | Q6 | Deadline tracking | Settled by Q3: deadlines live in the OS, generated from rules, not Moxie recurring tasks |
@@ -14,12 +14,12 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q8 | OCR document types v1 | Sales/ORs, purchase receipts, **BIR 2307 issued and received**, COR |
 | Q9 | OCR engine | **Gemini** (handwritten invoices); every extraction goes through staff review |
 | Q10 | Intake channel | **Portal upload only** for now |
-| Q11 | n8n role | Plumbing only; business rules stay in the app |
-| Q12 | n8n hosting | Self-hosted on a VPS |
+| Q11 | n8n role | ~~Plumbing only~~ **Superseded by Q81:** no n8n. Business rules stay in the app |
+| Q12 | n8n hosting | ~~Self-hosted on a VPS~~ **Superseded by Q81:** no n8n, no VPS |
 | Q13 | Data / privacy | Supabase Singapore; Data Privacy Act basics from day one |
 | Q14 | Seed data | ~~Import clients, obligations, fee schedule from Moxie~~ **Changed 23 Nov 2026:** no Moxie import; clients are entered from their COR (spec §8) |
 | Q15 | OCR testing | Swappable OCR; test on ~50 real receipts to choose model and thresholds |
-| Q16 | Tech stack | Next.js/Vercel, Supabase, Tailwind + shadcn/ui, Supabase Queues, n8n, Resend, HTML→PDF, Vitest/Playwright/Sentry |
+| Q16 | Tech stack | Next.js/Vercel, Supabase, Tailwind + shadcn/ui, Supabase Queues, n8n, Resend, HTML→PDF, Vitest/Playwright/Sentry (n8n superseded by Q81) |
 | Q17 | Phase 1 scope | Minimal engagement record; full lead → proposal pipeline in Phase 2; service lines in the data model now |
 | Q18 | Bookkeeping | Double-entry per client; BIR loose-leaf books; no client CAS registration in v1 |
 | Q19 | Chart of accounts | Standard templates by client type, customizable |
@@ -41,7 +41,7 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q35 | Client portal | Upload, document status, filing calendar, SOA — **plus returns and reports**; no chat |
 | Q36 | Owner dashboard | Deadlines, overdue, missed cutoffs, review queue, receivables, exceptions, OCR correction rate — **plus clients per staff (capacity), clients not following the system, late filings, per-staff KPIs** |
 | Q37 | Time tracking | **None** — fixed retainers |
-| Q38 | Notifications | Email + in-app; Viber/SMS later via n8n |
+| Q38 | Notifications | Email + in-app; Viber/SMS later, sent by the app (n8n part superseded by Q81) |
 | Q39 | Capacity | Weighted by fee bands. Owner asked for help building the fee bands and a review of the current calculator |
 | Q40 | Staff KPIs | On-time rate, kickback rate, cutoff-to-filed days, documents processed, load |
 | Q41 | Client compliance score | Green/yellow/red; client-caused vs staff-caused lateness |
@@ -84,3 +84,4 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q78 | Marketing & Growth | AI employees for marketing, social media and SEO join the workforce as their own department. (Owner, 27 Nov 2026) |
 | Q79 | FS Preparer | An AI employee prepares financial statements in the firm's design with the firm's full notes; amounts, totals and note numbering come from the books, so the FS cannot carry those errors. Its desk is in the Owner's Cowork. (Owner, 27 Nov 2026) |
 | Q80 | Annual Reviewer | An AI employee reviews each client's books against every return filed for the year (books vs returns); code computes the differences, the AI explains them and recommends; amendments still need the Owner (Q71). (Owner, 27 Nov 2026) |
+| Q81 | No n8n | **n8n is dropped.** Nothing in the app uses it: emails and reminders run as the app's scheduled jobs through Resend, Telegram runs in the app, mailboxes are read through the Gmail API, and migrations run on GitHub Actions. The nightly off-site backup (encrypted, to the firm's Google Drive) runs on GitHub Actions instead of a self-hosted server; Viber or SMS, when added, are sent by the app. Supersedes the n8n parts of Q3, Q11, Q12, Q16 and Q38. (Owner, 27 Nov 2026) |
