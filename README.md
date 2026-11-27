@@ -6,6 +6,7 @@ The operating system of **Tallo CPA** (EJ Tallo Cloud Accounting and Auditing Se
 
 - [`docs/SPEC.md`](docs/SPEC.md) — product specification
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — the decisions (Q1–Q61) behind it
+- [`docs/AI-WORKFORCE.md`](docs/AI-WORKFORCE.md) — AI employees and the TalloCPA OS MCP server (draft)
 
 ## Status
 
