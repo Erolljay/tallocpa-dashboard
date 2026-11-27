@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795763467.5259702,
-    "seen": 1795763473.8922584,
-    "ast_hash": "53ee4f809648462582499ba599115615",
+    "mtime": 1795763486.2959194,
+    "seen": 1795763492.5583687,
+    "ast_hash": "aaeae045e0b4b3bf07a7f55e7f9f6633",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000005_calendar_year_rules_and_2026_holidays.sql": {
@@ -4242,9 +4242,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/scores/page.tsx": {
-    "mtime": 1795705732.1324594,
-    "seen": 1795760252.721624,
-    "ast_hash": "c26cf3b4744d0278339f811e988f9d15",
+    "mtime": 1795763475.122654,
+    "seen": 1795763492.5446315,
+    "ast_hash": "5ebbec6aeaac1da9ed296fbed7bdb41c",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/acting-approver/actions.ts": {
@@ -5385,6 +5385,18 @@
     "mtime": 1795761263.7998767,
     "seen": 1795761275.0100722,
     "ast_hash": "c1d13b4207ddfb6d088b6308866aba1d",
+    "semantic_hash": ""
+  },
+  "src/lib/scores/late-submitters.test.ts": {
+    "mtime": 1795763475.126654,
+    "seen": 1795763492.5559673,
+    "ast_hash": "b452029c161e12fb004c08b063305b68",
+    "semantic_hash": ""
+  },
+  "src/lib/scores/late-submitters.ts": {
+    "mtime": 1795763475.126654,
+    "seen": 1795763492.5559692,
+    "ast_hash": "dc6afda5ff9af8294389a5737a7b2270",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
