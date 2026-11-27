@@ -117,6 +117,26 @@ export async function waiveDueAction(clientId: string, dueId: string, _: MoneySt
   return { ok: "Waived." };
 }
 
+/** Approves a late-submission surcharge waiting for the Owner: it goes in Ready to bill. */
+export async function approveLateSurchargeAction(clientId: string, surchargeId: string): Promise<MoneyState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("approve_late_surcharge", { p_id: surchargeId });
+  if (error) return { error: error.message };
+  refresh(clientId);
+  return { ok: "Approved. It goes on the next statement." };
+}
+
+/** Waives a late-submission surcharge waiting for the Owner, with a reason. */
+export async function waiveLateSurchargeAction(clientId: string, surchargeId: string, _: MoneyState, form: FormData): Promise<MoneyState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("waive_late_surcharge", { p_id: surchargeId, p_reason: text(form.get("reason")) });
+  if (error) return { error: error.message };
+  refresh(clientId);
+  return { ok: "Waived." };
+}
+
 export async function applyCreditAction(clientId: string): Promise<MoneyState> {
   await requireOwner();
   const supabase = await supabaseServer();

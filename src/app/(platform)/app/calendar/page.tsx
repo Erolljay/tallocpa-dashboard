@@ -1,13 +1,17 @@
+import Link from "next/link";
 import { Suspense } from "react";
+import { CancelBooking } from "@/components/booking/cancel-booking";
 import { AnchorButton, Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
 import { requireStaff } from "@/lib/auth";
+import { manilaWhen } from "@/lib/calendar/cancel";
 import { appBookedEvents, teamWeek, type PersonWeek } from "@/lib/calendar/staff";
 import { isTeamEvent, manilaTime, mondayOf, weekCells, weekDays, weekRange } from "@/lib/calendar/week";
 import { googleCalendarEnv } from "@/lib/env";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
+import { cancelMeetingAction } from "./actions";
 import { DisconnectButton } from "./disconnect";
 
 /**
@@ -77,6 +81,16 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
   }
   const mine = linkOf.get(me.userId);
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
+  // Client meetings booked from the portal, coming up, for the clients this person works on.
+  const { data: meetingRows } = await supabase
+    .from("client_meetings")
+    .select("id, client_id, staff_user_id, starts_at, topic, clients(name)")
+    .is("cancelled_at", null)
+    .gt("starts_at", new Date().toISOString())
+    .order("starts_at")
+    .limit(50);
+  const meetings = (meetingRows ?? []) as unknown as { id: string; client_id: string; staff_user_id: string; starts_at: string; topic: string | null; clients: { name: string } | null }[];
+  const nameOf = new Map(staff.map((p) => [p.user_id, p.full_name]));
 
   return (
     <>
@@ -171,6 +185,24 @@ async function TeamCalendar({ searchParams }: Pick<PageProps<"/app/calendar">, "
             </table>
           </div>
         </Card>
+
+        {meetings.length > 0 && (
+          <Card title="Client meetings coming up" actions={<span className="text-caption-1-regular text-text-tertiary">Booked from the portal</span>}>
+            <ul className="divide-y divide-separator-border text-body-regular">
+              {meetings.map((m) => (
+                <li key={m.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                  <span className="min-w-0">
+                    <Link href={`/app/clients/${m.client_id}`} className="text-text-primary hover:underline">{m.clients?.name ?? "Client"}</Link>
+                    <span className="block text-caption-1-regular text-text-tertiary">
+                      {manilaWhen(m.starts_at)} · with {nameOf.get(m.staff_user_id) ?? "the team"}{m.topic ? ` · ${m.topic}` : ""}
+                    </span>
+                  </span>
+                  <CancelBooking action={cancelMeetingAction.bind(null, m.id)} reasonHint="Optional. It goes in the notice to the client." />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       </div>
     </>
   );

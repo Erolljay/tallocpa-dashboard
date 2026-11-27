@@ -15,7 +15,8 @@ import { monthLabel, REMITTANCE_KINDS, type RemittanceKind } from "@/lib/remitta
 import { cx } from "@/utils/cx";
 import { BooksChart } from "./_home/books-chart";
 import { portalContext, type PortalClient } from "./client-context";
-import { MonthComplete, type SentRow } from "./month-complete";
+import { MonthComplete, type SentRow, type StandingRow } from "./month-complete";
+import { standingLine, type StandingKind } from "@/lib/requests/labels";
 
 /**
  * Portal Home (rework decision 18): what waits on the client, the progress of the
@@ -349,13 +350,20 @@ const KINDS: { label: string; types: string[] }[] = [
 async function MonthCard(props: { client: PortalClient; several: boolean; period: string; cutoff: string; today: string; confirmedAt: string | null; confirmedCount: number | null }) {
   const { supabase } = await portalContext();
   const { client, period } = props;
-  const [check, { data: docs }, { data: payroll }, { data: filings }, { data: hols }] = await Promise.all([
+  const [check, { data: docs }, { data: payroll }, { data: filings }, { data: hols }, { data: standingData }] = await Promise.all([
     supabase.rpc("month_check", { p_client: client.id, p_period: period }),
     supabase.from("documents").select("doc_type, status").eq("client_id", client.id).eq("document_month", period).not("status", "in", "(uploading,split)").not("doc_type", "in", "(filed_return,payment_proof,cor)").limit(5000),
     supabase.from("payroll_submissions").select("status").eq("client_id", client.id).eq("pay_month", period),
     supabase.from("filing_instances").select("form, period_label, period_start, period_end, due_date, status").eq("client_id", client.id).lte("period_start", period).gte("period_end", period).neq("status", "proof_uploaded"),
     supabase.from("holidays").select("date").neq("kind", "local"),
+    // Standing monthly requests (bank statements, the AR/AP update): shown, never blocking.
+    supabase.from("client_requests").select("id, subject, status, standing_kind").eq("client_id", client.id).eq("period", period).not("standing_kind", "is", null).order("standing_kind").order("subject"),
   ]);
+  const standing: StandingRow[] = ((standingData ?? []) as { id: string; subject: string; status: string; standing_kind: StandingKind }[]).map((r) => ({
+    id: r.id,
+    label: standingLine(r),
+    state: r.status === "closed" ? "done" : r.status === "answered" ? "sent" : "open",
+  }));
   const c = (check.data ?? { missing: [], cwt: [], reading: 0 }) as { missing: MissingNumber[]; cwt: { party: string; amount: number }[]; reading: number };
   const sent: SentRow[] = KINDS.map((k) => {
     const of = (docs ?? []).filter((d) => k.types.includes(d.doc_type));
@@ -384,6 +392,7 @@ async function MonthCard(props: { client: PortalClient; several: boolean; period
       readOnly={!canAct(client.access)}
       confirmed={confirmedOn ? { on: shortDay(confirmedOn), count: props.confirmedCount } : null}
       sent={sent}
+      standing={standing}
       ranges={missingRanges(c.missing)}
       cwt={c.cwt}
       reading={c.reading}

@@ -5,7 +5,26 @@ import { Badge, Button, Card, Field, Input, Notice, Select, Textarea } from "@/c
 import type { Branch } from "@/lib/branches";
 import { months, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAXPAYER_TYPES, type TaxpayerType } from "@/lib/clients/obligations";
-import { AGENCIES, branchStepsFor, closureStepsFor, renewalStepsFor, STEP_STATUSES, stepsFor, UPDATE_CHANGES, updateStepsFor, type PlannedStep, type StepStatus, type UpdateChange } from "@/lib/registration/steps";
+import {
+  AGENCIES,
+  branchStepsFor,
+  certificateStepsFor,
+  CERTIFICATES,
+  closureStepsFor,
+  employerStepsFor,
+  renewalStepsFor,
+  secFilingStepsFor,
+  STEP_STATUSES,
+  stepsFor,
+  UPDATE_CHANGES,
+  updateChangesFor,
+  updateStepsFor,
+  type Certificate,
+  isIloiloCity,
+  type PlannedStep,
+  type StepStatus,
+  type UpdateChange,
+} from "@/lib/registration/steps";
 import { StaffOptions } from "../clients/client-form";
 import { cancelRegistrationAction, completeRegistrationAction, openClientCaseAction, openRegistrationAction, openYearRenewalsAction, updateStepAction, type ClientCaseKind, type FormState } from "./actions";
 
@@ -16,6 +35,7 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
   const [state, action, pending] = useActionState(openRegistrationAction, {} as FormState);
   const [type, setType] = useState<TaxpayerType>("individual");
   const [lguServed, setLguServed] = useState(true);
+  const [city, setCity] = useState("Iloilo City");
   const [employer, setEmployer] = useState(false);
   const openBranches = branches.filter((b) => b.active);
   const [branch, setBranch] = useState(openBranches.length === 1 ? openBranches[0].id : "");
@@ -49,8 +69,8 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
                 <Input id="registered_address" name="registered_address" />
               </Field>
             </div>
-            <Field label="City / municipality" htmlFor="lgu" error={e.lgu} hint="Where the mayor's permit is applied for.">
-              <Input id="lgu" name="lgu" placeholder="Iloilo City" />
+            <Field label="City / municipality" htmlFor="lgu" error={e.lgu} hint="Where the mayor's permit is applied for. We handle permits only in Iloilo City.">
+              <Input id="lgu" name="lgu" placeholder="Iloilo City" value={city} onChange={(ev) => { setCity(ev.target.value); setLguServed(isIloiloCity(ev.target.value)); }} />
             </Field>
             <Field label="Branch" htmlFor="branch_id" error={e.branch_id}>
               <Select id="branch_id" name="branch_id" value={branch} onChange={(ev) => setBranch(ev.target.value)} required>
@@ -65,7 +85,7 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
           <div className="grid gap-3">
             <label className="flex items-start gap-3 text-body-regular text-text-primary">
               <input type="checkbox" name="lgu_served" checked={lguServed} onChange={(ev) => setLguServed(ev.target.checked)} className="mt-1 size-4 shrink-0" />
-              <span>Barangay clearance and mayor&rsquo;s permit (City Hall)<span className="block text-caption-1-regular text-text-tertiary">Leave unticked when the client gets these themselves.</span></span>
+              <span>Barangay clearance and mayor&rsquo;s permit (Iloilo City Hall)<span className="block text-caption-1-regular text-text-tertiary">Iloilo City clients only, billed as the business permit. Leave unticked when the client gets these themselves.</span></span>
             </label>
             <label className="flex items-start gap-3 text-body-regular text-text-primary">
               <input type="checkbox" name="employer" checked={employer} onChange={(ev) => setEmployer(ev.target.checked)} className="mt-1 size-4 shrink-0" />
@@ -236,29 +256,52 @@ const caseTitle: Record<ClientCaseKind, string> = {
   renewal: "Renewal",
   bir_update: "What changes",
   branch: "The branch",
+  sec_filing: "SEC filings",
+  certificate: "The certificate",
+  employer: "Employer registration",
   closure: "Closing the business",
 };
 const caseNote: Record<ClientCaseKind, string> = {
   renewal: "Completing the renewal only closes this case.",
   bir_update: "When tax types change, enter the new tax setup on the client (Edit, with the date of the change) before completing; that starts and ends the filing obligations.",
   branch: "Completing the branch registration only closes this case.",
+  sec_filing: "Completing the SEC filings only closes this case.",
+  certificate: "Completing the certificate only closes this case.",
+  employer: "Completing the employer registration only closes this case. Enter the employer numbers on the client page.",
   closure: "Completing the closure ends the client's filing obligations after the closing date, ends its engagements and makes it inactive.",
 };
-const submitLabel: Record<ClientCaseKind, string> = { renewal: "Open renewal", bir_update: "Open BIR update", branch: "Open branch registration", closure: "Open closure" };
+const submitLabel: Record<ClientCaseKind, string> = {
+  renewal: "Open renewal",
+  bir_update: "Open update",
+  branch: "Open branch registration",
+  sec_filing: "Open SEC filings",
+  certificate: "Open certificate",
+  employer: "Open employer registration",
+  closure: "Open closure",
+};
 
-/** Renewal, BIR update, branch or closure for an existing client. */
-export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: { clientId: string; taxpayerType: TaxpayerType; kind: ClientCaseKind; year: number; dtiDue: boolean }) {
+/** Renewal, BIR update or SEC amendment, branch, SEC filings, certificate, employer registration or closure for an existing client. */
+export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue, city: knownCity }: { clientId: string; taxpayerType: TaxpayerType; kind: ClientCaseKind; year: number; dtiDue: boolean; city: string | null }) {
   const [state, action, pending] = useActionState(openClientCaseAction.bind(null, clientId, kind), {} as FormState);
-  const [lguServed, setLguServed] = useState(true);
+  const [city, setCity] = useState(knownCity ?? "");
+  // We handle permits only for Iloilo City clients (Owner, 27 Nov 2026).
+  const [lguServed, setLguServed] = useState(knownCity === null || isIloiloCity(knownCity));
   const [employer, setEmployer] = useState(false);
   const [dti, setDti] = useState(dtiDue);
   const [changes, setChanges] = useState<UpdateChange[]>([]);
+  const [filings, setFilings] = useState({ gis: true, afs: true });
+  const [certificate, setCertificate] = useState<Certificate>("tax_clearance");
+  const [agencies, setAgencies] = useState({ sss: true, philhealth: true, pagibig: true });
   const e = state.fieldErrors ?? {};
   const preview =
     kind === "renewal" ? renewalStepsFor(taxpayerType, { lguServed, dtiDue: dti })
     : kind === "bir_update" ? updateStepsFor(taxpayerType, changes, { lguServed, employer })
     : kind === "branch" ? branchStepsFor(taxpayerType, { lguServed })
+    : kind === "sec_filing" ? secFilingStepsFor(taxpayerType, filings)
+    : kind === "certificate" ? certificateStepsFor(certificate)
+    : kind === "employer" ? employerStepsFor(agencies)
     : closureStepsFor(taxpayerType, { lguServed, employer });
+  const servesLgu = kind !== "sec_filing" && kind !== "certificate" && kind !== "employer";
   const toggle = (c: UpdateChange) => setChanges((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
 
   return (
@@ -275,13 +318,14 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
                 <Field label="Renew by" htmlFor="target_date" error={e.target_date} hint="Most LGUs renew the mayor's permit by 20 January.">
                   <Input id="target_date" name="target_date" type="date" defaultValue={`${year}-01-20`} />
                 </Field>
+                <CityField value={city} error={e.lgu} onChange={(v) => { setCity(v); setLguServed(isIloiloCity(v)); }} />
               </>
             )}
             {kind === "bir_update" && (
               <>
                 <fieldset className="grid gap-2 sm:col-span-2">
-                  <legend className="mb-1 text-body-medium text-text-primary">Changes filed on Form 1905</legend>
-                  {(Object.keys(UPDATE_CHANGES) as UpdateChange[]).map((c) => (
+                  <legend className="mb-1 text-body-medium text-text-primary">Changes filed (Form 1905, DTI or SEC)</legend>
+                  {updateChangesFor(taxpayerType).map((c) => (
                     <label key={c} className="flex items-center gap-3 text-body-regular text-text-primary">
                       <input type="checkbox" name="changes" value={c} checked={changes.includes(c)} onChange={() => toggle(c)} className="size-4 shrink-0" />
                       {UPDATE_CHANGES[c]}
@@ -309,34 +353,71 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
                 </Field>
               </>
             )}
+            {kind === "sec_filing" && (
+              <>
+                <Field label="Filed in" htmlFor="period_year" error={e.period_year} hint="The year the GIS and AFS are filed.">
+                  <Input id="period_year" name="period_year" type="number" min={2000} max={2100} required defaultValue={year} className="tabular-nums" />
+                </Field>
+                <div className="grid gap-3 sm:col-span-2">
+                  <Check name="gis" checked={filings.gis} onChange={(v) => setFilings((f) => ({ ...f, gis: v }))} label="General Information Sheet" hint="Within 30 days after the annual meeting." />
+                  <Check name="afs" checked={filings.afs} onChange={(v) => setFilings((f) => ({ ...f, afs: v }))} label="Annual financial statements" hint="By the SEC filing schedule." />
+                  {e.gis && <p className="text-caption-1-medium text-text-error-primary">{e.gis}</p>}
+                </div>
+              </>
+            )}
+            {kind === "certificate" && (
+              <>
+                <Field label="Certificate" htmlFor="certificate" error={e.certificate}>
+                  <Select id="certificate" name="certificate" value={certificate} onChange={(ev) => setCertificate(ev.target.value as Certificate)}>
+                    {(Object.keys(CERTIFICATES) as Certificate[]).map((c) => <option key={c} value={c}>{CERTIFICATES[c]}</option>)}
+                  </Select>
+                </Field>
+                <Field label="Purpose" htmlFor="purpose" error={e.purpose} hint="What the client needs it for.">
+                  <Input id="purpose" name="purpose" placeholder="Bidding with the provincial government" />
+                </Field>
+              </>
+            )}
+            {kind === "employer" && (
+              <div className="grid gap-3 sm:col-span-2">
+                <Check name="sss" checked={agencies.sss} onChange={(v) => setAgencies((a) => ({ ...a, sss: v }))} label="SSS" hint="Untick when the client is already registered." />
+                <Check name="philhealth" checked={agencies.philhealth} onChange={(v) => setAgencies((a) => ({ ...a, philhealth: v }))} label="PhilHealth (PHIC)" hint="Untick when the client is already registered." />
+                <Check name="pagibig" checked={agencies.pagibig} onChange={(v) => setAgencies((a) => ({ ...a, pagibig: v }))} label="Pag-IBIG (HDMF)" hint="Untick when the client is already registered." />
+                {e.sss && <p className="text-caption-1-medium text-text-error-primary">{e.sss}</p>}
+              </div>
+            )}
             {kind === "closure" && (
-              <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
-                <Input id="effective_date" name="effective_date" type="date" required />
-              </Field>
+              <>
+                <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
+                  <Input id="effective_date" name="effective_date" type="date" required />
+                </Field>
+                <CityField value={city} error={e.lgu} onChange={(v) => { setCity(v); setLguServed(isIloiloCity(v)); }} />
+              </>
             )}
             {kind !== "renewal" && (
               <Field label="Target date" htmlFor="target_date" error={e.target_date}>
                 <Input id="target_date" name="target_date" type="date" />
               </Field>
             )}
-            <div className="grid gap-3 sm:col-span-2">
-              <Check
-                name="lgu_served"
-                checked={lguServed}
-                onChange={setLguServed}
-                label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : kind === "closure" ? "Barangay and City Hall closure" : "Barangay and City Hall"}
-                hint="Leave unticked when the client handles these themselves."
-              />
-              {kind === "renewal" && taxpayerType === "individual" && (
-                <Check name="dti_due" checked={dti} onChange={setDti} label="DTI business name is due for renewal" hint="Every 5 years from registration." />
-              )}
-              {kind === "closure" && (
-                <Check name="employer" checked={employer} onChange={setEmployer} label="Close the SSS, PhilHealth and Pag-IBIG employer numbers" hint="Tick when the business had employees." />
-              )}
-              {kind === "bir_update" && (
-                <Check name="employer" checked={employer} onChange={setEmployer} label="Update the SSS, PhilHealth and Pag-IBIG employer records" hint="For a new name or address, when the business has employees." />
-              )}
-            </div>
+            {servesLgu && (
+              <div className="grid gap-3 sm:col-span-2">
+                <Check
+                  name="lgu_served"
+                  checked={lguServed}
+                  onChange={setLguServed}
+                  label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : kind === "closure" ? "Barangay and City Hall closure" : "Barangay and City Hall"}
+                  hint="Iloilo City clients only. Leave unticked when the client handles these themselves."
+                />
+                {kind === "renewal" && taxpayerType === "individual" && (
+                  <Check name="dti_due" checked={dti} onChange={setDti} label="DTI business name is due for renewal" hint="Every 5 years from registration." />
+                )}
+                {kind === "closure" && (
+                  <Check name="employer" checked={employer} onChange={setEmployer} label="Close the SSS, PhilHealth and Pag-IBIG employer numbers" hint="Tick when the business had employees." />
+                )}
+                {kind === "bir_update" && (
+                  <Check name="employer" checked={employer} onChange={setEmployer} label="Update the SSS, PhilHealth and Pag-IBIG employer records" hint="For a new name or address, when the business has employees." />
+                )}
+              </div>
+            )}
             <div className="sm:col-span-2">
               <Field label="Notes" htmlFor="notes" error={e.notes}>
                 <Textarea id="notes" name="notes" rows={3} />
@@ -363,5 +444,14 @@ export function YearRenewalsForm({ year }: { year: number }) {
       {state.message && <span className="text-caption-1-regular text-text-secondary">{state.message}</span>}
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
+  );
+}
+
+/** The city or municipality of the permits: we handle them only in Iloilo City. */
+function CityField({ value, error, onChange }: { value: string; error?: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="City / municipality" htmlFor="lgu" error={error} hint="We handle permits only for Iloilo City clients.">
+      <Input id="lgu" name="lgu" value={value} onChange={(ev) => onChange(ev.target.value)} placeholder="Iloilo City" />
+    </Field>
   );
 }

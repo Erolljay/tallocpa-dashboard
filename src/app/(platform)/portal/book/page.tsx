@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { CancelBooking } from "@/components/booking/cancel-booking";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import { Notice, Skeleton } from "@/components/ui";
 import { slotsFor } from "@/lib/calendar/booking";
 import { labelledDays, CLIENT_MEETING } from "@/lib/calendar/slots";
 import { accessNote, canAct } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
-import { bookClientMeetingAction } from "./actions";
+import { bookClientMeetingAction, cancelMyMeetingAction } from "./actions";
 
 /** Book a meeting with the client's reviewer (or preparer): their free times, a Meet link by email (decision 22). */
 export default function PortalBookPage(props: PageProps<"/portal/book">) {
@@ -31,6 +32,8 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
   const host = ((hosts ?? []) as { user_id: string; full_name: string; connected: boolean }[])[0];
   const free = host?.connected ? await slotsFor(host.user_id, CLIENT_MEETING) : null;
   const upcoming = (meetings ?? []) as { id: string; starts_at: string; meet_url: string | null; topic: string | null }[];
+  // A meeting that has started can no longer be cancelled.
+  const now = new Date().getTime();
 
   return (
     <div className="space-y-6">
@@ -48,7 +51,12 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
             {upcoming.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-body-regular">
                 <span className="text-text-primary">{when.format(new Date(m.starts_at))}{m.topic ? ` · ${m.topic}` : ""}</span>
-                {m.meet_url?.startsWith("https://") && <a href={m.meet_url} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Join on Meet</a>}
+                <span className="flex flex-wrap items-center gap-2">
+                  {m.meet_url?.startsWith("https://") && <a href={m.meet_url} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Join on Meet</a>}
+                  {Date.parse(m.starts_at) > now && canAct(business.access) && (
+                    <CancelBooking action={cancelMyMeetingAction.bind(null, m.id)} reasonHint="Optional. Your team will see it." />
+                  )}
+                </span>
               </li>
             ))}
           </ul>

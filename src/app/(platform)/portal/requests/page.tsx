@@ -21,6 +21,7 @@ interface Row {
   subject: string;
   status: RequestStatus;
   due_date: string | null;
+  standing_kind: string | null;
   updated_at: string;
   registration_steps: { label: string } | null;
 }
@@ -32,7 +33,7 @@ async function Requests() {
   const { supabase, clients } = await portalContext();
   const { data } = await supabase
     .from("client_requests")
-    .select("id, client_id, direction, subject, status, due_date, updated_at, registration_steps(label)")
+    .select("id, client_id, direction, subject, status, due_date, standing_kind, updated_at, registration_steps(label)")
     .in("client_id", clients.map((c) => c.id))
     .order("updated_at", { ascending: false })
     .limit(100);
@@ -51,7 +52,7 @@ async function Requests() {
             <span className="min-w-0">
               <span className="block text-body-medium text-text-primary">{r.subject}</span>
               <span className="block text-caption-1-regular text-text-tertiary">
-                {r.direction === "to_client" ? "From us" : "Your question"}
+                {r.standing_kind ? "Every month" : r.direction === "to_client" ? "From us" : "Your question"}
                 {r.registration_steps ? ` · for ${r.registration_steps.label}` : ""}
                 {r.due_date && r.status !== "closed" ? ` · needed by ${r.due_date}` : ""}
                 {clients.length > 1 ? ` · ${nameOf.get(r.client_id)}` : ""}

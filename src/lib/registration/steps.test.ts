@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { birForm, branchStepsFor, closureStepsFor, updateStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
+import { isIloiloCity, birForm, branchStepsFor, certificateStepsFor, closureStepsFor, employerStepsFor, feeJobsFor, secFilingStepsFor, updateChangesFor, updateStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
+import { FEE_TEMPLATE } from "../fees/template";
 
 const codes = (...args: Parameters<typeof stepsFor>) => stepsFor(...args).map((s) => s.code);
 const all = { lguServed: true, employer: true };
@@ -105,9 +106,9 @@ describe("routingSlip", () => {
 });
 
 describe("renewalStepsFor", () => {
-  it("renews the barangay, fire, sanitary and mayor's permits, then the books for the new year", () => {
+  it("renews the barangay, fire, sanitary and mayor's permits, then the books for the new year (the GIS has its own case)", () => {
     expect(renewalStepsFor("corporation", { lguServed: true, dtiDue: false }).map((s) => s.code)).toEqual([
-      "barangay_clearance", "fire_safety", "sanitary_permit", "mayors_permit", "sec_gis", "bir_books", "bir_display",
+      "barangay_clearance", "fire_safety", "sanitary_permit", "mayors_permit", "bir_books", "bir_display",
     ]);
   });
   it("renews a sole proprietor's DTI name only when due", () => {
@@ -150,7 +151,7 @@ describe("updateStepsFor", () => {
   });
   it("moves a corporation to another city: SEC, barangay, both City Halls, BIR transfer, employer records", () => {
     expect(codes("corporation", ["rdo_transfer"], all)).toEqual([
-      "sec_amendment", "barangay_clearance", "mayors_permit_new", "mayors_retirement_old",
+      "sec_board_approval", "sec_amendment", "sec_amendment_approved", "barangay_clearance", "mayors_permit_new", "mayors_retirement_old",
       "bir_1905", "bir_rdo_transfer", "bir_cor", "bir_invoices", "bir_books", "bir_display",
       "sss_employer_update", "philhealth_employer_update", "pagibig_employer_update",
     ]);
@@ -178,5 +179,112 @@ describe("branchStepsFor", () => {
     expect(branchStepsFor("individual", { lguServed: false }).map((s) => [s.code, s.status]).slice(0, 3)).toEqual([
       ["dti_scope", "pending"], ["barangay_clearance", "not_applicable"], ["mayors_permit", "not_applicable"],
     ]);
+  });
+});
+
+describe("SEC amendments", () => {
+  const codes = (...a: Parameters<typeof updateStepsFor>) => updateStepsFor(...a).map((s) => s.code);
+  const all = { lguServed: true, employer: true };
+
+  it("files an SEC-only amendment without Form 1905", () => {
+    expect(codes("corporation", ["directors"], all)).toEqual(["sec_board_approval", "sec_amendment", "sec_amendment_approved", "sec_gis_update"]);
+    expect(updateStepsFor("corporation", ["directors"], all).find((s) => s.code === "sec_amendment")?.label).toContain("number of directors");
+  });
+  it("pays for a capital increase and its DST before filing, then amends the GIS", () => {
+    expect(codes("corporation", ["capital_increase"], all)).toEqual([
+      "sec_board_approval", "sec_capital_paid", "bir_dst", "sec_amendment", "sec_amendment_approved", "sec_gis_update",
+    ]);
+    expect(codes("corporation", ["capital_decrease"], all)).toContain("sec_creditors");
+  });
+  it("changes the fiscal year with SEC and the BIR, with a short-period return", () => {
+    expect(codes("corporation", ["fiscal_year"], all)).toEqual([
+      "sec_board_approval", "sec_amendment", "sec_amendment_approved", "bir_1905", "bir_cor", "bir_books", "bir_short_period", "bir_display",
+    ]);
+  });
+  it("changes the primary purpose with SEC, City Hall and the BIR", () => {
+    expect(codes("corporation", ["primary_purpose"], all)).toEqual([
+      "sec_board_approval", "sec_amendment", "sec_amendment_approved", "mayors_permit_amendment", "bir_1905", "bir_cor", "bir_display",
+    ]);
+  });
+  it("reserves the new name and lists every change once in one amendment", () => {
+    const steps = updateStepsFor("partnership", ["name", "primary_purpose", "other_amendment"], all);
+    expect(steps.map((s) => s.code).slice(0, 4)).toEqual(["sec_board_approval", "sec_name", "sec_amendment", "sec_amendment_approved"]);
+    expect(steps[0].label).toContain("Partners");
+    expect(steps.find((s) => s.code === "sec_amendment")?.label).toContain("corporate name, primary purpose, other provisions");
+  });
+  it("offers sole proprietors no SEC amendments and ignores any given", () => {
+    expect(updateChangesFor("individual")).toEqual(["address", "rdo_transfer", "tax_types", "name", "line_of_business"]);
+    expect(updateChangesFor("corporation")).toContain("capital_increase");
+    expect(codes("individual", ["directors"], all)).toEqual([]);
+  });
+});
+
+describe("SEC filings, certificates and employer registration", () => {
+  it("files the GIS and AFS through eFAST, keeping what the case does not cover", () => {
+    expect(secFilingStepsFor("corporation", { gis: true, afs: true }).map((s) => s.code)).toEqual([
+      "sec_efast", "sec_gis", "sec_afs_ready", "sec_afs", "sec_fees", "sec_acknowledgment",
+    ]);
+    const gisOnly = secFilingStepsFor("opc", { gis: true, afs: false });
+    expect(gisOnly.filter((s) => s.status === "not_applicable").map((s) => s.code)).toEqual(["sec_afs_ready", "sec_afs"]);
+    expect(gisOnly.find((s) => s.code === "sec_gis")?.label).toContain("OPC");
+  });
+  it("settles open cases first for a tax clearance, then applies and waits for the release", () => {
+    expect(certificateStepsFor("tax_clearance").map((s) => s.code)).toEqual([
+      "bir_open_cases", "bir_application", "bir_requirements", "bir_certification_fee", "bir_evaluation", "bir_release",
+    ]);
+    expect(certificateStepsFor("cor_replacement").map((s) => s.code)[0]).toBe("bir_application");
+    expect(certificateStepsFor("cor_replacement")[0].label).toContain("1905");
+  });
+  it("registers the employer with each agency not yet registered", () => {
+    const steps = employerStepsFor({ sss: true, philhealth: false, pagibig: true });
+    expect(steps.map((s) => s.code)).toEqual(["sss_employer", "sss_employees", "philhealth_employer", "philhealth_employees", "pagibig_employer", "pagibig_employees"]);
+    expect(steps.filter((s) => s.status === "not_applicable").map((s) => s.code)).toEqual(["philhealth_employer", "philhealth_employees"]);
+  });
+});
+
+describe("isIloiloCity", () => {
+  it("knows Iloilo City however it is written, and nothing else", () => {
+    for (const c of ["Iloilo City", "iloilo city", "City of Iloilo", "Jaro, Iloilo City", "La Paz, ILOILO CITY"]) expect(isIloiloCity(c)).toBe(true);
+    for (const c of ["Iloilo", "Pavia, Iloilo", "Oton", "Iloilo Province", "", null, undefined]) expect(isIloiloCity(c)).toBe(false);
+  });
+});
+
+describe("feeJobsFor", () => {
+  const facts = { lguServed: true, lgu: "Iloilo City", employer: false };
+
+  it("bills new businesses by taxpayer type, the Iloilo City permit, plus each employer registration not skipped", () => {
+    expect(feeJobsFor("new_business", "individual", facts)).toEqual(["I.registration_individual", "I.business_permit"]);
+    expect(feeJobsFor("new_business", "individual", { ...facts, lguServed: false })).toEqual(["I.registration_individual"]);
+    expect(feeJobsFor("new_business", "corporation", { lguServed: true, lgu: "Pavia, Iloilo", employer: true, notNeeded: ["philhealth_employer"] })).toEqual([
+      "I.registration_non_individual", "I.sss_registration", "I.pagibig_registration",
+    ]);
+  });
+  it("bills the permit renewal only where the firm handles the permits, in Iloilo City", () => {
+    expect(feeJobsFor("renewal", "corporation", facts)).toEqual(["I.business_permit"]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: "Jaro, City of Iloilo" })).toEqual(["I.business_permit"]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: "Oton" })).toEqual([]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: null })).toEqual([]);
+    expect(feeJobsFor("renewal", "corporation", { lguServed: false, employer: false })).toEqual([]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, notNeeded: ["mayors_permit"] })).toEqual([]);
+  });
+  it("bills a BIR update as ORUS and an SEC amendment as the SEC amendment job", () => {
+    expect(feeJobsFor("bir_update", "individual", { ...facts, changes: ["address"] })).toEqual(["I.orus"]);
+    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["directors"] })).toEqual(["I.sec_amendment"]);
+    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["name"] })).toEqual(["I.orus", "I.sec_amendment"]);
+    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["tax_types"] })).toEqual(["I.orus"]);
+  });
+  it("bills the other kinds as their one job", () => {
+    expect(feeJobsFor("branch", "corporation", facts)).toEqual(["I.orus"]);
+    expect(feeJobsFor("sec_filing", "corporation", facts)).toEqual(["I.sec"]);
+    expect(feeJobsFor("certificate", "individual", facts)).toEqual(["I.certificate"]);
+    expect(feeJobsFor("closure", "individual", facts)).toEqual(["I.closure"]);
+    expect(feeJobsFor("employer", "individual", { ...facts, notNeeded: ["sss_employer"] })).toEqual(["I.philhealth_registration", "I.pagibig_registration"]);
+  });
+  it("covers every ad hoc job on the fee schedule except the amended return, and only those", () => {
+    const kinds = ["new_business", "renewal", "bir_update", "branch", "sec_filing", "certificate", "employer", "closure"] as const;
+    const billed = new Set(kinds.flatMap((k) => ["individual", "corporation"].flatMap((t) =>
+      feeJobsFor(k, t as "individual" | "corporation", { lguServed: true, lgu: "Iloilo City", employer: true, changes: ["name", "directors"] }))));
+    const adHoc = FEE_TEMPLATE.filter((i) => i.component === "I" && i.code !== "I.amended_return" && i.code !== "I.backlog_month").map((i) => i.code);
+    expect([...billed].sort()).toEqual([...adHoc].sort());
   });
 });

@@ -149,8 +149,10 @@ export const FEE_TEMPLATE: readonly FeeItemTemplate[] = [
 
   // Ad hoc jobs (billing "one_time"): not in the quote; priced in the proposal, billed when done.
   item("I.orus", "I", "ORUS and BIR registration updates", null, "one_time"),
-  item("I.business_permit", "I", "Business permit renewal (Iloilo City)", "Only in Iloilo City for now", "one_time"),
+  // Only for Iloilo City clients (Owner, 27 Nov 2026): a new business's first permit or the yearly renewal.
+  item("I.business_permit", "I", "Business permit (Iloilo City)", "New or renewal · Iloilo City clients only", "one_time"),
   item("I.sec", "I", "SEC filings", "GIS, AFS submission", "one_time", { taxpayer_types: [...NON_INDIVIDUAL] }),
+  item("I.sec_amendment", "I", "SEC amendment", "Articles or by-laws: name, purpose, capital, directors, fiscal year and others", "one_time", { taxpayer_types: [...NON_INDIVIDUAL] }),
   item("I.closure", "I", "Closure of business", null, "one_time"),
   // New business registration covers BIR and SEC only; the LGU permit and other registrations are separate.
   // OPC, partnership and non-stock take the corporation price.

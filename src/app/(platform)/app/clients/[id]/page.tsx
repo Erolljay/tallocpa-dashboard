@@ -12,6 +12,7 @@ import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
 import { telegramEnv } from "@/lib/env";
 import { TelegramSwitch, TelegramUnlinkButton } from "@/components/telegram/telegram-link";
+import { StandingSwitches } from "@/components/requests/standing-forms";
 import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
 import { EmployerCard } from "./employer-card";
@@ -51,7 +52,12 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("branches").select("id, code, name, address, active").order("name"),
     supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
   ]);
-  const { data: telegramLinks } = await supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id).eq("staff", false);
+  const [{ data: telegramLinks }, { data: standingRows }, { data: bankAccounts }] = await Promise.all([
+    supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id).eq("staff", false),
+    supabase.from("client_standing_requests").select("kind, accounts").eq("client_id", id),
+    supabase.from("ledger_accounts").select("name").eq("client_id", id).eq("control", "bank").eq("active", true).order("sort_order").order("code"),
+  ]);
+  const standingOf = new Map((standingRows ?? []).map((r) => [r.kind as string, (r.accounts ?? []) as string[]]));
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const [{ data: portalEmails }, { data: otherLinks }] = portalIds.length
@@ -206,8 +212,11 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           {isOwner && (client.status === "active" || client.status === "onboarding") && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-separator-border pt-4">
               <LinkButton href={`/app/registrations/new?client=${id}&kind=renewal`} variant="secondary" size="sm">Annual renewal</LinkButton>
-              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update (1905)</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=bir_update`} variant="secondary" size="sm">BIR update / SEC amendment</LinkButton>
               <LinkButton href={`/app/registrations/new?client=${id}&kind=branch`} variant="secondary" size="sm">New branch</LinkButton>
+              {client.taxpayer_type !== "individual" && <LinkButton href={`/app/registrations/new?client=${id}&kind=sec_filing`} variant="secondary" size="sm">SEC filings (GIS, AFS)</LinkButton>}
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=certificate`} variant="secondary" size="sm">BIR certificate</LinkButton>
+              <LinkButton href={`/app/registrations/new?client=${id}&kind=employer`} variant="secondary" size="sm">Employer registration</LinkButton>
               <LinkButton href={`/app/registrations/new?client=${id}&kind=closure`} variant="secondary" size="sm">Close the business</LinkButton>
             </div>
           )}
@@ -262,6 +271,25 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
             </ul>
           )}
           {canWork && <TelegramSwitch clientId={id} on={Boolean(client.telegram_enabled)} />}
+        </Card>
+
+        <Card
+          title="Standing monthly requests"
+          actions={<Badge tone={standingOf.size ? "done" : "neutral"}>{standingOf.size ? "On" : "Off"}</Badge>}
+        >
+          <p className="mb-4 text-body-regular text-text-secondary">
+            Each month a request opens by itself in the client&apos;s portal, due on the document cutoff. The client uploads the files; you accept or return them under Requests. Missing ones block nothing.
+          </p>
+          {canWork ? (
+            <StandingSwitches
+              clientId={id}
+              on={{ arap_update: standingOf.has("arap_update"), bank_statements: standingOf.has("bank_statements") }}
+              accounts={standingOf.get("bank_statements") ?? []}
+              booksAccounts={(bankAccounts ?? []).map((a) => a.name as string)}
+            />
+          ) : (
+            <p className="text-body-regular text-text-secondary">{standingOf.size ? [...standingOf.keys()].map((k) => (k === "arap_update" ? "AR/AP update" : "Bank statements")).join(" · ") : "None."}</p>
+          )}
         </Card>
 
         <Card title="Portal contacts" actions={<Link href="/app/contacts" className="text-body-medium text-button-ghost-foreground hover:underline">All contacts</Link>}>

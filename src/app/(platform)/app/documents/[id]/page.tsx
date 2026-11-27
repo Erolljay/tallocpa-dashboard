@@ -28,6 +28,7 @@ import { ColumnMapping, PayrollReadReview, ReadPayrollButton, SheetPreview } fro
 import { ReviewForm, type Booking } from "./review-form";
 import { CwtMatch } from "./cwt-match";
 import { ZoomPreview } from "./zoom-preview";
+import { AttachBatchImage } from "@/components/attach-batch-image";
 import { AddBundleInvoice, BundlePage, ReadBundleAgain, RemoveBundleInvoice } from "./bundle-tools";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
@@ -44,7 +45,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const supabase = await supabaseServer();
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, uploaded_by, return_reason, client_reply, created_at, ledger_account_id, bundle_id, bundle_page, bundle_index, bundle_count, bundle_pages, clients(name)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, uploaded_by, return_reason, client_reply, created_at, ledger_account_id, bundle_id, bundle_page, bundle_index, bundle_count, bundle_pages, storage_path, image_attached_at, image_attached_by, clients(name)")
     .eq("id", id)
     .maybeSingle();
   if (!doc) notFound();
@@ -99,6 +100,11 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const booking = await loadBooking(supabase, doc, entry?.id ?? null);
   const isPdf = doc.mime_type === "application/pdf";
   const maxPage = bundle?.pages ?? MAX_BUNDLE_PAGES;
+  // A batch row (B1) has no file until staff attach its image.
+  const noImage = doc.source === "batch" && !doc.storage_path;
+  const attachedBy = doc.image_attached_by
+    ? (await supabase.from("staff_profiles").select("full_name").eq("user_id", doc.image_attached_by).maybeSingle()).data?.full_name ?? null
+    : null;
   const place = bundle && doc.bundle_index && doc.bundle_page ? bundleLabel(doc.doc_type, doc.bundle_index, bundle.count, doc.bundle_page) : null;
   // A PDF read as one invoice that holds more: staff can add the others by hand.
   const canSplit = canAct && !bundle && isSplittable(doc.doc_type, doc.mime_type) && ["received", "under_review"].includes(doc.status);
@@ -117,13 +123,26 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={doc.file_name}>
-          {isPdf ? (
+          {noImage ? (
+            <div className="flex flex-col items-start gap-3 rounded-2xl bg-background-secondary-default p-4">
+              <Badge tone="waiting">Batch · no image</Badge>
+              <p className="text-body-regular text-text-secondary">
+                This row came from a batch upload, so there is no image behind it yet. Attach the invoice&rsquo;s photo or PDF as evidence. Its approved figures and entries stay as they are, even in a locked month.
+              </p>
+              {canAct ? <AttachBatchImage documentId={doc.id} size="md" /> : <p className="text-caption-1-regular text-text-tertiary">Staff assigned to the client can attach it.</p>}
+            </div>
+          ) : isPdf ? (
             // Keyed by its address so moving to an invoice on another page reloads the viewer there.
             <iframe key={fileHref} src={fileHref} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : (
             <ZoomPreview src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} />
           )}
-          <a href={fileHref} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
+          {!noImage && <a href={fileHref} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>}
+          {doc.image_attached_at && (
+            <p className="mt-1 text-caption-1-regular text-text-tertiary">
+              Image attached to the batch row{attachedBy ? ` by ${attachedBy}` : ""} on {String(doc.image_attached_at).slice(0, 10)}.
+            </p>
+          )}
         </Card>
         <div className="space-y-4">
           {bundle && place && doc.bundle_page && (

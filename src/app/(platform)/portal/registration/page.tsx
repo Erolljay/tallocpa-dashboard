@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Skeleton } from "@/components/ui";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
-import { AGENCIES, CASE_KINDS, daysOpen, progress, routingSlip, type CaseKind, type StepStatus } from "@/lib/registration/steps";
+import { RiFileTextLine, RiImageLine } from "@remixicon/react";
+import { AGENCIES, CASE_KINDS, CERTIFICATES, daysOpen, progress, routingSlip, type CaseKind, type StepStatus } from "@/lib/registration/steps";
 import { cx } from "@/utils/cx";
 import { daysTone, manilaDate } from "@/lib/registration/slip";
 import { portalContext } from "../client-context";
@@ -32,7 +33,7 @@ interface CaseRow {
   client_id: string;
   kind: CaseKind;
   period_year: number | null;
-  details: { branch_name?: string };
+  details: { branch_name?: string; certificate?: string };
   status: "open" | "completed" | "cancelled";
   opened_at: string;
   closed_at: string | null;
@@ -65,6 +66,11 @@ async function Registration() {
   for (const r of (reqs ?? []) as { id: string; subject: string; status: RequestStatus; direction: Direction; registration_step_id: string }[]) {
     asked.set(r.registration_step_id, [...(asked.get(r.registration_step_id) ?? []), r]);
   }
+  const { data: fileRows } = cases.length
+    ? await supabase.from("registration_step_files").select("id, step_id, file_name, mime_type").in("case_id", cases.map((c) => c.id)).order("created_at")
+    : { data: [] };
+  const files = new Map<string, { id: string; file_name: string; mime_type: string }[]>();
+  for (const f of (fileRows ?? []) as { id: string; step_id: string; file_name: string; mime_type: string }[]) files.set(f.step_id, [...(files.get(f.step_id) ?? []), f]);
   const nameOf = new Map(clients.map((c) => [c.id, c.name]));
   const today = manilaDate(now);
 
@@ -87,7 +93,7 @@ async function Registration() {
             <header className="flex flex-wrap items-start justify-between gap-3 border-b border-separator-border bg-background-secondary-default px-4 py-3">
               <div className="min-w-0">
                 <p className="text-caption-1-semibold text-text-tertiary">
-                  {CASE_KINDS[k.kind]}{k.period_year ? ` ${k.period_year}` : ""}{k.details.branch_name ? ` · ${k.details.branch_name}` : ""}{clients.length > 1 ? ` · ${nameOf.get(k.client_id)}` : ""}
+                  {CASE_KINDS[k.kind]}{k.period_year ? ` ${k.period_year}` : ""}{k.details.branch_name ? ` · ${k.details.branch_name}` : ""}{k.details.certificate ? ` · ${CERTIFICATES[k.details.certificate as keyof typeof CERTIFICATES] ?? k.details.certificate}` : ""}{clients.length > 1 ? ` · ${nameOf.get(k.client_id)}` : ""}
                 </p>
                 {here ? (
                   <p className="text-headline-medium text-text-primary">Now at {AGENCIES[here.step.agency]}: {here.step.label}</p>
@@ -126,6 +132,21 @@ async function Registration() {
                         {days !== null ? ` · ${days} day${days === 1 ? "" : "s"}` : ""}
                         {step.status === "done" && step.reference_no ? ` · ${step.reference_label} ${step.reference_no}` : ""}
                       </p>
+                      {(files.get(step.id) ?? []).length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-2">
+                          {(files.get(step.id) ?? []).map((f) => {
+                            const Icon = f.mime_type.startsWith("image/") ? RiImageLine : RiFileTextLine;
+                            return (
+                              <li key={f.id}>
+                                <a href={`/registration-files/${f.id}`} className="flex max-w-full items-center gap-1.5 rounded-full border border-border-button-default bg-background-primary-default px-3 py-1 text-caption-1-medium text-button-ghost-foreground outline-none hover:bg-background-secondary-hover focus-visible:ring-2 focus-visible:ring-border-focus-ring pointer-coarse:min-h-11">
+                                  <Icon aria-hidden className="size-4 shrink-0 text-foreground-icon-tertiary" />
+                                  <span className="min-w-0 truncate">{f.file_name}</span>
+                                </a>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                       {(asked.get(step.id) ?? []).map((r) => {
                         const v = statusFor("client", r.direction, r.status);
                         return (

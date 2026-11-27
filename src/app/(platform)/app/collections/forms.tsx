@@ -6,6 +6,8 @@ import { CONTRIBUTION_KEYS, CONTRIBUTIONS, methodLabel, type DepositMethod } fro
 import {
   addChargeAction,
   applyCreditAction,
+  approveLateSurchargeAction,
+  waiveLateSurchargeAction,
   clearRemittedAction,
   markRemittedAction,
   recordDepositAction,
@@ -229,6 +231,20 @@ export function VoidDepositForm({ clientId, depositId }: { clientId: string; dep
 
 export function WaiveDueForm({ clientId, dueId }: { clientId: string; dueId: string }) {
   return <ReasonAction label="Waive" confirm="Waive the Rest" reasonLabel="Why it is waived" action={waiveDueAction.bind(null, clientId, dueId)} />;
+}
+
+/** Approve or waive (with a reason) a late-submission surcharge waiting for the Owner. */
+export function LateSurchargeActions({ clientId, surchargeId }: { clientId: string; surchargeId: string }) {
+  const [state, approve, pending] = useActionState(approveLateSurchargeAction.bind(null, clientId, surchargeId), {} as MoneyState);
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <form action={approve} className="flex flex-wrap items-center justify-end gap-2">
+        <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Approving…" : "Approve"}</Button>
+        <Result state={state} />
+      </form>
+      <ReasonAction label="Waive" confirm="Waive Surcharge" reasonLabel="Why it is waived" action={waiveLateSurchargeAction.bind(null, clientId, surchargeId)} />
+    </div>
+  );
 }
 
 export function ApplyCreditButton({ clientId }: { clientId: string }) {

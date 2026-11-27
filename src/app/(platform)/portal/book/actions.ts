@@ -2,9 +2,12 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import type { CancelState } from "@/components/booking/cancel-booking";
 import type { BookingState } from "@/components/booking/slot-picker";
 import { getIdentity } from "@/lib/auth";
 import { slotsFor } from "@/lib/calendar/booking";
+import { cancelReason } from "@/lib/calendar/cancel";
+import { cancelClientMeeting } from "@/lib/calendar/cancel-server";
 import { CLIENT_MEETING } from "@/lib/calendar/slots";
 import { bookOn } from "@/lib/calendar/staff";
 import { accessNote, canAct } from "@/lib/contacts/access";
@@ -57,4 +60,14 @@ export async function bookClientMeetingAction(clientId: string, start: string, t
     console.error("Portal booking failed:", e instanceof Error ? e.message : e);
     return { error: "The meeting could not be put on the calendar. Please try again, or email your team." };
   }
+}
+
+/** The signed-in client cancels one of its upcoming meetings, with an optional reason. */
+export async function cancelMyMeetingAction(meetingId: string, _: CancelState, form: FormData): Promise<CancelState> {
+  const id = await getIdentity();
+  if (id.staff) return { error: "Meeting not found." };
+  const r = await cancelClientMeeting(meetingId, cancelReason(form.get("reason")), "client");
+  if ("error" in r) return r;
+  revalidatePath("/portal/book");
+  return r;
 }

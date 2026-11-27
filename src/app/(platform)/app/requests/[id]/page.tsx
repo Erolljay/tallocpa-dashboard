@@ -5,6 +5,7 @@ import { Badge, Card, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { CloseRequestButton, ReplyForm } from "@/components/requests/reply-form";
 import { Thread, type ThreadMessage } from "@/components/requests/thread";
 import { AssignRequestForm } from "@/components/requests/assign-form";
+import { ReturnStandingForm } from "@/components/requests/standing-forms";
 import { TaskForm } from "@/components/tasks/task-form";
 import { requireStaff } from "@/lib/auth";
 import { manilaToday } from "@/lib/filings/run";
@@ -27,7 +28,7 @@ async function RequestDetail({ params }: Pick<PageProps<"/app/requests/[id]">, "
   const supabase = await supabaseServer();
   const { data: r } = await supabase
     .from("client_requests")
-    .select("id, client_id, direction, subject, status, priority, assigned_to, due_date, created_at, clients(name), registration_steps(label, case_id)")
+    .select("id, client_id, direction, subject, status, priority, assigned_to, due_date, created_at, standing_kind, no_activity, clients(name), registration_steps(label, case_id)")
     .eq("id", id)
     .maybeSingle();
   if (!r) notFound();
@@ -46,24 +47,38 @@ async function RequestDetail({ params }: Pick<PageProps<"/app/requests/[id]">, "
   const step = r.registration_steps as unknown as { label: string; case_id: string } | null;
   const view = statusFor("firm", r.direction as Direction, r.status as RequestStatus);
   const isOpen = r.status !== "closed";
+  // A standing monthly request has no chat: staff accept what the client sent (close) or return it with a reason.
+  const standing = r.standing_kind as string | null;
 
   return (
     <>
       <PageHeader
         title={r.subject}
-        description={<>{r.direction === "to_client" ? "Request to" : "Ticket from"} <Link href={`/app/clients/${r.client_id}`} className="hover:underline">{client?.name}</Link>{r.due_date ? ` · needed by ${r.due_date}` : ""}{r.assigned_to ? ` · ${names.get(r.assigned_to) ?? "staff"} answers for it` : ""}</>}
+        description={<>{standing ? "Standing monthly request to" : r.direction === "to_client" ? "Request to" : "Ticket from"} <Link href={`/app/clients/${r.client_id}`} className="hover:underline">{client?.name}</Link>{r.due_date ? ` · needed by ${r.due_date}` : ""}{r.assigned_to ? ` · ${names.get(r.assigned_to) ?? "staff"} answers for it` : ""}</>}
         actions={
           <div className="flex items-center gap-3">
             <Badge tone={view.tone}>{view.label}</Badge>
             {step && <LinkButton href={`/app/registrations/${step.case_id}`} variant="secondary">Routing slip</LinkButton>}
-            {isOpen && <CloseRequestButton requestId={id} />}
+            {isOpen && <CloseRequestButton requestId={id} label={standing && r.status === "answered" ? "Accept" : "Close"} />}
           </div>
         }
       />
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <Card title={step ? `For: ${step.label}` : "Messages"}>
-          <Thread messages={(messages ?? []) as ThreadMessage[]} viewer="firm" />
-          {isOpen && (
+        <Card title={step ? `For: ${step.label}` : standing ? "What the client sent" : "Messages"}>
+          {standing && (messages ?? []).length === 0 ? (
+            <p className="text-body-regular text-text-secondary">Nothing yet. The client uploads it in the portal by {r.due_date ?? "the cutoff"}; it blocks nothing.</p>
+          ) : (
+            <Thread messages={(messages ?? []) as ThreadMessage[]} viewer="firm" />
+          )}
+          {standing && r.no_activity && r.status === "answered" && (
+            <p className="mt-4 text-body-regular text-text-secondary">The client says there were no collections or payments this month. Accept it, or return it if the books show otherwise.</p>
+          )}
+          {standing && r.status === "answered" && (
+            <div className="mt-6 border-t border-separator-border pt-4">
+              <ReturnStandingForm requestId={id} />
+            </div>
+          )}
+          {isOpen && !standing && (
             <div className="mt-6 border-t border-separator-border pt-4">
               <ReplyForm requestId={id} placeholder="Write to the client…" />
             </div>

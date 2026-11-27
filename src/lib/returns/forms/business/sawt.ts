@@ -4,6 +4,10 @@
  * 1702Q. Ported from taxify reports/sawt-report.js: rows aggregate per
  * customer per ATC; the DAT file is filed per month (one file per month of
  * the quarter, `exportSAWTDatSimple`), the Excel export covers the period.
+ *
+ * Annual returns (1702-RT, 1701 / 1701A) attach one SAWT DAT for the whole
+ * taxable year: the same layout under the annual form code (H1702 / H1701,
+ * D…, C…), with the return period the fiscal year-end month (MM/YYYY).
  */
 import { branchOfTin, payeeKeyOf } from "@/lib/parties/tin";
 import { grossUp } from "../../money";
@@ -14,6 +18,8 @@ import {
 } from "./util";
 
 export type SawtForm = "2551Q" | "2550Q" | "1701Q" | "1702Q";
+/** Form codes of the annual SAWT: 1702 for 1702-RT, 1701 for 1701 and 1701A. */
+export type SawtAnnualForm = "1701" | "1702";
 
 export interface SawtRow {
   partyName: string;
@@ -129,7 +135,7 @@ export function sawtSchedule(title: string, rows: SawtRow[]): WorksheetSchedule 
 }
 
 /** One month's SAWT DAT (taxify `exportSAWTDatSimple`, ptype "monthly"). */
-export function sawtDat(ctx: WorksheetContext, form: SawtForm, mk: string, rows: SawtRow[]): AttachmentFile {
+export function sawtDat(ctx: WorksheetContext, form: SawtForm | SawtAnnualForm, mk: string, rows: SawtRow[]): AttachmentFile {
   const f = filerOf(ctx);
   const rdo = f.rdo.padStart(3, "0").substring(0, 3);
   const period = datMonth(mk);
@@ -150,7 +156,7 @@ export function sawtDat(ctx: WorksheetContext, form: SawtForm, mk: string, rows:
 }
 
 /** The Excel-compatible SAWT for the whole period (taxify `exportSAWTExcel`, as CSV). */
-export function sawtCsv(ctx: WorksheetContext, form: SawtForm, start: string, end: string, rows: SawtRow[]): AttachmentFile {
+export function sawtCsv(ctx: WorksheetContext, form: SawtForm | SawtAnnualForm, start: string, end: string, rows: SawtRow[]): AttachmentFile {
   const f = filerOf(ctx);
   const sm = Number(start.slice(5, 7)) - 1;
   const em = Number(end.slice(5, 7)) - 1;
@@ -204,4 +210,20 @@ export function sawtAttachments(ctx: WorksheetContext, form: SawtForm, sawt: Saw
   }
   out.push({ kind: "sawt_csv", label: "SAWT (Excel CSV)", build: () => sawtCsv(ctx, form, start, end, sawt.rows) });
   return out;
+}
+
+/**
+ * Attachment entries for an annual return: one SAWT DAT for the taxable year
+ * ending `yearEnd` (rows summed over the year, return period = the year-end
+ * month), plus the year's CSV.
+ */
+export function sawtAnnualAttachments(ctx: WorksheetContext, form: SawtAnnualForm, sawt: SawtResult, start: string, yearEnd: string) {
+  const rows = sawt.rows.filter((r) => r.base !== 0 || r.withheld !== 0);
+  if (!rows.length) return [];
+  const mk = yearEnd.slice(0, 7);
+  const name = `${MONTH_NAMES[Number(mk.slice(5, 7)) - 1]} ${mk.slice(0, 4)}`;
+  return [
+    { kind: `sawt_dat_${mk}`, label: `SAWT DAT — year ended ${name}`, build: () => sawtDat(ctx, form, mk, rows) },
+    { kind: "sawt_csv", label: "SAWT (Excel CSV)", build: () => sawtCsv(ctx, form, start, yearEnd, rows) },
+  ];
 }

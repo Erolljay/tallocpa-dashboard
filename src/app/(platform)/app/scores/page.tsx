@@ -8,6 +8,7 @@ import { manilaToday } from "@/lib/filings/run";
 import { loadPoints } from "@/lib/people/schema";
 import { complianceScore, SCORE_RULES, toneBadge, toneLabel, type ClientMonth, type Part, type Score } from "@/lib/scores/compliance";
 import { lateReason, type LateFiling } from "@/lib/scores/late";
+import { LATE_SUBMITTER_RULES, lateSubmitters, type ScorecardRow } from "@/lib/scores/late-submitters";
 import { kpis, lastMonths, pct, type StaffMonth } from "@/lib/scores/staff";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -34,12 +35,14 @@ async function Scores() {
   const supabase = await supabaseServer();
   const today = manilaToday();
   const year = lastMonths(today, 12);
+  const lateFrom = lastMonths(today, LATE_SUBMITTER_RULES.months)[0];
   const scoreFrom = lastMonths(today, SCORE_RULES.months)[0];
   const thisMonth = year[year.length - 1];
 
   const [clients, cards, late, staffRows, staff, assignments, engagements] = await Promise.all([
     supabase.from("clients").select("id, name, code").in("status", ["onboarding", "active"]).order("name"),
-    supabase.rpc("client_scorecard", { p_from: scoreFrom, p_to: thisMonth }),
+    // One call covers both the score (last SCORE_RULES.months) and the late submitters.
+    supabase.rpc("client_scorecard", { p_from: lateFrom < scoreFrom ? lateFrom : scoreFrom, p_to: thisMonth }),
     supabase.rpc("late_filings", { p_from: year[0], p_to: today }),
     supabase.rpc("staff_scorecard", { p_from: year[0], p_to: thisMonth }),
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active").neq("role", "owner").order("full_name"),
@@ -47,8 +50,10 @@ async function Scores() {
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
   ]);
 
+  const cardRows = (cards.data ?? []) as (ClientMonth & ScorecardRow)[];
   const monthsOf = new Map<string, ClientMonth[]>();
-  for (const r of (cards.data ?? []) as (ClientMonth & { client_id: string })[]) {
+  for (const r of cardRows) {
+    if (r.month < scoreFrom) continue;
     monthsOf.set(r.client_id, [...(monthsOf.get(r.client_id) ?? []), r]);
   }
   const scored: ScoredClient[] = ((clients.data ?? []) as ClientRow[])
@@ -57,6 +62,8 @@ async function Scores() {
 
   const lateRows = (late.data ?? []) as LateFiling[];
   const clientName = new Map(((clients.data ?? []) as ClientRow[]).map((c) => [c.id, c.name]));
+  const clientById = new Map(((clients.data ?? []) as ClientRow[]).map((c) => [c.id, c]));
+  const latecomers = lateSubmitters(cardRows.filter((r) => r.month >= lateFrom)).filter((l) => clientById.has(l.clientId));
   const people = (staff.data ?? []) as { user_id: string; full_name: string; role: string; capacity_points: string; active: boolean }[];
   const nameOf = new Map(people.map((s) => [s.user_id, s.full_name]));
 
@@ -110,6 +117,54 @@ async function Scores() {
                     <PartCell part={score.lateFilings} show={(v) => String(v ?? "—")} />
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Card title={`Late submitters (${latecomers.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Last {LATE_SUBMITTER_RULES.months} months</span>}>
+        <p className="mb-1 text-body-regular text-text-secondary">
+          Clients who missed the cutoff or sent any document after it, most late months first. Always late: late in at least{" "}
+          {pct(LATE_SUBMITTER_RULES.alwaysLateShare)} of their months, and in {LATE_SUBMITTER_RULES.alwaysLateMonths} or more.
+        </p>
+        <p className="mb-4 text-caption-1-regular text-text-tertiary">
+          No surcharge is charged while the fee schedule has no surcharge amount. Set one under{" "}
+          <Link href="/app/settings/fees" className="text-button-ghost-foreground hover:underline">Settings → Fee schedule</Link> to charge it.
+        </p>
+        {latecomers.length === 0 ? (
+          <p className="text-body-regular text-text-secondary">No client was late in the last {LATE_SUBMITTER_RULES.months} months.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[44rem] text-body-regular">
+              <thead className="text-start text-body-medium text-text-tertiary">
+                <tr>
+                  <th scope="col" className="text-start pb-2">Client</th>
+                  <th scope="col" className="pb-2 text-end">Late months</th>
+                  <th scope="col" className="pb-2 text-end">Documents after the cutoff</th>
+                  <th scope="col" className="text-start pb-2 ps-4">Latest late month</th>
+                  <th scope="col" className="text-start pb-2"><span className="sr-only">Flag</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {latecomers.map((l) => {
+                  const client = clientById.get(l.clientId)!;
+                  return (
+                    <tr key={l.clientId} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover align-top">
+                      <td className="py-2 pr-4">
+                        <Link href={`/app/clients/${client.id}`} className="font-medium text-button-ghost-foreground hover:underline">{client.name}</Link>
+                        <p className="text-caption-1-regular text-text-tertiary">{client.code}</p>
+                      </td>
+                      <td className="py-2 pr-4 text-end tabular-nums">
+                        <span className="text-text-primary">{l.lateMonths}</span>
+                        <span className="text-text-tertiary"> of {l.cycleMonths}</span>
+                      </td>
+                      <td className="py-2 pr-4 text-end tabular-nums text-text-primary">{l.lateDocuments}</td>
+                      <td className="py-2 pr-4 ps-4 tabular-nums text-text-secondary">{showMonth(l.latestLate)}</td>
+                      <td className="py-2">{l.alwaysLate && <Badge tone="blocked">Always late</Badge>}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

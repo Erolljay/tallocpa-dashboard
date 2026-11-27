@@ -62,7 +62,7 @@ export async function sendEmail(a: OutgoingEmail | string[], subject?: string, t
 export async function sendBrandedEmail(
   to: string | string[],
   content: EmailContent,
-  opts: { brand?: EmailBrand; footerNote?: string; settingsUrl?: string | null } = {},
+  opts: { brand?: EmailBrand; footerNote?: string; settingsUrl?: string | null; hideSettings?: boolean } = {},
 ): Promise<SendResult> {
   if (!emailConfigured() || (Array.isArray(to) ? to.length === 0 : !to)) return "not_configured";
   const brand = opts.brand ?? (await loadEmailBrand());
@@ -74,6 +74,7 @@ export async function sendBrandedEmail(
     action: content.action,
     footerNote: opts.footerNote,
     settingsUrl: opts.settingsUrl,
+    hideSettings: opts.hideSettings,
   });
   return sendEmail({ to, subject: content.subject, html, text, replyTo: brand.replyTo });
 }

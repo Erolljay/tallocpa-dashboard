@@ -42,6 +42,7 @@ export const OWNER_PRICES: Readonly<Record<string, number>> = {
   "I.orus": 1500,
   "I.business_permit": 3500,
   "I.sec": 2000,
+  "I.sec_amendment": 15000, // Owner, 27 Nov 2026
   "I.closure": 20000,
   "I.registration_individual": 8000,
   "I.registration_non_individual": 12500,

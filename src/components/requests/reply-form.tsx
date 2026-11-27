@@ -8,6 +8,19 @@ import { Button, Notice, Textarea } from "@/components/ui";
 import { shrinkImage } from "@/lib/documents/shrink";
 import { closeRequestAction, replyRequest, startRequestUpload, type RequestFormState } from "@/lib/requests/actions";
 
+/** Puts one file in the request's folder through a one-time link; returns where it went. */
+export async function uploadRequestFile(requestId: string, file: File): Promise<{ path: string; type: string }> {
+  const upload = file.type.startsWith("image/") ? await shrinkImage(file) : file;
+  const started = await startRequestUpload({ requestId, mimeType: upload.type, size: upload.size });
+  if ("error" in started) throw new Error(started.error);
+  const storage = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  }).storage.from("requests");
+  const { error } = await storage.uploadToSignedUrl(started.path, started.token, upload, { contentType: upload.type });
+  if (error) throw new Error(error.message);
+  return { path: started.path, type: upload.type };
+}
+
 /**
  * Reply to a request or ticket, with a message, a file or both. The file goes
  * straight to storage through a one-time link, then the reply is saved.
@@ -28,18 +41,7 @@ export function ReplyForm({ requestId, placeholder }: { requestId: string; place
     try {
       let path: string | null = null;
       let type: string | null = null;
-      if (file) {
-        const upload = file.type.startsWith("image/") ? await shrinkImage(file) : file;
-        const started = await startRequestUpload({ requestId, mimeType: upload.type, size: upload.size });
-        if ("error" in started) throw new Error(started.error);
-        const storage = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        }).storage.from("requests");
-        const { error } = await storage.uploadToSignedUrl(started.path, started.token, upload, { contentType: upload.type });
-        if (error) throw new Error(error.message);
-        path = started.path;
-        type = upload.type;
-      }
+      if (file) ({ path, type } = await uploadRequestFile(requestId, file));
       const result = await replyRequest({ requestId, body, path, fileName: file?.name ?? null, mimeType: type });
       setState(result);
       if (result.ok) {

@@ -12,15 +12,16 @@
  *
  * Lines are labelled by what they are rather than by item number: check the
  * item numbers against the current form when transcribing into eBIRForms. The
- * SAWT is shown as a schedule; its DAT file for annual returns is not built yet.
+ * SAWT is shown as a schedule and attached as one DAT file for the taxable year
+ * (form code 1702 or 1701, return period = the fiscal year-end month).
  */
 import { BIR_LINES, type BirLineKey } from "@/lib/ledger/bir-lines";
 import type { Centavos, FormModule, ManualInput, WorksheetContext, WorksheetLine, WorksheetResult, WorksheetSchedule } from "../../types";
 import { corporateRates, eightPercentRate, graduatedIncomeTax, mcitRate, osdRate } from "../../rates";
 import { bookIncome } from "./book-income";
 import { EIGHT_PCT_REDUCTION, PROXY_WARNING, REGIMES, VAT_THRESHOLD, booksCover, cwt, incomeSource, periods, withoutBookFigures, type InputsCtx } from "./income";
-import { sawtSchedule } from "./sawt";
-import { Inputs, amountInput, filerWarnings, labelsOf, line, ownerNameInputs, pct, peso } from "./util";
+import { buildSawt, sawtAnnualAttachments, sawtSchedule, type SawtAnnualForm } from "./sawt";
+import { Inputs, amountInput, docsWithin, filerWarnings, labelsOf, line, ownerNameInputs, pct, peso, taxableYear } from "./util";
 
 const empty = (errs: string[]): WorksheetResult => ({ sections: [], schedules: [], errors: errs, warnings: [], documentIds: [] });
 
@@ -349,6 +350,15 @@ function compute1701(ctx: WorksheetContext): WorksheetResult {
   };
 }
 
+/** The year's SAWT DAT and CSV: the 2307s received in the filing period, income ATCs only. */
+function annualAttachments(form: SawtAnnualForm) {
+  return (ctx: WorksheetContext) => {
+    const sawt = buildSawt(docsWithin(ctx.documents, ctx.filing.periodStart, ctx.filing.periodEnd), ["income"]);
+    const { start, end } = taxableYear(ctx.filing.periodStart, ctx.client.fiscalYearEndMonth);
+    return sawtAnnualAttachments(ctx, form, sawt, start, end);
+  };
+}
+
 export const form1702RT: FormModule = {
   forms: ["1702-RT"],
   title: "1702-RT — Annual Income Tax Return (corporations, partnerships, non-individuals: regular rate)",
@@ -357,6 +367,7 @@ export const form1702RT: FormModule = {
   usesLedger: true,
   priorWithinPeriod: true,
   compute: compute1702RT,
+  attachments: annualAttachments("1702"),
 };
 
 export const form1701: FormModule = {
@@ -367,4 +378,5 @@ export const form1701: FormModule = {
   usesLedger: true,
   priorWithinPeriod: true,
   compute: compute1701,
+  attachments: annualAttachments("1701"),
 };
