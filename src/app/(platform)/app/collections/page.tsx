@@ -4,11 +4,12 @@ import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { ageOpenItems, AGING_BUCKETS, agingLabel, groupReady, readyReasonLabel, totalHeld, type ReadyItem } from "@/lib/collections/collections";
 import { addDays } from "@/lib/deadlines/dates";
+import { showMonth } from "@/lib/documents/labels";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
-import { RunReadyButton } from "./forms";
+import { LateSurchargeActions, RunReadyButton } from "./forms";
 
 export default function CollectionsPage() {
   return (
@@ -31,7 +32,7 @@ async function Overview() {
   await requireOwner();
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const [ready, dues, credits, clients, remittance, notReady, soas, proofs] = await Promise.all([
+  const [ready, dues, credits, clients, remittance, notReady, soas, proofs, surcharges] = await Promise.all([
     // Decision 16c: the Owner runs billing; this is what a run would bill today.
     supabase.rpc("ready_to_bill", { p_date: today }),
     supabase.from("due_balances").select("client_id, due_on, open_amount, kind, soa_id").gt("open_amount", 0),
@@ -53,7 +54,10 @@ async function Overview() {
       .select("id, soa_id, amount, paid_on, method, submitted_at, soas(reference), clients(name), brand_payment_accounts(institution)")
       .eq("status", "for_verification")
       .order("submitted_at"),
+    // Late-submission surcharges waiting for the Owner (fee schedule's late_surcharge_auto off).
+    supabase.from("late_surcharges").select("id, client_id, month, amount, clients(name, code)").eq("status", "pending").order("month").order("created_at"),
   ]);
+  const pendingSurcharges = (surcharges.data ?? []) as unknown as { id: string; client_id: string; month: string; amount: string; clients: { name: string; code: string } | null }[];
   const toVerify = (proofs.data ?? []) as unknown as {
     id: string;
     soa_id: string;
@@ -158,6 +162,27 @@ async function Overview() {
           </>
         )}
       </Card>
+
+      {pendingSurcharges.length > 0 && (
+        <Card title="Late-submission surcharges to approve" actions={<span className="text-caption-1-regular text-text-tertiary">Documents sent after the cutoff</span>}>
+          <p className="mb-3 text-body-regular text-text-secondary">Approve to put the surcharge in Ready to bill, or waive it with a reason. One per client per month.</p>
+          <ul className="divide-y divide-separator-border text-body-regular">
+            {pendingSurcharges.map((s) => (
+              <li key={s.id} className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <span className="min-w-0">
+                  <Link href={`/app/collections/${s.client_id}`} className="text-body-medium text-text-primary hover:underline">{s.clients?.name}</Link>{" "}
+                  <span className="text-caption-1-regular text-text-tertiary">{s.clients?.code}</span>
+                  <span className="block text-text-secondary">Late-submission surcharge — {showMonth(s.month)}</span>
+                </span>
+                <span className="flex shrink-0 items-start gap-4">
+                  <span className="amount text-body-medium text-text-primary">{peso.format(Number(s.amount))}</span>
+                  <LateSurchargeActions clientId={s.client_id} surchargeId={s.id} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {toVerify.length > 0 && (
         <Card title="Payments to verify" actions={<span className="text-caption-1-regular text-text-tertiary">Proofs of payment uploaded by clients</span>}>

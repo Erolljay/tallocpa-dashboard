@@ -85,6 +85,63 @@ describe("1702-RT", () => {
   });
 });
 
+describe("1702-RT SAWT DAT", () => {
+  const corp = { vatRegistered: true };
+
+  it("one DAT for the year: rows summed across months, period = the year-end month, form code 1702", () => {
+    const ctx = ctxFor({
+      form: "1702-RT",
+      ...year,
+      client: corp,
+      inputs: { deduction: "osd", corporate_rate: "regular" },
+      ledger: books([mv("sales", -10_000_000)]),
+      priorFigures: { "1702Q": { regular_payments_to_date: 0 } },
+      documents: [
+        cert2307({ month: "2026-03", atc: "WC158", total: 100_000, withholding: 1_000, partyName: "Top WA", partyTin: "555-555-555" }),
+        cert2307({ month: "2026-09", atc: "WC158", total: 200_000, withholding: 2_000, partyName: "Top WA", partyTin: "555-555-555" }),
+        cert2307({ month: "2026-10", atc: "WC160", total: 50_000, withholding: 1_000, partyName: "Alpha Co", partyTin: "999-888-777-001" }),
+        // A VAT withholding code does not go on the income tax SAWT.
+        cert2307({ month: "2026-10", atc: "WV020", total: 10_000, withholding: 500, partyName: "Gov" }),
+      ],
+    });
+    const att = form1702RT.attachments!(ctx, form1702RT.compute(ctx));
+    expect(att.map((a) => [a.kind, a.label])).toEqual([
+      ["sawt_dat_2026-12", "SAWT DAT — year ended December 2026"],
+      ["sawt_csv", "SAWT (Excel CSV)"],
+    ]);
+    const dat = att[0].build();
+    expect(dat.fileName).toBe("000123456000012" + "20261702.DAT");
+    expect(dat.body).toBe(
+      'HSAWT,H1702,000123456,0000,"ACME TRADING INC.","","","",12/2026,050\r\n' +
+        'DSAWT,D1702,1,999888777,0001,"ALPHA CO",,,,12/2026,,WC160,2.00,50000.00,1000.00\r\n' +
+        'DSAWT,D1702,2,555555555,0001,"TOP WA",,,,12/2026,,WC158,1.00,300000.00,3000.00\r\n' +
+        "CSAWT,C1702,000123456,0000,12/2026,350000.00,4000.00\r\n",
+    );
+    expect(att[1].build().body).toContain("FOR THE PERIOD JANUARY 2026 TO DECEMBER 2026");
+  });
+
+  it("fiscal year: the return period is the fiscal year-end month", () => {
+    const ctx = ctxFor({
+      form: "1702-RT",
+      periodStart: "2025-07-01",
+      periodEnd: "2026-06-30",
+      client: { ...corp, fiscalYearEndMonth: 6 },
+      inputs: { deduction: "osd", corporate_rate: "regular" },
+      documents: [cert2307({ month: "2025-12", atc: "WC158", total: 100_000, withholding: 1_000, partyName: "Top WA", partyTin: "555-555-555" })],
+    });
+    const att = form1702RT.attachments!(ctx, form1702RT.compute(ctx));
+    expect(att[0].kind).toBe("sawt_dat_2026-06");
+    const dat = att[0].build();
+    expect(dat.fileName).toBe("000123456000006" + "20261702.DAT");
+    expect(dat.body.split("\r\n")[0]).toMatch(/,06\/2026,050$/);
+  });
+
+  it("no 2307s, no SAWT attachments", () => {
+    const ctx = ctxFor({ form: "1702-RT", ...year, client: corp, inputs: { deduction: "osd", corporate_rate: "regular" }, documents: [] });
+    expect(form1702RT.attachments!(ctx, form1702RT.compute(ctx))).toEqual([]);
+  });
+});
+
 describe("1701 / 1701A", () => {
   const individual = { taxpayerType: "individual" as const };
 
@@ -112,6 +169,29 @@ describe("1701 / 1701A", () => {
     expect(amounts(r)).toMatchObject({ total_income: 1_000_000, allowable_reduction: 250_000, taxable_income: 750_000, tax_8pct: 60_000, tax_due: 60_000 });
     expect(form1701.compute(ctx("1701A", { regime: "8pct", compensation_income: "100000" })).errors.join(" ")).toMatch(/file 1701/);
     expect(form1701.compute(ctx("1701A", { regime: "graduated_itemized" })).errors.join(" ")).toMatch(/OSD or 8% only/);
+  });
+
+  it("attaches one SAWT DAT for the year under form code 1701 (1701A too)", () => {
+    for (const form of ["1701", "1701A"]) {
+      const ctx = ctxFor({
+        form,
+        ...year,
+        client: { ...individual, name: "Juan Dela Cruz", tin: "123-456-789-000" },
+        inputs: { regime: "8pct", owner_last_name: "Dela Cruz", owner_first_name: "Juan" },
+        ledger: books([mv("sales", -1_000_000)]),
+        priorFigures: { "1701Q": { tax_payments_to_date: 0 } },
+        documents: [cert2307({ month: "2026-11", atc: "WI010", total: 20_000, withholding: 1_000, partyName: "Client B, Inc.", partyTin: "333-444-555-00000" })],
+      });
+      const att = form1701.attachments!(ctx, form1701.compute(ctx));
+      expect(att.map((a) => a.kind)).toEqual(["sawt_dat_2026-12", "sawt_csv"]);
+      const dat = att[0].build();
+      expect(dat.fileName).toBe("123456789000012" + "20261701.DAT");
+      expect(dat.body).toBe(
+        'HSAWT,H1701,123456789,0000,"JUAN DELA CRUZ","DELA CRUZ","JUAN","",12/2026,050\r\n' +
+          'DSAWT,D1701,1,333444555,0000,"CLIENT B INC.",,,,12/2026,,WI010,5.00,20000.00,1000.00\r\n' +
+          "CSAWT,C1701,123456789,0000,12/2026,20000.00,1000.00\r\n",
+      );
+    }
   });
 
   it("refuses the wrong taxpayer type", () => {
