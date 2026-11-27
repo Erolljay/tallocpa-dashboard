@@ -179,7 +179,7 @@ AI callers. Summary is served only through summary functions, never the entry ta
 2. **Sign-in**: per AI employee (§5). A key as `Authorization: Bearer tcai_…`, or OAuth
    2.1 (built in 2b): protected resource and sign-in server metadata, dynamic client
    registration, the Owner's consent page, PKCE (S256), one-hour access tokens (stored as
-   keys, source `oauth`) and rotating 30-day refresh tokens; disconnecting revokes them.
+   keys, source `oauth`) and rotating refresh tokens valid 90 days from their last use; disconnecting revokes them.
 3. **Permissions**: each AI employee sees only the tools granted to it and only its
    assigned clients; books access per §6.
 4. **Tools**: read, search and save-draft actions (§7.2).

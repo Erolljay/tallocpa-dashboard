@@ -8,7 +8,11 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 export const SCOPE = "mcp";
 export const CODE_SECONDS = 5 * 60;
 export const ACCESS_SECONDS = 60 * 60;
-export const REFRESH_DAYS = 30;
+/**
+ * A connection stays signed in while it is used at least once every 90 days (Owner, 27 Nov
+ * 2026): seasonal AI employees (FS Preparer, Annual Reviewer) may sit idle between seasons.
+ */
+export const REFRESH_DAYS = 90;
 
 /** Random secrets: codes and refresh tokens (32 bytes, base64url). */
 export const secret = (prefix: string) => prefix + randomBytes(32).toString("base64url");

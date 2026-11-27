@@ -169,6 +169,20 @@ describe.skipIf(!url)("AI connector OAuth: register, consent, tokens, refresh, d
     refresh = next.refresh;
   });
 
+  it("stays signed in while used at least once every 90 days", async () => {
+    const r = await exchange({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId }, later(3200));
+    refresh = r.json.refresh_token as string;
+    access = r.json.access_token as string;
+    const { rows } = await db.query(`select extract(epoch from refresh_expires_at - last_used_at)::int as s from public.oauth_grants`);
+    expect(rows[0].s).toBe(90 * 86400);
+    const idle = (days: number) => new Date(later(3200).getTime() + days * 86_400_000);
+    expect((await exchange({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId }, idle(91))).json.error).toBe("invalid_grant");
+    const back = await exchange({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId }, idle(89));
+    expect(back.status).toBe(200);
+    refresh = back.json.refresh_token as string;
+    access = back.json.access_token as string;
+  });
+
   it("OAuth tokens are stored as hashes, never in the clear", async () => {
     const { rows } = await db.query(`select token_hash, source from public.ai_credentials`);
     expect(rows.every((r) => r.source === "oauth" && /^[0-9a-f]{64}$/.test(r.token_hash))).toBe(true);
@@ -179,8 +193,9 @@ describe.skipIf(!url)("AI connector OAuth: register, consent, tokens, refresh, d
     const grant = (await db.query(`select id from public.oauth_grants`)).rows[0].id;
     expect((await as(REVIEWER, `update public.oauth_grants set revoked_at = now() where id = $1 returning id`, [grant])).rows).toHaveLength(0);
     await as(OWNER, `update public.oauth_grants set revoked_at = $2, revoked_by = $3 where id = $1`, [grant, later(3100).toISOString(), OWNER]);
-    expect((await mcp(access, "document_clerk", later(3200))).status).toBe(401);
-    expect((await exchange({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId }, later(3200))).json.error).toBe("invalid_grant");
+    const soon = new Date(later(3200).getTime() + 89 * 86_400_000 + 60_000);
+    expect((await mcp(access, "document_clerk", soon)).status).toBe(401);
+    expect((await exchange({ grant_type: "refresh_token", refresh_token: refresh, client_id: clientId }, soon)).json.error).toBe("invalid_grant");
     await expect(as(OWNER, `update public.oauth_grants set revoked_at = null where id = $1`, [grant])).rejects.toThrow(/cannot be restored/);
   });
 
