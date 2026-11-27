@@ -190,3 +190,10 @@ export async function statementLinkAction(soaId: string, renew: boolean): Promis
   if (error) return { error: error.message };
   return { path: `/pay/${data as string}` };
 }
+
+/** New Bill from the Collections page: the same as a client's Add a Fee or Charge, with the client picked in the form. */
+export async function newBillAction(state: MoneyState, form: FormData): Promise<MoneyState> {
+  const clientId = text(form.get("client_id"));
+  if (!z.uuid().safeParse(clientId).success) return { error: "Choose the client." };
+  return addChargeAction(clientId, state, form);
+}
