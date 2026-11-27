@@ -46,7 +46,7 @@ export interface RegisterLine {
   id: string;
   documentId: string;
   kind: RegisterKind;
-  source: "portal" | "staff" | "email" | "batch";
+  source: "portal" | "staff" | "email" | "batch" | "telegram";
   month: string;
   date: string | null;
   reference: string | null;

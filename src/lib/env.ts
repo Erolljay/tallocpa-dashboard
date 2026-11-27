@@ -71,3 +71,25 @@ export function googleCalendarEnv(): GoogleCalendarEnv | null {
     domain: (process.env.GOOGLE_WORKSPACE_DOMAIN || "tallocpa.com").toLowerCase(),
   };
 }
+
+/**
+ * The Telegram upload bot (docs/SETUP.md, "Telegram uploads"). Optional: null until set,
+ * and the portal and the client page say Telegram is not set up.
+ *
+ *   TELEGRAM_BOT_TOKEN       from @BotFather
+ *   TELEGRAM_BOT_USERNAME    the bot's username without @, for the t.me link
+ *   TELEGRAM_WEBHOOK_SECRET  any long random string; Telegram sends it on every webhook call
+ */
+export interface TelegramEnv {
+  token: string;
+  username: string;
+  webhookSecret: string;
+}
+
+export function telegramEnv(): TelegramEnv | null {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const username = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, "");
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!token || !username || !webhookSecret) return null;
+  return { token, username, webhookSecret };
+}

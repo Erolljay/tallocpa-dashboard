@@ -102,6 +102,26 @@ The team calendar (Home → Team calendar), the lead's booking page (`/book/…`
    - `GOOGLE_WORKSPACE_DOMAIN` (optional) — default `tallocpa.com`. Only accounts of this domain can connect, and each person only the account they sign in with.
 4. What shows: on the team calendar, events on each person's tallocpa.com calendar in full; their private events and personal calendars as **Busy** only. Bookings offer 9:00–17:00 Manila on working days (holidays from the deadline calendar skipped), from 24 hours ahead: 45-minute discovery calls over 14 days, 30-minute client meetings over 21 days.
 
+### Telegram uploads (optional)
+
+Telegram is one more way documents come in, next to the portal, staff uploads, email and batch. It is **off for every client** until staff switch it on for that client (client page → *Telegram uploads* → *Turn on Telegram*). A client without it never sees Telegram in the portal.
+
+Telegram bot chats are encrypted between the phone and Telegram, but they are **not end-to-end encrypted** (only Telegram's Secret Chats are, and bots cannot use them). Turn it on only for clients who ask for it.
+
+1. In Telegram, open **@BotFather**, send `/newbot`, and choose a name (e.g. *Tallo CPA Documents*) and a username ending in `bot`. Copy the token.
+2. In Vercel → Settings → Environment Variables, add `TELEGRAM_BOT_TOKEN` (the token), `TELEGRAM_BOT_USERNAME` (the username, without @) and `TELEGRAM_WEBHOOK_SECRET` (any long random string, e.g. `openssl rand -hex 32`). Redeploy.
+3. Point the bot at the app (once, with the same token and secret):
+
+   ```bash
+   curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" -d "url=https://app.tallocpa.com/api/telegram/webhook" -d "secret_token=$TELEGRAM_WEBHOOK_SECRET" -d 'allowed_updates=["message","callback_query"]'
+   ```
+
+How it works:
+
+- **Clients:** on Upload, *Link Telegram* opens the bot with a one-time code (15 minutes). From then on that chat sends for that client, as that portal user. They send photos or PDFs (albums of up to 10 too), tap what they are, and each file becomes its own document in that client's Inbox, in the month open for documents, marked *Telegram*. Their notifications are also sent to the chat.
+- **Staff (the Owner included):** Settings → Notifications → *Link Telegram*. In the bot, `/client molo` lists matching clients assigned to you (the Owner: all clients); tap one. Send the files, tap what they are, then the month. They go to that client's Inbox under your name. The bot remembers the client until you choose another.
+- A chat that is not linked cannot send anything. `/unlink` in the bot, or *Unlink* in the app, stops a chat.
+
 ## 6. Vercel
 
 1. Import the GitHub repository into Vercel.
