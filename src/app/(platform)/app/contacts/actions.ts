@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { formToObject } from "@/lib/clients/schema";
 import { grantClientAccess } from "@/lib/contacts/grant";
-import { contactAccessSchema, contactLinkSchema, contactNameSchema, newContactSchema } from "@/lib/people/schema";
+import { contactAccessSchema, contactLinkSchema, contactDetailsSchema, newContactSchema } from "@/lib/people/schema";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type ContactFormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string };
@@ -40,12 +40,13 @@ export async function addContactBusinessAction(userId: string, _: ContactFormSta
   const parsed = contactLinkSchema.safeParse(formToObject(form));
   if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: errorsOf(parsed.error.issues) };
   const supabase = await supabaseServer();
-  const { data: existing } = await supabase.from("client_users").select("full_name").eq("user_id", userId).limit(1).maybeSingle();
+  const { data: existing } = await supabase.from("client_users").select("full_name, mobile").eq("user_id", userId).limit(1).maybeSingle();
   if (!existing) return { error: "Contact not found." };
   const { error } = await supabase.from("client_users").insert({
     user_id: userId,
     client_id: parsed.data.client_id,
     full_name: existing.full_name,
+    mobile: existing.mobile,
     position: parsed.data.position ?? null,
     access: parsed.data.access,
   });
@@ -82,13 +83,13 @@ export async function removeContactBusinessAction(userId: string, clientId: stri
   return { ok: "Removed." };
 }
 
-/** Renames a contact on every business they are linked to. */
-export async function renameContactAction(userId: string, _: ContactFormState, form: FormData): Promise<ContactFormState> {
+/** A contact's name and mobile number, saved on every business they are linked to. */
+export async function saveContactDetailsAction(userId: string, _: ContactFormState, form: FormData): Promise<ContactFormState> {
   await requireOwner();
-  const parsed = contactNameSchema.safeParse(formToObject(form));
+  const parsed = contactDetailsSchema.safeParse(formToObject(form));
   if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: errorsOf(parsed.error.issues) };
   const supabase = await supabaseServer();
-  const { error } = await supabase.from("client_users").update({ full_name: parsed.data.full_name }).eq("user_id", userId);
+  const { error } = await supabase.from("client_users").update({ full_name: parsed.data.full_name, mobile: parsed.data.mobile ?? null }).eq("user_id", userId);
   if (error) return { error: `Could not save: ${error.message}` };
   refresh(userId, null);
   revalidatePath("/app/clients", "layout");

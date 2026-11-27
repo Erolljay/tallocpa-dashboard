@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { Button, Field, Input, Notice, Select, Textarea } from "@/components/ui";
 import { auditIndependenceWarning, bandForSales, JOB_GROUPS, jobField, parseSales, type JobOption } from "@/lib/fees/proposal";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { ACCESS_LABEL, CONTACT_ACCESS } from "@/lib/contacts/access";
 import { parsePrice } from "@/lib/fees/schedule";
 import { auditNote } from "@/lib/fees/template";
 import {
@@ -287,8 +289,16 @@ export function ReopenForm({ leadId }: { leadId: string }) {
 }
 
 /** Won → Onboarding: the client's own preparer and reviewer are picked here. */
-export function ConvertForm({ leadId, defaultStart, staff, reviewers, leadReviewer }: { leadId: string; defaultStart: string; staff: Person[]; reviewers: Person[]; leadReviewer: string | null }) {
+/** The lead's contact person, and the portal contact already using their email, if any. */
+export interface LeadContact {
+  name: string;
+  email: string;
+  existing: { fullName: string; businesses: string[] } | null;
+}
+
+export function ConvertForm({ leadId, defaultStart, staff, reviewers, leadReviewer, contact }: { leadId: string; defaultStart: string; staff: Person[]; reviewers: Person[]; leadReviewer: string | null; contact: LeadContact }) {
   const [state, action, pending] = useActionState(convertLeadAction.bind(null, leadId), {} as LeadState);
+  const [portal, setPortal] = useState(true);
   return (
     <form action={action} className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -307,6 +317,29 @@ export function ConvertForm({ leadId, defaultStart, staff, reviewers, leadReview
         </Field>
       </div>
       <p className="text-caption-1-regular text-text-secondary">The client&apos;s reviewer may differ from the lead&apos;s. Either can be left for the Team card; the onboarding checklist asks for both.</p>
+      <fieldset className="space-y-3 rounded-2xl border border-border-button-default p-3">
+        <legend className="px-1 text-body-medium text-text-primary">Portal access</legend>
+        <Checkbox name="portal" value="on" isSelected={portal} onChange={setPortal}>
+          Give {contact.existing?.fullName ?? contact.name} (<bdi dir="ltr">{contact.email}</bdi>) portal access to the new client
+        </Checkbox>
+        <p className="ps-6 text-caption-1-regular text-text-secondary">
+          {contact.existing
+            ? `Already a portal contact for ${contact.existing.businesses.join(", ")}: the new business is added to the same login and shows in their business switcher.`
+            : "A login is made for this email; they sign in with Google or an emailed link. The lead's mobile number is kept on the contact."}
+        </p>
+        {portal && (
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Access" htmlFor="c-portal-access">
+              <Select id="c-portal-access" name="portal_access" defaultValue="full" className="w-44">
+                {CONTACT_ACCESS.map((a) => <option key={a} value={a}>{ACCESS_LABEL[a]}</option>)}
+              </Select>
+            </Field>
+            <Field label="Position (optional)" htmlFor="c-portal-position">
+              <Input id="c-portal-position" name="portal_position" placeholder="Owner, president…" className="w-56" />
+            </Field>
+          </div>
+        )}
+      </fieldset>
       <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Make the client (Onboarding)"}</Button>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}
     </form>

@@ -234,6 +234,33 @@ describe.skipIf(!url)("contact access levels", () => {
     }
   });
 
+  it("staff find an existing contact by email (for a lead), only on clients they may see", async () => {
+    await db.query("begin");
+    try {
+      await db.query(`update auth.users set email = 'maria@example.com' where id = $1`, [MARIA]);
+      await db.query(`update public.client_users set mobile = '0917 123 4567' where user_id = $1`, [MARIA]);
+      const other = (await db.query(`insert into auth.users (id) values ('00000000-0000-0000-0000-000000000c09') returning id`)).rows[0].id;
+      const brand = (await db.query(`select brand_id from public.clients where id = $1`, [alpha])).rows[0].brand_id;
+      await db.query(`insert into public.staff_profiles (user_id, brand_id, full_name, role) values ($1, $2, 'Other', 'staff')`, [other, brand]);
+      await db.query("savepoint s");
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [OWNER]);
+      await db.query("set local role authenticated");
+      const seen = (await db.query(`select full_name, mobile, client_name, access from public.contact_by_email('  MARIA@example.com ')`)).rows;
+      expect(seen).toEqual([
+        { full_name: "Maria", mobile: "0917 123 4567", client_name: "Alpha Co", access: "full" },
+        { full_name: "Maria", mobile: "0917 123 4567", client_name: "Beta Co", access: "viewer" },
+      ]);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [other]);
+      expect((await db.query(`select * from public.contact_by_email('maria@example.com')`)).rows).toEqual([]);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [BEN]);
+      expect((await db.query(`select * from public.contact_by_email('maria@example.com')`)).rows).toEqual([]);
+      await db.query("rollback to savepoint s");
+      await fails(`update public.client_users set mobile = 'call me' where user_id = $1`, [MARIA], /check constraint/);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
   it("staff are not affected", async () => {
     await as(STAFF, async () => {
       await works(upload(alpha));

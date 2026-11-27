@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireOwnerOrReviewer } from "@/lib/auth";
 import { cancelReason } from "@/lib/calendar/cancel";
+import { isContactAccess } from "@/lib/contacts/access";
+import { contactLogin, linkContact } from "@/lib/contacts/grant";
 import { cancelDiscoveryCall } from "@/lib/calendar/cancel-server";
 import { emailConfigured, sendBrandedEmail } from "@/lib/cycle/email";
 import { addDays } from "@/lib/deadlines/dates";
@@ -13,6 +15,7 @@ import { manilaToday } from "@/lib/filings/run";
 import { loadEmailBrand, requestOrigin, siteOrigin } from "@/lib/email/brand";
 import { NOTE_MAX, proposalDate, proposalEmail } from "@/lib/funnel/proposal-email";
 import { proposalStart } from "@/lib/funnel/proposal-quote";
+import { mobile as mobileSchema } from "@/lib/people/schema";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type LeadState = { ok?: string; error?: string; link?: string };
@@ -189,12 +192,43 @@ export async function convertLeadAction(leadId: string, _: LeadState, form: Form
   const start = text(form, "start");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return { error: "Choose the date the services start." };
   const supabase = await supabaseServer();
+
+  // Portal access for the lead's contact person: their login is found or made first, so
+  // a problem with it stops here, before the client is created.
+  const portal = form.get("portal") === "on";
+  const access = text(form, "portal_access") || "full";
+  if (portal && !isContactAccess(access)) return { error: "Choose the portal access." };
+  let contact: { userId: string; fullName: string; mobile: string | undefined; position: string | undefined } | null = null;
+  if (portal) {
+    const { data: lead } = await supabase.from("leads").select("contact_name, email, mobile").eq("id", leadId).maybeSingle();
+    if (!lead) return { error: "Lead not found." };
+    const login = await contactLogin(supabase, lead.email);
+    if ("error" in login) return { error: `Portal access: ${login.error}` };
+    // A person already linked to another business keeps the name on file.
+    const { data: known } = await supabase.from("client_users").select("full_name").eq("user_id", login.userId).limit(1).maybeSingle();
+    const phone = mobileSchema.safeParse(lead.mobile ?? undefined);
+    contact = {
+      userId: login.userId,
+      fullName: known?.full_name ?? lead.contact_name,
+      mobile: phone.success ? phone.data : undefined,
+      position: text(form, "portal_position").slice(0, 80) || undefined,
+    };
+  }
+
   const { data, error } = await supabase.rpc("convert_lead", {
     p_lead: leadId, p_start: start, p_preparer: uuidOrNull(text(form, "preparer")), p_reviewer: uuidOrNull(text(form, "reviewer")),
   });
   if (error) return { error: error.message };
+  const clientId = data as string;
+  let portalError = "";
+  if (contact && isContactAccess(access)) {
+    const linked = await linkContact(supabase, contact.userId, { full_name: contact.fullName, mobile: contact.mobile, position: contact.position, access, client_id: clientId });
+    if ("error" in linked) portalError = linked.error;
+    revalidatePath("/app/contacts");
+    revalidatePath(`/app/contacts/${contact.userId}`);
+  }
   refresh(leadId);
-  redirect(`/app/clients/${data as string}/onboarding`);
+  redirect(`/app/clients/${clientId}/onboarding${portalError ? `?portal_error=${encodeURIComponent(portalError)}` : ""}`);
 }
 
 /** The lead's booking page link (decision 22): the reviewer's free times; the lead books the discovery call. */
