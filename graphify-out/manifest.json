@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/collections/page.tsx": {
-    "mtime": 1795785226.1468234,
-    "seen": 1795785471.8300784,
-    "ast_hash": "38e9b9a1cdc89f5652ef9e35db67ae35",
+    "mtime": 1795787975.1926246,
+    "seen": 1795787999.932557,
+    "ast_hash": "febf09e15acc42b2eb04341a87bba14c",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/collections/statements/[id]/page.tsx": {
