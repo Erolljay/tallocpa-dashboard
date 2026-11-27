@@ -77,7 +77,7 @@ async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "sear
 
         <ListToolbar
           label="Search contacts"
-          placeholder="Search name, email or business"
+          placeholder="Search name, email, mobile or business"
           className="mb-0"
           filters={[
             { param: "access", label: "Access", anyLabel: "Any access", options: CONTACT_ACCESS.map((a) => ({ value: a, label: ACCESS_LABEL[a] })) },
@@ -107,6 +107,7 @@ async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "sear
                     <td className="px-4 py-3">
                       <Link href={`/app/contacts/${c.userId}`} className="text-body-medium text-text-primary hover:underline">{c.fullName}</Link>
                       <p className="text-caption-1-regular text-text-tertiary"><bdi dir="ltr">{c.email ?? "—"}</bdi></p>
+                      {c.mobile && <p className="text-caption-1-regular text-text-tertiary"><bdi dir="ltr">{c.mobile}</bdi></p>}
                     </td>
                     <td className="px-4 py-3">
                       <ul className="flex flex-col gap-1.5">

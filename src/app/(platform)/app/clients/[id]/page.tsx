@@ -47,7 +47,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("staff_assignments").select("user_id, role, staff_profiles(full_name)").eq("client_id", id),
     supabase.from("service_lines").select("code, name").eq("available", true).order("sort_order"),
     isOwner ? supabase.from("staff_profiles").select("user_id, full_name, role, branch_id").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
-    supabase.from("client_users").select("user_id, full_name, position, access").eq("client_id", id).order("full_name"),
+    supabase.from("client_users").select("user_id, full_name, mobile, position, access").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
     supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
@@ -310,7 +310,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
                         <Badge tone={ACCESS_TONE[access]}>{ACCESS_LABEL[access]}</Badge>
                       </p>
                       <p className="text-caption-1-regular text-text-tertiary">
-                        <bdi dir="ltr">{info?.email ?? "—"}</bdi>{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}
+                        <bdi dir="ltr">{info?.email ?? "—"}</bdi>{u.mobile ? <> · <bdi dir="ltr">{u.mobile}</bdi></> : null}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}
                         {others > 0 ? ` · also sees ${others} other business${others === 1 ? "" : "es"}` : ""}
                       </p>
                     </div>

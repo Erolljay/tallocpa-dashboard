@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accessNote, canAct, canApprove, isContactAccess } from "./access";
-import { contactLinkSchema, clientUserSchema, newContactSchema } from "@/lib/people/schema";
+import { contactDetailsSchema, contactLinkSchema, clientUserSchema, newContactSchema } from "@/lib/people/schema";
 
 describe("contact access levels", () => {
   it("full acts and approves; uploader only acts; viewer does neither", () => {
@@ -29,5 +29,13 @@ describe("contact forms", () => {
   it("rejects an unknown level and a missing business", () => {
     expect(clientUserSchema.safeParse({ full_name: "Maria Santos", email: "m@example.com", access: "owner" }).success).toBe(false);
     expect(newContactSchema.safeParse({ full_name: "Maria Santos", email: "m@example.com", access: "viewer" }).success).toBe(false);
+  });
+
+  it("keeps a mobile number tidy and refuses one that is not a number", () => {
+    expect(contactDetailsSchema.parse({ full_name: "Maria Santos", mobile: "  0917  123 4567 " }).mobile).toBe("0917 123 4567");
+    expect(contactDetailsSchema.parse({ full_name: "Maria Santos", mobile: "+63 (917) 123-4567" }).mobile).toBe("+63 (917) 123-4567");
+    expect(contactDetailsSchema.parse({ full_name: "Maria Santos", mobile: "" }).mobile).toBeUndefined();
+    expect(contactDetailsSchema.safeParse({ full_name: "Maria Santos", mobile: "call me" }).success).toBe(false);
+    expect(contactDetailsSchema.safeParse({ full_name: "Maria Santos", mobile: "123" }).success).toBe(false);
   });
 });

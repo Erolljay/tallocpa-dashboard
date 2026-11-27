@@ -41,12 +41,16 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const supabase = await supabaseServer();
   const { data: lead } = await supabase.from("leads").select("*, brands(display_name, legal_name, tin), marketing_links(label, platform, campaign, code)").eq("id", id).maybeSingle();
   if (!lead) notFound();
-  const [{ data: proposals }, { data: notes }, { data: staffRows }, { data: booked }] = await Promise.all([
+  const [{ data: proposals }, { data: notes }, { data: staffRows }, { data: booked }, { data: knownRows }] = await Promise.all([
     supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     supabase.from("lead_notes").select("source, source_id, at, author, body, details").eq("lead_id", id),
     supabase.from("staff_profiles").select("user_id, full_name, role, active").order("full_name"),
     supabase.from("discovery_calls").select("id, scheduled_at, meet_url, booked_via").eq("lead_id", id).is("held_at", null).is("cancelled_at", null).maybeSingle(),
+    // Is the lead's email already a portal contact (an existing client's owner, say)?
+    supabase.rpc("contact_by_email", { p_email: lead.email }),
   ]);
+  const known = (knownRows ?? []) as { user_id: string; full_name: string; client_id: string; client_name: string }[];
+  const existingContact = known.length ? { userId: known[0].user_id, fullName: known[0].full_name, businesses: known.map((k) => k.client_name) } : null;
   const bookedCall = booked as { id: string; scheduled_at: string | null; meet_url: string | null } | null;
   const staff = (staffRows ?? []) as Person[];
   const nameOf = new Map(staff.map((s) => [s.user_id, s.full_name]));
@@ -81,6 +85,17 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
               <dt className="text-text-tertiary">Name</dt><dd>{lead.contact_name}</dd>
               <dt className="text-text-tertiary">Email</dt><dd className="break-all"><bdi dir="ltr"><a href={`mailto:${lead.email}`} className="underline">{lead.email}</a></bdi></dd>
               <dt className="text-text-tertiary">Mobile</dt><dd><bdi dir="ltr">{lead.mobile ?? "—"}</bdi></dd>
+              {existingContact && (
+                <>
+                  <dt className="text-text-tertiary">Portal</dt>
+                  <dd>
+                    <Badge tone="done">Already a client contact</Badge>
+                    <span className="mt-1 block text-text-secondary">
+                      <Link href={`/app/contacts/${existingContact.userId}`} className="text-text-primary underline">{existingContact.fullName}</Link> signs in for {existingContact.businesses.join(", ")}.
+                    </span>
+                  </dd>
+                </>
+              )}
               <dt className="text-text-tertiary">Type</dt><dd>{taxpayerTypeLabel[lead.taxpayer_type] ?? lead.taxpayer_type}</dd>
               <dt className="text-text-tertiary">Services</dt><dd>{(lead.services as string[]).map((s) => SERVICE_LABELS[s] ?? s).join(", ") || "—"}</dd>
               {lead.quote && <><dt className="text-text-tertiary">Website quote</dt><dd className="tabular-nums">{peso.format((lead.quote as { monthlyRetainer: number }).monthlyRetainer)} / month</dd></>}
@@ -122,7 +137,7 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
               {isOwner ? (
                 <div className="space-y-3">
                   <p className="text-body-regular text-text-secondary">Creates the client in Onboarding with the engagement and the retainer, and its own preparer and reviewer. The accepted proposal becomes its proposal and signed contract on the Onboarding tab.</p>
-                  <ConvertForm leadId={id} defaultStart={nextMonth} staff={active} reviewers={reviewers} leadReviewer={lead.reviewer_id} />
+                  <ConvertForm leadId={id} defaultStart={nextMonth} staff={active} reviewers={reviewers} leadReviewer={lead.reviewer_id} contact={{ name: lead.contact_name, email: lead.email, existing: existingContact }} />
                 </div>
               ) : (
                 <p className="text-body-regular text-text-secondary">Won. The Owner makes the client and picks its preparer and reviewer.</p>
