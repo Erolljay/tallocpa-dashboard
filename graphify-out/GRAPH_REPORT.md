@@ -1,17 +1,17 @@
 # Graph Report - tallocpa-dashboard  (2026-11-27)
 
 ## Corpus Check
-- 1019 files · ~852,811 words
+- 1019 files · ~852,831 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: .css 10, (none) 4, .woff2 3)
 
 ## Summary
-- 6248 nodes · 22284 edges · 187 communities (167 shown, 20 thin omitted)
+- 6248 nodes · 22286 edges · 187 communities (167 shown, 20 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 192 edges (avg confidence: 0.85)
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9ceda359`
+- Built from commit: `471c5c50`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -903,16 +903,16 @@ Nodes (7): seedDeadlineRules, SeedHoliday, seedHolidays, seedHolidays2026, seedH
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `next` connect `next` to `form-2307.ts`, `ui.ts`, `Review`, `package.json`, `zod`, `module-pages.tsx`, `Badge`, `dependencies`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `clients/[id]/page.tsx`, `invoice-pages.tsx`, `modal.tsx`, `supabaseAdmin`, `remittances/[id]/page.tsx`, `webhook.ts`, `binder/page.tsx`, `registrations/[id]/page.tsx`, `proposal-view.tsx`, `returns/load.ts`, `steps.ts`, `app/requests/[id]/page.tsx`, `year-end/page.tsx`, `lib/books/actions.ts`, `report-periods.ts`, `marketing/page.tsx`, `template.ts`, `books/forms.tsx`, `fixed-assets/page.tsx`, `clients/[id]/page.tsx`, `Card`, `documents/labels.ts`, `parties/[id]/page.tsx`, `auth.ts`, `remittances/forms.tsx`, `Notice`, `portalContext`, `board.ts`, `[slug]/page.tsx`, `LinkButton`, `memo.ts`, `work/page.tsx`, `payroll/data.ts`, `calendar/page.tsx`, `Centavos`, `ledger/data.ts`, `cx`, `opening-checklist.tsx`, `leads/actions.ts`, `cwt-tracker-view.tsx`, `review-forms.tsx`, `documents/[id]/page.tsx`, `app/page.tsx`, `profile.ts`, `portal/page.tsx`, `sign-off-actions.tsx`, `settings/actions.ts`, `filings/actions.ts`, `manilaToday`, `leads/[id]/page.tsx`, `batch/register.ts`, `auth.ts`, `addDays`, `read.test.ts`, `worksheet/page.tsx`, `return-file-actions.ts`, `app/settings/page.tsx`, `react`, `catch-up-forms.tsx`, `blocks.tsx`, `post-button.tsx`, `payroll/forms.tsx`, `@remixicon/react`, `proposal/[token]/actions.ts`, `social-button.tsx`, `move-bar.tsx`, `server-only`, `onboarding/page.tsx`, `next`, `calendar/staff.ts`, `site-document.tsx`, `collections/forms.tsx`, `register/page.tsx`, `opengraph-image.tsx`, `Textarea`, `supabaseServer`, `cycle/page.tsx`, `notification-bell.tsx`, `formatAmount`, `filed-returns.ts`, `[clientId]/[year]/page.tsx`, `deadlines/actions.ts`, `filings/[id]/page.tsx`, `review-form.tsx`?**
-  _High betweenness centrality (0.128) - this node is a cross-community bridge._
+  _High betweenness centrality (0.146) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _21 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `form-2307.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.08978174603174603 - nodes in this community are weakly interconnected._
 - **Why does `vitest` connect `vitest` to `form-2307.ts`, `index.ts`, `ui.ts`, `package.json`, `zod`, `Badge`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `returns/types.ts`, `invoice-pages.tsx`, `supabaseAdmin`, `remittances/[id]/page.tsx`, `webhook.ts`, `quote.ts`, `returns/load.ts`, `steps.ts`, `app/requests/[id]/page.tsx`, `opening.ts`, `year-end/page.tsx`, `report-periods.ts`, `marketing/page.tsx`, `filings/run.ts`, `testing.ts`, `template.ts`, `Centavos`, `books/forms.tsx`, `fixed-assets/page.tsx`, `parties/[id]/page.tsx`, `portal-billing.test.ts`, `board.ts`, `document-scanner.tsx`, `[slug]/page.tsx`, `memo.ts`, `work/page.tsx`, `calendar/page.tsx`, `Centavos`, `opening-checklist.tsx`, `leads/actions.ts`, `tieouts.test.ts`, `profile.ts`, `portal/page.tsx`, `settings/actions.ts`, `filings/actions.ts`, `manilaToday`, `layout.ts`, `cancel-server.ts`, `leads/[id]/page.tsx`, `batch/register.ts`, `addDays`, `holiday-list.ts`, `read.test.ts`, `return-file-actions.ts`, `app/settings/page.tsx`, `blocks.tsx`, `client-form.tsx`, `ticked-allocation.test.ts`, `work/load.ts`, `payroll/forms.tsx`, `deadlines/page.tsx`, `messages.ts`, `morning.ts`, `@remixicon/react`, `split-bundled-pdfs.test.ts`, `social-button.tsx`, `move-bar.tsx`, `server-only`, `onboarding/page.tsx`, `next`, `calendar/staff.ts`, `collections/forms.tsx`, `register/page.tsx`, `arap.ts`, `gemini.ts`, `cycle/page.tsx`, `notification-bell.tsx`, `acting-approver.test.ts`, `fields.ts`, `tests/register.test.ts`, `formatAmount`, `filed-returns.ts`, `rates.ts`, `sign-off.ts`, `books/periods.ts`, `review-form.tsx`, `money.ts`?**
-  _High betweenness centrality (0.116) - this node is a cross-community bridge._
+  _High betweenness centrality (0.105) - this node is a cross-community bridge._
 - **Should `index.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.024863339798977254 - nodes in this community are weakly interconnected._
 - **Why does `react` connect `react` to `form-2307.ts`, `ui.ts`, `Review`, `package.json`, `module-pages.tsx`, `Badge`, `dependencies`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `clients/[id]/page.tsx`, `invoice-pages.tsx`, `modal.tsx`, `next`, `supabaseAdmin`, `button.tsx`, `remittances/[id]/page.tsx`, `quote.ts`, `binder/page.tsx`, `registrations/[id]/page.tsx`, `proposal-view.tsx`, `steps.ts`, `app/requests/[id]/page.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `template.ts`, `books/forms.tsx`, `fixed-assets/page.tsx`, `stat-cards.tsx`, `clients/[id]/page.tsx`, `Card`, `documents/labels.ts`, `parties/[id]/page.tsx`, `how-we-work/page.tsx`, `auth.ts`, `cx.ts`, `remittances/forms.tsx`, `Notice`, `portalContext`, `board.ts`, `document-scanner.tsx`, `[slug]/page.tsx`, `work/page.tsx`, `payroll/data.ts`, `calendar/page.tsx`, `Centavos`, `ledger/data.ts`, `cx`, `leads/actions.ts`, `cwt-tracker-view.tsx`, `review-forms.tsx`, `documents/[id]/page.tsx`, `app/page.tsx`, `profile.ts`, `portal/page.tsx`, `sign-off-actions.tsx`, `settings/actions.ts`, `manilaToday`, `leads/[id]/page.tsx`, `batch/register.ts`, `auth.ts`, `addDays`, `worksheet/page.tsx`, `return-file-actions.ts`, `app/settings/page.tsx`, `catch-up-forms.tsx`, `fees/forms.tsx`, `blocks.tsx`, `client-form.tsx`, `post-button.tsx`, `payroll/forms.tsx`, `@remixicon/react`, `social-button.tsx`, `move-bar.tsx`, `onboarding/page.tsx`, `next`, `calendar/staff.ts`, `site-document.tsx`, `collections/forms.tsx`, `register/page.tsx`, `Textarea`, `supabaseServer`, `cycle/page.tsx`, `notification-bell.tsx`, `formatAmount`, `filed-returns.ts`, `[clientId]/[year]/page.tsx`, `deadlines/actions.ts`, `filings/[id]/page.tsx`, `review-form.tsx`, `money.ts`?**
-  _High betweenness centrality (0.115) - this node is a cross-community bridge._
+  _High betweenness centrality (0.103) - this node is a cross-community bridge._
 - **Should `migrate.yml` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._

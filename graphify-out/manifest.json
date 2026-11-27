@@ -3972,9 +3972,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/page.tsx": {
-    "mtime": 1795785226.1478639,
-    "seen": 1795785471.8301187,
-    "ast_hash": "2ad6e66e2fb148a1893c6df0429035f8",
+    "mtime": 1795787878.4936068,
+    "seen": 1795787903.082401,
+    "ast_hash": "866f98024d9c7ad5a9664892b5130257",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/pending-review.tsx": {
