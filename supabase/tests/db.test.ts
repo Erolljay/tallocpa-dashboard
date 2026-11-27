@@ -882,7 +882,7 @@ describe.skipIf(!url)("database", () => {
       try {
         await db.query(`delete from public.document_cycles`);
         // 23 November: November is open for documents, due 5 December.
-        expect((await db.query(`select public.run_document_cycles('2026-11-23') r`)).rows[0].r).toEqual({ opened: 2, missed: 0, closed: 0 });
+        expect((await db.query(`select public.run_document_cycles('2026-11-23') r`)).rows[0].r).toEqual({ opened: 2, missed: 0, closed: 0, standing: 0 });
         expect(await cycle(clientA, "2026-11-01")).toMatchObject({ cutoff_date: "2026-12-05", missed_cutoff: null, closed: false });
         // No request while the month is still running; on 1 December both clients get one.
         expect(await notices("2026-11-23")).toEqual([]);
@@ -897,7 +897,7 @@ describe.skipIf(!url)("database", () => {
         expect(await notices("2026-12-04")).toEqual(["B:reminder"]);
 
         // 6 December: B missed the cutoff, A did not; December opens.
-        expect((await db.query(`select public.run_document_cycles('2026-12-06') r`)).rows[0].r).toEqual({ opened: 2, missed: 1, closed: 0 });
+        expect((await db.query(`select public.run_document_cycles('2026-12-06') r`)).rows[0].r).toEqual({ opened: 2, missed: 1, closed: 0, standing: 0 });
         expect((await cycle(clientA, "2026-11-01")).missed_cutoff).toBe(false);
         expect((await cycle(clientB, "2026-11-01")).missed_cutoff).toBe(true);
 
