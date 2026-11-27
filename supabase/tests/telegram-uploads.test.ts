@@ -149,8 +149,8 @@ describe.skipIf(!url)("Telegram uploads", () => {
       expect((await bot(`select name from public.telegram_staff_clients($1, 'molo')`, [STAFF_CHAT])).rows).toEqual([]);
       await expect(bot(`select public.telegram_set_client($1, $2)`, [STAFF_CHAT, client])).rejects.toThrow(/cannot send documents for this client/);
       expect((await bot(`select public.telegram_set_client($1, $2) as n`, [STAFF_CHAT, other])).rows[0].n).toBe("Arevalo Hardware");
-      // A client's chat cannot choose a client.
-      await expect(bot(`select public.telegram_set_client($1, $2)`, [CHAT, other])).rejects.toThrow(/not linked to a staff account/);
+      // A contact's chat cannot choose a business they are not linked to.
+      await expect(bot(`select public.telegram_set_client($1, $2)`, [CHAT, other])).rejects.toThrow(/cannot send documents for this business/);
     });
 
     it("file for the chosen client in the month they choose, under their own name", async () => {

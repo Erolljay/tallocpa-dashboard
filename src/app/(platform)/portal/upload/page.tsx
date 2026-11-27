@@ -139,6 +139,7 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
           <p className="mb-4 text-body-regular text-text-secondary">
             Send photos or PDFs to our Telegram bot, many at a time if you like, then tap what they are. Each file arrives here as its own document.
             For the clearest reading, send photos as files.
+            {all.filter((c) => c.telegram_enabled && canAct(c.access)).length > 1 && " One linked chat can send for each of your businesses: send /client in the bot to switch."}
           </p>
           <ul className="space-y-4">
             {telegram.map((c) => {

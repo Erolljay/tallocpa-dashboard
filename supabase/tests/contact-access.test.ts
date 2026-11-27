@@ -213,6 +213,27 @@ describe.skipIf(!url)("contact access levels", () => {
     });
   });
 
+  it("Telegram: a contact with several businesses switches between them, only where they may upload", async () => {
+    await db.query("begin");
+    try {
+      const brand = (await db.query(`select brand_id from public.clients where id = $1`, [alpha])).rows[0].brand_id;
+      const gamma = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type, telegram_enabled) values ($1, 'TC-9603', 'Gamma Co', 'corporation', true) returning id`, [brand])).rows[0].id;
+      const delta = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9604', 'Delta Co', 'corporation') returning id`, [brand])).rows[0].id;
+      await db.query(`update public.clients set telegram_enabled = true where id in ($1, $2)`, [alpha, beta]);
+      // Maria: full on Alpha and Gamma, viewer on Beta, full on Delta (Telegram off there).
+      await db.query(`insert into public.client_users (client_id, user_id, full_name, access) values ($1, $3, 'Maria', 'full'), ($2, $3, 'Maria', 'full')`, [gamma, delta, MARIA]);
+      await db.query(`insert into public.telegram_links (chat_id, user_id, client_id) values (8001, $1, $2)`, [MARIA, alpha]);
+      const names = (await db.query(`select name from public.telegram_staff_clients(8001, '')`)).rows.map((r) => r.name);
+      expect(names).toEqual(["Alpha Co", "Gamma Co"]);
+      expect((await db.query(`select public.telegram_set_client(8001, $1) as n`, [gamma])).rows[0].n).toBe("Gamma Co");
+      expect((await db.query(`select client_id from public.telegram_links where chat_id = 8001`)).rows[0].client_id).toBe(gamma);
+      await fails(`select public.telegram_set_client(8001, $1)`, [beta], /cannot send documents for this business/);
+      await fails(`select public.telegram_set_client(8001, $1)`, [delta], /cannot send documents for this business/);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
   it("staff are not affected", async () => {
     await as(STAFF, async () => {
       await works(upload(alpha));
