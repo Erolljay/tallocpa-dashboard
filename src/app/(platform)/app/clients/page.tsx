@@ -28,6 +28,12 @@ const SORTS = [
   { value: "preparer", label: "Preparer" },
 ];
 
+/** Status filter choices that cover more than one status. */
+const STATUS_GROUPS: Record<string, string[]> = {
+  current: ["active", "onboarding"],
+  inactive_archived: ["inactive", "archived"],
+};
+
 interface Row {
   id: string;
   code: string;
@@ -45,7 +51,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
   const me = await requireStaff();
   const sp = await searchParams;
   const search = searchParam(sp.q);
-  const status = pickParam(sp.status, Object.keys(statusLabel));
+  const status = pickParam(sp.status, [...Object.keys(STATUS_GROUPS), ...Object.keys(statusLabel)]);
   const type = pickParam(sp.type, Object.keys(taxpayerTypeLabel));
   const filing = pickParam(sp.filing, ["efps", "ebirforms"] as const);
   const preparer = searchParam(sp.preparer);
@@ -66,7 +72,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
   const statusRank = { active: 0, onboarding: 1, inactive: 2, archived: 3 } as const;
   const shown = rows
     .filter((c) => matchesSearch(search, [c.name, c.code, c.tin, preparers(c), taxpayerTypeLabel[c.taxpayer_type], statusLabel[c.status]]))
-    .filter((c) => !status || c.status === status)
+    .filter((c) => !status || (status in STATUS_GROUPS ? STATUS_GROUPS[status].includes(c.status) : c.status === status))
     .filter((c) => !type || c.taxpayer_type === type)
     .filter((c) => !filing || (filing === "efps" ? c.filing_channel === "efps" : c.filing_channel !== "efps"))
     .filter((c) => !preparer || (preparer === "none" ? !preparers(c) : c.staff_assignments.some((a) => a.role === "preparer" && a.staff_profiles?.full_name === preparer)))
@@ -96,7 +102,16 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
           label="Search clients"
           placeholder="Search name, code, TIN or preparer"
           filters={[
-            { param: "status", label: "Status", anyLabel: "Any status", options: Object.entries(statusLabel).map(([value, label]) => ({ value, label })) },
+            {
+              param: "status",
+              label: "Status",
+              anyLabel: "Any status",
+              options: [
+                { value: "current", label: "Current (active or onboarding)" },
+                { value: "inactive_archived", label: "Inactive or archived" },
+                ...Object.entries(statusLabel).map(([value, label]) => ({ value, label })),
+              ],
+            },
             { param: "type", label: "Taxpayer type", anyLabel: "Any type", options: Object.entries(taxpayerTypeLabel).map(([value, label]) => ({ value, label })) },
             { param: "filing", label: "Filing channel", anyLabel: "Any filing", options: [{ value: "efps", label: "eFPS" }, { value: "ebirforms", label: "eBIRForms" }] },
             ...(preparerNames.length > 1 || isOwner
