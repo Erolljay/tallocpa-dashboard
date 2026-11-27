@@ -3840,9 +3840,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/page.tsx": {
-    "mtime": 1795785226.146418,
-    "seen": 1795785471.830072,
-    "ast_hash": "ef5d28344b688800cbc481fd9bf38bad",
+    "mtime": 1795786236.4110477,
+    "seen": 1795786253.090242,
+    "ast_hash": "5ede605b3300acd07868672977129012",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/setup-charts.tsx": {
