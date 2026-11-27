@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { RiAddLine } from "@remixicon/react";
-import { Badge, Button, Input, LinkButton, PageHeader, Select, Skeleton } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
+import { ListToolbar } from "@/components/application/search/list-search";
+import { pickParam } from "@/lib/search/match";
 import { requireStaff } from "@/lib/auth";
 import { PARTY_KINDS, VAT_STATUSES, partyTinLabel, type Party } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -16,6 +18,14 @@ export default function PartiesPage(props: PageProps<"/app/parties">) {
 }
 
 const LIMIT = 200;
+/** Server-side orders: column and direction. The first is the default. */
+const SORTS = [
+  { value: "name", label: "Name A–Z", column: "display_name", ascending: true },
+  { value: "name_desc", label: "Name Z–A", column: "display_name", ascending: false },
+  { value: "tin", label: "TIN", column: "tin", ascending: true },
+  { value: "newest", label: "Newest first", column: "created_at", ascending: false },
+  { value: "verified", label: "Recently verified", column: "verified_at", ascending: false },
+] as const;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 type Row = Pick<Party, "id" | "tin" | "branch_code" | "kind" | "display_name" | "trade_name" | "vat_status" | "verified_at" | "source">;
@@ -28,12 +38,14 @@ async function PartyList({ searchParams }: Pick<PageProps<"/app/parties">, "sear
   const vat = one(sp.vat);
   const verified = one(sp.verified);
   const clientId = one(sp.client);
+  const sort = SORTS.find((s) => s.value === pickParam(sp.sort, SORTS.map((s) => s.value))) ?? SORTS[0];
   const supabase = await supabaseServer();
 
   const clientName = clientId ? (await supabase.from("clients").select("name").eq("id", clientId).maybeSingle()).data?.name ?? null : null;
   let query = supabase
     .from("parties")
     .select(`id, tin, branch_code, kind, display_name, trade_name, vat_status, verified_at, source${clientId ? ", client_parties!inner(client_id)" : ""}`)
+    .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
     .order("display_name")
     .limit(LIMIT + 1);
   if (clientId) query = query.eq("client_parties.client_id", clientId);
@@ -65,36 +77,16 @@ async function PartyList({ searchParams }: Pick<PageProps<"/app/parties">, "sear
         actions={<LinkButton href="/app/parties/new"><RiAddLine aria-hidden className="size-4" />New party</LinkButton>}
       />
       <SectionTabs section="clients" active="parties" />
-      <form className="mb-6 grid gap-3 sm:grid-cols-[1fr_10rem_10rem_10rem_auto] sm:items-end" role="search">
-        {clientId && <input type="hidden" name="client" value={clientId} />}
-        <div>
-          <label htmlFor="q" className="sr-only">Search by TIN or name</label>
-          <Input id="q" name="q" type="search" defaultValue={q} placeholder="TIN or name" />
-        </div>
-        <div>
-          <label htmlFor="kind" className="sr-only">Kind</label>
-          <Select id="kind" name="kind" defaultValue={kind}>
-            <option value="">Any kind</option>
-            {Object.entries(PARTY_KINDS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="vat" className="sr-only">VAT status</label>
-          <Select id="vat" name="vat" defaultValue={vat}>
-            <option value="">Any VAT status</option>
-            {Object.entries(VAT_STATUSES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="verified" className="sr-only">Verified</label>
-          <Select id="verified" name="verified" defaultValue={verified}>
-            <option value="">Verified or not</option>
-            <option value="yes">Verified</option>
-            <option value="no">Not verified</option>
-          </Select>
-        </div>
-        <Button type="submit" variant="secondary">Filter</Button>
-      </form>
+      <ListToolbar
+        label="Search by TIN or name"
+        placeholder="TIN or name"
+        filters={[
+          { param: "kind", label: "Kind", anyLabel: "Any kind", options: Object.entries(PARTY_KINDS).map(([value, label]) => ({ value, label })) },
+          { param: "vat", label: "VAT status", anyLabel: "Any VAT status", options: Object.entries(VAT_STATUSES).map(([value, label]) => ({ value, label })) },
+          { param: "verified", label: "Verified", anyLabel: "Verified or not", options: [{ value: "yes", label: "Verified" }, { value: "no", label: "Not verified" }] },
+        ]}
+        sorts={SORTS.map(({ value, label }) => ({ value, label }))}
+      />
       {clientName && (
         <p className="mb-4 text-body-regular text-text-secondary">
           Showing {clientName}&rsquo;s parties. <Link href="/app/parties" className="text-button-ghost-foreground hover:underline">Show everyone</Link>
