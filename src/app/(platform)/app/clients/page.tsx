@@ -3,7 +3,9 @@ import { Suspense } from "react";
 import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { BOOKS_GO_LIVE } from "@/lib/ledger/types";
+import { manilaToday } from "@/lib/filings/run";
 import { SetupCharts } from "./setup-charts";
+import { CatchUpOnboarding } from "./catch-up-onboarding";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -37,6 +39,7 @@ interface Row {
   filing_channel: string;
   efps_group: string | null;
   status: keyof typeof statusTone;
+  catch_up_through: string | null;
   staff_assignments: { role: string; staff_profiles: { full_name: string } | null }[];
 }
 
@@ -52,7 +55,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
   const supabase = await supabaseServer();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, code, name, taxpayer_type, tin, filing_channel, efps_group, status, staff_assignments(role, staff_profiles(full_name))")
+    .select("id, code, name, taxpayer_type, tin, filing_channel, efps_group, status, catch_up_through, staff_assignments(role, staff_profiles(full_name))")
     .order("name");
   if (error) throw error;
   const rows = (data ?? []) as unknown as Row[];
@@ -80,6 +83,10 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
       }
     });
   const noChart = isOwner ? rows.filter((r) => r.status !== "archived" && !charted.has(r.id)).map((r) => r.name) : [];
+  // Onboarding clients not yet in catch-up (migration 20270104000001), for the Owner.
+  const notCaughtUp = isOwner ? rows.filter((r) => r.status === "onboarding" && !r.catch_up_through).map((r) => r.name) : [];
+  // Default: the month before this one (this month's returns are still ahead).
+  const lastMonth = (() => { const [y, m] = manilaToday().slice(0, 7).split("-").map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`; })();
 
   return (
     <>
@@ -90,6 +97,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
       />
       <SectionTabs section="clients" active="clients" />
       {noChart.length > 0 && <SetupCharts missing={noChart} defaultMonth={BOOKS_GO_LIVE.slice(0, 7)} />}
+      {notCaughtUp.length > 0 && <CatchUpOnboarding clients={notCaughtUp} defaultMonth={lastMonth} />}
       {rows.length > 0 && (
         <ListToolbar
           label="Search clients"
@@ -143,7 +151,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
                   <td className="px-4 py-3 text-text-secondary">
                     {preparers(c) || "—"}
                   </td>
-                  <td className="px-4 py-3"><Badge tone={statusTone[c.status]}>{statusLabel[c.status]}</Badge></td>
+                  <td className="px-4 py-3"><span className="flex flex-wrap gap-1"><Badge tone={statusTone[c.status]}>{statusLabel[c.status]}</Badge>{c.catch_up_through && <Badge tone="waiting">Catch-up</Badge>}</span></td>
                 </tr>
               ))}
             </tbody>

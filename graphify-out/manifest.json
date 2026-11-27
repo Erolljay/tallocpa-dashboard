@@ -3822,9 +3822,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/actions.ts": {
-    "mtime": 1795775405.6126833,
-    "seen": 1795775645.2642918,
-    "ast_hash": "a85ec7a9d76356dc8f5172787deec72d",
+    "mtime": 1795782203.3776557,
+    "seen": 1795782264.9870665,
+    "ast_hash": "717034c2727fe5e607d072b66b3b7424",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/client-form.tsx": {
@@ -3840,9 +3840,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/page.tsx": {
-    "mtime": 1795774898.650965,
-    "seen": 1795775645.2642956,
-    "ast_hash": "5660b8044d87ad2006f37cc144d87fd8",
+    "mtime": 1795782217.116867,
+    "seen": 1795782264.9871416,
+    "ast_hash": "5e5e0b9090f738721d65702e1a4eb3b5",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/setup-charts.tsx": {
@@ -5523,6 +5523,12 @@
     "mtime": 1795775327.3126786,
     "seen": 1795775645.2655385,
     "ast_hash": "3659064b9e9ed8b84bad2703de83edfc",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/app/clients/catch-up-onboarding.tsx": {
+    "mtime": 1795782203.3838701,
+    "seen": 1795782264.987071,
+    "ast_hash": "df7e5eb438e9f95b47ee7717396614fa",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
