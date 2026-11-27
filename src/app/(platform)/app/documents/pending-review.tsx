@@ -1,14 +1,12 @@
 "use client";
 
+import { RiTelegram2Line } from "@remixicon/react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { Pick } from "@/components/books/pick";
 import { Badge, Button, Card } from "@/components/ui";
 import type { DocumentCodes, PendingTaxCodes } from "@/lib/books/actions";
 import type { TaxCode } from "@/lib/books/tax-codes";
-import { CODE_SOURCE_LABELS, codesFor, codeTone, PORTION_LABELS, postingChoices, type CodeSourceKind } from "@/lib/books/ui";
 import { ACCOUNT_SOURCES, needsConfirming, type AccountSource } from "@/lib/documents/bulk";
-import { formatAmount } from "@/lib/returns/money";
 import { cx } from "@/utils/cx";
 import { approveSelectedAction, type BulkState } from "./bulk-actions";
 import { MoveBar } from "./move-bar";
@@ -18,6 +16,9 @@ export interface PendingRow {
   received: string;
   typeLabel: string;
   fileName: string;
+  /** How it came in and who sent it, e.g. "Telegram · Maria Molo". */
+  via: string;
+  telegram: boolean;
   month: string;
   /** The month it is reported in ("YYYY-MM-01"). */
   documentMonth: string;
@@ -65,19 +66,25 @@ const ocrKeys = (r: PendingRow) =>
  * a title from this client's history can go as is.
  */
 export function PendingReview({ clientId, rows, accounts, cashAccounts = [], taxCodes = [], canMove = false, fyeMonth = 12 }: { clientId: string; rows: PendingRow[]; accounts: { id: string; label: string; group: string }[]; cashAccounts?: { id: string; label: string }[]; taxCodes?: TaxCode[]; canMove?: boolean; fyeMonth?: number }) {
-  const [chosen, setChosen] = useState<Record<string, string>>(() => Object.fromEntries(rows.map((r) => [r.id, r.account?.id ?? ""])));
+  const [chosen] = useState<Record<string, string>>(() => Object.fromEntries(rows.map((r) => [r.id, r.account?.id ?? ""])));
   const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const [codes, setCodes] = useState<Record<string, Codes>>(() => Object.fromEntries(rows.map((r) => [r.id, initialCodes(r)])));
+  const [codes] = useState<Record<string, Codes>>(() => Object.fromEntries(rows.map((r) => [r.id, initialCodes(r)])));
   const [codeOk, setCodeOk] = useState<Set<string>>(new Set());
-  const [terms, setTerms] = useState<Record<string, "cash" | "charge">>(() => Object.fromEntries(rows.map((r) => [r.id, r.terms])));
-  const [cash, setCash] = useState<Record<string, string | null>>(() => Object.fromEntries(rows.map((r) => [r.id, r.cashAccountId ?? cashAccounts[0]?.id ?? null])));
+  const [terms] = useState<Record<string, "cash" | "charge">>(() => Object.fromEntries(rows.map((r) => [r.id, r.terms])));
+  const [cash] = useState<Record<string, string | null>>(() => Object.fromEntries(rows.map((r) => [r.id, r.cashAccountId ?? cashAccounts[0]?.id ?? null])));
   const codesOk = (r: PendingRow) => !r.invoiceKind || ocrKeys(r).every((k) => codeOk.has(k));
-  const pickCode = (r: PendingRow, key: string, patch: Partial<Codes>) => {
-    setCodes((c) => ({ ...c, [r.id]: { ...c[r.id], ...patch, lines: { ...c[r.id].lines, ...(patch.lines ?? {}) } } }));
-    // Choosing a code on purpose confirms it.
-    setCodeOk((s) => new Set(s).add(`${r.id}:${key}`));
+  // The choices themselves are made on the document page; the list shows them in one line.
+  const accountName = new Map(accounts.map((a) => [a.id, a.label]));
+  const accountLabel = (id: string) => (chosen[id] ? accountName.get(chosen[id]) ?? null : null);
+  const codeName = new Map(taxCodes.map((c) => [c.id, c.name]));
+  const cashName = new Map(cashAccounts.map((a) => [a.id, a.label]));
+  const booksSummary = (r: PendingRow) => {
+    const c = codes[r.id];
+    const names = [...Object.values(c.lines), c.wh, c.vw].map((x) => (x ? codeName.get(x) : null)).filter(Boolean);
+    const posting = terms[r.id] === "charge" ? "On account" : `Cash${cash[r.id] ? `, ${cashName.get(cash[r.id]!) ?? ""}` : " (choose account)"}`;
+    return [...(names.length ? names : ["No tax code"]), posting].join(" · ");
   };
   const titleOk = (r: PendingRow) => !r.booked || !r.titled || (chosen[r.id] !== "" && (!needsConfirming(r.account?.source ?? "choose") || confirmed.has(r.id)));
   const canSelect = (r: PendingRow) => r.ready && titleOk(r) && codesOk(r) && (!r.invoiceKind || terms[r.id] === "charge" || cash[r.id] != null);
@@ -137,7 +144,7 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
         <>
           {showTitles && (
             <p className="mb-3 text-caption-1-regular text-text-tertiary">
-              Account titles come from this client&apos;s chart. A title from the client&apos;s own history can be approved as is; confirm or change a firm suggestion or a default. Tax codes in green are this client&apos;s default for the party; amber ones were read by OCR and need confirming. The title and codes you choose are kept for this client and party only. Approving posts each sale or purchase to the Books as chosen under &ldquo;Goes to the Books as&rdquo;.
+              Account title, tax codes and how each goes to the Books are suggested here; change them on the document. A title from the client&apos;s own history can be approved as is; for a firm suggestion, a default or codes read by OCR, tap Confirm or open the document.
             </p>
           )}
           {canMove && <MoveBar clientId={clientId} selected={toMove} fyeMonth={fyeMonth} />}
@@ -184,6 +191,10 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                       <td className="py-2 pe-4">
                         <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{r.typeLabel}{r.number ? ` ${r.number}` : ""}</Link>
                         <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.party ?? r.fileName}</p>
+                        <p className="mt-0.5 flex max-w-56 items-center gap-1 text-caption-1-regular text-text-tertiary">
+                          {r.telegram && <RiTelegram2Line aria-hidden className="size-3.5 shrink-0 text-foreground-icon-tertiary" />}
+                          <span className="truncate">via {r.via}</span>
+                        </p>
                       </td>
                       <td className="py-2 pe-4 text-text-secondary">
                         {r.month}
@@ -195,39 +206,28 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                       {showTitles && (
                         <td className="py-2 ps-4 pe-4">
                           {r.booked ? (
-                            <div className="flex min-w-72 flex-col gap-1">
-                              <Pick
-                                ariaLabel="Account title"
-                                size="sm"
-                                value={chosen[r.id] || null}
-                                onChange={(x) => {
-                                  setChosen({ ...chosen, [r.id]: x ?? "" });
-                                  // Choosing a title on purpose confirms it.
-                                  setConfirmed(set(confirmed, r.id, Boolean(x)));
-                                }}
-                                options={accounts}
-                              />
-                              {r.invoiceKind && (
-                                <BooksChoices
-                                  row={r}
-                                  codes={codes[r.id]}
-                                  confirmed={codeOk}
-                                  taxCodes={taxCodes}
-                                  cashAccounts={cashAccounts}
-                                  terms={terms[r.id]}
-                                  cash={cash[r.id]}
-                                  onCode={(key, patch) => pickCode(r, key, patch)}
-                                  onConfirm={() => setCodeOk((s) => new Set([...s, ...ocrKeys(r)]))}
-                                  onTerms={(t) => setTerms({ ...terms, [r.id]: t })}
-                                  onCash={(a) => setCash({ ...cash, [r.id]: a })}
-                                />
-                              )}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span title={s.hint}><Badge tone={confirmed.has(r.id) && source !== "choose" ? "done" : s.tone}>{confirmed.has(r.id) && needsConfirming(source) ? "Confirmed" : r.titled ? s.label : "By rule"}</Badge></span>
-                                {mustConfirm && chosen[r.id] !== "" && (
-                                  <button type="button" onClick={() => setConfirmed(set(confirmed, r.id, true))} className="text-caption-1-medium text-button-ghost-foreground hover:underline">Confirm</button>
-                                )}
+                            <div className="max-w-80">
+                              <div className="flex items-center gap-2">
+                                <span className={cx("min-w-0 truncate", chosen[r.id] ? "text-text-primary" : "text-text-error-primary")} title={accountLabel(r.id) ?? undefined}>
+                                  {accountLabel(r.id) ?? "No account title yet"}
+                                </span>
+                                <span className="shrink-0" title={s.hint}><Badge tone={confirmed.has(r.id) && source !== "choose" ? "done" : s.tone}>{confirmed.has(r.id) && needsConfirming(source) ? "Confirmed" : r.titled ? s.label : "By rule"}</Badge></span>
+                                {!chosen[r.id] ? (
+                                  <Link href={`/app/documents/${r.id}`} className="shrink-0 text-caption-1-medium text-button-ghost-foreground hover:underline">Choose</Link>
+                                ) : (mustConfirm || !codesOk(r)) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setConfirmed(set(confirmed, r.id, true));
+                                      setCodeOk((k) => new Set([...k, ...ocrKeys(r)]));
+                                    }}
+                                    className="shrink-0 rounded-md text-caption-1-medium text-button-ghost-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+                                  >
+                                    Confirm
+                                  </button>
+                                ) : null}
                               </div>
+                              {r.invoiceKind && <p className="truncate text-caption-1-regular text-text-tertiary" title={booksSummary(r)}>{booksSummary(r)}</p>}
                             </div>
                           ) : (
                             <span className="text-caption-1-regular text-text-tertiary">—</span>
@@ -247,105 +247,5 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
         </>
       )}
     </Card>
-  );
-}
-
-/**
- * The Books side of a sale or purchase row: a tax code per line portion (split when
- * the document has VATable, exempt and zero-rated amounts), the withholding code (and
- * on a sale the WV code), what the row goes to the Books as, and the cash account
- * when it is cash. Green: the party default; amber: OCR's suggestion to confirm.
- */
-function BooksChoices({
-  row,
-  codes,
-  confirmed,
-  taxCodes,
-  cashAccounts,
-  terms,
-  cash,
-  onCode,
-  onConfirm,
-  onTerms,
-  onCash,
-}: {
-  row: PendingRow;
-  codes: Codes;
-  confirmed: Set<string>;
-  taxCodes: TaxCode[];
-  cashAccounts: { id: string; label: string }[];
-  terms: "cash" | "charge";
-  cash: string | null;
-  onCode: (key: string, patch: Partial<Codes>) => void;
-  onConfirm: () => void;
-  onTerms: (t: "cash" | "charge") => void;
-  onCash: (a: string | null) => void;
-}) {
-  const kind = row.invoiceKind!;
-  const tone = (key: string, source: CodeSourceKind) => codeTone(source, confirmed.has(`${row.id}:${key}`));
-  const hint = (key: string, source: CodeSourceKind) => (confirmed.has(`${row.id}:${key}`) ? "Confirmed" : source ? CODE_SOURCE_LABELS[source] : "No suggestion");
-  const pending = ocrKeys(row).filter((k) => !confirmed.has(k)).length;
-  const invoiceCodes = codesFor(taxCodes, kind, "invoice", codes.wh ?? codes.vw);
-  const lines = row.codes?.lines ?? [];
-  return (
-    <div className="mt-1 space-y-1.5 rounded-xl bg-background-secondary-default p-2">
-      {lines.map((l) => (
-        <div key={l.portion}>
-          <span className="text-caption-1-regular text-text-tertiary">
-            Tax code{lines.length > 1 ? ` · ${PORTION_LABELS[l.portion]} ${formatAmount(Math.round(Number(l.amount) * 100))}` : ""} · {hint(l.portion, l.source)}
-          </span>
-          <Pick
-            ariaLabel={`Tax code${lines.length > 1 ? `, ${PORTION_LABELS[l.portion]}` : ""}`}
-            size="sm"
-            value={codes.lines[l.portion] ?? null}
-            onChange={(x) => onCode(l.portion, { lines: { [l.portion]: x } })}
-            options={codesFor(taxCodes, kind, "line", codes.lines[l.portion]).map((c) => ({ id: c.id, label: c.name }))}
-            noneLabel="No tax code"
-            tone={tone(l.portion, l.source)}
-          />
-        </div>
-      ))}
-      <div>
-        <span className="text-caption-1-regular text-text-tertiary">Withholding code · {hint("wh", row.codes?.withholding_source ?? null)}</span>
-        <Pick
-          ariaLabel="Withholding code"
-          size="sm"
-          value={codes.wh}
-          onChange={(x) => onCode("wh", { wh: x })}
-          options={invoiceCodes.filter((c) => c.kind === "withholding").map((c) => ({ id: c.id, label: c.name }))}
-          noneLabel="None"
-          tone={tone("wh", row.codes?.withholding_source ?? null)}
-        />
-      </div>
-      {kind === "sales" && (codes.vw || row.codes?.vat_withholding_source) && (
-        <div>
-          <span className="text-caption-1-regular text-text-tertiary">VAT withheld (government) · {hint("vw", row.codes?.vat_withholding_source ?? null)}</span>
-          <Pick
-            ariaLabel="VAT withheld code"
-            size="sm"
-            value={codes.vw}
-            onChange={(x) => onCode("vw", { vw: x })}
-            options={invoiceCodes.filter((c) => c.kind === "govt_vat_withheld").map((c) => ({ id: c.id, label: c.name }))}
-            noneLabel="None"
-            tone={tone("vw", row.codes?.vat_withholding_source ?? null)}
-          />
-        </div>
-      )}
-      {pending > 0 && (
-        <button type="button" onClick={onConfirm} className="rounded-md text-caption-1-medium text-button-ghost-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus-ring">
-          Confirm tax codes ({pending})
-        </button>
-      )}
-      <div>
-        <span className="text-caption-1-regular text-text-tertiary">Goes to the Books as</span>
-        <Pick ariaLabel="Goes to the Books as" size="sm" value={terms} onChange={(x) => onTerms(x === "charge" ? "charge" : "cash")} options={postingChoices(kind).map((c) => ({ id: c.value, label: c.label }))} />
-      </div>
-      {terms === "cash" && (
-        <div>
-          <span className="text-caption-1-regular text-text-tertiary">{kind === "sales" ? "Deposited to" : "Paid from"}</span>
-          <Pick ariaLabel={kind === "sales" ? "Deposited to" : "Paid from"} size="sm" value={cash} onChange={onCash} options={cashAccounts} tone={cash ? "neutral" : "error"} />
-        </div>
-      )}
-    </div>
   );
 }
