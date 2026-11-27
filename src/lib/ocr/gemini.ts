@@ -13,7 +13,7 @@ const PROMPT = `You read Philippine business documents for an accounting firm: s
 
 Return every field you can read; use null for a field that is not on the document or that you cannot read. Never guess.
 - doc_type: one of ${OCR_DOC_TYPES.join(", ")} ("bir_2307" for Form 2307).
-- date: the document date as YYYY-MM-DD.
+- date: the document date copied EXACTLY as printed or written (for example "11/27/2026", "11-27-26" or "Nov. 27, 2026"); do not reorder, convert or complete it, and never take the year from today's date. Philippine invoices print dates month first (MM/DD/YYYY). Read each digit of the year carefully.
 - number: the invoice / receipt / serial number as printed.
 - party_name, party_tin, party_address: the OTHER party — the seller on a purchase receipt, the buyer/customer on a sales invoice, the payor (withholding agent) on a 2307.
 - party_kind: "individual" when the other party is a natural person (a sole proprietor, a professional, a person buying or selling in their own name), "non_individual" for a corporation, partnership, cooperative or other entity. A sole proprietor's business is still "individual": its BIR registered name is the owner's name (often printed as "JUAN S. DELA CRUZ - Prop." under the trade name).

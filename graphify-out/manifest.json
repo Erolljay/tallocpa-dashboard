@@ -396,8 +396,8 @@
     "semantic_hash": ""
   },
   "src/lib/documents/labels.ts": {
-    "mtime": 1795745465.5405161,
-    "seen": 1795745539.2773695,
+    "mtime": 1795746986.4592626,
+    "seen": 1795747603.3921607,
     "ast_hash": "06b96b728579ae0840d0a343562a73d4",
     "semantic_hash": ""
   },
@@ -414,21 +414,21 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/checks.test.ts": {
-    "mtime": 1795588210.4502666,
-    "seen": 1795743535.8346114,
-    "ast_hash": "05d116d385bc5e826a93f6bafab3f55c",
+    "mtime": 1795747557.3329022,
+    "seen": 1795747603.393895,
+    "ast_hash": "96062561c524e485d03cde1343b833eb",
     "semantic_hash": ""
   },
   "src/lib/ocr/checks.ts": {
-    "mtime": 1795588210.4511874,
-    "seen": 1795743535.8346124,
-    "ast_hash": "a1b6836b20495104d164a790812c9391",
+    "mtime": 1795747494.827074,
+    "seen": 1795747603.393897,
+    "ast_hash": "5b8c467e9716bdbc37ee0776eb21c221",
     "semantic_hash": ""
   },
   "src/lib/ocr/fields.ts": {
-    "mtime": 1795588210.4511874,
-    "seen": 1795743535.8346133,
-    "ast_hash": "12905912459088526cc04e1700becd67",
+    "mtime": 1795747494.826443,
+    "seen": 1795747603.3939018,
+    "ast_hash": "490a27900a8daab619f6a598f8d1ab2c",
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.test.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "src/lib/ocr/gemini.ts": {
-    "mtime": 1795742617.4759984,
-    "seen": 1795743535.8346148,
-    "ast_hash": "5a0971dde7f85c99a765befd107fc82e",
+    "mtime": 1795747494.8268929,
+    "seen": 1795747603.3939238,
+    "ast_hash": "c3b7849464a0de088f887054fbd38f22",
     "semantic_hash": ""
   },
   "src/lib/ocr/provider.ts": {
@@ -1908,9 +1908,9 @@
     "semantic_hash": ""
   },
   "src/lib/documents/bulk.ts": {
-    "mtime": 1795742617.4702904,
-    "seen": 1795743535.8345,
-    "ast_hash": "713fb1d7f2b03e14fe3483ec04133025",
+    "mtime": 1795747502.1214027,
+    "seen": 1795747603.3920865,
+    "ast_hash": "b553ef199ff68d4b263806384462543d",
     "semantic_hash": ""
   },
   "supabase/tests/month-complete.test.ts": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/[id]/page.tsx": {
-    "mtime": 1795745732.7066212,
-    "seen": 1795745924.01689,
-    "ast_hash": "e4214f1340f0e6c232abd5c2f2086002",
+    "mtime": 1795747502.122027,
+    "seen": 1795747603.38482,
+    "ast_hash": "558a7298e2fcd4690e1adb931a2c85a7",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/[id]/payroll-intake.tsx": {
@@ -3960,9 +3960,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/bulk-actions.ts": {
-    "mtime": 1795742617.4591362,
-    "seen": 1795743535.834014,
-    "ast_hash": "0acd0cfc2847fbe6c0b3060cfe0252f0",
+    "mtime": 1795747506.403225,
+    "seen": 1795747603.384932,
+    "ast_hash": "cd0e04cfb3972c0e2dde9305918f5955",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/filters.tsx": {
@@ -3972,14 +3972,14 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/page.tsx": {
-    "mtime": 1795745470.4085495,
-    "seen": 1795745539.2704864,
-    "ast_hash": "02a0790563e6dc284c769b60462951bb",
+    "mtime": 1795747502.121784,
+    "seen": 1795747603.3849952,
+    "ast_hash": "def72ff543577cc7b12ec6f84fec1d73",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/pending-review.tsx": {
-    "mtime": 1795745673.8319743,
-    "seen": 1795745924.0171227,
+    "mtime": 1795746986.4591513,
+    "seen": 1795747603.3849974,
     "ast_hash": "74f02c10ac1c33358f1b0778457929fc",
     "semantic_hash": ""
   },
@@ -5226,9 +5226,21 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/[id]/zoom-preview.tsx": {
-    "mtime": 1795745732.695433,
-    "seen": 1795745924.0169713,
+    "mtime": 1795746986.458856,
+    "seen": 1795747603.3849077,
     "ast_hash": "5abf1b27d6590b6be5768b0c85113a94",
+    "semantic_hash": ""
+  },
+  "src/lib/ocr/dates.test.ts": {
+    "mtime": 1795747494.8154626,
+    "seen": 1795747603.3938987,
+    "ast_hash": "56af696a6888276f9924d8600040b9ff",
+    "semantic_hash": ""
+  },
+  "src/lib/ocr/dates.ts": {
+    "mtime": 1795747494.814315,
+    "seen": 1795747603.3939004,
+    "ast_hash": "eaf01859ca3532bc82f59fead3a482ff",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

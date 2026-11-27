@@ -42,7 +42,7 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
   const [{ data: docs, error }, { data: books }] = await Promise.all([
     supabase
       .from("documents")
-      .select("id, client_id, doc_type, status, prior_year, file_name, extractions(status, fields, confidence)")
+      .select("id, client_id, doc_type, status, prior_year, document_month, file_name, extractions(status, fields, confidence)")
       .in("id", ids)
       .eq("client_id", clientId),
     supabase.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
@@ -70,7 +70,7 @@ export async function approveSelectedAction(clientId: string, items: ApproveItem
     const e = d.extractions as unknown as { status: string; fields: OcrFields; confidence: OcrConfidence } | null;
     const fields = normalizeFields(e?.fields ?? {});
     const k = key(fields);
-    const r = bulkReadiness(e && { ...e, fields }, { today, priorYear: d.prior_year, duplicate: Boolean(k && seen.has(k)), docType: d.doc_type });
+    const r = bulkReadiness(e && { ...e, fields }, { today, priorYear: d.prior_year, duplicate: Boolean(k && seen.has(k)), docType: d.doc_type, documentMonth: d.document_month });
     if (!r.ready) {
       skipped.push(`${d.file_name} (${r.reason})`);
       continue;

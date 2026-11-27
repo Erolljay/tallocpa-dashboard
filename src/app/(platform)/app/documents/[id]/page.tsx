@@ -84,7 +84,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   // A directory that cannot be read never blocks the review.
   const entry = key ? (await lookupParties(supabase, [fields.party_tin]).catch(() => null))?.get(key) : undefined;
   const resolved = entry ? resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry) : null;
-  const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year });
+  const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year, documentMonth: doc.document_month });
   const client = doc.clients as unknown as { name: string } | null;
   const booking = await loadBooking(supabase, doc, entry?.id ?? null);
   const isPdf = doc.mime_type === "application/pdf";

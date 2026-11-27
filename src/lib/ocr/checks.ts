@@ -4,6 +4,7 @@
  * duplicate (same supplier TIN + document number), and the date (not in the
  * future; prior taxable year goes to exceptions). They warn; the reviewer decides.
  */
+import { dateFarFromMonth } from "./dates";
 import type { OcrFields } from "./fields";
 
 export interface Issue {
@@ -14,7 +15,7 @@ export interface Issue {
 const TIN = /^\d{3}-\d{3}-\d{3}(-\d{3,5})?$/;
 const num = (v: string | null | undefined) => (v == null || v === "" ? null : Number(v));
 
-export function checkFields(f: OcrFields, ctx: { today: string; duplicateOf?: string | null; priorYear?: boolean }): Issue[] {
+export function checkFields(f: OcrFields, ctx: { today: string; duplicateOf?: string | null; priorYear?: boolean; documentMonth?: string | null }): Issue[] {
   const issues: Issue[] = [];
   if (f.party_tin && !TIN.test(f.party_tin)) issues.push({ field: "party_tin", message: "TIN should look like 123-456-789-00000." });
 
@@ -33,6 +34,11 @@ export function checkFields(f: OcrFields, ctx: { today: string; duplicateOf?: st
   }
   if (!f.date) issues.push({ field: "date", message: "Enter the document date." });
   else if (f.date > ctx.today) issues.push({ field: "date", message: "The date is in the future." });
+  else if (ctx.documentMonth) {
+    // Usually a misread year: the reviewer checks it before approving.
+    const far = dateFarFromMonth(f.date, ctx.documentMonth);
+    if (far) issues.push({ field: "date", message: far });
+  }
   if (ctx.priorYear) issues.push({ field: "date", message: "This is from a prior taxable year: it goes to the exceptions queue, not this year's return." });
   if (ctx.duplicateOf) issues.push({ field: "number", message: "Same supplier TIN and document number as another approved document." });
   return issues;
