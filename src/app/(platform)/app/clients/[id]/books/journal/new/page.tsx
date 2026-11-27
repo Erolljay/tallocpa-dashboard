@@ -18,7 +18,7 @@ async function NewEntry({ params }: Pick<PageProps<"/app/clients/[id]/books/jour
   if (!books) notFound();
   const [accounts, { data: docs }] = await Promise.all([
     loadAccounts(supabase, id),
-    supabase.from("documents").select("id, file_name, doc_type, document_month").eq("client_id", id).neq("status", "uploading").order("created_at", { ascending: false }).limit(200),
+    supabase.from("documents").select("id, file_name, doc_type, document_month").eq("client_id", id).not("status", "in", "(uploading,split)").order("created_at", { ascending: false }).limit(200),
   ]);
   const documents = (docs ?? []).map((d) => ({ id: d.id, label: `${String(d.document_month).slice(0, 7)} · ${d.file_name}` }));
   return (

@@ -3,6 +3,7 @@
  * tier may use data for training). High media resolution for handwritten
  * receipts; the reply is constrained to a JSON schema and then validated.
  */
+import { parseMany, type OcrManyOutput } from "./bundle";
 import { OCR_DOC_TYPES, OCR_READ_FIELDS, normalizeFields, ocrOutputSchema, type OcrOutput } from "./fields";
 import type { OcrInput, OcrProvider } from "./provider";
 
@@ -34,6 +35,39 @@ const responseSchema = {
     confidence: { type: "OBJECT", properties: Object.fromEntries(OCR_READ_FIELDS.map((f) => [f.key, { type: "NUMBER" }])) },
   },
   required: ["fields", "confidence"],
+};
+
+/**
+ * A file that may bundle several documents (a PDF of many invoices): the same field
+ * instructions as PROMPT, for each document found, with where it is.
+ */
+const MANY_PROMPT = `${PROMPT}
+
+This file may hold more than one separate document: several pages, and a page may hold one or more invoices, receipts or 2307s. Return one entry in "documents" for EACH separate document, in the order they appear, with the fields and confidence above for that document alone:
+- page: the page (1 = first page of the file) the document starts on.
+- position: where it is on that page when a page holds more than one ("top", "bottom", "left", "right", "1 of 3"…); null when it fills the page.
+A document that runs over several pages is one entry, on its first page. Do not return the same document twice (a duplicate copy, a carbon copy or a continuation page is not a new document). Pages with no document (a cover page, a blank page) have no entry.
+- page_count: the number of pages in the file.`;
+
+const manyResponseSchema = {
+  type: "OBJECT",
+  properties: {
+    page_count: { type: "INTEGER" },
+    documents: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          page: { type: "INTEGER" },
+          position: nullableString,
+          fields: responseSchema.properties.fields,
+          confidence: responseSchema.properties.confidence,
+        },
+        required: ["page", "fields", "confidence"],
+      },
+    },
+  },
+  required: ["page_count", "documents"],
 };
 
 function base64(bytes: Uint8Array): string {
@@ -147,6 +181,16 @@ export function geminiProvider(opts: GeminiOptions): OcrProvider {
         { highRes: true },
       );
       return { fields: normalizeFields(data.fields), confidence: data.confidence, model };
+    },
+    /** Every document in the file, each with its page; same retries and fallback as extract(). */
+    async extractMany(input: OcrInput): Promise<OcrManyOutput> {
+      const { data, model } = await gemini.generate(
+        [{ text: `${MANY_PROMPT}\n\nThe uploader says these are: ${input.docTypeHint}.` }, inlineFile(input.mimeType, input.bytes)],
+        manyResponseSchema,
+        parseMany,
+        { highRes: true },
+      );
+      return { ...data, model };
     },
   };
 }

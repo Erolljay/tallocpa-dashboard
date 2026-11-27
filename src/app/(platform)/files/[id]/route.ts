@@ -12,15 +12,23 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/files/[id]">
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims) return NextResponse.redirect(new URL(`/login?next=/files/${id}`, request.url));
 
-  const { data: doc } = await supabase.from("documents").select("id, storage_path, file_name").eq("id", id).maybeSingle();
+  const { data: doc } = await supabase.from("documents").select("id, storage_path, file_name, bundle_id").eq("id", id).maybeSingle();
   if (!doc) return new NextResponse("Not found", { status: 404 });
+  // An invoice of a bundled PDF opens its bundle's file (the viewer adds #page=N); the
+  // bundle is the same client's, so the same RLS check applies to it.
+  let path: string | null = doc.storage_path;
+  if (!path && doc.bundle_id) {
+    const { data: bundle } = await supabase.from("documents").select("storage_path").eq("id", doc.bundle_id).maybeSingle();
+    path = bundle?.storage_path ?? null;
+    if (!path) return new NextResponse("Not found", { status: 404 });
+  }
   // A batch row (B1) has no image behind it.
-  if (!doc.storage_path) return new NextResponse("This line came from a batch upload: there is no image.", { status: 404 });
+  if (!path) return new NextResponse("This line came from a batch upload: there is no image.", { status: 404 });
 
   const { error: logError } = await supabase.from("access_log").insert({ actor: claims.claims.sub, document_id: doc.id, action: "view" });
   if (logError) return new NextResponse("Could not record the view", { status: 500 });
 
-  const { data: signed, error } = await supabase.storage.from("documents").createSignedUrl(doc.storage_path, 60);
+  const { data: signed, error } = await supabase.storage.from("documents").createSignedUrl(path, 60);
   if (error || !signed) return new NextResponse("File not available", { status: 404 });
   return NextResponse.redirect(signed.signedUrl);
 }

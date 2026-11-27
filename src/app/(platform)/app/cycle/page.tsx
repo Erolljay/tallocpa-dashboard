@@ -81,12 +81,13 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
       .select("client_id, status, late, carried_from")
       .eq("period", period)
       .not("doc_type", "in", "(filed_return,payment_proof,cor)")
-      .neq("status", "uploading")
+      .not("status", "in", "(uploading,split)")
       .limit(5000),
     supabase
       .from("documents")
       .select("id, doc_type, period, document_month, exception_reason, file_name, client_id, clients(name)")
       .eq("exception_status", "open")
+      .neq("status", "split")
       .order("created_at")
       .limit(200),
     supabase.from("staff_assignments").select("client_id, role").eq("user_id", me.userId),

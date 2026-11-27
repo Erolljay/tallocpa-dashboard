@@ -107,5 +107,5 @@ export async function runOcrAction(documentId: string): Promise<DocActionState> 
   revalidatePath("/app", "layout");
   if ("error" in r) return { error: r.error };
   if ("skipped" in r) return { error: r.skipped };
-  return { ok: "Read." };
+  return { ok: r.invoices && r.invoices > 1 ? `Read: ${r.invoices} invoices found, one line each.` : "Read." };
 }
