@@ -27,6 +27,15 @@ Rules:
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 <!-- boardui:rules:start -->
+# AI employees
+
+The firm's AI employees are described in `docs/AI-WORKFORCE.md`. These rules apply to every change:
+
+- **AI employees are not staff, on purpose.** They live in `ai_employees` and have no `staff_profiles` or `client_users` row, so every staff check refuses them. Never give an AI employee a staff or client-contact row, and never let one prepare, review, approve, post, reverse, lock, release, file, pay or remit: those stay with people.
+- **New tables and views are closed to AI employees by default.** When a feature adds client data that an AI employee needs, add a read-only policy built on `private.ai_client_ids()` (client records) or `private.ai_full_books_client_ids()` (books at Full access), and add the table to the allowlist in `supabase/tests/ai-employees.test.ts`. Never add an insert, update or delete policy for AI employees.
+- **Marketing never sees client data** (`client_data = false`). Do not work around it.
+- **When you add a feature, decide which AI employees need it.** Once the TalloCPA OS MCP server exists (build step 2), add the feature's tools beside its code with their tests; new tools start ungranted.
+
 # BoardUI design rules
 
 This project uses BoardUI (React + Tailwind CSS v4, source-owned components under `components/`). These rules always apply when writing UI code. MCP tools are on demand; these rules are not optional context.

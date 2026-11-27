@@ -29,6 +29,9 @@ export default function SettingsPage() {
         <Card title="Acting approver" actions={<Link href="/app/settings/acting-approver" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
           <p className="text-body-regular text-text-secondary">Name a Reviewer to give the final approval while you are away, with a peso limit and a daily digest.</p>
         </Card>
+        <Card title="AI employees" actions={<Link href="/app/settings/ai-employees" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Switch AI employees on or off, assign their clients, set their books access and limits, create and revoke their keys, and see what they did.</p>
+        </Card>
       </div>
       <Suspense fallback={<Skeleton rows={4} />}>
         <PaymentSettings />

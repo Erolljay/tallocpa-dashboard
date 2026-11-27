@@ -101,20 +101,38 @@ model or provider is a setting, not a rebuild.
 
 ## 5. Identity and credentials
 
-- **AI role.** `staff_profiles.role` gains `'ai'`. An AI employee has a branch,
-  assigned clients (`staff_assignments`, as preparer) and a supervisor, so the
-  existing queues, load and Scores pages show its work. It counts zero load points.
-- **No human sign-in.** Each AI employee has an auth user with no password, Google
-  or email login. It acts only through a credential.
-- **Credentials.** Created in Settings → AI Employees, shown once, stored as a hash,
-  with an expiry date, revocable at any time. Each one is bound to one AI employee.
-- **Acting under the database rules.** When a request arrives with a valid
-  credential, the app makes a short-lived session for that AI employee's user, so
-  every query runs under the same row-level security as staff. The service key is
-  never used for an AI employee's work.
-- **Sign-off is refused for the AI role.** A new `private.is_human_staff()` check
-  goes into every sign-off, approval, release, posting, lock and payment function and
-  policy. A database test asserts that each of them refuses an AI caller.
+Built in step 1 (migration `20270107000001_ai_employees.sql`, tests in
+`supabase/tests/ai-employees.test.ts`).
+
+- **Not staff, by design.** An AI employee is a row in `ai_employees` with its own
+  login, and has **no** `staff_profiles` or `client_users` row. Every existing check
+  (`staff_role()`, `is_staff()`, `is_owner()`, `is_assigned()`, `can_access_client()`
+  and everything built on them) therefore refuses it: it cannot prepare, review,
+  approve, post, reverse, lock, release, file, pay or remit anything. This is
+  deny-by-default: a feature added later refuses AI employees too unless a migration
+  grants access on purpose. (The first draft proposed an `'ai'` staff role with an
+  `is_human_staff()` guard on each sign-off path; that would have needed a guard on
+  every path, present and future.) A login is a person or an AI employee, never both
+  (triggers on `ai_employees`, `staff_profiles` and `client_users`).
+- **What is granted on purpose**, read-only and only while switched on: its own
+  record, assignments and tool grants; its assigned client records (`ai_assignments`,
+  or every client of the brand with "every client"); and those clients' books at
+  Full access (§6). Marketing (`client_data = false`) can be given no client and no
+  books.
+- **The test** checks that an AI employee, switched on with Full access, is refused on
+  every sign-off path, can change or delete no row in any table, and reads no more
+  than a signed-in stranger apart from the grants above.
+- **No human sign-in.** Its login is on a reserved domain no mail can reach
+  (`*.invalid`) and is banned from signing in. It acts only through a key.
+- **Keys.** Created in Settings → AI Employees, shown once, stored as a SHA-256 hash
+  with the last four characters, with an expiry (30 days, 90 days or 1 year),
+  revocable; a revoked key cannot be revived and no key can be edited.
+- **Acting under the database rules** (step 2). When a request arrives with a valid
+  key, the server acts as that AI employee, so the same rules apply. For server code,
+  `private.ai_books_level(ai, client)` gives the same answer as the policies. The
+  service key is never used to read data on an AI employee's behalf.
+- **Supervisor.** Each AI employee names the staff member who checks its work; none
+  means the Owner.
 
 **To confirm (A1):** whether Cowork stores a custom connector's sign-in per project or
 once per account. If per project, each desk signs in as its own AI employee. If per
@@ -296,14 +314,12 @@ Owner and can be built at any time.
 
 ## 10. Data model (first draft)
 
-- `staff_profiles.role` adds `'ai'`; new `ai_employees` (user_id, department, job,
-  supervisor_user_id, runs_on, enabled, daily_limit, monthly_cap_centavos,
-  books_level).
-- `ai_credentials` (id, ai_user_id, hash, created_by, created_at, expires_at,
-  revoked_at, last_used_at).
-- `ai_tool_grants` (ai_user_id, tool, granted_by, granted_at).
-- `ai_activity` (id, ai_user_id, acting_owner_user_id null, tool, client_id null,
-  outcome, cost_centavos null, created_at).
+- Built in step 1: `ai_employees` (user_id, brand, key, name, department, job,
+  supervisor_user_id, runs_on, enabled, books_level, all_clients, client_data,
+  daily_limit, monthly_cap in pesos); `ai_assignments` (ai_user_id, client_id);
+  `ai_credentials` (hash, hint, label, expiry, revoked, last used); `ai_tool_grants`
+  (ai_user_id, tool); `ai_activity` (ai_user_id, acting_user_id, tool, client_id,
+  outcome, detail, cost in pesos), written by the server and read by the Owner.
 - `ai_drafts` where a feature has no draft state of its own (kind, client_id,
   payload, status: open / accepted / rejected, decided_by).
 - FS: `fs_templates`, `fs_note_library`, `fs_drafts`.
@@ -314,8 +330,8 @@ Owner and can be built at any time.
 
 ## 11. Build order
 
-1. **Foundation**: AI role, `is_human_staff()` on every sign-off path with tests,
-   credentials, Settings → AI Employees, activity log, books access levels.
+1. **Foundation** (built): AI employees outside staff, refused by every sign-off path
+   with tests, keys, Settings → AI Employees, activity log, books access levels.
 2. **MCP server**: endpoint, sign-in, tool registry with its tests, shared tools,
    reference library.
 3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks.

@@ -1,0 +1,161 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
+import { requireOwner } from "@/lib/auth";
+import { keyState } from "@/lib/ai/credentials";
+import { DEPARTMENTS, RUNS_ON, spendsOnApi, type BooksLevel, type Department, type RunsOn } from "@/lib/ai/workforce";
+import { supabaseServer } from "@/lib/supabase/server";
+import { ActivityList, type ActivityRow } from "../activity";
+import { AssignForm, CreateKeyForm, EnabledSwitch, RevokeKeyButton, SettingsForm, UnassignButton } from "../forms";
+
+export default function AiEmployeePage(props: PageProps<"/app/settings/ai-employees/[key]">) {
+  return (
+    <>
+      <p className="mb-3 text-body-regular">
+        <Link href="/app/settings" className="text-button-ghost-foreground hover:underline">Settings</Link>
+        <span className="text-text-tertiary"> / </span>
+        <Link href="/app/settings/ai-employees" className="text-button-ghost-foreground hover:underline">AI employees</Link>
+      </p>
+      <Suspense fallback={<Skeleton rows={12} />}>
+        <Employee params={props.params} />
+      </Suspense>
+    </>
+  );
+}
+
+interface Ai {
+  user_id: string;
+  key: string;
+  name: string;
+  department: Department;
+  job: string;
+  runs_on: RunsOn;
+  enabled: boolean;
+  books_level: BooksLevel;
+  all_clients: boolean;
+  client_data: boolean;
+  supervisor_user_id: string | null;
+  daily_limit: number;
+  monthly_cap: string;
+}
+
+interface Key {
+  id: string;
+  label: string;
+  token_hint: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
+}
+
+const day = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
+const keyBadge = { active: { tone: "done", word: "Active" }, expired: { tone: "neutral", word: "Expired" }, revoked: { tone: "blocked", word: "Revoked" } } as const;
+
+async function Employee({ params }: Pick<PageProps<"/app/settings/ai-employees/[key]">, "params">) {
+  const { key } = await params;
+  const owner = await requireOwner();
+  const supabase = await supabaseServer();
+  const { data: ai } = await supabase
+    .from("ai_employees")
+    .select("user_id, key, name, department, job, runs_on, enabled, books_level, all_clients, client_data, supervisor_user_id, daily_limit, monthly_cap")
+    .eq("brand_id", owner.staff.brandId)
+    .eq("key", key)
+    .maybeSingle<Ai>();
+  if (!ai) notFound();
+
+  const [{ data: staff }, { data: assigned }, { data: clients }, { data: keys }, { data: activity }] = await Promise.all([
+    supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name"),
+    supabase.from("ai_assignments").select("client_id, clients(id, name, code)").eq("ai_user_id", ai.user_id),
+    ai.client_data ? supabase.from("clients").select("id, name, code").eq("brand_id", owner.staff.brandId).order("name") : Promise.resolve({ data: [] }),
+    supabase.from("ai_credentials").select("id, label, token_hint, created_at, expires_at, revoked_at, last_used_at").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }),
+    supabase.from("ai_activity").select("id, ai_user_id, tool, outcome, created_at, clients(name)").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }).limit(50),
+  ]);
+  const assignedClients = ((assigned ?? []) as unknown as { client_id: string; clients: { id: string; name: string; code: string } | null }[])
+    .flatMap((a) => (a.clients ? [a.clients] : []))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const assignedIds = new Set(assignedClients.map((c) => c.id));
+  const unassigned = ((clients ?? []) as { id: string; name: string; code: string }[]).filter((c) => !assignedIds.has(c.id));
+  const now = new Date();
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader title={ai.name} description={ai.job} />
+      <div className="flex flex-wrap items-center gap-3">
+        <Badge tone={ai.enabled ? "done" : "neutral"}>{ai.enabled ? "On" : "Off"}</Badge>
+        <span className="text-body-regular text-text-secondary">{DEPARTMENTS[ai.department]} · {RUNS_ON[ai.runs_on]}</span>
+        <EnabledSwitch userId={ai.user_id} aiKey={ai.key} enabled={ai.enabled} name={ai.name} />
+      </div>
+
+      <Card title="Settings">
+        <SettingsForm
+          userId={ai.user_id}
+          aiKey={ai.key}
+          staff={staff ?? []}
+          clientData={ai.client_data}
+          spendsOnApi={spendsOnApi(ai.runs_on)}
+          values={{ supervisor_user_id: ai.supervisor_user_id, books_level: ai.books_level, all_clients: ai.all_clients, daily_limit: ai.daily_limit, monthly_cap: String(ai.monthly_cap) }}
+        />
+      </Card>
+
+      {ai.client_data && (
+        <Card title="Clients">
+          <div className="flex flex-col gap-4">
+            {ai.all_clients && <Notice tone="waiting">Set to every client: the list below is not used while that box is ticked.</Notice>}
+            {assignedClients.length === 0 ? (
+              <p className="text-body-regular text-text-secondary">No clients assigned. It reads no client records until you assign one.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-separator-border">
+                {assignedClients.map((c) => (
+                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+                    <Link href={`/app/clients/${c.id}`} className="min-w-0 text-body-regular text-text-primary hover:underline">
+                      {c.name} <span className="text-text-tertiary">({c.code})</span>
+                    </Link>
+                    <UnassignButton userId={ai.user_id} aiKey={ai.key} clientId={c.id} name={c.name} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <AssignForm userId={ai.user_id} aiKey={ai.key} clients={unassigned} />
+          </div>
+        </Card>
+      )}
+
+      <Card title="Keys">
+        <div className="flex flex-col gap-5">
+          <p className="text-body-regular text-text-secondary">
+            A key lets this AI employee use the TalloCPA OS connector. It is shown once, stored only as a fingerprint, and works until it expires or you revoke it.
+          </p>
+          {(keys ?? []).length > 0 && (
+            <ul className="flex flex-col divide-y divide-separator-border">
+              {((keys ?? []) as Key[]).map((k) => {
+                const state = keyState(k, now);
+                return (
+                  <li key={k.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-body-regular text-text-primary">
+                        {k.label || "Key"} <code dir="ltr" className="font-mono text-caption-1-regular text-text-secondary">…{k.token_hint}</code>
+                        <Badge tone={keyBadge[state].tone}>{keyBadge[state].word}</Badge>
+                      </p>
+                      <p className="text-caption-1-regular text-text-tertiary">
+                        Created {day.format(new Date(k.created_at))} · {state === "revoked" && k.revoked_at ? `revoked ${day.format(new Date(k.revoked_at))}` : `${state === "expired" ? "expired" : "expires"} ${day.format(new Date(k.expires_at))}`} ·{" "}
+                        {k.last_used_at ? `last used ${day.format(new Date(k.last_used_at))}` : "never used"}
+                      </p>
+                    </div>
+                    {state === "active" && <RevokeKeyButton id={k.id} aiKey={ai.key} />}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <CreateKeyForm userId={ai.user_id} aiKey={ai.key} />
+        </div>
+      </Card>
+
+      <Card title="Activity">
+        <ActivityList rows={(activity ?? []) as unknown as ActivityRow[]} />
+      </Card>
+    </div>
+  );
+}
