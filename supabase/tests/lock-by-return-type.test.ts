@@ -2,8 +2,9 @@
  * A filed return locks only the documents it was prepared from
  * (migration 20261231000004_lock_by_return_type.sql). A filed 1601-C (payroll)
  * leaves the month's purchases and sales open: approved, corrected, taken back and
- * booked in their own month. A filed 0619-E locks purchases, not sales. Manual
- * entries in the Books stay locked by any filed return.
+ * booked in their own month. A filed 0619-E locks the purchases with EWT withheld
+ * (migration 20270103000002_ewt_locks_only_withheld.sql), not the others or sales.
+ * Manual entries in the Books stay locked by any filed return.
  *
  * Runs in its own database. `pnpm test:db`.
  */
@@ -48,10 +49,10 @@ describe.skipIf(!url)("a filed return locks only the documents it was prepared f
        values ($1, $2, 'staff', $3, $4, $4, 'x.jpg', 'image/jpeg', 1, gen_random_uuid()::text, 'under_review') returning id`,
       [client, PREPARER, docType, month],
     )).rows[0].id as string;
-  const fields = (date: string, number: string, total = "1120.00") =>
-    JSON.stringify({ date, number, party_name: "Visayas Flour Mills", vatable: "1000.00", vat: "120.00", total, payment_terms: "charge" });
-  const approve = (d: string, date: string, number: string, account: string, total?: string) =>
-    as(PREPARER, `select public.approve_and_post_document($1, $2, true, $3, null, null, false) as r`, [d, fields(date, number, total), acct[account]]);
+  const fields = (date: string, number: string, total = "1120.00", withholding?: string) =>
+    JSON.stringify({ date, number, party_name: "Visayas Flour Mills", vatable: "1000.00", vat: "120.00", total, payment_terms: "charge", ...(withholding ? { withholding, atc: "WC158" } : {}) });
+  const approve = (d: string, date: string, number: string, account: string, total?: string, withholding?: string) =>
+    as(PREPARER, `select public.approve_and_post_document($1, $2, true, $3, null, null, false) as r`, [d, fields(date, number, total, withholding), acct[account]]);
   const invoiceOf = async (d: string) => (await db.query(`select issue_date::text, total::text from public.book_invoices where document_id = $1 and voided_at is null`, [d])).rows[0];
   async function file(form: string, rule: string, label: string, start: string, end: string) {
     const ob = (await db.query(`insert into public.obligations (client_id, form, frequency, start_date) values ($1, $2, 'monthly', '2026-01-01') returning id`, [client, form])).rows[0].id;
@@ -93,7 +94,7 @@ describe.skipIf(!url)("a filed return locks only the documents it was prepared f
   });
 
   it("keeps the database's lists equal to the screens'", async () => {
-    for (const t of ["sales_invoice", "bir_2307_received", "purchase_receipt", "bir_2307_issued", "payroll", "other"]) {
+    for (const t of ["sales_invoice", "bir_2307_received", "purchase_receipt", "purchase_receipt_ewt", "bir_2307_issued", "payroll", "other"]) {
       expect((await db.query(`select private.book_lock_forms($1::text) as f`, [t])).rows[0].f).toEqual([...lockFormsFor(t)]);
     }
   });
@@ -127,10 +128,31 @@ describe.skipIf(!url)("a filed return locks only the documents it was prepared f
     expect((await invoiceOf(d)).issue_date).toBe("2026-10-22");
   });
 
-  it("a filed 0619-E locks October's purchases, not its sales", async () => {
+  it("a filed 0619-E locks October's purchases with EWT withheld, not the others or its sales", async () => {
+    // Approved before the 0619-E was filed: one with EWT, one without.
+    const withEwt = await upload("purchase_receipt", "2026-10-01");
+    await approve(withEwt, "2026-10-05", "OR-5600", "office_supplies", "1120.00", "10.00");
+    const noEwt = await upload("purchase_receipt", "2026-10-01");
+    await approve(noEwt, "2026-10-06", "BILL-10-2026", "office_supplies");
+
     await file("0619-E", "0619E", "2026-10", "2026-10-01", "2026-10-31");
+
+    // The one the 0619-E declared is locked; the other can still be corrected and taken back.
+    await expect(approve(withEwt, "2026-10-05", "OR-5600", "office_supplies", "1130.00", "10.00")).rejects.toThrow(/locked.*0619-E/);
+    await expect(as(REVIEWER, `select status from public.unapprove_document($1, 'Check')`, [withEwt])).rejects.toThrow(/0619-E/);
+    await approve(noEwt, "2026-10-07", "BILL-10-2026", "office_supplies");
+    expect((await invoiceOf(noEwt)).issue_date).toBe("2026-10-07");
+    // Adding EWT to it now would change what the filed 0619-E declared.
+    await expect(approve(noEwt, "2026-10-07", "BILL-10-2026", "office_supplies", "1120.00", "10.00")).rejects.toThrow(/locked.*0619-E/);
+    expect((await as(REVIEWER, `select status from public.unapprove_document($1, 'Wrong supplier')`, [noEwt])).rows[0].status).toBe("under_review");
+
+    // New purchases: with EWT, October is locked; without, it is booked in October.
     const p = await upload("purchase_receipt", "2026-10-01");
-    await expect(approve(p, "2026-10-25", "OR-6001", "office_supplies")).rejects.toThrow(/October 2026 is locked \(0619-E 2026-10 filed\)/);
+    await expect(approve(p, "2026-10-25", "OR-6001", "office_supplies", "1120.00", "10.00")).rejects.toThrow(/October 2026 is locked \(0619-E 2026-10 filed\)/);
+    await approve(p, "2026-10-25", "OR-6001", "office_supplies");
+    expect((await invoiceOf(p)).issue_date).toBe("2026-10-25");
+
+    // Sales are not locked by it.
     const s = await upload("sales_invoice", "2026-10-01");
     await approve(s, "2026-10-25", "SI-1002", "sales");
     expect((await invoiceOf(s)).issue_date).toBe("2026-10-25");

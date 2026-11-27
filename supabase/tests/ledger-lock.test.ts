@@ -48,14 +48,14 @@ describe.skipIf(!url)("ledger: period lock and amendments", () => {
     as(user, `select public.post_journal_entry($1, $2, 'Meals', null, $3) as id`, [client, date, cashLines("100")]).then((r) => r.rows[0].id as string);
   const setStatus = (form: string, status: string) => db.query(`update public.filing_instances set status = $2 where id = $1`, [filing[form], status]);
 
-  async function doc(date: string): Promise<string> {
+  async function doc(date: string, extra: Record<string, string> = {}): Promise<string> {
     const d = (await db.query(
       `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, file_name, mime_type, size_bytes, storage_path, status)
        values ($1, $2, 'staff', 'purchase_receipt', '2027-01-01', '2027-01-01', 'x.jpg', 'image/jpeg', 1, gen_random_uuid()::text, 'posted') returning id`,
       [client, STAFF],
     )).rows[0].id;
     await db.query(`insert into public.extractions (document_id, status, fields, approved_fields, approved_by, approved_at) values ($1, 'done', '{}', $2, $3, now())`, [
-      d, JSON.stringify({ date, number: `OR-${date}`, party_name: "Grocer", total: "224.00" }), STAFF,
+      d, JSON.stringify({ date, number: `OR-${date}`, party_name: "Grocer", total: "224.00", ...extra }), STAFF,
     ]);
     return d;
   }
@@ -152,7 +152,8 @@ describe.skipIf(!url)("ledger: period lock and amendments", () => {
 
   it("books a late document on the first open month of the taxable year, and shows each month's lock", async () => {
     await setStatus("0619-E", "filed");
-    lateDoc = await doc("2027-02-20");
+    // With EWT withheld, so the 0619-E declared it (one without EWT is not locked by it).
+    lateDoc = await doc("2027-02-20", { withholding: "2.00", atc: "WC158" });
     const e = (await as(STAFF, `select public.book_document($1) as id`, [lateDoc])).rows[0].id;
     const row = (await db.query(`select entry_date::text, memo from public.journal_entries where id = $1`, [e])).rows[0];
     // March is locked by the 2550Q and April by the 0619-E: May is the first open month.

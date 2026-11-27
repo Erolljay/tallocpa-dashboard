@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lockFormsFor, lockingFiling, type LockFiling } from "./lock";
+import { lockFormsFor, lockKind, lockingFiling, type LockFiling } from "./lock";
 
 const f = (over: Partial<LockFiling>): LockFiling => ({ id: "f1", client_id: "c1", form: "2550Q", period_label: "Q3 2026", period_start: "2026-07-01", period_end: "2026-09-30", status: "filed", ...over });
 const P = "purchase_receipt";
@@ -27,13 +27,24 @@ describe("lockingFiling", () => {
     expect(lockingFiling("c1", "2026-10-01", [c], "purchase_receipt")).toBeNull();
     expect(lockingFiling("c1", "2026-10-01", [c], "sales_invoice")).toBeNull();
     expect(lockingFiling("c1", "2026-10-01", [c], "payroll")?.id).toBe("c");
-    // Expanded withholding locks purchases, not sales; percentage tax locks sales, not purchases.
-    expect(lockingFiling("c1", "2026-10-01", [e], "purchase_receipt")?.id).toBe("e");
+    // Expanded withholding locks the purchases with EWT withheld (and 2307s issued), not the others or sales;
+    // percentage tax locks sales, not purchases.
+    expect(lockingFiling("c1", "2026-10-01", [e], "purchase_receipt_ewt")?.id).toBe("e");
+    expect(lockingFiling("c1", "2026-10-01", [e], "bir_2307_issued")?.id).toBe("e");
+    expect(lockingFiling("c1", "2026-10-01", [e], "purchase_receipt")).toBeNull();
     expect(lockingFiling("c1", "2026-10-01", [e], "sales_invoice")).toBeNull();
     expect(lockingFiling("c1", "2026-10-01", [pt], "sales_invoice")?.id).toBe("pt");
     expect(lockingFiling("c1", "2026-10-01", [pt], "purchase_receipt")).toBeNull();
     // VAT locks both.
     expect(lockingFiling("c1", "2026-08-01", [f({})], "sales_invoice")?.id).toBe("f1");
+  });
+  it("a purchase with EWT withheld is its own lock kind", () => {
+    expect(lockKind("purchase_receipt", { withholding: "800.00" })).toBe("purchase_receipt_ewt");
+    expect(lockKind("purchase_receipt", { withholding: "0.00" })).toBe("purchase_receipt");
+    expect(lockKind("purchase_receipt", { withholding: "" })).toBe("purchase_receipt");
+    expect(lockKind("purchase_receipt", null)).toBe("purchase_receipt");
+    // Sales keep their type, with or without CWT.
+    expect(lockKind("sales_invoice", { withholding: "200.00" })).toBe("sales_invoice");
   });
   it("any other kind of document is locked by every return that locks the Books", () => {
     expect(lockFormsFor("other")).toContain("1601-C");
