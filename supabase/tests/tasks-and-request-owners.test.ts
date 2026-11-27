@@ -206,7 +206,7 @@ describe.skipIf(!url)("tasks and request owners", () => {
     await db.query(`update public.registration_cases set status = 'completed', closed_at = now() where id = $1`, [k]);
     expect(await unbilled()).toHaveLength(4);
     // No price in the schedule: a task for the Owner to price and bill.
-    const k2 = (await db.query(`insert into public.registration_cases (client_id, kind, lgu_served, employer, period_year) values ($1, 'renewal', true, false, 2027) returning id`, [client])).rows[0].id;
+    const k2 = (await db.query(`insert into public.registration_cases (client_id, kind, lgu_served, employer, period_year, lgu) values ($1, 'renewal', true, false, 2027, 'Iloilo City') returning id`, [client])).rows[0].id;
     await db.query(`update public.registration_cases set status = 'completed', closed_at = now() where id = $1`, [k2]);
     const task = (await db.query(`select title, assigned_to, job_price from public.staff_tasks where title like 'Price and bill%'`)).rows;
     expect(task).toEqual([{ title: "Price and bill: I.business_permit (permit renewal 2027)", assigned_to: OWNER, job_price: null }]);

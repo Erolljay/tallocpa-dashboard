@@ -12,6 +12,7 @@ import path from "node:path";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  branchStepsFor,
   certificateStepsFor,
   employerStepsFor,
   feeJobsFor,
@@ -102,8 +103,9 @@ describe.skipIf(!url)("registration fee jobs and proof files", () => {
     await db.query(
       `insert into public.fee_items (schedule_id, code, component, label, band_label, billing, price) values
          ($1, 'I.orus', 'I', 'ORUS and BIR registration updates', null, 'one_time', 1500),
-         ($1, 'I.business_permit', 'I', 'Business permit renewal (Iloilo City)', null, 'one_time', 3000),
+         ($1, 'I.business_permit', 'I', 'Business permit (Iloilo City)', null, 'one_time', 3000),
          ($1, 'I.sec', 'I', 'SEC filings', 'GIS, AFS submission', 'one_time', 5000),
+         ($1, 'I.sec_amendment', 'I', 'SEC amendment', null, 'one_time', 15000),
          ($1, 'I.certificate', 'I', 'BIR certificate or clearance', 'e.g. tax clearance', 'one_time', null),
          ($1, 'I.sss_registration', 'I', 'SSS registration', 'Employer', 'one_time', 1000),
          ($1, 'I.philhealth_registration', 'I', 'PhilHealth registration', 'Employer', 'one_time', 1100),
@@ -149,7 +151,7 @@ describe.skipIf(!url)("registration fee jobs and proof files", () => {
 
   /* --------------------------------------------------------------- Billing */
 
-  it("bills SEC filings and an SEC-only amendment as SEC filings; a name change as ORUS and SEC", async () => {
+  it("bills SEC filings as SEC filings, an SEC-only amendment as the SEC amendment, a name change as ORUS and the SEC amendment", async () => {
     const client = await activeClient("Amend Corp");
     const filing = await openCase(client, "sec_filing", { period_year: 2027 }, secFilingStepsFor("corporation", { gis: true, afs: false }));
     await finishAndComplete(filing.id);
@@ -158,28 +160,63 @@ describe.skipIf(!url)("registration fee jobs and proof files", () => {
     const directors = await openCase(client, "bir_update", { effective_date: "2027-03-01", changes: ["directors"] }, updateStepsFor("corporation", ["directors"], { lguServed: true, employer: false }));
     expect((await db.query(`select count(*)::int as n from public.registration_steps where case_id = $1 and code = 'bir_1905'`, [directors.id])).rows[0].n).toBe(0);
     await finishAndComplete(directors.id);
-    expect((await dues(client)).length).toBe(2);
+    expect(await dues(client)).toEqual([
+      { description: "SEC amendment", amount: "15000.00" },
+      { description: "SEC filings (GIS, AFS submission)", amount: "5000.00" },
+    ]);
 
     const other = await activeClient("Rename Corp");
     const rename = await openCase(other, "bir_update", { effective_date: "2027-03-01", changes: ["name"] }, updateStepsFor("corporation", ["name"], { lguServed: true, employer: false }));
     await finishAndComplete(rename.id);
     expect(await dues(other)).toEqual([
       { description: "ORUS and BIR registration updates", amount: "1500.00" },
-      { description: "SEC filings (GIS, AFS submission)", amount: "5000.00" },
+      { description: "SEC amendment", amount: "15000.00" },
     ]);
   });
 
   it("bills the permit renewal only where the firm handles the permits", async () => {
     const served = await activeClient("Served Corp");
-    const a = await openCase(served, "renewal", { period_year: 2027, lgu_served: true }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false }));
+    const a = await openCase(served, "renewal", { period_year: 2027, lgu_served: true, lgu: "Iloilo City" }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false }));
     await finishAndComplete(a.id);
-    expect(await dues(served)).toEqual([{ description: "Business permit renewal (Iloilo City)", amount: "3000.00" }]);
+    expect(await dues(served)).toEqual([{ description: "Business permit (Iloilo City)", amount: "3000.00" }]);
 
     const own = await activeClient("Own Permits Corp");
     const b = await openCase(own, "renewal", { period_year: 2027, lgu_served: false }, renewalStepsFor("corporation", { lguServed: false, dtiDue: false }));
     await finishAndComplete(b.id);
     expect(await dues(own)).toEqual([]);
     expect(await tasks(own)).toEqual([]);
+  });
+
+  it("handles permits only for Iloilo City clients, and bills a new business's first permit there", async () => {
+    // Another city is refused while the firm handles the permits; unticked it is fine.
+    const oton = await activeClient("Oton Corp");
+    await expect(openCase(oton, "renewal", { period_year: 2027, lgu_served: true, lgu: "Oton" }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false })))
+      .rejects.toThrow(/only for Iloilo City clients/);
+    const own = await openCase(oton, "renewal", { period_year: 2027, lgu_served: false, lgu: "Oton" }, renewalStepsFor("corporation", { lguServed: false, dtiDue: false }));
+    expect(own.lgu_served).toBe(false);
+
+    // A renewal without a city takes the client's city from its latest case.
+    const jaro = await activeClient("Jaro Corp");
+    const first = await openCase(jaro, "branch", { branch_name: "Jaro branch", lgu: "Jaro, Iloilo City", lgu_served: true }, branchStepsFor("corporation", { lguServed: true }));
+    await finishAndComplete(first.id);
+    const renewal = await openCase(jaro, "renewal", { period_year: 2028, lgu_served: true }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false }));
+    expect((await db.query(`select lgu from public.registration_cases where id = $1`, [renewal.id])).rows[0].lgu).toBe("Jaro, Iloilo City");
+    await finishAndComplete(renewal.id);
+    expect(await dues(jaro)).toEqual([
+      { description: "Business permit (Iloilo City)", amount: "3000.00" },
+      { description: "ORUS and BIR registration updates", amount: "1500.00" },
+    ]);
+
+    // A new business in Iloilo City whose permit we handle bills the permit with the registration.
+    const fresh = await activeClient("Fresh Corp");
+    const jobs = async (lgu: string | null, served: boolean) => {
+      const id = (await db.query(`insert into public.registration_cases (client_id, kind, lgu_served, employer, lgu) values ($1, 'new_business', $2, false, $3) returning id`, [fresh, served, lgu])).rows[0].id;
+      const codes = (await db.query(`select private.registration_fee_jobs(c) as codes from public.registration_cases c where id = $1`, [id])).rows[0].codes;
+      await db.query(`delete from public.registration_cases where id = $1`, [id]);
+      return codes;
+    };
+    expect(await jobs("Iloilo City", true)).toEqual(["I.registration_non_individual", "I.business_permit"]);
+    expect(await jobs("Iloilo City", false)).toEqual(["I.registration_non_individual"]);
   });
 
   it("bills employer registration per agency registered", async () => {
@@ -203,16 +240,17 @@ describe.skipIf(!url)("registration fee jobs and proof files", () => {
 
   it("bills what feeJobsFor says for each kind", async () => {
     const cases: [CaseKind, "individual" | "corporation", object, PlannedStep[]][] = [
-      ["renewal", "corporation", { period_year: 2029, lgu_served: true }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false }).map((s) => (s.code === "mayors_permit" ? { ...s, status: "not_applicable" as const } : s))],
+      ["renewal", "corporation", { period_year: 2029, lgu_served: true, lgu: "Iloilo City" }, renewalStepsFor("corporation", { lguServed: true, dtiDue: false }).map((s) => (s.code === "mayors_permit" ? { ...s, status: "not_applicable" as const } : s))],
       ["bir_update", "corporation", { effective_date: "2027-03-01", changes: ["capital_increase", "fiscal_year"] }, updateStepsFor("corporation", ["capital_increase", "fiscal_year"], { lguServed: true, employer: false })],
       ["employer", "individual", {}, employerStepsFor({ sss: true, philhealth: true, pagibig: true })],
     ];
     for (const [kind, type, data, steps] of cases) {
       const client = await activeClient(`Mirror ${kind}`, type);
       const k = await openCase(client, kind, data, steps);
-      const row = (await db.query(`select private.registration_fee_jobs(c) as codes, c.lgu_served, c.employer, c.details from public.registration_cases c where id = $1`, [k.id])).rows[0];
+      const row = (await db.query(`select private.registration_fee_jobs(c) as codes, c.lgu_served, c.lgu, c.employer, c.details from public.registration_cases c where id = $1`, [k.id])).rows[0];
       const expected = feeJobsFor(kind, type, {
         lguServed: row.lgu_served,
+        lgu: row.lgu,
         employer: row.employer,
         changes: row.details.changes,
         notNeeded: steps.filter((s) => s.status === "not_applicable").map((s) => s.code),

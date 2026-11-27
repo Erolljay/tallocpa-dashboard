@@ -58,6 +58,14 @@ export interface RegistrationOptions {
 /** Individuals register a business name with DTI; everyone else registers with SEC. */
 export const registersWithSec = (t: TaxpayerType) => t !== "individual";
 
+/**
+ * The firm handles business permits only for Iloilo City clients (Owner, 27 Nov 2026).
+ * Same test as private.is_iloilo_city: the city names Iloilo City.
+ */
+export const isIloiloCity = (lgu: string | null | undefined) =>
+  /(^| )(iloilo city|city of iloilo)( |$)/.test((lgu ?? "").toLowerCase().replace(/[^a-z]+/g, " "));
+export const PERMIT_CITY = "Iloilo City";
+
 /** BIR registration form: 1901 for individuals (sole proprietors, professionals), 1903 for juridical persons. */
 export const birForm = (t: TaxpayerType) => (t === "individual" ? "1901" : "1903");
 
@@ -466,9 +474,10 @@ export function employerStepsFor(options: EmployerOptions): PlannedStep[] {
 export const FEE_JOBS = {
   "I.registration_individual": "New business registration (individual)",
   "I.registration_non_individual": "New business registration (non-individual)",
-  "I.business_permit": "Business permit renewal",
+  "I.business_permit": "Business permit (Iloilo City)",
   "I.orus": "ORUS and BIR registration updates",
   "I.sec": "SEC filings",
+  "I.sec_amendment": "SEC amendment",
   "I.closure": "Closure of business",
   "I.certificate": "BIR certificate or clearance",
   "I.sss_registration": "SSS registration",
@@ -479,6 +488,8 @@ export type FeeJob = keyof typeof FEE_JOBS;
 
 export interface BillingFacts {
   lguServed: boolean;
+  /** The case's city or municipality: the business permit is billed only in Iloilo City. */
+  lgu?: string | null;
   employer: boolean;
   /** A BIR update's changes. */
   changes?: readonly string[];
@@ -489,25 +500,27 @@ export interface BillingFacts {
 /**
  * The fee schedule jobs a completed case bills (the database does the same in
  * private.bill_registration_case). A job whose step was marked not needed is
- * left out: the renewal bills the business permit only where the firm handles
- * the permits, a BIR update bills ORUS for Form 1905 and SEC filings for an
- * amendment, and employer registration is billed per agency done.
+ * left out. The business permit (new business or renewal) is billed only where
+ * the firm handles the permits, which it does for Iloilo City clients only; a BIR
+ * update bills ORUS for Form 1905 and the SEC amendment for an SEC amendment; and
+ * employer registration is billed per agency done.
  */
 export function feeJobsFor(kind: CaseKind, t: TaxpayerType, f: BillingFacts): FeeJob[] {
   const skip = new Set(f.notNeeded ?? []);
   const changes = new Set(f.changes ?? []);
+  const permit: FeeJob[] = f.lguServed && isIloiloCity(f.lgu) && !skip.has("mayors_permit") ? ["I.business_permit"] : [];
   const employer = (["sss", "philhealth", "pagibig"] as const)
     .filter((a) => !skip.has(`${a}_employer`))
     .map((a): FeeJob => `I.${a}_registration`);
   switch (kind) {
     case "new_business":
-      return [registersWithSec(t) ? "I.registration_non_individual" : "I.registration_individual", ...(f.employer ? employer : [])];
+      return [registersWithSec(t) ? "I.registration_non_individual" : "I.registration_individual", ...permit, ...(f.employer ? employer : [])];
     case "renewal":
-      return f.lguServed && !skip.has("mayors_permit") ? ["I.business_permit"] : [];
+      return permit;
     case "bir_update": {
       const jobs: FeeJob[] = [];
       if (BIR_CHANGES.some((c) => changes.has(c)) && !skip.has("bir_1905")) jobs.push("I.orus");
-      if (registersWithSec(t) && SEC_AMENDMENTS.some((c) => changes.has(c)) && !skip.has("sec_amendment")) jobs.push("I.sec");
+      if (registersWithSec(t) && SEC_AMENDMENTS.some((c) => changes.has(c)) && !skip.has("sec_amendment")) jobs.push("I.sec_amendment");
       return jobs;
     }
     case "branch":

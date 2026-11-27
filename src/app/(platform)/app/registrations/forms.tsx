@@ -20,6 +20,7 @@ import {
   updateChangesFor,
   updateStepsFor,
   type Certificate,
+  isIloiloCity,
   type PlannedStep,
   type StepStatus,
   type UpdateChange,
@@ -34,6 +35,7 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
   const [state, action, pending] = useActionState(openRegistrationAction, {} as FormState);
   const [type, setType] = useState<TaxpayerType>("individual");
   const [lguServed, setLguServed] = useState(true);
+  const [city, setCity] = useState("Iloilo City");
   const [employer, setEmployer] = useState(false);
   const openBranches = branches.filter((b) => b.active);
   const [branch, setBranch] = useState(openBranches.length === 1 ? openBranches[0].id : "");
@@ -67,8 +69,8 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
                 <Input id="registered_address" name="registered_address" />
               </Field>
             </div>
-            <Field label="City / municipality" htmlFor="lgu" error={e.lgu} hint="Where the mayor's permit is applied for.">
-              <Input id="lgu" name="lgu" placeholder="Iloilo City" />
+            <Field label="City / municipality" htmlFor="lgu" error={e.lgu} hint="Where the mayor's permit is applied for. We handle permits only in Iloilo City.">
+              <Input id="lgu" name="lgu" placeholder="Iloilo City" value={city} onChange={(ev) => { setCity(ev.target.value); setLguServed(isIloiloCity(ev.target.value)); }} />
             </Field>
             <Field label="Branch" htmlFor="branch_id" error={e.branch_id}>
               <Select id="branch_id" name="branch_id" value={branch} onChange={(ev) => setBranch(ev.target.value)} required>
@@ -83,7 +85,7 @@ export function NewRegistrationForm({ staff, branches }: { staff: { user_id: str
           <div className="grid gap-3">
             <label className="flex items-start gap-3 text-body-regular text-text-primary">
               <input type="checkbox" name="lgu_served" checked={lguServed} onChange={(ev) => setLguServed(ev.target.checked)} className="mt-1 size-4 shrink-0" />
-              <span>Barangay clearance and mayor&rsquo;s permit (City Hall)<span className="block text-caption-1-regular text-text-tertiary">Leave unticked when the client gets these themselves.</span></span>
+              <span>Barangay clearance and mayor&rsquo;s permit (Iloilo City Hall)<span className="block text-caption-1-regular text-text-tertiary">Iloilo City clients only, billed as the business permit. Leave unticked when the client gets these themselves.</span></span>
             </label>
             <label className="flex items-start gap-3 text-body-regular text-text-primary">
               <input type="checkbox" name="employer" checked={employer} onChange={(ev) => setEmployer(ev.target.checked)} className="mt-1 size-4 shrink-0" />
@@ -279,9 +281,11 @@ const submitLabel: Record<ClientCaseKind, string> = {
 };
 
 /** Renewal, BIR update or SEC amendment, branch, SEC filings, certificate, employer registration or closure for an existing client. */
-export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: { clientId: string; taxpayerType: TaxpayerType; kind: ClientCaseKind; year: number; dtiDue: boolean }) {
+export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue, city: knownCity }: { clientId: string; taxpayerType: TaxpayerType; kind: ClientCaseKind; year: number; dtiDue: boolean; city: string | null }) {
   const [state, action, pending] = useActionState(openClientCaseAction.bind(null, clientId, kind), {} as FormState);
-  const [lguServed, setLguServed] = useState(true);
+  const [city, setCity] = useState(knownCity ?? "");
+  // We handle permits only for Iloilo City clients (Owner, 27 Nov 2026).
+  const [lguServed, setLguServed] = useState(knownCity === null || isIloiloCity(knownCity));
   const [employer, setEmployer] = useState(false);
   const [dti, setDti] = useState(dtiDue);
   const [changes, setChanges] = useState<UpdateChange[]>([]);
@@ -314,6 +318,7 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
                 <Field label="Renew by" htmlFor="target_date" error={e.target_date} hint="Most LGUs renew the mayor's permit by 20 January.">
                   <Input id="target_date" name="target_date" type="date" defaultValue={`${year}-01-20`} />
                 </Field>
+                <CityField value={city} error={e.lgu} onChange={(v) => { setCity(v); setLguServed(isIloiloCity(v)); }} />
               </>
             )}
             {kind === "bir_update" && (
@@ -381,9 +386,12 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
               </div>
             )}
             {kind === "closure" && (
-              <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
-                <Input id="effective_date" name="effective_date" type="date" required />
-              </Field>
+              <>
+                <Field label="Stopped operating on" htmlFor="effective_date" error={e.effective_date} hint="Filing obligations end on this day once the closure is completed.">
+                  <Input id="effective_date" name="effective_date" type="date" required />
+                </Field>
+                <CityField value={city} error={e.lgu} onChange={(v) => { setCity(v); setLguServed(isIloiloCity(v)); }} />
+              </>
             )}
             {kind !== "renewal" && (
               <Field label="Target date" htmlFor="target_date" error={e.target_date}>
@@ -397,7 +405,7 @@ export function ClientCaseForm({ clientId, taxpayerType, kind, year, dtiDue }: {
                   checked={lguServed}
                   onChange={setLguServed}
                   label={kind === "renewal" ? "Barangay, fire, sanitary and mayor's permits" : kind === "closure" ? "Barangay and City Hall closure" : "Barangay and City Hall"}
-                  hint="Leave unticked when the client handles these themselves."
+                  hint="Iloilo City clients only. Leave unticked when the client handles these themselves."
                 />
                 {kind === "renewal" && taxpayerType === "individual" && (
                   <Check name="dti_due" checked={dti} onChange={setDti} label="DTI business name is due for renewal" hint="Every 5 years from registration." />
@@ -436,5 +444,14 @@ export function YearRenewalsForm({ year }: { year: number }) {
       {state.message && <span className="text-caption-1-regular text-text-secondary">{state.message}</span>}
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
+  );
+}
+
+/** The city or municipality of the permits: we handle them only in Iloilo City. */
+function CityField({ value, error, onChange }: { value: string; error?: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="City / municipality" htmlFor="lgu" error={error} hint="We handle permits only for Iloilo City clients.">
+      <Input id="lgu" name="lgu" value={value} onChange={(ev) => onChange(ev.target.value)} placeholder="Iloilo City" />
+    </Field>
   );
 }

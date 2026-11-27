@@ -11,6 +11,7 @@ import {
   closureStepsFor,
   dtiRenewalDue,
   employerStepsFor,
+  isIloiloCity,
   registersWithSec,
   renewalStepsFor,
   SEC_ONLY_CHANGES,
@@ -125,7 +126,7 @@ export async function openClientCaseAction(clientId: string, kind: ClientCaseKin
     const parsed = renewalSchema.safeParse(formToObject(form));
     if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
     const v = parsed.data;
-    caseData = { period_year: v.period_year, lgu_served: v.lgu_served, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    caseData = { period_year: v.period_year, lgu_served: v.lgu_served, lgu: v.lgu ?? "", target_date: v.target_date ?? "", notes: v.notes ?? "" };
     steps = renewalStepsFor(type, { lguServed: v.lgu_served, dtiDue: v.dti_due });
   } else if (kind === "bir_update") {
     const parsed = updateSchema.safeParse(formToObject(form));
@@ -165,7 +166,7 @@ export async function openClientCaseAction(clientId: string, kind: ClientCaseKin
     const parsed = closureSchema.safeParse(formToObject(form));
     if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
     const v = parsed.data;
-    caseData = { effective_date: v.effective_date, lgu_served: v.lgu_served, employer: v.employer, target_date: v.target_date ?? "", notes: v.notes ?? "" };
+    caseData = { effective_date: v.effective_date, lgu_served: v.lgu_served, employer: v.employer, lgu: v.lgu ?? "", target_date: v.target_date ?? "", notes: v.notes ?? "" };
     steps = closureStepsFor(type, { lguServed: v.lgu_served, employer: v.employer });
   }
   const { data, error } = await supabase.rpc("open_client_case", { p_client: clientId, p_kind: kind, p_case: caseData, p_steps: stepsPayload(steps) });
@@ -238,8 +239,9 @@ async function dtiRegisteredOn(supabase: Awaited<ReturnType<typeof supabaseServe
 
 /**
  * The Owner opens the year's renewals for every active client that has none
- * yet. The firm is taken to handle the permits; staff mark what the client
- * handles as not needed. The DTI renewal is due every 5 years from the DTI
+ * yet. The firm handles the permits only for Iloilo City clients (the city of the
+ * client's latest case); for the others the client handles them. Staff mark what
+ * the client handles as not needed. The DTI renewal is due every 5 years from the DTI
  * registration we did.
  */
 export async function openYearRenewalsAction(_: FormState, form: FormData): Promise<FormState> {
@@ -247,23 +249,28 @@ export async function openYearRenewalsAction(_: FormState, form: FormData): Prom
   const year = Number(form.get("year"));
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "Choose the year." };
   const supabase = await supabaseServer();
-  const [{ data: clients, error }, { data: existing }, dti] = await Promise.all([
+  const [{ data: clients, error }, { data: existing }, dti, { data: cities }] = await Promise.all([
     supabase.from("clients").select("id, taxpayer_type").eq("status", "active"),
     supabase.from("registration_cases").select("client_id").eq("kind", "renewal").eq("period_year", year).neq("status", "cancelled"),
     dtiRegisteredOn(supabase),
+    supabase.from("registration_cases").select("client_id, lgu").not("lgu", "is", null).order("opened_at", { ascending: false }),
   ]);
   if (error) return { error: error.message };
   const has = new Set((existing ?? []).map((r) => r.client_id));
+  const cityOf = new Map<string, string>();
+  for (const r of cities ?? []) if (!cityOf.has(r.client_id)) cityOf.set(r.client_id, r.lgu as string);
   const todo = (clients ?? []).filter((c) => !has.has(c.id));
   let opened = 0;
   const failed: string[] = [];
   for (const c of todo) {
     const type = c.taxpayer_type as TaxpayerType;
-    const steps = renewalStepsFor(type, { lguServed: true, dtiDue: dtiRenewalDue(dti.get(c.id) ?? null, year) });
+    const lgu = cityOf.get(c.id) ?? null;
+    const served = isIloiloCity(lgu);
+    const steps = renewalStepsFor(type, { lguServed: served, dtiDue: dtiRenewalDue(dti.get(c.id) ?? null, year) });
     const { error: e } = await supabase.rpc("open_client_case", {
       p_client: c.id,
       p_kind: "renewal",
-      p_case: { period_year: year, lgu_served: true, target_date: `${year}-01-20` },
+      p_case: { period_year: year, lgu_served: served, lgu: lgu ?? "", target_date: `${year}-01-20` },
       p_steps: stepsPayload(steps),
     });
     if (e) failed.push(e.message);

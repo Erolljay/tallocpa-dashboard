@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birForm, branchStepsFor, certificateStepsFor, closureStepsFor, employerStepsFor, feeJobsFor, secFilingStepsFor, updateChangesFor, updateStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
+import { isIloiloCity, birForm, branchStepsFor, certificateStepsFor, closureStepsFor, employerStepsFor, feeJobsFor, secFilingStepsFor, updateChangesFor, updateStepsFor, daysBetween, dtiRenewalDue, renewalStepsFor, daysOpen, nextStep, progress, routingSlip, stepsFor, stepsPayload, waitingOn } from "./steps";
 import { FEE_TEMPLATE } from "../fees/template";
 
 const codes = (...args: Parameters<typeof stepsFor>) => stepsFor(...args).map((s) => s.code);
@@ -242,24 +242,35 @@ describe("SEC filings, certificates and employer registration", () => {
   });
 });
 
-describe("feeJobsFor", () => {
-  const facts = { lguServed: true, employer: false };
+describe("isIloiloCity", () => {
+  it("knows Iloilo City however it is written, and nothing else", () => {
+    for (const c of ["Iloilo City", "iloilo city", "City of Iloilo", "Jaro, Iloilo City", "La Paz, ILOILO CITY"]) expect(isIloiloCity(c)).toBe(true);
+    for (const c of ["Iloilo", "Pavia, Iloilo", "Oton", "Iloilo Province", "", null, undefined]) expect(isIloiloCity(c)).toBe(false);
+  });
+});
 
-  it("bills new businesses by taxpayer type, plus each employer registration not skipped", () => {
-    expect(feeJobsFor("new_business", "individual", facts)).toEqual(["I.registration_individual"]);
-    expect(feeJobsFor("new_business", "corporation", { lguServed: true, employer: true, notNeeded: ["philhealth_employer"] })).toEqual([
+describe("feeJobsFor", () => {
+  const facts = { lguServed: true, lgu: "Iloilo City", employer: false };
+
+  it("bills new businesses by taxpayer type, the Iloilo City permit, plus each employer registration not skipped", () => {
+    expect(feeJobsFor("new_business", "individual", facts)).toEqual(["I.registration_individual", "I.business_permit"]);
+    expect(feeJobsFor("new_business", "individual", { ...facts, lguServed: false })).toEqual(["I.registration_individual"]);
+    expect(feeJobsFor("new_business", "corporation", { lguServed: true, lgu: "Pavia, Iloilo", employer: true, notNeeded: ["philhealth_employer"] })).toEqual([
       "I.registration_non_individual", "I.sss_registration", "I.pagibig_registration",
     ]);
   });
-  it("bills the permit renewal only where the firm handles the permits", () => {
+  it("bills the permit renewal only where the firm handles the permits, in Iloilo City", () => {
     expect(feeJobsFor("renewal", "corporation", facts)).toEqual(["I.business_permit"]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: "Jaro, City of Iloilo" })).toEqual(["I.business_permit"]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: "Oton" })).toEqual([]);
+    expect(feeJobsFor("renewal", "corporation", { ...facts, lgu: null })).toEqual([]);
     expect(feeJobsFor("renewal", "corporation", { lguServed: false, employer: false })).toEqual([]);
     expect(feeJobsFor("renewal", "corporation", { ...facts, notNeeded: ["mayors_permit"] })).toEqual([]);
   });
-  it("bills a BIR update as ORUS and an SEC amendment as SEC filings", () => {
+  it("bills a BIR update as ORUS and an SEC amendment as the SEC amendment job", () => {
     expect(feeJobsFor("bir_update", "individual", { ...facts, changes: ["address"] })).toEqual(["I.orus"]);
-    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["directors"] })).toEqual(["I.sec"]);
-    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["name"] })).toEqual(["I.orus", "I.sec"]);
+    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["directors"] })).toEqual(["I.sec_amendment"]);
+    expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["name"] })).toEqual(["I.orus", "I.sec_amendment"]);
     expect(feeJobsFor("bir_update", "corporation", { ...facts, changes: ["tax_types"] })).toEqual(["I.orus"]);
   });
   it("bills the other kinds as their one job", () => {
@@ -272,7 +283,7 @@ describe("feeJobsFor", () => {
   it("covers every ad hoc job on the fee schedule except the amended return, and only those", () => {
     const kinds = ["new_business", "renewal", "bir_update", "branch", "sec_filing", "certificate", "employer", "closure"] as const;
     const billed = new Set(kinds.flatMap((k) => ["individual", "corporation"].flatMap((t) =>
-      feeJobsFor(k, t as "individual" | "corporation", { lguServed: true, employer: true, changes: ["name", "directors"] }))));
+      feeJobsFor(k, t as "individual" | "corporation", { lguServed: true, lgu: "Iloilo City", employer: true, changes: ["name", "directors"] }))));
     const adHoc = FEE_TEMPLATE.filter((i) => i.component === "I" && i.code !== "I.amended_return" && i.code !== "I.backlog_month").map((i) => i.code);
     expect([...billed].sort()).toEqual([...adHoc].sort());
   });

@@ -170,7 +170,8 @@ describe.skipIf(!url)("fee schedule: monthly quotes (migration of 26 Nov 2026)",
       ]);
       expect(prices).toMatchObject({ "H.audit_proprietor_0-3m": 8000, "H.audit_partnership_10m-20m": 24000, "H.audit_corporation_50m-100m": 56000 });
       expect(prices).toMatchObject({ "H.itr_afs_individual": 5000, "H.itr_afs_partnership": 7500, "H.itr_afs_corporation": 10000 });
-      expect(rows.find((r) => r.code === "I.business_permit")).toMatchObject({ label: "Business permit renewal (Iloilo City)", band_label: "Only in Iloilo City for now" });
+      expect(rows.find((r) => r.code === "I.business_permit")).toMatchObject({ label: "Business permit (Iloilo City)", band_label: "New or renewal · Iloilo City clients only" });
+      expect(rows.find((r) => r.code === "I.sec_amendment")).toMatchObject({ label: "SEC amendment", price: "15000.00" });
     });
 
     it("gives the quotes the Owner asked for", async () => {

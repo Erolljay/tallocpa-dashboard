@@ -50,10 +50,19 @@ async function OwnerOnly({ searchParams }: Pick<PageProps<"/app/registrations/ne
       .eq("code", "dti_business_name")
       .eq("status", "done")
       .maybeSingle();
+    // The client's city from its latest case: permits are handled only in Iloilo City.
+    const { data: last } = await supabase
+      .from("registration_cases")
+      .select("lgu")
+      .eq("client_id", clientId)
+      .not("lgu", "is", null)
+      .order("opened_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     return (
       <>
         <PageHeader title={clientCase[k].title} description={`${client.name}: ${clientCase[k].description}`} />
-        <ClientCaseForm clientId={client.id} taxpayerType={client.taxpayer_type as TaxpayerType} kind={k} year={year} dtiDue={dtiRenewalDue(dti?.done_on ?? null, year)} />
+        <ClientCaseForm clientId={client.id} taxpayerType={client.taxpayer_type as TaxpayerType} kind={k} year={year} dtiDue={dtiRenewalDue(dti?.done_on ?? null, year)} city={(last?.lgu as string | null) ?? null} />
       </>
     );
   }

@@ -65,6 +65,7 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
   // The fee schedule jobs this case bills when completed, priced from the active schedule.
   const jobs = feeJobsFor(k.kind as CaseKind, client.taxpayer_type as TaxpayerType, {
     lguServed: k.lgu_served,
+    lgu: k.lgu,
     employer: k.employer,
     changes: (k.details as { changes?: string[] }).changes,
     notNeeded: steps.filter((s) => s.status === "not_applicable").map((s) => s.code),
