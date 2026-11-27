@@ -223,3 +223,20 @@ export async function setupMissingChartsAction(_: { ok?: string; error?: string 
   const ok = `Account titles set up for ${done} client${done === 1 ? "" : "s"}.`;
   return failed.length ? { ok, error: `Not set up: ${failed.join("; ")}` } : { ok };
 }
+
+/**
+ * Catch-up accounting (migration 20270104000001): the Owner puts the client in catch-up
+ * through a month (YYYY-MM), or ends it ("end").
+ */
+export async function setCatchUpAction(clientId: string, mode: "set" | "end", _: FormState, form: FormData): Promise<FormState> {
+  await requireOwner();
+  const month = String(form.get("through") ?? "").trim();
+  if (mode === "set" && !/^\d{4}-\d{2}$/.test(month)) return { error: "Choose the last month to catch up." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("set_catch_up", { p_client: clientId, p_through: mode === "set" ? `${month}-01` : null });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/clients/${clientId}`);
+  revalidatePath("/app/deadlines");
+  revalidatePath("/app");
+  return { ok: true };
+}

@@ -7,6 +7,7 @@ import "server-only";
  * admin client used by the morning email job.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { catchUpOpenIds, withoutCatchUp } from "@/lib/filings/catch-up";
 import type { TaxpayerType, TaxType } from "@/lib/clients/obligations";
 import type { FilingStatus } from "@/lib/filings/sign-off";
 import { coverageGaps, type CoverageClient, type Gap } from "./coverage";
@@ -59,7 +60,7 @@ async function holidaySet(db: SupabaseClient): Promise<Set<IsoDate>> {
  */
 export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days?: number; userId?: string } = {}): Promise<BoardRow[]> {
   const until = addDays(today, opts.days ?? 60);
-  const [{ data: filings, error }, holidays] = await Promise.all([
+  const [{ data: filings, error }, holidays, catchUp] = await Promise.all([
     db
       .from("filing_instances")
       .select("id, client_id, form, period_label, period_start, period_end, due_date, status, tax_due, clients(name, code, submission_cutoff_day)")
@@ -69,9 +70,11 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
       .order("due_date")
       .limit(1000),
     holidaySet(db),
+    catchUpOpenIds(db),
   ]);
   if (error) throw new Error(`Could not load the filings: ${error.message}`);
-  const rows = (filings ?? []) as unknown as FilingRow[];
+  // Returns of catch-up periods were filed outside the app: never on the board.
+  const rows = withoutCatchUp((filings ?? []) as unknown as FilingRow[], catchUp);
   const clientIds = [...new Set(rows.map((r) => r.client_id))];
   if (clientIds.length === 0) return [];
 

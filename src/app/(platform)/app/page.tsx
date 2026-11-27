@@ -15,6 +15,7 @@ import { DashboardStats } from "./dashboard-stats";
 import { OwnerSections } from "./owner-sections";
 import { UnlockRequests } from "./unlock-requests";
 import { keepBooksReady } from "@/lib/filings/books-ready";
+import { catchUpOpenIds, withoutCatchUp } from "@/lib/filings/catch-up";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
 
 export default function DashboardPage() {
@@ -151,17 +152,26 @@ async function Summary() {
   const supabase = await supabaseServer();
   const today = manilaToday();
   const in14 = addDays(today, 14);
-  const [clients, overdue, next14, missed, exceptions] = await Promise.all([
+  const [clients, overdue, next14, missed, exceptions, catchUp] = await Promise.all([
     supabase.from("clients").select("id", { count: "exact", head: true }).in("status", ["onboarding", "active"]),
     supabase.from("filing_instances").select(select, { count: "exact" }).lt("due_date", today).not("status", "in", "(filed,paid,proof_uploaded)").order("due_date").limit(50),
     supabase.from("filing_instances").select(select, { count: "exact" }).gte("due_date", today).lte("due_date", in14).not("status", "in", "(filed,paid,proof_uploaded)").order("due_date").limit(100),
     // Months still open where the client sent nothing by the cutoff (spec §3.10, §3.11).
     supabase.from("document_cycles").select("client_id, period, cutoff_date, clients(name)", { count: "exact" }).eq("missed_cutoff", true).is("closed_at", null).order("cutoff_date", { ascending: false }).limit(8),
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("exception_status", "open").neq("status", "split"),
+    catchUpOpenIds(supabase),
   ]);
+  // Returns of catch-up periods were filed outside the app: not overdue (migration 20270104000001).
+  const lessCatchUp = (q: { data: unknown; count: number | null }) => {
+    const before = (q.data ?? []) as FilingListRow[];
+    const after = withoutCatchUp(before, catchUp);
+    return { data: after, count: q.count == null ? null : Math.max(0, q.count - (before.length - after.length)) };
+  };
+  const overdueNow = lessCatchUp(overdue);
+  const next14Now = lessCatchUp(next14);
   const missedRows = (missed.data ?? []) as unknown as { client_id: string; period: string; cutoff_date: string; clients: { name: string } | null }[];
   // Returns appear only for locked periods (docs/REWORK.md, decision 10); Filings lists the Books still open.
-  const rows = await keepBooksReady([...((overdue.data ?? []) as unknown as FilingListRow[]), ...((next14.data ?? []) as unknown as FilingListRow[])], supabase);
+  const rows = await keepBooksReady([...overdueNow.data, ...next14Now.data], supabase);
 
   const n = (c: number | null) => c ?? 0;
   const flag = (c: number | null, bad: string, good: string) => (n(c) > 0 ? { delta: bad, deltaColor: "rose" as const } : { delta: good, deltaColor: "lime" as const });
@@ -171,8 +181,8 @@ async function Summary() {
       <DashboardStats
         stats={[
           { icon: "clients", label: me.staff.role === "owner" ? "Active clients" : "My clients", value: String(n(clients.count)), delta: "Onboarding + active", deltaColor: "neutral" },
-          { icon: "overdue", label: "Overdue filings", value: String(n(overdue.count)), ...flag(overdue.count, "Past due", "None") },
-          { icon: "due", label: "Due in 14 days", value: String(n(next14.count)), delta: "Upcoming", deltaColor: "neutral" },
+          { icon: "overdue", label: "Overdue filings", value: String(n(overdueNow.count)), ...flag(overdueNow.count, "Past due", "None") },
+          { icon: "due", label: "Due in 14 days", value: String(n(next14Now.count)), delta: "Upcoming", deltaColor: "neutral" },
           { icon: "missed", label: "Missed the cutoff", value: String(n(missed.count)), ...flag(missed.count, "Follow up", "All in") },
         ]}
       />

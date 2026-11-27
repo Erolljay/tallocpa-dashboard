@@ -5,7 +5,7 @@ import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import type { Branch } from "@/lib/branches";
 import { ACCESS_LABEL, CONTACT_ACCESS } from "@/lib/contacts/access";
 import { StaffOptions } from "../client-form";
-import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, setIncomeTaxMethodAction, type FormState } from "../actions";
+import { addEngagementAction, assignStaffAction, removeAssignmentAction, setCatchUpAction, setClientStatusAction, setIncomeTaxMethodAction, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
 export function EngagementForm({ clientId, serviceLines }: { clientId: string; serviceLines: { code: string; name: string }[] }) {
@@ -132,5 +132,28 @@ export function RemoveClientUserButton({ clientId, userId }: { clientId: string;
       <button type="submit" disabled={pending} className="text-caption-1-regular text-text-error-primary hover:underline">{pending ? "Removing…" : "Remove"}</button>
       {state.error && <span className="ml-2 text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
+  );
+}
+
+/** The Owner puts the client in catch-up through a month, moves that month, or ends catch-up. */
+export function CatchUpForm({ clientId, through }: { clientId: string; through: string | null }) {
+  const [state, set, setting] = useActionState(setCatchUpAction.bind(null, clientId, "set"), {} as FormState);
+  const [endState, end, ending] = useActionState(setCatchUpAction.bind(null, clientId, "end"), {} as FormState);
+  return (
+    <div className="space-y-3">
+      <form action={set} className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+        <Field label="Catch up through" htmlFor="catch_up_through" hint="The last month whose returns are filed outside the app, in your current tools.">
+          <Input id="catch_up_through" name="through" type="month" required defaultValue={through ? through.slice(0, 7) : `${new Date().getFullYear()}-12`} />
+        </Field>
+        <Button type="submit" variant={through ? "secondary" : "primary"} disabled={setting}>{setting ? "Saving…" : through ? "Change" : "Start catch-up"}</Button>
+      </form>
+      {through && (
+        <form action={end} className="flex flex-wrap items-center gap-3">
+          <Button type="submit" variant="secondary" disabled={ending}>{ending ? "Ending…" : "End catch-up"}</Button>
+          <span className="text-caption-1-regular text-text-tertiary">The months of the confirmed returns lock in the Books.</span>
+        </form>
+      )}
+      {(state.error || endState.error) && <Notice tone="blocked">{state.error ?? endState.error}</Notice>}
+    </div>
   );
 }
