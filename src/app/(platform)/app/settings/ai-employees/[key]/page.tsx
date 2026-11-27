@@ -10,7 +10,7 @@ import { toolFor } from "@/lib/mcp/tool";
 import { DEPARTMENTS, RUNS_ON, spendsOnApi, type BooksLevel, type Department, type RunsOn } from "@/lib/ai/workforce";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ActivityList, type ActivityRow } from "../activity";
-import { AssignForm, ConnectorAddress, CreateKeyForm, EnabledSwitch, GrantToolsButton, RemoveToolButton, RevokeKeyButton, SettingsForm, UnassignButton } from "../forms";
+import { AssignForm, ConnectorAddress, CreateKeyForm, DisconnectButton, EnabledSwitch, GrantToolsButton, RemoveToolButton, RevokeKeyButton, SettingsForm, UnassignButton } from "../forms";
 
 export default function AiEmployeePage(props: PageProps<"/app/settings/ai-employees/[key]">) {
   return (
@@ -68,15 +68,17 @@ async function Employee({ params }: Pick<PageProps<"/app/settings/ai-employees/[
     .maybeSingle<Ai>();
   if (!ai) notFound();
 
-  const [{ data: staff }, { data: assigned }, { data: clients }, { data: keys }, { data: activity }, { data: grants }, origin] = await Promise.all([
+  const [{ data: staff }, { data: assigned }, { data: clients }, { data: keys }, { data: activity }, { data: grants }, origin, { data: apps }] = await Promise.all([
     supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name"),
     supabase.from("ai_assignments").select("client_id, clients(id, name, code)").eq("ai_user_id", ai.user_id),
     ai.client_data ? supabase.from("clients").select("id, name, code").eq("brand_id", owner.staff.brandId).order("name") : Promise.resolve({ data: [] }),
-    supabase.from("ai_credentials").select("id, label, token_hint, created_at, expires_at, revoked_at, last_used_at").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }),
+    supabase.from("ai_credentials").select("id, label, token_hint, created_at, expires_at, revoked_at, last_used_at").eq("ai_user_id", ai.user_id).eq("source", "key").order("created_at", { ascending: false }),
     supabase.from("ai_activity").select("id, ai_user_id, tool, outcome, created_at, clients(name)").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }).limit(50),
     supabase.from("ai_tool_grants").select("tool").eq("ai_user_id", ai.user_id),
     requestOrigin(),
+    supabase.from("oauth_grants").select("id, created_at, last_used_at, oauth_clients(client_name)").eq("ai_user_id", ai.user_id).is("revoked_at", null).order("created_at", { ascending: false }),
   ]);
+  const connected = (apps ?? []) as unknown as { id: string; created_at: string; last_used_at: string | null; oauth_clients: { client_name: string } | null }[];
   const granted = new Set((grants ?? []).map((g) => g.tool));
   const jobTools = TOOLS.filter((t) => toolFor(t, ai.key) && (ai.client_data || t.employees === "all"));
   const ungranted = jobTools.filter((t) => !granted.has(t.name)).map((t) => t.name);
@@ -139,8 +141,33 @@ async function Employee({ params }: Pick<PageProps<"/app/settings/ai-employees/[
             </p>
             <ConnectorAddress address={address} />
             <p className="text-caption-1-regular text-text-tertiary">
-              Claude Code: <code dir="ltr" className="font-mono">claude mcp add --transport http {ai.key.replace(/_/g, "-")} {address} --header &quot;Authorization: Bearer &lt;key&gt;&quot;</code>. Cowork signs in with OAuth, which comes next (step 2b).
+              <strong className="text-text-secondary">Cowork, claude.ai or the Claude app:</strong> Customize → Connectors → Add custom connector, paste this address, then sign in and allow it here. Add only this connector to {ai.name}&apos;s Cowork project.{" "}
+              <strong className="text-text-secondary">Claude Code:</strong> <code dir="ltr" className="font-mono">claude mcp add --transport http {ai.key.replace(/_/g, "-")} {address}</code> (it signs in the same way), or add <code dir="ltr" className="font-mono">--header &quot;Authorization: Bearer &lt;key&gt;&quot;</code> with a key below.
             </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <h3 className="text-headline-medium text-text-primary">Connected apps</h3>
+            {connected.length === 0 ? (
+              <p className="text-body-regular text-text-secondary">No app is signed in as {ai.name}.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-separator-border">
+                {connected.map((g) => {
+                  const app = g.oauth_clients?.client_name || "Connected app";
+                  return (
+                    <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+                      <div className="min-w-0">
+                        <p className="text-body-medium text-text-primary">{app}</p>
+                        <p className="text-caption-1-regular text-text-tertiary">
+                          Connected {day.format(new Date(g.created_at))}
+                          {g.last_used_at ? ` · last signed in ${day.format(new Date(g.last_used_at))}` : ""}
+                        </p>
+                      </div>
+                      <DisconnectButton grantId={g.id} aiKey={ai.key} app={app} />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

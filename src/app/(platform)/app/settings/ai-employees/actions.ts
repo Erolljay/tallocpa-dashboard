@@ -177,3 +177,13 @@ export async function removeToolAction(userId: string, key: string, tool: string
   refresh(key);
   return { ok: "Removed." };
 }
+
+/** Disconnects an app (OAuth connection): its tokens stop working at once (the database revokes them). */
+export async function disconnectAppAction(grantId: string, key: string): Promise<AiState> {
+  const owner = await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("oauth_grants").update({ revoked_at: new Date().toISOString(), revoked_by: owner.userId }).eq("id", grantId).is("revoked_at", null);
+  if (error) return { error: error.message };
+  refresh(key);
+  return { ok: "Disconnected." };
+}

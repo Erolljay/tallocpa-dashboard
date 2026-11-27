@@ -10,6 +10,7 @@ import {
   addWorkforceAction,
   assignClientAction,
   createKeyAction,
+  disconnectAppAction,
   grantToolsAction,
   removeToolAction,
   revokeKeyAction,
@@ -265,5 +266,21 @@ export function ConnectorAddress({ address }: { address: string }) {
       </div>
       {failed && <p role="status" className="text-caption-1-regular text-text-error-primary">Copy did not work here. Select the address and copy it.</p>}
     </div>
+  );
+}
+
+export function DisconnectButton({ grantId, aiKey, app }: { grantId: string; aiKey: string; app: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [state, action, pending] = useActionState(async () => disconnectAppAction(grantId, aiKey), {} as AiState);
+  if (!confirming) {
+    return <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(true)} aria-label={`Disconnect ${app}`}>Disconnect</Button>;
+  }
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <span className="text-caption-1-regular text-text-secondary">Disconnect for good?</span>
+      <Button type="submit" variant="danger" size="sm" disabled={pending}>{pending ? "Disconnecting…" : "Yes, disconnect"}</Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>Keep</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
   );
 }

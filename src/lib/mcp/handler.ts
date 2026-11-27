@@ -14,6 +14,7 @@
  */
 import { hashKey, isKeyShaped } from "@/lib/ai/credentials";
 import type { BooksLevel, Department } from "@/lib/ai/workforce";
+import { resourceMetadataUrl, SCOPE } from "@/lib/oauth/rules";
 import { handleBody, toolError, toolResult, type McpServer, type ToolInfo } from "./protocol";
 import { toolByName, TOOLS } from "./registry";
 import { listResources, readResource } from "./resources";
@@ -27,6 +28,8 @@ export interface McpRequest {
   authorization: string | null;
   body: unknown;
   now: Date;
+  /** This app's address, for the sign-in hint on a 401 (OAuth protected resource metadata). */
+  origin?: string;
 }
 
 export interface McpResponse {
@@ -36,11 +39,20 @@ export interface McpResponse {
 }
 
 const REALM = 'Bearer realm="TalloCPA OS"';
-const denied = (status: 401 | 403, message: string): McpResponse => ({
-  status,
-  json: { error: status === 401 ? "invalid_token" : "forbidden", error_description: message },
-  headers: status === 401 ? { "WWW-Authenticate": `${REALM}, error="invalid_token"` } : undefined,
-});
+/**
+ * 401 carries where to sign in (RFC 9728 resource_metadata), so a connector that has no
+ * token yet (Claude, Cowork) starts OAuth; 403 is for a valid key at the wrong place.
+ */
+const denied = (status: 401 | 403, message: string, signIn?: { origin: string; aiKey: string; noToken: boolean }): McpResponse => {
+  const parts = [REALM];
+  if (signIn) parts.push(`resource_metadata="${resourceMetadataUrl(signIn.origin, signIn.aiKey)}"`, `scope="${SCOPE}"`);
+  if (!signIn?.noToken) parts.push('error="invalid_token"');
+  return {
+    status,
+    json: { error: status === 401 ? "invalid_token" : "forbidden", error_description: message },
+    headers: status === 401 ? { "WWW-Authenticate": parts.join(", ") } : undefined,
+  };
+};
 
 export const manilaDay = (now: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
@@ -94,9 +106,10 @@ interface CallerRow extends Record<string, unknown> {
 }
 
 /** The AI employee behind a key, or why it is refused. Runs as the service (no RLS). */
-export async function findCaller(service: Queryable, aiKey: string, authorization: string | null, now: Date): Promise<AiCaller | McpResponse> {
+export async function findCaller(service: Queryable, aiKey: string, authorization: string | null, now: Date, origin?: string): Promise<AiCaller | McpResponse> {
   const token = /^Bearer\s+(\S+)\s*$/i.exec(authorization ?? "")?.[1];
-  if (!token || !isKeyShaped(token)) return denied(401, "Send the AI employee's key as Authorization: Bearer tcai_…");
+  const signIn = (noToken: boolean) => (origin && /^[a-z][a-z0-9_]{1,40}$/.test(aiKey) ? { origin, aiKey, noToken } : undefined);
+  if (!token || !isKeyShaped(token)) return denied(401, "Sign in to this connector, or send the AI employee's key as Authorization: Bearer tcai_…", signIn(!token));
   const { rows } = await service.query<CallerRow>(
     `select c.id as credential_id, c.expires_at, c.revoked_at, c.last_used_at,
             e.user_id, e.key, e.name, e.brand_id, e.department, e.job, e.books_level, e.client_data, e.daily_limit, e.enabled,
@@ -106,7 +119,7 @@ export async function findCaller(service: Queryable, aiKey: string, authorizatio
     [hashKey(token)],
   );
   const r = rows[0];
-  if (!r || r.revoked_at || new Date(r.expires_at) <= now) return denied(401, "This key is not valid: it was revoked, has expired, or never existed.");
+  if (!r || r.revoked_at || new Date(r.expires_at) <= now) return denied(401, "This key is not valid: it was revoked, has expired, or never existed.", signIn(false));
   if (r.key !== aiKey) return denied(403, "This key belongs to another AI employee. Use the address for that AI employee.");
   if (!r.enabled) return denied(403, `${r.name} is switched off. The Owner switches AI employees on in Settings → AI Employees.`);
   if (!r.last_used_at || now.getTime() - new Date(r.last_used_at).getTime() > 5 * 60_000) {
@@ -209,7 +222,7 @@ export function serverFor(conn: Connector, caller: AiCaller, now: Date): McpServ
 }
 
 export async function handleMcp(conn: Connector, req: McpRequest): Promise<McpResponse> {
-  const caller = await borrow(conn, (db) => findCaller(db, req.aiKey, req.authorization, req.now));
+  const caller = await borrow(conn, (db) => findCaller(db, req.aiKey, req.authorization, req.now, req.origin));
   if ("status" in caller) return caller;
   return handleBody(serverFor(conn, caller, req.now), req.body);
 }

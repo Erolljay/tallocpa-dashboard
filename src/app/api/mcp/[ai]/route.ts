@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleMcp } from "@/lib/mcp/handler";
 import { mcpConnector } from "@/lib/mcp/pool";
+import { publicOrigin } from "@/lib/oauth/origin";
 
 /** Tool calls read the database and may take a few seconds. (Route handlers run on Node, which pg needs.) */
 export const maxDuration = 30;
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/mcp/[ai
     return NextResponse.json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "The body is not JSON." } }, { status: 400 });
   }
   try {
-    const res = await handleMcp(conn, { aiKey: ai, authorization: request.headers.get("authorization"), body, now: new Date() });
+    const res = await handleMcp(conn, { aiKey: ai, authorization: request.headers.get("authorization"), body, now: new Date(), origin: publicOrigin(request) });
     if (res.status === 202) return new Response(null, { status: 202 });
     return NextResponse.json(res.json, { status: res.status, headers: res.headers });
   } catch (e) {

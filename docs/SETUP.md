@@ -131,13 +131,10 @@ The TalloCPA OS connector (MCP server) lets AI employees work in the app with th
 2. **Certificate (recommended).** In Supabase → **Database settings → SSL configuration**, download the certificate and add its whole text as `SUPABASE_DB_CA`. With it the connection is encrypted *and* the database server is verified; without it the connection is encrypted only, and the app logs a warning.
 3. Redeploy.
 4. In **Settings → AI Employees**, open an AI employee: switch it on, assign clients, choose its books access, **grant its tools** (Connector → Tools), and create a key.
-5. **Claude Code** (or any MCP client that sends a header):
+5. **Claude Cowork, claude.ai or the Claude app:** Customize → Connectors → **Add custom connector**. Name it after the AI employee (e.g. *Tallo Document Clerk*) and paste its address. Claude opens a TalloCPA OS page: sign in as the Owner and press **Allow**. Then, in that AI employee's Cowork project, turn on only its own connector. Each AI employee is a separate connector with its own sign-in, so every call is logged under its name. The connection appears under **Connected apps** on its page; **Disconnect** stops it at once.
+6. **Claude Code:** `claude mcp add --transport http document-clerk https://app.tallocpa.com/api/mcp/document_clerk` (it signs in the same way), or with a key from step 4: add `--header "Authorization: Bearer <key>"`.
 
-   ```bash
-   claude mcp add --transport http document-clerk https://app.tallocpa.com/api/mcp/document_clerk --header "Authorization: Bearer <key>"
-   ```
-
-   **Claude Cowork** signs in to custom connectors with OAuth; that comes in build step 2b. (Plain keys there are a beta that only some organizations have.)
+How sign-in works (OAuth 2.1, docs/AI-WORKFORCE.md step 2b): the connector answers an unsigned request with where to sign in (`/.well-known/oauth-protected-resource/api/mcp/<key>` and `/.well-known/oauth-authorization-server`); Claude registers itself (`/oauth/register`); only the Owner can approve it, on `/oauth/authorize`; Claude trades the one-time code and its PKCE proof for an access token (one hour) and a refresh token (30 days, replaced on every use) at `/oauth/token`. Tokens are stored only as fingerprints. The consent page cannot be shown inside another site.
 
 Each tool call counts against the AI employee's calls per day and appears under **Activity** on its page.
 

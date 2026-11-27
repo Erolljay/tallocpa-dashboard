@@ -138,8 +138,10 @@ Built in step 1 (migration `20270107000001_ai_employees.sql`, tests in
 plain keys in a header are a beta for some organizations only, and a sign-in belongs to
 the account, not to a Cowork project. So **each AI employee has its own connector
 address** (`/api/mcp/<key>`): each Cowork desk adds only its own connector, and each
-connector signs in separately as that AI employee. Keys work now (Claude Code, tests,
-scheduled jobs); OAuth sign-in for Cowork is build step 2b.
+connector signs in separately as that AI employee. Keys work for Claude Code, tests and
+scheduled jobs; Cowork and claude.ai sign in with OAuth (step 2b, built): only the Owner
+can allow a connection, on a consent page that names the AI employee, and can disconnect
+it in Settings.
 
 ## 6. Books access
 
@@ -174,8 +176,10 @@ AI callers. Summary is served only through summary functions, never the entry ta
 1. **Endpoint** (built): `/api/mcp/<key>`, one address per AI employee, Streamable
    HTTP, stateless (each POST gets one JSON answer). `src/app/api/mcp/[ai]/route.ts`,
    `src/lib/mcp/`.
-2. **Sign-in**: per AI employee (§5). A key as `Authorization: Bearer tcai_…` (built);
-   OAuth for Cowork (step 2b).
+2. **Sign-in**: per AI employee (§5). A key as `Authorization: Bearer tcai_…`, or OAuth
+   2.1 (built in 2b): protected resource and sign-in server metadata, dynamic client
+   registration, the Owner's consent page, PKCE (S256), one-hour access tokens (stored as
+   keys, source `oauth`) and rotating 30-day refresh tokens; disconnecting revokes them.
 3. **Permissions**: each AI employee sees only the tools granted to it and only its
    assigned clients; books access per §6.
 4. **Tools**: read, search and save-draft actions (§7.2).
@@ -337,7 +341,8 @@ Owner and can be built at any time.
 2. **MCP server** (built): endpoint, key sign-in, tool registry with its tests, shared
    tools (who am I, my clients, a client, upcoming returns, trial balance), reference
    library (house rules, my job, the workforce), daily limit, activity log, tool grants
-   in Settings. **2b:** OAuth sign-in for Cowork connectors.
+   in Settings. **2b** (built): OAuth sign-in for Cowork and claude.ai connectors, with
+   Connected apps and Disconnect in Settings.
 3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks.
 4. **`ai-provider` with Qwen**; Client Concierge on Telegram and the portal.
 5. **FS template, notes library and release validator** (useful to staff without AI);

@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   "next.config.ts": {
-    "mtime": 1795773927.0289595,
-    "seen": 1795792160.970595,
-    "ast_hash": "d4824090bb9fa29cc38ce886fcd4f901",
+    "mtime": 1795794286.2761977,
+    "seen": 1795794605.8725712,
+    "ast_hash": "320d981cb1fceb98c07e3a32a39337db",
     "semantic_hash": ""
   },
   "package.json": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "docs/SETUP.md": {
-    "mtime": 1795793233.7867956,
-    "seen": 1795793459.5140114,
-    "ast_hash": "ed60297e1e60c9cfa35d05376d66df16",
+    "mtime": 1795794600.2098484,
+    "seen": 1795794605.8958793,
+    "ast_hash": "5e2849cc5838623a0540765f8e270972",
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
@@ -1734,9 +1734,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/registration.test.ts": {
-    "mtime": 1795773927.0775437,
-    "seen": 1795792160.9769068,
-    "ast_hash": "672ce6a7926036da6003a082e554f46f",
+    "mtime": 1795793522.865186,
+    "seen": 1795794605.895409,
+    "ast_hash": "300fadbe35408da5432bd6990b477f65",
     "semantic_hash": ""
   },
   "src/components/requests/reply-form.tsx": {
@@ -5562,15 +5562,15 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/[key]/page.tsx": {
-    "mtime": 1795793233.7867956,
-    "seen": 1795793459.5018656,
-    "ast_hash": "17bf3d97dd4654bbec241868edd9b1fa",
+    "mtime": 1795794286.276799,
+    "seen": 1795794605.8772974,
+    "ast_hash": "57a4cc8a9fbd05d759f3be67693a0eba",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/actions.ts": {
-    "mtime": 1795793233.7867956,
-    "seen": 1795793459.5018678,
-    "ast_hash": "5ee5d091a70dcda1c26f42c36ad9431c",
+    "mtime": 1795794286.2764015,
+    "seen": 1795794605.8772993,
+    "ast_hash": "c43e640a1e9ed6ca9fbdaeb672bc664f",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/activity.tsx": {
@@ -5580,9 +5580,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/forms.tsx": {
-    "mtime": 1795793233.7867956,
-    "seen": 1795793459.5018914,
-    "ast_hash": "adf3ea5922c39d769c2e0a664bddcab3",
+    "mtime": 1795794286.2766292,
+    "seen": 1795794605.8773222,
+    "ast_hash": "5d957aecd611a1e83fcf4414d6cd3071",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/page.tsx": {
@@ -5622,15 +5622,15 @@
     "semantic_hash": ""
   },
   "docs/AI-WORKFORCE.md": {
-    "mtime": 1795793233.7867956,
-    "seen": 1795793459.5139787,
-    "ast_hash": "31e1671ee6a771f4ec0e10b5778787a8",
+    "mtime": 1795794600.2101688,
+    "seen": 1795794605.895834,
+    "ast_hash": "cc90c671eeceea2dfd1e5925dee1ad6f",
     "semantic_hash": ""
   },
   "src/app/api/mcp/[ai]/route.ts": {
-    "mtime": 1795793343.5953238,
-    "seen": 1795793459.504107,
-    "ast_hash": "6f23d2fcd7724aa63f7d4e59ba9ab6e5",
+    "mtime": 1795794150.3912086,
+    "seen": 1795794605.87955,
+    "ast_hash": "39d616902272f0a31582c350be817753",
     "semantic_hash": ""
   },
   "src/lib/clients/ai-tools.ts": {
@@ -5658,9 +5658,9 @@
     "semantic_hash": ""
   },
   "src/lib/mcp/handler.ts": {
-    "mtime": 1795793005.3922608,
-    "seen": 1795793459.509385,
-    "ast_hash": "9ca4bec27411966e623b5f5f052b555f",
+    "mtime": 1795794150.39088,
+    "seen": 1795794605.8908687,
+    "ast_hash": "f74c853ddf5a543165d51508b7c888bc",
     "semantic_hash": ""
   },
   "src/lib/mcp/pool-config.test.ts": {
@@ -5727,6 +5727,90 @@
     "mtime": 1795793021.5253537,
     "seen": 1795793459.5127046,
     "ast_hash": "39e54ddd04932fdd108d0f0178154a20",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/oauth/authorize/actions.ts": {
+    "mtime": 1795794209.2459903,
+    "seen": 1795794605.8780758,
+    "ast_hash": "8d5ec85e7188f0ae60c8a7e700a601b0",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/oauth/authorize/forms.tsx": {
+    "mtime": 1795794215.9459906,
+    "seen": 1795794605.8780775,
+    "ast_hash": "5581a8565fef221bcb68829a4b1a502b",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/oauth/authorize/page.tsx": {
+    "mtime": 1795794234.4539912,
+    "seen": 1795794605.878079,
+    "ast_hash": "5735399167dcfdc8da3d73a7d358d087",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/oauth/register/route.ts": {
+    "mtime": 1795794189.1611814,
+    "seen": 1795794605.8780808,
+    "ast_hash": "fd722aa035d0286533406ec522cb9e46",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/oauth/token/route.ts": {
+    "mtime": 1795794189.1619895,
+    "seen": 1795794605.8780825,
+    "ast_hash": "b40110a33d0a643fbb59b6bea68e7be7",
+    "semantic_hash": ""
+  },
+  "src/app/.well-known/oauth-authorization-server/route.ts": {
+    "mtime": 1795794189.1601498,
+    "seen": 1795794605.8794596,
+    "ast_hash": "5fe727045992c7aedf7622ed0aa58a31",
+    "semantic_hash": ""
+  },
+  "src/app/.well-known/oauth-protected-resource/api/mcp/[ai]/route.ts": {
+    "mtime": 1795794189.1579895,
+    "seen": 1795794605.8794608,
+    "ast_hash": "66ff5c2d7a205db693fad8e5a100a02a",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/cors.ts": {
+    "mtime": 1795794189.1577637,
+    "seen": 1795794605.891178,
+    "ast_hash": "a4a4f1ee8bd77250eee122a78d21acb1",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/endpoints.ts": {
+    "mtime": 1795794132.4899876,
+    "seen": 1795794605.8911803,
+    "ast_hash": "8cac8740a2535fc82ecc19acfa31073c",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/origin.ts": {
+    "mtime": 1795794161.7699885,
+    "seen": 1795794605.8911817,
+    "ast_hash": "d799a97d0c2b95c2570b6a37907c2969",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/rules.test.ts": {
+    "mtime": 1795794313.8739939,
+    "seen": 1795794605.8911831,
+    "ast_hash": "afea99f1822cc323c9ecd6b0bce7c645",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/rules.ts": {
+    "mtime": 1795794090.461986,
+    "seen": 1795794605.8911843,
+    "ast_hash": "f82774e9d61dd1689c2408167e5cc439",
+    "semantic_hash": ""
+  },
+  "src/lib/oauth/server.ts": {
+    "mtime": 1795794377.4778779,
+    "seen": 1795794605.891186,
+    "ast_hash": "15bd5ef6af8ab4989e61a31d84d9aceb",
+    "semantic_hash": ""
+  },
+  "supabase/tests/ai-oauth.test.ts": {
+    "mtime": 1795794351.4099953,
+    "seen": 1795794605.8945358,
+    "ast_hash": "f2936365ce2da19982dc2e0fa91b3482",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
