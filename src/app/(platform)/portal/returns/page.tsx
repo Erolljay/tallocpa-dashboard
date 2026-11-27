@@ -4,7 +4,8 @@ import { Badge, Notice, peso, Skeleton } from "@/components/ui";
 import { filingStatusLabel, filingStatusTone, showDate } from "@/lib/filings/labels";
 import { isNilReturn } from "@/lib/filings/sign-off";
 import { SignOffActions } from "../../app/filings/sign-off-actions";
-import { portalContext } from "../client-context";
+import { accessNote, canApprove } from "@/lib/contacts/access";
+import { accessFor, portalContext } from "../client-context";
 
 export default function PortalReturns() {
   return (
@@ -32,6 +33,7 @@ async function Returns() {
   const { data } = await supabase
     .from("filing_instances")
     .select("id, client_id, form, period_label, due_date, status, tax_due, open_query, filing_reference, clients(name, payment_mode)")
+    .in("client_id", clients.map((c) => c.id))
     .in("status", ["reviewed", "client_approved", "owner_approved", "filed"])
     .order("due_date", { ascending: false })
     .limit(100);
@@ -70,6 +72,8 @@ async function Returns() {
               </div>
               {r.open_query ? (
                 <Notice tone="waiting">You asked: “{r.open_query}” — we will reply before you approve.</Notice>
+              ) : !canApprove(accessFor(clients, r.client_id)) ? (
+                <p className="text-body-regular text-text-secondary">{accessNote(accessFor(clients, r.client_id), "approve")}</p>
               ) : (
                 <SignOffActions filingId={r.id} actions={["client_approve", "client_query"]} taxDue={r.tax_due == null ? null : Number(r.tax_due)} paymentMode={r.clients?.payment_mode ?? ""} audience="client" />
               )}

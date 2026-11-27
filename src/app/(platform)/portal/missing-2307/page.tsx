@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { Badge, Notice, peso, Skeleton } from "@/components/ui";
 import { showDate } from "@/lib/filings/labels";
-import { portalContext } from "../client-context";
+import { canApprove } from "@/lib/contacts/access";
+import { accessFor, portalContext } from "../client-context";
 import { Decision } from "./decision";
 
 /**
@@ -67,6 +68,8 @@ async function Missing() {
                   </div>
                   {r.closed ? (
                     <Badge tone="neutral">{r.claim === "stop" ? "Not claimed" : "Claimed"} · annual return filed</Badge>
+                  ) : !canApprove(accessFor(clients, client.id)) ? (
+                    <Badge tone="neutral">{r.claim === "stop" ? "Not to be claimed" : r.claim === "keep" ? "To be claimed" : "Waiting for a full-access contact"}</Badge>
                   ) : (
                     <Decision invoiceId={r.invoice_id} claim={r.claim} />
                   )}

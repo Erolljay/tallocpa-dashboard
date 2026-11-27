@@ -31,8 +31,8 @@ const when = (iso: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "med
  */
 async function Reports({ searchParams }: Pick<PageProps<"/portal/reports">, "searchParams">) {
   const q = await searchParams;
-  const { supabase, clients } = await portalContext();
-  const picked = pickClient(clients, q.client);
+  const { supabase, clients, all } = await portalContext();
+  const picked = pickClient(clients, q.client, all);
   if (!picked) {
     return (
       <div className="space-y-6">

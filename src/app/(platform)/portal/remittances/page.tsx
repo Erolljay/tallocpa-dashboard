@@ -36,6 +36,7 @@ async function Remittances() {
   const { data } = await supabase
     .from("contribution_remittances")
     .select("id, client_id, kind, period_month, due_date, status, total, prn, remitted_on, remit_reference, clients(name, payment_mode)")
+    .in("client_id", clients.map((c) => c.id))
     .order("period_month", { ascending: false })
     .order("kind")
     .limit(120);

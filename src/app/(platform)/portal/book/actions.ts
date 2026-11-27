@@ -10,13 +10,16 @@ import { cancelReason } from "@/lib/calendar/cancel";
 import { cancelClientMeeting } from "@/lib/calendar/cancel-server";
 import { CLIENT_MEETING } from "@/lib/calendar/slots";
 import { bookOn } from "@/lib/calendar/staff";
+import { accessNote, canAct } from "@/lib/contacts/access";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 
 /** The signed-in client books a meeting with its reviewer (or preparer) at `start`, with a Meet link. */
 export async function bookClientMeetingAction(clientId: string, start: string, topic: string): Promise<BookingState> {
   const id = await getIdentity();
-  if (id.staff || !id.clients.some((c) => c.clientId === clientId)) return { error: "Business not found." };
+  const link = id.clients.find((c) => c.clientId === clientId);
+  if (id.staff || !link) return { error: "Business not found." };
+  if (!canAct(link.access)) return { error: accessNote(link.access, "act") };
   const supabase = await supabaseServer();
   const [{ data: hosts, error }, { data: client }] = await Promise.all([
     supabase.rpc("portal_meeting_host", { p_client: clientId }),

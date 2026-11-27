@@ -162,6 +162,18 @@ describe.skipIf(!url)("cancelling a discovery call or a client meeting", () => {
       expect(await notices("client_meeting_cancelled")).toEqual([]);
     });
 
+    it("is not for a contact who may only view the business", async () => {
+      const m = await bookMeeting(inDays(8));
+      await db.query(`update public.client_users set access = 'viewer' where user_id = $1`, [CLIENT_USER_2]);
+      try {
+        await expect(as(CLIENT_USER_2, `select public.cancel_client_meeting($1)`, [m])).rejects.toThrow();
+        expect((await db.query(`select cancelled_at from public.client_meetings where id = $1`, [m])).rows[0].cancelled_at).toBeNull();
+      } finally {
+        await db.query(`update public.client_users set access = 'full' where user_id = $1`, [CLIENT_USER_2]);
+        await as(OWNER, `select public.cancel_client_meeting($1)`, [m]);
+      }
+    });
+
     it("is not for other staff or another business's users, nor a meeting already started or cancelled", async () => {
       const m = await bookMeeting(inDays(8));
       await expect(as(OTHER, `select public.cancel_client_meeting($1)`, [m])).rejects.toThrow(/Meeting not found/);

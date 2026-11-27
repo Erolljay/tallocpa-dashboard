@@ -7,6 +7,7 @@ import { StatementView } from "@/components/statement/statement-view";
 import { loadPayments, loadStatement } from "@/lib/collections/statement";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
+import { accessNote, canApprove } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
 
 /**
@@ -71,7 +72,7 @@ async function Billing() {
       {loaded.map(({ client, current, payments, statements }) => (
         <div key={client.id} className="space-y-6">
           {several && <h2 className="text-title-2-medium text-text-primary">{client.name}</h2>}
-          {current && <StatementView s={current} today={today} payments={false} />}
+          {current && <StatementView s={current} today={today} payments={false} payBlocked={canApprove(client.access) ? undefined : accessNote(client.access, "approve")} />}
 
           <Card title="Your payments" className="print:hidden">
             {payments.length === 0 ? (

@@ -20,7 +20,8 @@ const statusBadge: Record<StatementStatus, { tone: "done" | "waiting" | "blocked
  * `payments={false}` leaves out this statement's payments (portal Billing lists
  * all payments in one place).
  */
-export function StatementView({ s, today, owner = false, payments = true }: { s: Statement; today: string; owner?: boolean; payments?: boolean }) {
+/** `payBlocked`: shown in place of Pay when the signed-in contact may not pay for this business. */
+export function StatementView({ s, today, owner = false, payments = true, payBlocked }: { s: Statement; today: string; owner?: boolean; payments?: boolean; payBlocked?: string }) {
   const settled = s.totalDue <= 0;
   const pending = s.proofs.filter((p) => p.status === "for_verification").length;
   const status = statusBadge[statementStatus(s.totalDue, pending, s.soa.due_on, today)];
@@ -163,7 +164,11 @@ export function StatementView({ s, today, owner = false, payments = true }: { s:
 
       {!settled && (
         <Card title="Pay" className="print:hidden">
-          <PayNow accounts={s.accounts} reference={s.soa.reference} hasTax={s.hasTax} soaId={s.soa.id} amountDue={s.totalDue} today={today} />
+          {payBlocked ? (
+            <p className="text-body-regular text-text-secondary">{payBlocked}</p>
+          ) : (
+            <PayNow accounts={s.accounts} reference={s.soa.reference} hasTax={s.hasTax} soaId={s.soa.id} amountDue={s.totalDue} today={today} />
+          )}
         </Card>
       )}
       {settled && (

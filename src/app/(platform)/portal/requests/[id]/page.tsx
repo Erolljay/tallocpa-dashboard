@@ -7,7 +7,8 @@ import { CloseRequestButton, ReplyForm } from "@/components/requests/reply-form"
 import { StandingUpload } from "@/components/requests/standing-forms";
 import { Thread, type ThreadMessage } from "@/components/requests/thread";
 import { STANDING_ASK, statusFor, type Direction, type RequestStatus, type StandingKind } from "@/lib/requests/labels";
-import { portalContext } from "../../client-context";
+import { canAct } from "@/lib/contacts/access";
+import { accessFor, portalContext } from "../../client-context";
 
 export default function PortalRequest(props: PageProps<"/portal/requests/[id]">) {
   return (
@@ -19,10 +20,10 @@ export default function PortalRequest(props: PageProps<"/portal/requests/[id]">)
 
 async function RequestDetail({ params }: Pick<PageProps<"/portal/requests/[id]">, "params">) {
   const { id } = await params;
-  const { supabase } = await portalContext();
+  const { supabase, all } = await portalContext();
   const { data: r } = await supabase
     .from("client_requests")
-    .select("id, direction, subject, status, due_date, standing_kind, registration_steps(label)")
+    .select("id, client_id, direction, subject, status, due_date, standing_kind, registration_steps(label)")
     .eq("id", id)
     .maybeSingle();
   if (!r) notFound();
@@ -33,8 +34,10 @@ async function RequestDetail({ params }: Pick<PageProps<"/portal/requests/[id]">
     .order("created_at");
   const view = statusFor("client", r.direction as Direction, r.status as RequestStatus);
   const step = r.registration_steps as unknown as { label: string } | null;
+  const access = accessFor(all, r.client_id);
   const isOpen = r.status !== "closed";
   const standing = r.standing_kind as StandingKind | null;
+  const canReply = isOpen && canAct(access);
 
   return (
     <div className="space-y-5">
@@ -55,7 +58,7 @@ async function RequestDetail({ params }: Pick<PageProps<"/portal/requests/[id]">
         <div className="space-y-4 rounded-3xl border border-border-button-default bg-background-primary-default p-4">
           <p className="text-body-regular text-text-secondary">{STANDING_ASK[standing]}</p>
           {(messages ?? []).length > 0 && <Thread messages={(messages ?? []) as ThreadMessage[]} viewer="client" />}
-          {isOpen && (
+          {canReply && (
             <div className="border-t border-separator-border pt-4">
               <StandingUpload requestId={id} kind={standing} />
             </div>
@@ -64,14 +67,14 @@ async function RequestDetail({ params }: Pick<PageProps<"/portal/requests/[id]">
       ) : (
       <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-4">
         <Thread messages={(messages ?? []) as ThreadMessage[]} viewer="client" />
-        {isOpen && (
+        {canReply && (
           <div className="mt-6 border-t border-separator-border pt-4">
             <ReplyForm requestId={id} placeholder={r.direction === "to_client" ? "Reply, or attach the documents we asked for…" : "Add to your question…"} />
           </div>
         )}
       </div>
       )}
-      {isOpen && r.direction === "from_client" && (
+      {canReply && r.direction === "from_client" && (
         <div className="flex justify-end"><CloseRequestButton requestId={id} label="Mark as resolved" /></div>
       )}
     </div>

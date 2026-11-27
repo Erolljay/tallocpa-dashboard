@@ -5,7 +5,8 @@ import { Badge, Skeleton } from "@/components/ui";
 import { bundleLabel, bundleSummary, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { cx } from "@/utils/cx";
-import { portalContext } from "../client-context";
+import { canAct } from "@/lib/contacts/access";
+import { accessFor, portalContext } from "../client-context";
 import { ReplyForm } from "./reply-form";
 import { YearSelect } from "./year-select";
 
@@ -85,7 +86,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
 
   // Earliest month anything was sent, so the year list starts there.
   const [{ data: firstDoc }, { data: firstPayroll }] = await Promise.all([
-    supabase.from("documents").select("document_month").not("doc_type", "in", "(filed_return,payment_proof)").order("document_month").limit(1).maybeSingle(),
+    supabase.from("documents").select("document_month").in("client_id", ids).not("doc_type", "in", "(filed_return,payment_proof)").order("document_month").limit(1).maybeSingle(),
     supabase.from("payroll_submissions").select("pay_month").in("client_id", ids).order("pay_month").limit(1).maybeSingle(),
   ]);
   const firstYear = Math.min(
@@ -103,6 +104,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
     supabase
       .from("documents")
       .select("id, client_id, doc_type, period, document_month, late, file_name, status, bundle_count, bundle_pages, bundle_index, bundle_page, return_reason, client_reply, created_at")
+      .in("client_id", ids)
       .not("doc_type", "in", "(filed_return,payment_proof)")
       .neq("status", "uploading")
       // A bundled PDF is one file sent: it shows once, with how many invoices were found in it.
@@ -123,6 +125,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
       .from("documents")
       .select("id, client_id, doc_type, period, document_month, late, file_name, status, bundle_count, bundle_pages, bundle_index, bundle_page, return_reason, client_reply, created_at")
       .eq("status", "returned")
+      .in("client_id", ids)
       .not("doc_type", "in", "(filed_return,payment_proof)")
       .order("created_at", { ascending: false }),
   ]);
@@ -196,7 +199,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
               </div>
               <p className="text-body-regular text-text-primary">Reason: “{d.return_reason}”</p>
               <p className="text-caption-1-regular text-text-secondary">Upload a new copy from the Upload tab if needed, then tell us here.</p>
-              <ReplyForm documentId={d.id} />
+              {canAct(accessFor(clients, d.client_id)) && <ReplyForm documentId={d.id} />}
             </article>
           ))}
         </section>

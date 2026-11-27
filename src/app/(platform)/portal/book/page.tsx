@@ -5,6 +5,7 @@ import { SlotPicker } from "@/components/booking/slot-picker";
 import { Notice, Skeleton } from "@/components/ui";
 import { slotsFor } from "@/lib/calendar/booking";
 import { labelledDays, CLIENT_MEETING } from "@/lib/calendar/slots";
+import { accessNote, canAct } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
 import { bookClientMeetingAction, cancelMyMeetingAction } from "./actions";
 
@@ -52,7 +53,7 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
                 <span className="text-text-primary">{when.format(new Date(m.starts_at))}{m.topic ? ` · ${m.topic}` : ""}</span>
                 <span className="flex flex-wrap items-center gap-2">
                   {m.meet_url?.startsWith("https://") && <a href={m.meet_url} target="_blank" rel="noreferrer" className="text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Join on Meet</a>}
-                  {Date.parse(m.starts_at) > now && (
+                  {Date.parse(m.starts_at) > now && canAct(business.access) && (
                     <CancelBooking action={cancelMyMeetingAction.bind(null, m.id)} reasonHint="Optional. Your team will see it." />
                   )}
                 </span>
@@ -62,7 +63,9 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
         </section>
       )}
       <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-6">
-        {!host ? (
+        {!canAct(business.access) ? (
+          <Notice tone="waiting">{accessNote(business.access, "act")}</Notice>
+        ) : !host ? (
           <Notice tone="waiting">Your team is being assigned. You can book once we introduce them on your Home page.</Notice>
         ) : !free ? (
           <Notice tone="waiting">Online booking with {host.full_name} is not available right now. Please email them from your <Link href="/portal" className="underline">Home</Link> page.</Notice>
