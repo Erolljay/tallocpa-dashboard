@@ -60,11 +60,9 @@ describe.skipIf(!url)("contact access levels", () => {
     `select public.register_document('${client}', 'bir_2307_received', date_trunc('month', now())::date, 'a.jpg', 'image/jpeg', 2048)`;
   const ticket = (client: string) => `select public.open_client_ticket('${client}', 'Question', 'Hello')`;
   const approve = () => `select public.advance_filing('${filing}', 'client_approve', null, '{}'::jsonb)`;
-  const pay = () => {
-    const p = `${alpha}/${soa}/proof.jpg`;
-    return `insert into storage.objects (bucket_id, name) values ('payment-proofs', '${p}');
-            select public.submit_payment_proof('${soa}', '${p}', 'proof.jpg', 'image/jpeg', 1000, '2026-11-20', null, 'CHK-1', 'check')`;
-  };
+  // The proof file is stored beforehand (beforeAll), so this checks the payment itself.
+  const pay = () =>
+    `select public.submit_payment_proof('${soa}', '${alpha}/${soa}/proof.jpg', 'proof.jpg', 'image/jpeg', 1000, '2026-11-20', null, 'CHK-1', 'check')`;
 
   beforeAll(async () => {
     await admin.connect();
@@ -95,6 +93,7 @@ describe.skipIf(!url)("contact access levels", () => {
     )).rows[0].id;
     soa = (await db.query(`insert into public.soas (client_id, billing_date, reference, due_on) values ($1, '2026-11-10', 'TC-9601-2026-11-10', '2026-11-15') returning id`, [alpha])).rows[0].id;
     await db.query(`insert into public.client_dues (client_id, soa_id, kind, description, amount, due_on) values ($1, $2, 'other', 'Retainer', 1000, '2026-11-05')`, [alpha, soa]);
+    await db.query(`insert into storage.objects (bucket_id, name) values ('payment-proofs', $1)`, [`${alpha}/${soa}/proof.jpg`]);
   });
 
   afterAll(async () => {
@@ -154,11 +153,63 @@ describe.skipIf(!url)("contact access levels", () => {
   it("service-role uploads made for a viewer (Telegram) are refused too", async () => {
     await as(null, async () => {
       await fails(
-        `insert into public.documents (client_id, uploaded_by, source, doc_type, document_month, storage_path, file_name, mime_type, size_bytes)
-         values ($1, $2, 'portal', 'bir_2307_received', date_trunc('month', now())::date, 'x/y.jpg', 'y.jpg', 'image/jpeg', 1)`,
+        `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, storage_path, file_name, mime_type, size_bytes)
+         values ($1, $2, 'telegram', 'bir_2307_received', date_trunc('month', now())::date, date_trunc('month', now())::date, 'x/y.jpg', 'y.jpg', 'image/jpeg', 1)`,
         [alpha, VIC],
         /view only/,
       );
+    });
+  });
+
+  it("a Telegram upload for someone removed from the business is refused", async () => {
+    await db.query("begin");
+    try {
+      await db.query(`delete from public.client_users where user_id = $1 and client_id = $2`, [BEN, alpha]);
+      await fails(
+        `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, storage_path, file_name, mime_type, size_bytes)
+         values ($1, $2, 'telegram', 'bir_2307_received', date_trunc('month', now())::date, date_trunc('month', now())::date, 'x/z.jpg', 'z.jpg', 'image/jpeg', 1)`,
+        [alpha, BEN],
+        /no longer has access/,
+      );
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
+  it("the firm's own processing of a viewer's earlier upload (a bundle split) is not blocked", async () => {
+    await as(null, async () => {
+      await works(
+        `insert into public.documents (client_id, uploaded_by, source, doc_type, period, document_month, storage_path, file_name, mime_type, size_bytes)
+         values ($1, $2, 'portal', 'bir_2307_received', date_trunc('month', now())::date, date_trunc('month', now())::date, 'x/s.jpg', 's.jpg', 'image/jpeg', 1)`,
+        [alpha, VIC],
+      );
+    });
+  });
+
+  it("AR/AP updates need upload access", async () => {
+    // As the function inserts them: the signed-in contact, past row-level security.
+    await db.query("begin");
+    try {
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [VIC]);
+      await fails(`insert into public.arap_updates (client_id, month, source, rows) values ($1, date_trunc('month', now())::date, 'portal', '[]')`, [alpha], /view only/);
+      await db.query("select set_config('request.jwt.claim.sub', $1, true)", [BEN]);
+      await works(`insert into public.arap_updates (client_id, month, source, rows) values ($1, date_trunc('month', now())::date, 'portal', '[]')`, [alpha]);
+    } finally {
+      await db.query("rollback");
+    }
+  });
+
+  it("files: viewers add none, uploaders add no proofs of payment", async () => {
+    const add = (bucket: string) => `insert into storage.objects (bucket_id, name) values ('${bucket}', '${alpha}/f/${bucket}.jpg')`;
+    await as(VIC, async () => {
+      for (const b of ["documents", "requests", "payroll", "payment-proofs"]) await fails(add(b), [], /row-level security/);
+    });
+    await as(BEN, async () => {
+      for (const b of ["documents", "requests", "payroll"]) await works(add(b));
+      await fails(add("payment-proofs"), [], /row-level security/);
+    });
+    await as(MARIA, async () => {
+      await works(add("payment-proofs"));
     });
   });
 

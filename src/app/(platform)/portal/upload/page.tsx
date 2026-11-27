@@ -39,7 +39,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searchParams">) {
   const sp = await searchParams;
   const stream: Stream = ORDER.find((s) => s === one(sp.stream)) ?? "sales";
-  const { id, supabase, clients: linked } = await portalContext();
+  const { id, supabase, clients: linked, all } = await portalContext();
   if (linked.length === 0) {
     return <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
   }
@@ -49,7 +49,10 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
     return (
       <div className="space-y-4">
         <h1 className="text-title-1-medium text-text-primary">Upload</h1>
-        <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">{accessNote("viewer", "act")}</p>
+        <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">
+          {accessNote("viewer", "act")}
+          {all.some((c) => canAct(c.access)) && ` You can upload for ${all.filter((c) => canAct(c.access)).map((c) => c.name).join(", ")}: switch business at the top of the page.`}
+        </p>
       </div>
     );
   }

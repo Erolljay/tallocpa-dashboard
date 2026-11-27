@@ -29,8 +29,8 @@ export default function PortalStatements(props: PageProps<"/portal/reports/state
  */
 async function Statements({ searchParams }: Pick<PageProps<"/portal/reports/statements">, "searchParams">) {
   const q = await searchParams;
-  const { supabase, clients } = await portalContext();
-  const picked = pickClient(clients, q.client);
+  const { supabase, clients, all } = await portalContext();
+  const picked = pickClient(clients, q.client, all);
   if (!picked) notFound();
   const [client, books] = await Promise.all([portalBooksClient(supabase, picked.id), loadPortalBooks(supabase, picked.id)]);
   if (!client) notFound();

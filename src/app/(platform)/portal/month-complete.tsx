@@ -34,6 +34,8 @@ export function MonthComplete(props: {
   cutoff: string;
   daysLeft: number;
   canUndo: boolean;
+  /** View-only contacts: what was sent and what happens next, without confirm or undo. */
+  readOnly?: boolean;
   confirmed: { on: string; count: number | null } | null;
   sent: SentRow[];
   ranges: MissingRange[];
@@ -66,7 +68,7 @@ export function MonthComplete(props: {
             <p className="text-body-regular text-text-secondary">
               You confirmed {props.confirmed.count ?? total} document{(props.confirmed.count ?? total) === 1 ? "" : "s"} on {props.confirmed.on}. Found something else? You can still send it; it will be marked late.
             </p>
-            {props.canUndo ? (
+            {props.readOnly ? null : props.canUndo ? (
               <form action={undo} className="flex flex-wrap items-center gap-2">
                 <Button type="submit" size="sm" variant="secondary" disabled={undoing}>{undoing ? "Undoing…" : `Undo, until the cutoff on ${props.cutoff}`}</Button>
                 {undoState.error && <span role="alert" className="text-caption-1-regular text-text-error-primary">{undoState.error}</span>}
@@ -99,7 +101,11 @@ export function MonthComplete(props: {
           </table>
         </section>
 
-        {!props.confirmed && (
+        {!props.confirmed && props.readOnly && (
+          <p className="text-body-regular text-text-secondary">Not confirmed yet. A contact with upload access confirms the month once everything is sent.</p>
+        )}
+
+        {!props.confirmed && !props.readOnly && (
           <section aria-label="Before you confirm" className="space-y-3">
             <h3 className="text-headline-semibold text-text-primary">Before you confirm</h3>
             {props.ranges.length === 0 && props.cwt.length === 0 && (

@@ -1,8 +1,13 @@
 import type { PortalClient } from "../client-context";
 
 /** The business a Reports page is about: `?client=` when it is one of the user's, else the first. */
-export function pickClient(clients: PortalClient[], requested: string | string[] | undefined): PortalClient | null {
-  return clients.find((c) => c.id === requested) ?? clients[0] ?? null;
+/**
+ * The business a report shows: the one asked for in the link (any business the contact
+ * is linked to, so a link to another business still opens it), else the first shown.
+ * `all` defaults to `clients`.
+ */
+export function pickClient(clients: PortalClient[], requested: string | string[] | undefined, all: PortalClient[] = clients): PortalClient | null {
+  return all.find((c) => c.id === requested) ?? clients[0] ?? null;
 }
 
 const monthFmt = new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" });

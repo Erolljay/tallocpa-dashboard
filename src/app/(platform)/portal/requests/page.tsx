@@ -38,8 +38,10 @@ async function Requests() {
     .limit(100);
   const nameOf = new Map(clients.map((c) => [c.id, c.name]));
   const rows = ((data ?? []) as unknown as Row[]).map((r) => ({ ...r, view: statusFor("client", r.direction, r.status) }));
-  const needed = rows.filter((r) => r.view.actionNeeded);
-  const rest = rows.filter((r) => !r.view.actionNeeded);
+  // Waiting on the contact only where they may answer (view-only contacts cannot).
+  const answerable = new Set(clients.filter((c) => canAct(c.access)).map((c) => c.id));
+  const needed = rows.filter((r) => r.view.actionNeeded && answerable.has(r.client_id));
+  const rest = rows.filter((r) => !needed.includes(r));
 
   const list = (items: typeof rows) => (
     <ul className="divide-y divide-separator-border rounded-3xl border border-border-button-default bg-background-primary-default text-body-regular">

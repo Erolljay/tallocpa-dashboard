@@ -26,8 +26,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  */
 async function BookPrint({ searchParams }: Pick<PageProps<"/portal/reports/books/print">, "searchParams">) {
   const q = await searchParams;
-  const { supabase, clients } = await portalContext();
-  const picked = pickClient(clients, q.client);
+  const { supabase, clients, all } = await portalContext();
+  const picked = pickClient(clients, q.client, all);
   if (!picked) notFound();
   const kind = typeof q.book === "string" && (BOOK_KINDS as string[]).includes(q.book) ? (q.book as BookKind) : null;
   const from = typeof q.from === "string" && DATE_RE.test(q.from) ? q.from : null;

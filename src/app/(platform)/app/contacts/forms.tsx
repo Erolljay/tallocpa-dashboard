@@ -46,7 +46,7 @@ export function NewContactForm({ businesses }: { businesses: Business[] }) {
       <Field label="Position (optional)" htmlFor="nc_position" error={e.position}>
         <Input id="nc_position" name="position" placeholder="Owner, bookkeeper…" />
       </Field>
-      <Field label="Access" htmlFor="nc_access" error={e.access} hint={ACCESS_HINT.full}>
+      <Field label="Access" htmlFor="nc_access" error={e.access} hint={`${ACCESS_LABEL.uploader}: ${ACCESS_HINT.uploader} ${ACCESS_LABEL.viewer}: ${ACCESS_HINT.viewer}`}>
         <Select id="nc_access" name="access" defaultValue="full"><AccessOptions /></Select>
       </Field>
       <div className="flex items-end">

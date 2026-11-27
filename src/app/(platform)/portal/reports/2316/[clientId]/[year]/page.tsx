@@ -27,7 +27,7 @@ async function Portal2316({ params, searchParams }: Pick<PageProps<"/portal/repo
   const { clientId, year: y } = await params;
   const { employee } = await searchParams;
   if (!/^\d{4}$/.test(y)) notFound();
-  const { supabase, clients } = await portalContext();
+  const { supabase, all: clients } = await portalContext();
   if (!clients.some((c) => c.id === clientId)) notFound();
   const set = await load2316(supabase, clientId, Number(y));
   if (!set || !set.releasedAt) notFound();

@@ -28,7 +28,9 @@ $$;
 -- 'approve' (approving or querying a return, paying, deciding on a 2307 claim).
 -- `who` is the person acting: the signed-in user, or for service-role work done on a
 -- contact's behalf (Telegram uploads, meeting bookings), the contact it is done for.
--- Staff, and service-role work for no one, pass.
+-- Staff, and service-role work for no one, pass. Work done on behalf of someone who is
+-- no longer linked to the business (a Telegram chat left over after their access was
+-- removed) is refused; a signed-in non-contact is left to the other checks.
 create or replace function private.client_guard(target uuid, need text, who uuid default auth.uid()) returns void
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -37,6 +39,9 @@ begin
   if who is null or target is null then return; end if;
   if exists (select 1 from public.staff_profiles sp where sp.user_id = who and sp.active) then return; end if;
   select cu.access into lvl from public.client_users cu where cu.client_id = target and cu.user_id = who;
+  if lvl is null and who is distinct from auth.uid() then
+    raise exception 'This person no longer has access to this business.' using errcode = '42501';
+  end if;
   if lvl is null or lvl = 'full' then return; end if;
   if lvl = 'viewer' then
     raise exception 'Your access to this business is view only. Ask us if you need to upload or approve.' using errcode = '42501';
@@ -48,7 +53,9 @@ end;
 $$;
 
 -- Trigger form: tg_argv[0] is the need; tg_argv[1], when given, names the column that
--- holds the contact a service-role insert is done for.
+-- holds the contact a service-role insert is done for. For documents that is only a
+-- Telegram upload: other service-role inserts (a bundled PDF split into invoices) carry
+-- the original uploader but are the firm's own processing.
 create or replace function private.client_access_guard() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -61,7 +68,8 @@ begin
   else
     target := (row ->> 'client_id')::uuid;
   end if;
-  if who is null and tg_op = 'INSERT' and tg_nargs > 1 then
+  if who is null and tg_op = 'INSERT' and tg_nargs > 1
+     and (tg_table_name <> 'documents' or row ->> 'source' = 'telegram') then
     who := (row ->> tg_argv[1])::uuid;
   end if;
   perform private.client_guard(target, tg_argv[0], who);
@@ -84,6 +92,8 @@ create trigger client_access_guard before insert on public.payroll_submissions
   for each row execute function private.client_access_guard('act');
 create trigger client_access_guard before insert on public.telegram_link_codes
   for each row execute function private.client_access_guard('act');
+create trigger client_access_guard before insert on public.arap_updates
+  for each row execute function private.client_access_guard('act');
 create trigger client_access_guard before insert on public.client_meetings
   for each row execute function private.client_access_guard('act', 'booked_by');
 
@@ -95,9 +105,43 @@ create trigger client_access_guard before insert on public.payment_proofs
 create trigger client_access_guard before update of cwt_claim on public.book_invoices
   for each row execute function private.client_access_guard('approve');
 
+-- The same rule as a yes/no, for storage policies: may the signed-in user add a file for
+-- this business? Staff and non-contacts get true (their own policies decide).
+create or replace function private.client_may(target uuid, need text) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select case coalesce(private.client_access(target), 'full')
+    when 'full' then true
+    when 'uploader' then need = 'act'
+    else private.is_staff()
+  end
+$$;
+
+-- Files follow the rows: view-only contacts add no files, and only full-access contacts
+-- add proofs of payment.
+drop policy documents_files_insert on storage.objects;
+create policy documents_files_insert on storage.objects for insert to authenticated with check (
+  bucket_id = 'documents' and private.can_upload(private.document_client(name)) and private.client_may(private.document_client(name), 'act')
+);
+drop policy requests_files_insert on storage.objects;
+create policy requests_files_insert on storage.objects for insert to authenticated with check (
+  bucket_id = 'requests' and private.can_upload(private.document_client(name)) and private.client_may(private.document_client(name), 'act')
+);
+drop policy payroll_files_insert on storage.objects;
+create policy payroll_files_insert on storage.objects for insert to authenticated with check (
+  bucket_id = 'payroll' and (private.can_payroll(private.document_client(name)) or private.is_client_user(private.document_client(name)))
+  and private.client_may(private.document_client(name), 'act')
+);
+drop policy payment_proofs_files_insert on storage.objects;
+create policy payment_proofs_files_insert on storage.objects for insert to authenticated with check (
+  bucket_id = 'payment-proofs' and (private.is_owner() or private.is_client_user(private.document_client(name)))
+  and private.client_may(private.document_client(name), 'approve')
+);
+
 revoke execute on function private.client_access(uuid) from public, anon;
 revoke execute on function private.client_guard(uuid, text, uuid) from public, anon;
 grant execute on function private.client_access(uuid) to authenticated;
+revoke execute on function private.client_may(uuid, text) from public, anon;
+grant execute on function private.client_may(uuid, text) to authenticated;
 grant execute on function private.client_guard(uuid, text, uuid) to authenticated;
 
 -- Who is signed in now also says, per business, what the contact may do there.

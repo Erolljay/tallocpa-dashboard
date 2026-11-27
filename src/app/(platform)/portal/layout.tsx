@@ -4,6 +4,7 @@ import { Bell, BellFallback } from "@/components/application/notifications/bell"
 import { IdleWatcher } from "@/components/application/session/idle-watcher";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Lockup } from "@/components/brand/lockup";
+import { canAct } from "@/lib/contacts/access";
 import { BusinessSwitcher } from "./business/business-switcher";
 import { portalContext } from "./client-context";
 import { PortalNav } from "./nav/portal-nav";
@@ -56,7 +57,8 @@ async function Nav({ variant }: { variant: "top" | "bottom" }) {
     ? await Promise.all([
         supabase.from("registration_cases").select("id", { count: "exact", head: true }).in("client_id", ids).neq("status", "cancelled"),
         // Requests from us still waiting on the client.
-        supabase.from("client_requests").select("id", { count: "exact", head: true }).in("client_id", ids).eq("direction", "to_client").eq("status", "open"),
+        // Only where this contact may answer (view-only contacts cannot).
+        supabase.from("client_requests").select("id", { count: "exact", head: true }).in("client_id", clients.filter((c) => canAct(c.access)).map((c) => c.id)).eq("direction", "to_client").eq("status", "open"),
       ])
     : [{ count: 0 }, { count: 0 }];
   return <PortalNav variant={variant} registration={(cases ?? 0) > 0} pending={pending ?? 0} />;
@@ -70,7 +72,7 @@ async function BusinessBar() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-3 sm:pb-1">
       {name && <p className="text-body-regular text-text-secondary">{name}</p>}
-      <BusinessSwitcher businesses={all.map((c) => ({ id: c.id, name: c.name, access: c.access }))} activeId={all.length > 1 ? (active?.id ?? null) : null} />
+      <BusinessSwitcher businesses={all.map((c) => ({ id: c.id, name: c.name, access: c.access }))} activeId={active?.id ?? null} />
     </div>
   );
 }
