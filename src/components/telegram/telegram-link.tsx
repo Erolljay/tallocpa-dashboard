@@ -3,10 +3,10 @@
 import { RiExternalLinkLine, RiTelegram2Line } from "@remixicon/react";
 import { useState, useTransition } from "react";
 import { AnchorButton, Button, Notice } from "@/components/ui";
-import { setTelegramEnabledAction, telegramLinkAction, telegramUnlinkAction } from "@/lib/telegram/actions";
+import { setTelegramEnabledAction, telegramLinkAction, telegramStaffLinkAction, telegramUnlinkAction } from "@/lib/telegram/actions";
 
-/** Portal: open the bot with a one-time code that links this chat to the client. */
-export function TelegramLinkButton({ clientId, label = "Link Telegram" }: { clientId: string; label?: string }) {
+/** Open the bot with a one-time code: a portal user's chat for one client, or (no clientId) a staff member's own chat. */
+export function TelegramLinkButton({ clientId, label = "Link Telegram" }: { clientId?: string; label?: string }) {
   const [state, setState] = useState<{ url?: string; error?: string }>({});
   const [pending, start] = useTransition();
   if (state.url) {
@@ -21,7 +21,7 @@ export function TelegramLinkButton({ clientId, label = "Link Telegram" }: { clie
   }
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" disabled={pending} onClick={() => start(async () => setState(await telegramLinkAction(clientId)))}>
+      <Button variant="secondary" disabled={pending} onClick={() => start(async () => setState(await (clientId ? telegramLinkAction(clientId) : telegramStaffLinkAction())))}>
         <RiTelegram2Line aria-hidden className="size-5" /> {pending ? "Preparing…" : label}
       </Button>
       {state.error && <Notice tone="blocked">{state.error}</Notice>}

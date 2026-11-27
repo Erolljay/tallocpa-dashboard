@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fileFromMessage, parseChoice, safeName, startCode, typeButtons, type TgMessage } from "./intake";
+import { clientButtons, clientQuery, fileFromMessage, monthButtons, parseChoice, safeName, startCode, typeButtons, type TgMessage } from "./intake";
 
 const base: TgMessage = { message_id: 7, chat: { id: 1, type: "private" } };
 const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
@@ -60,5 +60,25 @@ describe("startCode and safeName", () => {
   it("names the stored file as register_document() does", () => {
     expect(safeName("Resibo ng Jollibee (1).jpg")).toBe("Resibo_ng_Jollibee_1_.jpg");
     expect(safeName("  ")).toBe("document");
+  });
+});
+
+describe("staff: client and month", () => {
+  it("reads /client with or without words", () => {
+    expect(clientQuery("/client molo")).toBe("molo");
+    expect(clientQuery("/client")).toBe("");
+    expect(clientQuery("molo")).toBeNull();
+  });
+
+  it("round-trips a client button", () => {
+    expect(parseChoice(clientButtons([{ id: ID, code: "TC-1", name: "Molo Bakeshop" }])[0][0].callback_data)).toEqual({ action: "client", clientId: ID });
+  });
+
+  it("round-trips a month button within Telegram's 64 bytes", () => {
+    const all = monthButtons(ID, "purchase_receipt", ["2026-11-01", "2026-10-01"]).flat();
+    expect(all.map((b) => b.text)).toEqual(["Nov 2026", "Oct 2026", "Cancel"]);
+    for (const b of all) expect(Buffer.byteLength(b.callback_data)).toBeLessThanOrEqual(64);
+    expect(parseChoice(all[1].callback_data)).toEqual({ action: "month", docType: "purchase_receipt", month: "2026-10-01", uploadId: ID });
+    expect(parseChoice(`m:p:202613:${ID}`)).toBeNull();
   });
 });

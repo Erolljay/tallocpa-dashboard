@@ -94,7 +94,27 @@ export function typeButtons(uploadId: string, mimeType: string): InlineKeyboard 
   return rows;
 }
 
-export type Choice = { action: "file"; docType: DocType; uploadId: string } | { action: "cancel"; uploadId: string };
+const monthLabel = new Intl.DateTimeFormat("en-PH", { month: "short", year: "numeric", timeZone: "UTC" });
+
+/** Staff: after the kind, the month it is for (callback "m:<code>:<yyyymm>:<upload id>"). Months are "YYYY-MM-01", newest first. */
+export function monthButtons(uploadId: string, docType: DocType, months: string[]): InlineKeyboard {
+  const buttons = months.map((m) => ({ text: monthLabel.format(new Date(`${m}T00:00:00Z`)), callback_data: `m:${CODE_OF[docType]}:${m.slice(0, 4)}${m.slice(5, 7)}:${uploadId}` }));
+  const rows: InlineKeyboard = [];
+  for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2));
+  rows.push([{ text: "Cancel", callback_data: `x:${uploadId}` }]);
+  return rows;
+}
+
+/** Staff: the clients matching /client, one button each (callback "c:<client id>"). */
+export function clientButtons(clients: { id: string; code: string; name: string }[]): InlineKeyboard {
+  return clients.map((c) => [{ text: `${c.name} (${c.code})`.slice(0, 60), callback_data: `c:${c.id}` }]);
+}
+
+export type Choice =
+  | { action: "file"; docType: DocType; uploadId: string }
+  | { action: "month"; docType: DocType; month: string; uploadId: string }
+  | { action: "client"; clientId: string }
+  | { action: "cancel"; uploadId: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -104,7 +124,17 @@ export function parseChoice(data: string | undefined): Choice | null {
   const parts = data.split(":");
   if (parts[0] === "x" && parts.length === 2 && UUID.test(parts[1])) return { action: "cancel", uploadId: parts[1] };
   if (parts[0] === "f" && parts.length === 3 && CODES[parts[1]] && UUID.test(parts[2])) return { action: "file", docType: CODES[parts[1]], uploadId: parts[2] };
+  if (parts[0] === "m" && parts.length === 4 && CODES[parts[1]] && /^\d{4}(0[1-9]|1[0-2])$/.test(parts[2]) && UUID.test(parts[3])) {
+    return { action: "month", docType: CODES[parts[1]], month: `${parts[2].slice(0, 4)}-${parts[2].slice(4)}-01`, uploadId: parts[3] };
+  }
+  if (parts[0] === "c" && parts.length === 2 && UUID.test(parts[1])) return { action: "client", clientId: parts[1] };
   return null;
+}
+
+/** "/client <words>": the words (may be empty), or null for any other message. */
+export function clientQuery(text: string | undefined): string | null {
+  const m = text?.trim().match(/^\/client(?:@\w+)?(?:\s+([\s\S]*))?$/);
+  return m ? (m[1] ?? "").trim().slice(0, 60) : null;
 }
 
 /** "/start <code>" from the portal's link; the code is 32 hex characters. */

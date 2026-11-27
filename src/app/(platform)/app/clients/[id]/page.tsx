@@ -50,7 +50,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("branches").select("id, code, name, address, active").order("name"),
     supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
   ]);
-  const { data: telegramLinks } = await supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id);
+  const { data: telegramLinks } = await supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id).eq("staff", false);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };

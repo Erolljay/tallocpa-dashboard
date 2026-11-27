@@ -18,6 +18,17 @@ export async function telegramLinkAction(clientId: string): Promise<LinkState> {
   return { url: `https://t.me/${env.username}?start=${data as string}` };
 }
 
+/** Staff: a one-time t.me link that links their own Telegram chat (they choose the client in the bot). */
+export async function telegramStaffLinkAction(): Promise<LinkState> {
+  await requireStaff();
+  const env = telegramEnv();
+  if (!env) return { error: "The Telegram bot is not set up yet (docs/SETUP.md, “Telegram uploads”)." };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("telegram_staff_link_code");
+  if (error) return { error: error.message };
+  return { url: `https://t.me/${env.username}?start=${data as string}` };
+}
+
 /** Portal user or staff: stop a linked chat sending documents. */
 export async function telegramUnlinkAction(chatId: number): Promise<{ ok?: true; error?: string }> {
   await getIdentity();
@@ -26,6 +37,7 @@ export async function telegramUnlinkAction(chatId: number): Promise<{ ok?: true;
   if (error) return { error: error.message };
   revalidatePath("/portal/upload");
   revalidatePath("/app/clients", "layout");
+  revalidatePath("/app/settings/notifications");
   return { ok: true };
 }
 

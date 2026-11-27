@@ -9,6 +9,11 @@
 -- file (or album) with buttons for the kind of document; tapping one files it in the
 -- client's Inbox exactly as a portal upload would, with source 'telegram'.
 --
+-- Staff (the Owner included) can link their own chat too, from Settings → Notifications.
+-- They choose the client in the bot (/client <name or code>; only clients they may upload
+-- for), send files, tap the kind and then the month. The client's Telegram switch is about
+-- the client's own use; staff may send any client they are assigned to.
+--
 -- The bot runs on the server with the secret key; the tables below have no policies
 -- for writes, and the service-role functions check the person is still the client's
 -- portal user and the channel is still on before anything is filed.
@@ -21,19 +26,23 @@ alter table public.register_lines drop constraint register_lines_source_check;
 alter table public.register_lines add constraint register_lines_source_check check (source in ('portal', 'staff', 'email', 'batch', 'telegram'));
 
 -- One-time codes a portal user opens in the bot (t.me/<bot>?start=<code>). 15 minutes.
+-- A staff code has no client: staff choose the client in the bot.
 create table public.telegram_link_codes (
   code text primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
-  client_id uuid not null references public.clients (id) on delete cascade,
+  client_id uuid references public.clients (id) on delete cascade,
+  staff boolean not null default false,
   expires_at timestamptz not null default now() + interval '15 minutes',
   used_at timestamptz
 );
 
--- A linked chat sends files for one client as one portal user.
+-- A linked chat sends files for one client as one portal user, or, for staff, for the
+-- client they last chose in the bot (none until they choose).
 create table public.telegram_links (
   chat_id bigint primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
-  client_id uuid not null references public.clients (id) on delete cascade,
+  client_id uuid references public.clients (id) on delete set null,
+  staff boolean not null default false,
   username text,
   linked_at timestamptz not null default now()
 );
@@ -64,11 +73,73 @@ alter table public.telegram_link_codes enable row level security;
 alter table public.telegram_links enable row level security;
 alter table public.telegram_uploads enable row level security;
 
--- A portal user sees their own linked chats; staff who manage the client see its links.
+-- Everyone sees their own linked chats; staff who manage a client see its portal users' links.
 create policy telegram_links_read on public.telegram_links for select to authenticated
-  using (user_id = auth.uid() or private.can_manage_client(client_id));
+  using (user_id = auth.uid() or (not staff and private.can_manage_client(client_id)));
 create policy telegram_links_delete on public.telegram_links for delete to authenticated
-  using (user_id = auth.uid() or private.can_manage_client(client_id));
+  using (user_id = auth.uid() or (not staff and private.can_manage_client(client_id)));
+
+/**
+ * May this person file a Telegram upload for this client? Staff: the Owner, or staff
+ * assigned to it. A portal user: their own client, with Telegram switched on.
+ */
+create or replace function private.telegram_can_file(p_user uuid, p_client uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.staff_profiles sp
+    where sp.user_id = p_user and sp.active
+      and (sp.role = 'owner' or exists (select 1 from public.staff_assignments sa where sa.user_id = p_user and sa.client_id = p_client))
+  ) or exists (
+    select 1 from public.clients c join public.client_users cu on cu.client_id = c.id
+    where c.id = p_client and c.telegram_enabled and cu.user_id = p_user
+  )
+$$;
+
+/** Staff: a one-time code to link their own Telegram chat. */
+create or replace function public.telegram_staff_link_code() returns text
+language plpgsql security definer set search_path = '' as $$
+declare
+  c text := replace(gen_random_uuid()::text, '-', '');
+begin
+  if private.staff_role() is null then
+    raise exception 'Only staff can do this' using errcode = '42501';
+  end if;
+  delete from public.telegram_link_codes where user_id = auth.uid() and (used_at is not null or expires_at < now());
+  insert into public.telegram_link_codes (code, user_id, client_id, staff) values (c, auth.uid(), null, true);
+  return c;
+end;
+$$;
+
+/** Bot (service role): the clients a linked staff chat may send for, matching a name or code. */
+create or replace function public.telegram_staff_clients(p_chat bigint, p_query text)
+returns table (id uuid, code text, name text)
+language sql stable security definer set search_path = '' as $$
+  select c.id, c.code, c.name
+  from public.telegram_links l
+  join public.clients c on private.telegram_can_file(l.user_id, c.id)
+  where l.chat_id = p_chat and l.staff and c.status <> 'archived'
+    and (coalesce(trim(p_query), '') = '' or c.name ilike '%' || trim(p_query) || '%' or c.code ilike '%' || trim(p_query) || '%')
+  order by c.name
+  limit 8
+$$;
+
+/** Bot (service role): a staff chat chooses the client its next files are for. Returns its name. */
+create or replace function public.telegram_set_client(p_chat bigint, p_client uuid) returns text
+language plpgsql security definer set search_path = '' as $$
+declare
+  l public.telegram_links;
+  name text;
+begin
+  select * into l from public.telegram_links where chat_id = p_chat for update;
+  if l.chat_id is null or not l.staff then raise exception 'This chat is not linked to a staff account' using errcode = '42501'; end if;
+  if not private.telegram_can_file(l.user_id, p_client) then
+    raise exception 'You cannot send documents for this client' using errcode = '42501';
+  end if;
+  update public.telegram_links set client_id = p_client where chat_id = p_chat;
+  select c.name into name from public.clients c where c.id = p_client;
+  return name;
+end;
+$$;
 
 /** Portal user: a one-time code to link a Telegram chat to this client. */
 create or replace function public.telegram_link_code(p_client uuid) returns text
@@ -88,7 +159,7 @@ begin
 end;
 $$;
 
-/** Bot (service role): link a chat with a code. Returns the client's name. */
+/** Bot (service role): link a chat with a code. Returns the client's name (staff: their own name). */
 create or replace function public.telegram_link_chat(p_code text, p_chat bigint, p_username text) returns text
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -99,17 +170,22 @@ begin
   if k.code is null or k.used_at is not null or k.expires_at < now() then
     raise exception 'This link has expired. Open a new one from the Upload page of the portal.' using errcode = 'P0002';
   end if;
-  select c.name into name from public.clients c
-  where c.id = k.client_id and c.telegram_enabled
-    and exists (select 1 from public.client_users cu where cu.client_id = c.id and cu.user_id = k.user_id);
-  if name is null then
-    raise exception 'Telegram uploads are not on for this account.' using errcode = '42501';
+  if k.staff then
+    select sp.full_name into name from public.staff_profiles sp where sp.user_id = k.user_id and sp.active;
+    if name is null then raise exception 'This staff account is not active.' using errcode = '42501'; end if;
+  else
+    select c.name into name from public.clients c
+    where c.id = k.client_id and c.telegram_enabled
+      and exists (select 1 from public.client_users cu where cu.client_id = c.id and cu.user_id = k.user_id);
+    if name is null then
+      raise exception 'Telegram uploads are not on for this account.' using errcode = '42501';
+    end if;
   end if;
   update public.telegram_link_codes set used_at = now() where code = k.code;
-  insert into public.telegram_links (chat_id, user_id, client_id, username)
-  values (p_chat, k.user_id, k.client_id, p_username)
+  insert into public.telegram_links (chat_id, user_id, client_id, username, staff)
+  values (p_chat, k.user_id, k.client_id, p_username, k.staff)
   on conflict (chat_id) do update set user_id = excluded.user_id, client_id = excluded.client_id,
-    username = excluded.username, linked_at = now();
+    username = excluded.username, staff = excluded.staff, linked_at = now();
   return name;
 end;
 $$;
@@ -142,7 +218,7 @@ begin
     return d;
   end if;
   select * into c from public.clients where id = u.client_id;
-  if not c.telegram_enabled or not exists (select 1 from public.client_users cu where cu.client_id = c.id and cu.user_id = u.user_id) then
+  if not private.telegram_can_file(u.user_id, c.id) then
     raise exception 'Telegram uploads are not on for this account.' using errcode = '42501';
   end if;
   if p_doc_type not in ('sales_invoice', 'purchase_receipt', 'bir_2307_received', 'bir_2307_issued', 'payroll', 'cor', 'other') then
@@ -170,6 +246,13 @@ begin
 end;
 $$;
 
+revoke execute on function private.telegram_can_file(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.telegram_staff_link_code() from public, anon;
+revoke execute on function public.telegram_staff_clients(bigint, text) from public, anon, authenticated;
+revoke execute on function public.telegram_set_client(bigint, uuid) from public, anon, authenticated;
+grant execute on function public.telegram_staff_link_code() to authenticated;
+grant execute on function public.telegram_staff_clients(bigint, text) to service_role;
+grant execute on function public.telegram_set_client(bigint, uuid) to service_role;
 revoke execute on function public.telegram_link_code(uuid) from public, anon;
 revoke execute on function public.telegram_link_chat(text, bigint, text) from public, anon, authenticated;
 revoke execute on function public.telegram_file_document(uuid, uuid, text, date, text) from public, anon, authenticated;

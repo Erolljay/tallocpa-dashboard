@@ -19,6 +19,8 @@ const DB_NAME = "telegram_uploads_test";
 const OWNER = "00000000-0000-0000-0000-000000000e01";
 const CLIENT_USER = "00000000-0000-0000-0000-000000000e02";
 const OTHER_USER = "00000000-0000-0000-0000-000000000e03";
+const PREPARER = "00000000-0000-0000-0000-000000000e04";
+const STAFF_CHAT = 555009;
 const CHAT = 555001;
 
 describe.skipIf(!url)("Telegram uploads", () => {
@@ -66,12 +68,14 @@ describe.skipIf(!url)("Telegram uploads", () => {
     await db.query(read("tests/grants.sql"));
     await db.query(read("seed.sql"));
     await db.query(`grant usage on schema public to service_role`);
-    await db.query(`insert into auth.users (id) values ($1), ($2), ($3)`, [OWNER, CLIENT_USER, OTHER_USER]);
+    await db.query(`insert into auth.users (id) values ($1), ($2), ($3), ($4)`, [OWNER, CLIENT_USER, OTHER_USER, PREPARER]);
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
-    await db.query(`insert into public.staff_profiles (user_id, brand_id, full_name, role) values ($1, $2, 'Owner', 'owner')`, [OWNER, brand]);
+    await db.query(`insert into public.staff_profiles (user_id, brand_id, full_name, role) values ($1, $3, 'Owner', 'owner'), ($2, $3, 'Pia Preparer', 'staff')`, [OWNER, PREPARER, brand]);
     client = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9951', 'Molo Bakeshop', 'individual') returning id`, [brand])).rows[0].id;
     other = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type) values ($1, 'TC-9952', 'Arevalo Hardware', 'individual') returning id`, [brand])).rows[0].id;
     await db.query(`insert into public.client_users (user_id, client_id, full_name) values ($1, $2, 'Maria Molo'), ($3, $4, 'Ben Arevalo')`, [CLIENT_USER, client, OTHER_USER, other]);
+    // The preparer is assigned to Arevalo Hardware only; neither client has Telegram on for staff to use it.
+    await db.query(`insert into public.staff_assignments (client_id, user_id, role) values ($1, $2, 'preparer')`, [other, PREPARER]);
   });
 
   afterAll(async () => {
@@ -123,5 +127,37 @@ describe.skipIf(!url)("Telegram uploads", () => {
     await as(OWNER, `update public.clients set telegram_enabled = true where id = $1`, [client]);
     await db.query(`delete from public.client_users where user_id = $1 and client_id = $2`, [CLIENT_USER, client]);
     await expect(bot(`select public.telegram_file_document($1, $2, 'sales_invoice', '2026-11-01', $3)`, [u, id, p])).rejects.toThrow(/not on for this account/);
+  });
+
+  describe("staff", () => {
+    it("link their own chat and choose only clients they may upload for", async () => {
+      await expect(as(CLIENT_USER, `select public.telegram_staff_link_code()`)).rejects.toThrow(/Only staff/);
+      const c = (await as(PREPARER, `select public.telegram_staff_link_code() as c`)).rows[0].c;
+      expect((await bot(`select public.telegram_link_chat($1, $2, 'pia') as n`, [c, STAFF_CHAT])).rows[0].n).toBe("Pia Preparer");
+      expect((await bot(`select name from public.telegram_staff_clients($1, '')`, [STAFF_CHAT])).rows).toEqual([{ name: "Arevalo Hardware" }]);
+      expect((await bot(`select name from public.telegram_staff_clients($1, 'molo')`, [STAFF_CHAT])).rows).toEqual([]);
+      await expect(bot(`select public.telegram_set_client($1, $2)`, [STAFF_CHAT, client])).rejects.toThrow(/cannot send documents for this client/);
+      expect((await bot(`select public.telegram_set_client($1, $2) as n`, [STAFF_CHAT, other])).rows[0].n).toBe("Arevalo Hardware");
+      // A client's chat cannot choose a client.
+      await expect(bot(`select public.telegram_set_client($1, $2)`, [CHAT, other])).rejects.toThrow(/not linked to a staff account/);
+    });
+
+    it("file for the chosen client in the month they choose, under their own name", async () => {
+      const u = (await db.query(
+        `insert into public.telegram_uploads (chat_id, user_id, client_id, file_id, file_name, mime_type, size_bytes)
+         values ($1, $2, $3, 'tg', 'si.pdf', 'application/pdf', 10) returning id`,
+        [STAFF_CHAT, PREPARER, other],
+      )).rows[0].id;
+      const id = (await db.query(`select gen_random_uuid() as id`)).rows[0].id;
+      const p = `${other}/${id}/si.pdf`;
+      await db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1)`, [p]);
+      const d = (await bot(`select client_id, uploaded_by, source, document_month::text from public.telegram_file_document($1, $2, 'sales_invoice', '2026-10-01', $3)`, [u, id, p])).rows[0];
+      expect(d).toEqual({ client_id: other, uploaded_by: PREPARER, source: "telegram", document_month: "2026-10-01" });
+    });
+
+    it("keep their link private from other staff", async () => {
+      expect((await as(OWNER, `select chat_id from public.telegram_links where staff`)).rows).toEqual([]);
+      expect((await as(PREPARER, `select chat_id from public.telegram_links`)).rows).toEqual([{ chat_id: String(STAFF_CHAT) }]);
+    });
   });
 });

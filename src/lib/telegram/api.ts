@@ -4,7 +4,7 @@ import type { InlineKeyboard } from "./intake";
 /** The few Telegram Bot API calls the upload bot makes. */
 export interface TelegramApi {
   sendMessage(chatId: number, text: string, opts?: { replyTo?: number; keyboard?: InlineKeyboard }): Promise<{ message_id: number } | null>;
-  editMessage(chatId: number, messageId: number, text: string): Promise<void>;
+  editMessage(chatId: number, messageId: number, text: string, keyboard?: InlineKeyboard): Promise<void>;
   answerCallback(callbackId: string, text?: string): Promise<void>;
   /** Downloads a file the client sent. */
   download(fileId: string): Promise<ArrayBuffer>;
@@ -32,8 +32,8 @@ export function telegramApi(token: string): TelegramApi {
         ...(opts?.keyboard ? { reply_markup: { inline_keyboard: opts.keyboard } } : {}),
       }).catch(() => null);
     },
-    async editMessage(chatId, messageId, text) {
-      await call("editMessageText", { chat_id: chatId, message_id: messageId, text }).catch(() => undefined);
+    async editMessage(chatId, messageId, text, keyboard) {
+      await call("editMessageText", { chat_id: chatId, message_id: messageId, text, ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}) }).catch(() => undefined);
     },
     async answerCallback(callbackId, text) {
       await call("answerCallbackQuery", { callback_query_id: callbackId, ...(text ? { text } : {}) }).catch(() => undefined);
