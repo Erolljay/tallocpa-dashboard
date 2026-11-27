@@ -123,6 +123,24 @@ How it works:
 - **Type first (`/send`):** to send many files of one kind, send `/send` and tap the kind (staff: then the month, this month or the three before it; staff choose the client with `/client` first). The bot confirms, e.g. *Sending as Purchase / expense (for Molo Bakeshop, November 2026)*, and from then on every file is filed straight away as that kind, with no buttons. A single file or an album gets one reply, updated as its files are filed, naming any that could not be sent. Excel or CSV is taken only as Payroll; under any other kind the bot says so and does not file it. `/done` ends it; so do choosing another client and 30 minutes without a file (the next file then gets the usual buttons, with a note that the choice expired). Without `/send`, files get buttons as above.
 - A chat that is not linked cannot send anything. `/unlink` in the bot, or *Unlink* in the app, stops a chat.
 
+### AI employees' connector (docs/AI-WORKFORCE.md)
+
+The TalloCPA OS connector (MCP server) lets AI employees work in the app with their own keys. Each AI employee has its own address, `https://app.tallocpa.com/api/mcp/<key>` (e.g. `/api/mcp/document_clerk`), shown on its page under **Settings → AI Employees**. Its tools run as that AI employee under the database's own rules, so it reads only what the Owner granted and can sign nothing.
+
+1. **Connection string.** In Vercel → Settings → Environment Variables, add `SUPABASE_DB_URL`: the same **session pooler** URI as the migrations workflow's GitHub secret (Supabase → **Connect → Session pooler**, port 5432, with the database password). Without it, the connector answers 503 and nothing else changes.
+2. **Certificate (recommended).** In Supabase → **Database settings → SSL configuration**, download the certificate and add its whole text as `SUPABASE_DB_CA`. With it the connection is encrypted *and* the database server is verified; without it the connection is encrypted only, and the app logs a warning.
+3. Redeploy.
+4. In **Settings → AI Employees**, open an AI employee: switch it on, assign clients, choose its books access, **grant its tools** (Connector → Tools), and create a key.
+5. **Claude Code** (or any MCP client that sends a header):
+
+   ```bash
+   claude mcp add --transport http document-clerk https://app.tallocpa.com/api/mcp/document_clerk --header "Authorization: Bearer <key>"
+   ```
+
+   **Claude Cowork** signs in to custom connectors with OAuth; that comes in build step 2b. (Plain keys there are a beta that only some organizations have.)
+
+Each tool call counts against the AI employee's calls per day and appears under **Activity** on its page.
+
 ## 6. Vercel
 
 1. Import the GitHub repository into Vercel.

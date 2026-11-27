@@ -134,11 +134,12 @@ Built in step 1 (migration `20270107000001_ai_employees.sql`, tests in
 - **Supervisor.** Each AI employee names the staff member who checks its work; none
   means the Owner.
 
-**To confirm (A1):** whether Cowork stores a custom connector's sign-in per project or
-once per account. If per project, each desk signs in as its own AI employee. If per
-account, the Owner's connection gets a credential that may only act as AI employees,
-every call names the AI employee acting, and both the Owner and the AI employee are
-logged.
+**A1, answered (27 Nov 2026).** Claude's custom connectors (claude.ai, desktop, Cowork) sign in with OAuth;
+plain keys in a header are a beta for some organizations only, and a sign-in belongs to
+the account, not to a Cowork project. So **each AI employee has its own connector
+address** (`/api/mcp/<key>`): each Cowork desk adds only its own connector, and each
+connector signs in separately as that AI employee. Keys work now (Claude Code, tests,
+scheduled jobs); OAuth sign-in for Cowork is build step 2b.
 
 ## 6. Books access
 
@@ -170,10 +171,11 @@ AI callers. Summary is served only through summary functions, never the entry ta
 
 ### 7.1 Parts
 
-1. **Endpoint**: one route on the app, e.g. `/api/mcp`, added in Cowork as a custom
-   connector.
-2. **Sign-in**: per AI employee (§5). OAuth for Cowork; a plain bearer credential for
-   tests and scheduled jobs.
+1. **Endpoint** (built): `/api/mcp/<key>`, one address per AI employee, Streamable
+   HTTP, stateless (each POST gets one JSON answer). `src/app/api/mcp/[ai]/route.ts`,
+   `src/lib/mcp/`.
+2. **Sign-in**: per AI employee (§5). A key as `Authorization: Bearer tcai_…` (built);
+   OAuth for Cowork (step 2b).
 3. **Permissions**: each AI employee sees only the tools granted to it and only its
    assigned clients; books access per §6.
 4. **Tools**: read, search and save-draft actions (§7.2).
@@ -332,8 +334,10 @@ Owner and can be built at any time.
 
 1. **Foundation** (built): AI employees outside staff, refused by every sign-off path
    with tests, keys, Settings → AI Employees, activity log, books access levels.
-2. **MCP server**: endpoint, sign-in, tool registry with its tests, shared tools,
-   reference library.
+2. **MCP server** (built): endpoint, key sign-in, tool registry with its tests, shared
+   tools (who am I, my clients, a client, upcoming returns, trial balance), reference
+   library (house rules, my job, the workforce), daily limit, activity log, tool grants
+   in Settings. **2b:** OAuth sign-in for Cowork connectors.
 3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks.
 4. **`ai-provider` with Qwen**; Client Concierge on Telegram and the portal.
 5. **FS template, notes library and release validator** (useful to staff without AI);
@@ -349,7 +353,7 @@ Each step ships with its tests and goes live switched off until the Owner turns 
 
 | # | Item | Owner of the answer |
 |---|---|---|
-| A1 | Does Cowork keep a connector sign-in per project or per account? (§5) | Build: check in Cowork |
+| A1 | ~~Does Cowork keep a connector sign-in per project or per account?~~ Per account; answered with one address per AI employee (§5) | Done |
 | A2 | Alibaba Cloud Model Studio terms against the Data Privacy Act; Singapore endpoint; which Qwen model by default | Owner, with Build |
 | A3 | FS design, notes library, framework per client type, past FS samples (§8) | Owner |
 | A4 | Approve the proposed books access defaults (§6) | Owner |

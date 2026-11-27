@@ -4,10 +4,13 @@ import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { keyState } from "@/lib/ai/credentials";
+import { requestOrigin, siteOrigin } from "@/lib/email/brand";
+import { TOOLS } from "@/lib/mcp/registry";
+import { toolFor } from "@/lib/mcp/tool";
 import { DEPARTMENTS, RUNS_ON, spendsOnApi, type BooksLevel, type Department, type RunsOn } from "@/lib/ai/workforce";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ActivityList, type ActivityRow } from "../activity";
-import { AssignForm, CreateKeyForm, EnabledSwitch, RevokeKeyButton, SettingsForm, UnassignButton } from "../forms";
+import { AssignForm, ConnectorAddress, CreateKeyForm, EnabledSwitch, GrantToolsButton, RemoveToolButton, RevokeKeyButton, SettingsForm, UnassignButton } from "../forms";
 
 export default function AiEmployeePage(props: PageProps<"/app/settings/ai-employees/[key]">) {
   return (
@@ -65,13 +68,19 @@ async function Employee({ params }: Pick<PageProps<"/app/settings/ai-employees/[
     .maybeSingle<Ai>();
   if (!ai) notFound();
 
-  const [{ data: staff }, { data: assigned }, { data: clients }, { data: keys }, { data: activity }] = await Promise.all([
+  const [{ data: staff }, { data: assigned }, { data: clients }, { data: keys }, { data: activity }, { data: grants }, origin] = await Promise.all([
     supabase.from("staff_profiles").select("user_id, full_name").eq("active", true).order("full_name"),
     supabase.from("ai_assignments").select("client_id, clients(id, name, code)").eq("ai_user_id", ai.user_id),
     ai.client_data ? supabase.from("clients").select("id, name, code").eq("brand_id", owner.staff.brandId).order("name") : Promise.resolve({ data: [] }),
     supabase.from("ai_credentials").select("id, label, token_hint, created_at, expires_at, revoked_at, last_used_at").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }),
     supabase.from("ai_activity").select("id, ai_user_id, tool, outcome, created_at, clients(name)").eq("ai_user_id", ai.user_id).order("created_at", { ascending: false }).limit(50),
+    supabase.from("ai_tool_grants").select("tool").eq("ai_user_id", ai.user_id),
+    requestOrigin(),
   ]);
+  const granted = new Set((grants ?? []).map((g) => g.tool));
+  const jobTools = TOOLS.filter((t) => toolFor(t, ai.key) && (ai.client_data || t.employees === "all"));
+  const ungranted = jobTools.filter((t) => !granted.has(t.name)).map((t) => t.name);
+  const address = `${siteOrigin() ?? origin ?? "https://app.tallocpa.com"}/api/mcp/${ai.key}`;
   const assignedClients = ((assigned ?? []) as unknown as { client_id: string; clients: { id: string; name: string; code: string } | null }[])
     .flatMap((a) => (a.clients ? [a.clients] : []))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -121,6 +130,48 @@ async function Employee({ params }: Pick<PageProps<"/app/settings/ai-employees/[
           </div>
         </Card>
       )}
+
+      <Card title="Connector">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <p className="text-body-regular text-text-secondary">
+              The TalloCPA OS connector address for {ai.name}. Each AI employee has its own address and its own keys, so every call is logged under its name.
+            </p>
+            <ConnectorAddress address={address} />
+            <p className="text-caption-1-regular text-text-tertiary">
+              Claude Code: <code dir="ltr" className="font-mono">claude mcp add --transport http {ai.key.replace(/_/g, "-")} {address} --header &quot;Authorization: Bearer &lt;key&gt;&quot;</code>. Cowork signs in with OAuth, which comes next (step 2b).
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-headline-medium text-text-primary">Tools</h3>
+              {ungranted.length > 1 && <GrantToolsButton userId={ai.user_id} aiKey={ai.key} tools={ungranted} label={`Grant all ${ungranted.length}`} />}
+            </div>
+            {jobTools.length === 0 ? (
+              <p className="text-body-regular text-text-secondary">No tools for this job yet. They come with the steps that build its work.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-separator-border">
+                {jobTools.map((t) => (
+                  <li key={t.name} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0 flex-1 basis-64">
+                      <p className="flex flex-wrap items-center gap-2 text-body-medium text-text-primary">
+                        {t.title} <code dir="ltr" className="font-mono text-caption-1-regular text-text-tertiary">{t.name}</code>
+                        <Badge tone={granted.has(t.name) ? "done" : "neutral"}>{granted.has(t.name) ? "Granted" : "Not granted"}</Badge>
+                      </p>
+                      <p className="text-caption-1-regular text-text-tertiary">{t.description}</p>
+                    </div>
+                    {granted.has(t.name) ? (
+                      <RemoveToolButton userId={ai.user_id} aiKey={ai.key} tool={t.name} />
+                    ) : (
+                      <GrantToolsButton userId={ai.user_id} aiKey={ai.key} tools={[t.name]} label="Grant" />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </Card>
 
       <Card title="Keys">
         <div className="flex flex-col gap-5">

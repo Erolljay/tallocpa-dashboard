@@ -8,6 +8,8 @@ import { aiSettingsSchema, assignSchema, keySchema, settingsFor } from "@/lib/ai
 import { aiLoginEmail, STANDARD_WORKFORCE } from "@/lib/ai/workforce";
 import { formToObject } from "@/lib/clients/schema";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { TOOLS } from "@/lib/mcp/registry";
+import { toolFor } from "@/lib/mcp/tool";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type AiState = { ok?: string; error?: string; fieldErrors?: Record<string, string>; key?: string };
@@ -150,4 +152,28 @@ export async function revokeKeyAction(id: string, key: string): Promise<AiState>
   if (error) return { error: error.message };
   refresh(key);
   return { ok: "Revoked." };
+}
+
+/** Grants tools (the connector's tool names) to an AI employee; only tools meant for its job. */
+export async function grantToolsAction(userId: string, key: string, tools: string[]): Promise<AiState> {
+  const owner = await requireOwner();
+  const allowed = new Set(TOOLS.filter((t) => toolFor(t, key)).map((t) => t.name));
+  const chosen = tools.filter((t) => allowed.has(t));
+  if (chosen.length === 0) return { error: "No tool to grant." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("ai_tool_grants")
+    .upsert(chosen.map((tool) => ({ ai_user_id: userId, tool, granted_by: owner.userId })), { onConflict: "ai_user_id,tool", ignoreDuplicates: true });
+  if (error) return { error: error.message };
+  refresh(key);
+  return { ok: chosen.length === 1 ? "Granted." : `Granted ${chosen.length} tools.` };
+}
+
+export async function removeToolAction(userId: string, key: string, tool: string): Promise<AiState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("ai_tool_grants").delete().eq("ai_user_id", userId).eq("tool", tool);
+  if (error) return { error: error.message };
+  refresh(key);
+  return { ok: "Removed." };
 }

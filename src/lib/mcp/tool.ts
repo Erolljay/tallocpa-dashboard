@@ -39,6 +39,9 @@ export function defineTool<S extends z.ZodObject>(tool: AiTool<S>): AiTool {
   return tool as unknown as AiTool;
 }
 
+/** A request the AI employee may not make (not its client, no access): logged as refused, not as an error. */
+export class ToolRefusal extends Error {}
+
 /** AI employees allowed client data (everyone but marketing). */
 export const CLIENT_DATA_EMPLOYEES = STANDARD_WORKFORCE.filter((e) => e.clientData).map((e) => e.key);
 

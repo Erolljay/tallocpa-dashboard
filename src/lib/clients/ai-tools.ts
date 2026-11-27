@@ -4,7 +4,7 @@
  * that), and nothing to marketing.
  */
 import { z } from "zod";
-import { CLIENT_DATA_EMPLOYEES, defineTool } from "@/lib/mcp/tool";
+import { CLIENT_DATA_EMPLOYEES, defineTool, ToolRefusal } from "@/lib/mcp/tool";
 import type { Queryable } from "@/lib/mcp/types";
 
 /** A client by id or by code (e.g. TC-0012), among the clients the AI employee may read. */
@@ -18,7 +18,7 @@ export async function findClient(db: Queryable, ref: string): Promise<{ id: stri
   return rows[0] ?? null;
 }
 
-export const notYours = (ref: string) => new Error(`No client "${ref}" among the clients assigned to you.`);
+export const notYours = (ref: string) => new ToolRefusal(`No client "${ref}" among the clients assigned to you.`);
 
 export const listMyClients = defineTool({
   name: "list_my_clients",

@@ -10,6 +10,8 @@ import {
   addWorkforceAction,
   assignClientAction,
   createKeyAction,
+  grantToolsAction,
+  removeToolAction,
   revokeKeyAction,
   setAiEnabledAction,
   unassignClientAction,
@@ -217,5 +219,51 @@ export function RevokeKeyButton({ id, aiKey }: { id: string; aiKey: string }) {
       <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>Keep</Button>
       {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
     </form>
+  );
+}
+
+export function GrantToolsButton({ userId, aiKey, tools, label }: { userId: string; aiKey: string; tools: string[]; label: string }) {
+  const [state, action, pending] = useActionState(async () => grantToolsAction(userId, aiKey, tools), {} as AiState);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <Button type="submit" variant="secondary" size="sm" disabled={pending}>{pending ? "Granting…" : label}</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+export function RemoveToolButton({ userId, aiKey, tool }: { userId: string; aiKey: string; tool: string }) {
+  const [state, action, pending] = useActionState(async () => removeToolAction(userId, aiKey, tool), {} as AiState);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <Button type="submit" variant="ghost" size="sm" disabled={pending} aria-label={`Remove ${tool}`}>{pending ? "Removing…" : "Remove"}</Button>
+      {state.error && <span className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+    </form>
+  );
+}
+
+export function ConnectorAddress({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setFailed(true);
+    }
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <code dir="ltr" className="min-w-0 select-all break-all rounded-xl bg-background-secondary-default px-3 py-2 font-mono text-body-regular text-text-primary">{address}</code>
+        <Button type="button" variant="secondary" size="sm" onClick={copy}>
+          {copied ? <RiCheckLine aria-hidden className="size-4" /> : <RiFileCopyLine aria-hidden className="size-4" />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      {failed && <p role="status" className="text-caption-1-regular text-text-error-primary">Copy did not work here. Select the address and copy it.</p>}
+    </div>
   );
 }
