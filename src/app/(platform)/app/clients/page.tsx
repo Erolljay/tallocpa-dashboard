@@ -28,7 +28,10 @@ const SORTS = [
   { value: "preparer", label: "Preparer" },
 ];
 
-/** Status filter choices that cover more than one status. */
+/**
+ * Status filter choices that cover more than one status. With no status chosen the
+ * list shows current clients only; "all" brings back inactive and archived ones.
+ */
 const STATUS_GROUPS: Record<string, string[]> = {
   current: ["active", "onboarding"],
   inactive_archived: ["inactive", "archived"],
@@ -51,7 +54,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
   const me = await requireStaff();
   const sp = await searchParams;
   const search = searchParam(sp.q);
-  const status = pickParam(sp.status, [...Object.keys(STATUS_GROUPS), ...Object.keys(statusLabel)]);
+  const status = pickParam(sp.status, ["all", ...Object.keys(STATUS_GROUPS), ...Object.keys(statusLabel)]) || "current";
   const type = pickParam(sp.type, Object.keys(taxpayerTypeLabel));
   const filing = pickParam(sp.filing, ["efps", "ebirforms"] as const);
   const preparer = searchParam(sp.preparer);
@@ -72,7 +75,7 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
   const statusRank = { active: 0, onboarding: 1, inactive: 2, archived: 3 } as const;
   const shown = rows
     .filter((c) => matchesSearch(search, [c.name, c.code, c.tin, preparers(c), taxpayerTypeLabel[c.taxpayer_type], statusLabel[c.status]]))
-    .filter((c) => !status || (status in STATUS_GROUPS ? STATUS_GROUPS[status].includes(c.status) : c.status === status))
+    .filter((c) => status === "all" || (status in STATUS_GROUPS ? STATUS_GROUPS[status].includes(c.status) : c.status === status))
     .filter((c) => !type || c.taxpayer_type === type)
     .filter((c) => !filing || (filing === "efps" ? c.filing_channel === "efps" : c.filing_channel !== "efps"))
     .filter((c) => !preparer || (preparer === "none" ? !preparers(c) : c.staff_assignments.some((a) => a.role === "preparer" && a.staff_profiles?.full_name === preparer)))
@@ -86,6 +89,9 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
         default: return byText(a.name, b.name);
       }
     });
+  // With the default view, say how many set-aside clients are hidden and link to them.
+  const hidden = sp.status ? 0 : rows.filter((c) => STATUS_GROUPS.inactive_archived.includes(c.status)).length;
+  const showAllHref = `/app/clients?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")), status: "all" })}`;
   const noChart = isOwner ? rows.filter((r) => r.status !== "archived" && !charted.has(r.id)).map((r) => r.name) : [];
 
   return (
@@ -105,9 +111,9 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
             {
               param: "status",
               label: "Status",
-              anyLabel: "Any status",
+              anyLabel: "Current clients",
               options: [
-                { value: "current", label: "Current (active or onboarding)" },
+                { value: "all", label: "All clients" },
                 { value: "inactive_archived", label: "Inactive or archived" },
                 ...Object.entries(statusLabel).map(([value, label]) => ({ value, label })),
               ],
@@ -165,6 +171,12 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
             </tbody>
           </table>
         </div>
+      )}
+      {hidden > 0 && (
+        <p className="mt-3 text-body-regular text-text-secondary">
+          {hidden} inactive or archived {hidden === 1 ? "client is" : "clients are"} hidden.{" "}
+          <Link href={showAllHref} className="text-body-medium text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">Show all clients</Link>
+        </p>
       )}
     </>
   );
