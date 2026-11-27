@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { statusFor } from "./labels";
+import { standingLine, statusFor } from "./labels";
+
+describe("standingLine", () => {
+  it("names each standing request shortly for the month checklist", () => {
+    expect(standingLine({ standing_kind: "arap_update", subject: "AR/AP update for October 2026" })).toBe("AR/AP update");
+    expect(standingLine({ standing_kind: "bank_statement", subject: "Bank statement for October 2026: Cash in Bank - BDO" })).toBe("Bank statement: Cash in Bank - BDO");
+    expect(standingLine({ standing_kind: "bank_statement", subject: "Bank statements for October 2026" })).toBe("Bank statements");
+  });
+});
 
 describe("statusFor", () => {
   it("words a request to the client for each side", () => {

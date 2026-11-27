@@ -12,6 +12,7 @@ import { loadBoard } from "@/lib/deadlines/safeguards-load";
 import { keepBooksReady } from "@/lib/filings/books-ready";
 import { showMonth } from "@/lib/documents/labels";
 import { periodLabel } from "@/lib/payroll/periods";
+import { standingLine, type StandingKind } from "@/lib/requests/labels";
 import { filingItem, type Role, type WorkItem } from "./next-actions";
 
 const ym = (d: string) => String(d).slice(0, 7);
@@ -57,7 +58,7 @@ export async function loadMyWork(db: SupabaseClient, me: { userId: string; role:
   };
 
   const since = `${addDays(today, -120).slice(0, 7)}-01`;
-  const [board, { data: docs }, { data: suggested }, { data: books }, { data: pay }, { data: postings }, { data: notes }, { data: signoffs }, { data: adjustments }] = await Promise.all([
+  const [board, { data: docs }, { data: suggested }, { data: books }, { data: pay }, { data: postings }, { data: notes }, { data: signoffs }, { data: adjustments }, { data: standing }] = await Promise.all([
     loadBoard(db, today, owner && everything ? {} : { days: 45 }),
     db.from("documents").select("client_id, document_month").in("client_id", ids).in("status", ["received", "under_review"]).limit(10000),
     db.from("journal_entries").select("client_id, entry_date").in("client_id", ids).eq("status", "suggested").limit(10000),
@@ -67,6 +68,7 @@ export async function loadMyWork(db: SupabaseClient, me: { userId: string; role:
     db.from("review_notes").select("client_id, period, response").in("client_id", ids).is("cleared_at", null),
     db.from("workpaper_signoffs").select("client_id, period, ref").in("client_id", ids).not("prepared_at", "is", null).is("reviewed_at", null),
     db.from("adjustments").select("client_id, entry_date, journal_entries(status)").in("client_id", ids).is("ticked_at", null),
+    db.from("client_requests").select("id, client_id, period, subject, status, due_date, standing_kind").in("client_id", ids).not("standing_kind", "is", null).neq("status", "closed").limit(2000),
   ]);
 
   // Returns: each one's next sign-off step, only once the Books of its period are locked
@@ -121,6 +123,13 @@ export async function loadMyWork(db: SupabaseClient, me: { userId: string; role:
       if ((run?.journal_entries as unknown as { status: string } | null)?.status !== "posted")
         push(c, ym(prev), "preparer", `Run depreciation for ${showMonth(prev)}`, `/app/clients/${c}/fixed-assets?month=${ym(prev)}`);
     }
+  }
+
+  // Standing monthly requests (bank statements, the AR/AP update): visible, never blocking.
+  for (const r of (standing ?? []) as { id: string; client_id: string; period: string; subject: string; status: string; due_date: string | null; standing_kind: StandingKind }[]) {
+    const line = standingLine(r);
+    if (r.status === "answered") push(r.client_id, ym(r.period), "preparer", `Check the client's ${line}`, `/app/requests/${r.id}`);
+    else push(r.client_id, ym(r.period), "preparer", `Waiting on the client: ${line}`, `/app/requests/${r.id}`, "open", r.due_date);
   }
 
   // Workpapers: notes to answer or clear, reviews to sign, adjustments to tick.

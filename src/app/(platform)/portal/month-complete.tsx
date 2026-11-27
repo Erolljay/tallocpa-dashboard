@@ -14,6 +14,13 @@ export interface SentRow {
   checked: number;
 }
 
+/** A standing monthly request of the month: open (to upload), sent (we are checking it) or done. */
+export interface StandingRow {
+  id: string;
+  label: string;
+  state: "open" | "sent" | "done";
+}
+
 export interface TimelineRow {
   date: string;
   title: string;
@@ -36,6 +43,7 @@ export function MonthComplete(props: {
   canUndo: boolean;
   confirmed: { on: string; count: number | null } | null;
   sent: SentRow[];
+  standing: StandingRow[];
   ranges: MissingRange[];
   cwt: { party: string; amount: number }[];
   reading: number;
@@ -98,6 +106,23 @@ export function MonthComplete(props: {
             </tbody>
           </table>
         </section>
+
+        {props.standing.length > 0 && (
+          <section aria-label="Every month we ask for" className="space-y-2">
+            <h3 className="text-headline-semibold text-text-primary">Every month we also ask for</h3>
+            <ul className="divide-y divide-separator-border text-body-regular">
+              {props.standing.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 py-2">
+                  <Link href={`/portal/requests/${r.id}`} className="min-w-0 text-text-primary hover:underline">{r.label}</Link>
+                  {r.state === "done" ? <Badge tone="done">Received</Badge> : r.state === "sent" ? <Badge tone="progress">Being checked</Badge> : <Badge tone="waiting">To upload</Badge>}
+                </li>
+              ))}
+            </ul>
+            {props.standing.some((r) => r.state === "open") && (
+              <p className="text-caption-1-regular text-text-tertiary">Upload {props.standing.filter((r) => r.state === "open").length === 1 ? "it" : "them"} under Requests when you have {props.standing.filter((r) => r.state === "open").length === 1 ? "it" : "them"}. {props.confirmed ? "" : "You can confirm the month without them."}</p>
+            )}
+          </section>
+        )}
 
         {!props.confirmed && (
           <section aria-label="Before you confirm" className="space-y-3">

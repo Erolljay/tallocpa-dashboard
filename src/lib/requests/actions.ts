@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getIdentity, requireStaff } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
-import { REQUEST_FILE_MAX, REQUEST_FILE_TYPES } from "./labels";
+import { REQUEST_FILE_MAX, REQUEST_FILE_TYPES, STANDING_SETTINGS, type StandingSetting } from "./labels";
 
 export type RequestFormState = { error?: string; fieldErrors?: Record<string, string>; ok?: boolean };
 
@@ -129,6 +129,48 @@ export async function assignRequestAction(_: RequestFormState, form: FormData): 
   if (!["low", "normal", "high"].includes(priority)) return { error: "Choose the priority." };
   const supabase = await supabaseServer();
   const { error } = await supabase.rpc("assign_client_request", { p_request: requestId, p_assignee: assignee, p_priority: priority });
+  if (error) return { error: error.message };
+  refresh(requestId);
+  return { ok: true };
+}
+
+/** Staff on the client (or the Owner) switch a standing monthly request on or off; bank statements may list the accounts. */
+export async function setStandingRequestAction(clientId: string, kind: StandingSetting, on: boolean, accounts: string[] = []): Promise<RequestFormState> {
+  await requireStaff();
+  if (!Object.hasOwn(STANDING_SETTINGS, kind)) return { error: "Unknown standing request." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("set_standing_request", {
+    p_client: clientId,
+    p_kind: kind,
+    p_on: on,
+    p_accounts: accounts.map((a) => a.trim()).filter(Boolean).slice(0, 30),
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/clients/${clientId}`);
+  revalidatePath("/portal");
+  refresh();
+  return { ok: true };
+}
+
+/** The client: no collections or payments this month (the AR/AP update). */
+export async function standingNoActivityAction(requestId: string): Promise<RequestFormState> {
+  await getIdentity();
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("standing_no_activity", { p_request: requestId });
+  if (error) return { error: error.message };
+  revalidatePath("/portal");
+  refresh(requestId);
+  return { ok: true };
+}
+
+/** Staff return what the client sent for a standing request, with the reason. */
+export async function returnStandingAction(_: RequestFormState, form: FormData): Promise<RequestFormState> {
+  await requireStaff();
+  const requestId = text(form.get("request_id"));
+  const reason = text(form.get("reason"));
+  if (!reason) return { error: "Say why you are returning it.", fieldErrors: { reason: "Say why you are returning it." } };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("return_standing_request", { p_request: requestId, p_reason: reason.slice(0, 2000) });
   if (error) return { error: error.message };
   refresh(requestId);
   return { ok: true };
