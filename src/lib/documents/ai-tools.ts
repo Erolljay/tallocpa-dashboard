@@ -71,14 +71,15 @@ export const documentsToReview = defineTool({
   name: "documents_to_review",
   title: "Documents to review",
   description:
-    "Your clients' documents still waiting for staff (received or under review), oldest first: client, type, period, file name, date sent, OCR status and how many fields OCR was unsure of. Optionally for one client.",
+    "Your clients' documents still waiting for staff (received or under review), oldest first: client, type, period, file name, date sent, OCR status and how many fields OCR was unsure of. Documents you already suggested on (your suggestion is still open, or a reviewer accepted or rejected it) are left out and only counted, so each run works new documents; pass include_suggested to list them too. Optionally for one client.",
   input: z.object({
     client: clientRef.optional().describe("Only this client (id or code)"),
     limit: z.number().int().min(1).max(200).default(50).describe("At most this many documents"),
+    include_suggested: z.boolean().default(false).describe("Also list documents you already suggested on"),
   }),
   employees: CLERK,
   effect: "read",
-  async run({ db, noteClient }, { client, limit }) {
+  async run({ db, noteClient }, { client, limit, include_suggested }) {
     let clientId: string | null = null;
     if (client) {
       const found = await findClient(db, client);
@@ -100,17 +101,39 @@ export const documentsToReview = defineTool({
       ocr_status: string | null;
       confidence: OcrConfidence | null;
       approved: boolean;
+      my_suggestion: string | null;
     }>(
-      `select d.id, c.code as client_code, c.name as client, d.doc_type, d.period::text, d.file_name, d.status, d.created_at,
-              d.late, d.prior_year, x.status as ocr_status, x.confidence, (x.approved_at is not null) as approved
+      `with mine as (
+         -- This AI employee's latest suggestion on each document (its own drafts only, by RLS).
+         select distinct on (subject_id) subject_id, status
+         from public.ai_drafts
+         where ai_user_id = auth.uid() and subject_table = 'documents' and status <> 'withdrawn'
+         order by subject_id, created_at desc
+       )
+       select d.id, c.code as client_code, c.name as client, d.doc_type, d.period::text, d.file_name, d.status, d.created_at,
+              d.late, d.prior_year, x.status as ocr_status, x.confidence, (x.approved_at is not null) as approved,
+              m.status as my_suggestion
        from public.documents d join public.clients c on c.id = d.client_id
        left join public.extractions x on x.document_id = d.id
+       left join mine m on m.subject_id = d.id
        where d.status = any ($1::text[]) and ($2::uuid is null or d.client_id = $2)
+         and ($4 or m.subject_id is null)
        order by d.created_at, d.id
        limit $3`,
-      [[...WAITING_STATUSES], clientId, limit],
+      [[...WAITING_STATUSES], clientId, limit, include_suggested],
     );
+    const { rows: counted } = include_suggested
+      ? { rows: [{ n: 0 }] }
+      : await db.query<{ n: number }>(
+          `select count(*)::int as n
+           from public.documents d
+           where d.status = any ($1::text[]) and ($2::uuid is null or d.client_id = $2)
+             and exists (select 1 from public.ai_drafts a
+                         where a.ai_user_id = auth.uid() and a.subject_table = 'documents' and a.subject_id = d.id and a.status <> 'withdrawn')`,
+          [[...WAITING_STATUSES], clientId],
+        );
     return {
+      already_suggested: include_suggested ? rows.filter((r) => r.my_suggestion).length : (counted[0]?.n ?? 0),
       documents: rows.map((r) => ({
         id: r.id,
         client_code: r.client_code,
@@ -125,6 +148,7 @@ export const documentsToReview = defineTool({
         prior_year: r.prior_year,
         ocr: r.ocr_status ?? "not read",
         unsure_fields: r.approved ? 0 : lowConfidence(r.confidence).length,
+        my_suggestion: r.my_suggestion ?? "none",
       })),
     };
   },

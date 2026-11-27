@@ -5652,9 +5652,9 @@
     "semantic_hash": ""
   },
   "src/lib/mcp/ai-tools.ts": {
-    "mtime": 1795792550.9899309,
-    "seen": 1795793459.5093837,
-    "ast_hash": "79e7d471f189ee3ee49534ad2c0c847a",
+    "mtime": 1795800830.4372058,
+    "seen": 1795803085.4308941,
+    "ast_hash": "f46c445c139816412c2840e49823ac37",
     "semantic_hash": ""
   },
   "src/lib/mcp/handler.ts": {
@@ -5724,9 +5724,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/ai-connector.test.ts": {
-    "mtime": 1795797352.4538035,
-    "seen": 1795797433.6227536,
-    "ast_hash": "e4d583eb9723403a1687b140eef71d59",
+    "mtime": 1795800830.437741,
+    "seen": 1795803085.4348083,
+    "ast_hash": "4cded098d9584aa21a510adca7252a41",
     "semantic_hash": ""
   },
   "src/app/(platform)/oauth/authorize/actions.ts": {
@@ -5868,9 +5868,9 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ai-tools.ts": {
-    "mtime": 1795799680.1668718,
-    "seen": 1795799984.6835632,
-    "ast_hash": "40d8aee705f277cf63973b6af156fc69",
+    "mtime": 1795802927.3524618,
+    "seen": 1795803085.429123,
+    "ast_hash": "7c1259500ea9af6979d357fdf770319e",
     "semantic_hash": ""
   },
   "src/lib/onboarding/ai-tools.test.ts": {
@@ -5886,9 +5886,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/ai-document-clerk.test.ts": {
-    "mtime": 1795799680.1668718,
-    "seen": 1795799984.6914165,
-    "ast_hash": "2c9e5f27ac40de15f9e1979e64d19792",
+    "mtime": 1795802935.7589881,
+    "seen": 1795803085.4348109,
+    "ast_hash": "045faf9da03d6cc818be10cf3e72f67c",
     "semantic_hash": ""
   },
   "supabase/tests/ai-drafts.test.ts": {
@@ -5916,9 +5916,9 @@
     "semantic_hash": ""
   },
   "docs/ai-desks/document-clerk/review-queue/SKILL.md": {
-    "mtime": 1795799680.1668413,
-    "seen": 1795799984.6935189,
-    "ast_hash": "09b449e4706bbbc0dbdcef774361a9ca",
+    "mtime": 1795802976.430139,
+    "seen": 1795803085.4365187,
+    "ast_hash": "13ee264550b48c17b792b4624e100ce9",
     "semantic_hash": ""
   },
   "docs/ai-desks/onboarding-officer/README.md": {
