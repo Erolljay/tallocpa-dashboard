@@ -168,7 +168,10 @@ describe.skipIf(!url)("AI connector: keys, grants, row-level security, limits an
 
     it("whoami describes the AI employee and its grants", async () => {
       const r = await call("whoami");
-      expect(r.result?.structuredContent).toMatchObject({ name: "Document Clerk", department: "Tax Compliance & Bookkeeping", books_access: "Full", assigned_clients: 1 });
+      expect(r.result?.structuredContent).toMatchObject({ name: "Document Clerk", department: "Tax Compliance & Bookkeeping", books_access: "Full", clients: "Assigned clients (1)", client_count: 1 });
+      await setClerk({ all_clients: true });
+      expect((await call("whoami")).result?.structuredContent).toMatchObject({ clients: "Every client of the firm (2)", client_count: 2 });
+      await setClerk({ all_clients: false });
     });
 
     it("lists only its assigned clients and opens only those", async () => {
