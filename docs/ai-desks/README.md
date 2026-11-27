@@ -8,5 +8,6 @@ data (clients, returns, books) stays in TalloCPA OS; a desk only holds instructi
 | Desk | Files |
 |---|---|
 | Chief of Staff | [`chief-of-staff/`](chief-of-staff/README.md) |
+| Onboarding Officer | [`onboarding-officer/`](onboarding-officer/README.md) |
 
 More desks come with the AI employees' tools (build step 3 onwards).

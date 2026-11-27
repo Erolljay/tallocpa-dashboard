@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RiCheckboxCircleFill, RiCheckboxBlankCircleLine, RiIndeterminateCircleLine } from "@remixicon/react";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
+import { DRAFT_KINDS as ONBOARDING_DRAFT_KINDS } from "@/lib/onboarding/ai-tools";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone } from "@/lib/clients/labels";
 import { ONBOARDING_GROUPS, onboardingChecklist, onboardingProgress } from "@/lib/onboarding/checklist";
@@ -112,6 +114,8 @@ async function Onboarding({ params, searchParams }: Pick<PageProps<"/app/clients
             })}
           </div>
         </Card>
+
+        <AiDraftsPanel clientId={id} kinds={[...ONBOARDING_DRAFT_KINDS]} path={`/app/clients/${id}/onboarding`} title="Suggested by the Onboarding Officer" />
 
         <div id="files">
           <Card title="Proposal, contract and other files">
