@@ -37,3 +37,6 @@ export const upcomingFilings = defineTool({
     return { today, through: addDays(today, days), returns: rows };
   },
 });
+
+// The Pre-Review Assistant's tools live beside the rest of the filings code.
+export { preReviewReturn, returnsToPreReview, saveReviewMemo } from "./pre-review-tools";

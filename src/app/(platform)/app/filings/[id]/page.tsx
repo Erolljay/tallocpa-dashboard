@@ -20,6 +20,7 @@ import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 import { CatchUpConfirmForms, CatchUpRecordForm } from "../catch-up-forms";
 import { AmendFilingForm } from "../amend-form";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { ApprovalMemo } from "./approval-memo";
 import { EsubmissionControls, ReturnFileUpload, RetryBookEntry } from "./return-files";
 
@@ -194,6 +195,10 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
 
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-6">
+          {/* The Pre-Review Assistant's memo, for the Reviewer to accept or reject (renders nothing without one). */}
+          <Suspense fallback={null}>
+            <AiDraftsPanel subject={{ table: "filing_instances", id: f.id }} path={`/app/filings/${f.id}`} title="Suggested by the Pre-Review Assistant" />
+          </Suspense>
           {/* W4: the approval memo, for the reviewer and the Owner once the return is reviewed. */}
           {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "filed" && (
             <Suspense fallback={<Skeleton rows={3} />}>
