@@ -69,10 +69,11 @@ export interface PaymentAccount {
 }
 
 /** Records money received and matches it to the ticked open items, oldest first. */
-export function RecordDepositForm(props: { clientId: string; today: string; items: OpenItem[]; accounts: PaymentAccount[]; staff: { id: string; name: string }[] }) {
+/** `preticked`: the items ticked at first (default: all), e.g. one statement's items when recorded from that statement. */
+export function RecordDepositForm(props: { clientId: string; today: string; items: OpenItem[]; accounts: PaymentAccount[]; staff: { id: string; name: string }[]; preticked?: string[] }) {
   const [state, run, pending] = useActionState(recordDepositAction.bind(null, props.clientId), {} as MoneyState);
   const [method, setMethod] = useState<DepositMethod>("transfer");
-  const [ticked, setTicked] = useState(() => new Set(props.items.map((i) => i.id)));
+  const [ticked, setTicked] = useState(() => new Set(props.preticked ?? props.items.map((i) => i.id)));
   const tickedTotal = props.items.filter((i) => ticked.has(i.id)).reduce((s, i) => s + i.open_amount, 0);
   const toggle = (id: string) => setTicked((t) => {
     const n = new Set(t);

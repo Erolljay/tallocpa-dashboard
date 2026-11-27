@@ -18,6 +18,7 @@ function refresh(clientId?: string) {
   revalidatePath("/app/collections");
   revalidatePath("/app");
   if (clientId) revalidatePath(`/app/collections/${clientId}`);
+  revalidatePath("/app/collections/statements/[id]", "page");
   revalidatePath("/portal/billing", "layout");
 }
 
