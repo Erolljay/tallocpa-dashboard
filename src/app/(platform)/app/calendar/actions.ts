@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth";
+import { cancelReason } from "@/lib/calendar/cancel";
+import { cancelClientMeeting } from "@/lib/calendar/cancel-server";
 import { googleCalendarEnv } from "@/lib/env";
 import { revoke } from "@/lib/google/calendar";
 import { openToken, parseKey } from "@/lib/google/crypto";
@@ -29,4 +31,14 @@ export async function disconnectCalendarAction(): Promise<FormState> {
   if (error) return { error: error.message };
   revalidatePath("/app/calendar");
   return { ok: "Disconnected." };
+}
+
+/** Staff on the client cancel an upcoming client meeting, with an optional reason. */
+export async function cancelMeetingAction(meetingId: string, _: FormState, form: FormData): Promise<FormState> {
+  await requireStaff();
+  const r = await cancelClientMeeting(meetingId, cancelReason(form.get("reason")), "staff");
+  if ("error" in r) return r;
+  revalidatePath("/app/calendar");
+  revalidatePath("/app/clients", "layout");
+  return r;
 }

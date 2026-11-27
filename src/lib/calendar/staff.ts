@@ -6,7 +6,7 @@ import "server-only";
  * client for a booking page).
  */
 import { googleCalendarEnv, type GoogleCalendarEnv } from "@/lib/env";
-import { accessToken, freeBusy, GoogleAuthError, insertEvent, listEvents, otherCalendars, type CalendarEvent, type NewEvent } from "@/lib/google/calendar";
+import { accessToken, deleteEvent, freeBusy, GoogleAuthError, insertEvent, listEvents, otherCalendars, type CalendarEvent, type NewEvent } from "@/lib/google/calendar";
 import { openToken, parseKey } from "@/lib/google/crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Interval } from "./slots";
@@ -102,6 +102,25 @@ export async function bookOn(userId: string, event: NewEvent): Promise<{ id: str
   if (!conn) throw new Error("This calendar is not connected right now.");
   const r = await insertEvent(conn.access, event);
   return { id: r.id, meetUrl: r.meetUrl };
+}
+
+/**
+ * Removes a booked event from the person's calendar; Google emails the guests the
+ * cancellation. Never throws: "not_connected" when Google Calendar is not set up or the
+ * person's calendar is not connected now, "failed" when Google refused.
+ */
+export async function removeFrom(userId: string, eventId: string): Promise<"removed" | "not_connected" | "failed"> {
+  try {
+    const env = googleCalendarEnv();
+    if (!env) return "not_connected";
+    const conn = (await connect(env, supabaseAdmin(), [userId])).get(userId);
+    if (!conn) return "not_connected";
+    await deleteEvent(conn.access, eventId);
+    return "removed";
+  } catch (e) {
+    console.error("Calendar event not removed:", e instanceof Error ? e.message : e);
+    return "failed";
+  }
 }
 
 /** Holidays (public.holidays) between two dates, for the booking pages. */

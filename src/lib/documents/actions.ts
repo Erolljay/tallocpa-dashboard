@@ -49,6 +49,45 @@ export async function startUpload(input: {
   return { documentId: doc.id, path: signed.path, token: signed.token };
 }
 
+/**
+ * A batch-uploaded row's image, step 1 (migration 20270101000401_batch_row_images.sql):
+ * the database checks the row and the file and names its path; storage returns a
+ * one-time upload link. Nothing about the row changes yet.
+ */
+export async function startBatchImage(input: { documentId: string; fileName: string; mimeType: string; size: number }): Promise<{ path: string; token: string } | { error: string }> {
+  await getIdentity();
+  if (!ALLOWED.includes(input.mimeType)) return { error: `${input.fileName}: attach a photo (JPEG, PNG, HEIC) or a PDF.` };
+  if (input.size > MAX_BYTES) return { error: `${input.fileName} is over 20 MB.` };
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("begin_batch_image", {
+    p_document: input.documentId,
+    p_file_name: input.fileName,
+    p_mime_type: input.mimeType,
+    p_size: input.size,
+  });
+  if (error) return { error: error.message };
+  const { data: signed, error: signError } = await supabase.storage.from("documents").createSignedUploadUrl(data as string);
+  if (signError || !signed) return { error: `Could not start the upload: ${signError?.message ?? "no link"}` };
+  return { path: signed.path, token: signed.token };
+}
+
+/**
+ * Step 2: the file has arrived; the row now shows it. Evidence only: no figure, register
+ * line or entry changes, so a locked month allows it. No OCR: the figures are approved.
+ */
+export async function finishBatchImage(input: { documentId: string; path: string; mimeType: string; size: number }): Promise<{ ok: true } | { error: string }> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("attach_batch_image", {
+    p_document: input.documentId,
+    p_path: input.path,
+    p_mime_type: input.mimeType,
+    p_size: input.size,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
 /** Step 3: after the browser has sent the file, mark the document Received. */
 export async function finishUpload(documentId: string): Promise<{ ok: true } | { error: string }> {
   const supabase = await supabaseServer();

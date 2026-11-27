@@ -197,3 +197,18 @@ export async function insertEvent(access: string, e: NewEvent): Promise<{ id: st
   const video = r.conferenceData?.entryPoints?.find((p) => p.entryPointType === "video")?.uri ?? r.hangoutLink ?? null;
   return { id: r.id, meetUrl: video, htmlLink: r.htmlLink ?? null };
 }
+
+/**
+ * Cancels an event on the primary calendar and emails the guests the cancellation
+ * (sendUpdates=all). An event already gone (404, 410) counts as cancelled.
+ */
+export async function deleteEvent(access: string, eventId: string): Promise<void> {
+  const res = await fetch(`${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${access}` },
+    cache: "no-store",
+  });
+  if (res.ok || res.status === 404 || res.status === 410) return;
+  const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+  throw new Error(`Google Calendar: ${body.error?.message ?? res.status}`);
+}
