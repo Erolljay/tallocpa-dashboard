@@ -1,5 +1,6 @@
 /**
- * Telegram uploads (migration 20261231000001_telegram_uploads.sql): off until staff
+ * Telegram uploads (migrations 20261231000001_telegram_uploads.sql and
+ * 20261231000002_telegram_send_mode.sql): off until staff
  * switch it on for a client; a portal user links a chat with a one-time code; the bot
  * (service role) files each upload as a Received document of that client, uploaded by
  * that portal user, with source 'telegram'.
@@ -68,6 +69,8 @@ describe.skipIf(!url)("Telegram uploads", () => {
     await db.query(read("tests/grants.sql"));
     await db.query(read("seed.sql"));
     await db.query(`grant usage on schema public to service_role`);
+    // The bot writes its /send choice and reply ids to these tables directly, as Supabase's service role may.
+    await db.query(`grant select, update on public.telegram_links, public.telegram_uploads to service_role`);
     await db.query(`insert into auth.users (id) values ($1), ($2), ($3), ($4)`, [OWNER, CLIENT_USER, OTHER_USER, PREPARER]);
     const brand = (await db.query(`select id from public.brands where code = 'TC'`)).rows[0].id;
     await db.query(`insert into public.staff_profiles (user_id, brand_id, full_name, role) values ($1, $3, 'Owner', 'owner'), ($2, $3, 'Pia Preparer', 'staff')`, [OWNER, PREPARER, brand]);
@@ -116,6 +119,14 @@ describe.skipIf(!url)("Telegram uploads", () => {
     expect((await db.query(`select status, document_id from public.telegram_uploads where id = $1`, [u])).rows[0]).toEqual({ status: "filed", document_id: id });
     // A second tap returns the same document.
     expect((await bot(`select id from public.telegram_file_document($1, gen_random_uuid(), 'other', '2026-11-01', $2)`, [u, p])).rows[0].id).toBe(id);
+  });
+
+  it("keeps a /send choice on the chat for the bot, only of a known type (20261231000002)", async () => {
+    await bot(`update public.telegram_links set send_doc_type = 'purchase_receipt', send_month = null, send_active_at = now() where chat_id = $1`, [CHAT]);
+    expect((await db.query(`select send_doc_type from public.telegram_links where chat_id = $1`, [CHAT])).rows[0]).toEqual({ send_doc_type: "purchase_receipt" });
+    await expect(bot(`update public.telegram_links set send_doc_type = 'receipt' where chat_id = $1`, [CHAT])).rejects.toThrow(/check constraint/);
+    await bot(`update public.telegram_uploads set reply_message_id = 42 where chat_id = $1`, [CHAT]);
+    await bot(`update public.telegram_links set send_doc_type = null, send_month = null, send_active_at = null where chat_id = $1`, [CHAT]);
   });
 
   it("stops filing when staff switch it off or the person loses portal access", async () => {
