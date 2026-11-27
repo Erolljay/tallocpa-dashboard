@@ -36,7 +36,7 @@ const BOOKS = [
   "open_items", "open_item_applications", "arap_updates", "book_invoices", "book_invoice_lines",
   "book_settlements", "book_settlement_allocations", "books_month_locks", "book_invoice_list",
 ];
-const OWN = ["ai_employees", "ai_assignments", "ai_tool_grants"];
+const OWN = ["ai_employees", "ai_assignments", "ai_tool_grants", "ai_drafts"];
 /** Client records granted with the client (step 2, migration 20270107000002). */
 const CLIENT_RECORDS = ["clients", "obligations", "filing_instances"];
 
