@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Fragment, Suspense, type ReactNode } from "react";
 import { RiCalendarScheduleLine } from "@remixicon/react";
+import { CancelBooking } from "@/components/booking/cancel-booking";
 import { ProposalView, type ProposalData } from "@/components/funnel/proposal-view";
 import { NotesTimeline } from "@/components/leads/notes-timeline";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
@@ -16,6 +17,7 @@ import { manilaNowLocal } from "@/lib/leads/time";
 import { channelLabel, leadChannel, type LeadSourceRow } from "@/lib/marketing/links";
 import { proposalSetup } from "@/lib/funnel/proposal-quote";
 import { supabaseServer } from "@/lib/supabase/server";
+import { cancelCallAction } from "../actions";
 import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
 
 export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
@@ -41,9 +43,9 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
     supabase.from("proposals").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     supabase.from("lead_notes").select("source, source_id, at, author, body, details").eq("lead_id", id),
     supabase.from("staff_profiles").select("user_id, full_name, role, active").order("full_name"),
-    supabase.from("discovery_calls").select("scheduled_at, meet_url, booked_via").eq("lead_id", id).is("held_at", null).maybeSingle(),
+    supabase.from("discovery_calls").select("id, scheduled_at, meet_url, booked_via").eq("lead_id", id).is("held_at", null).is("cancelled_at", null).maybeSingle(),
   ]);
-  const bookedCall = booked as { scheduled_at: string | null; meet_url: string | null } | null;
+  const bookedCall = booked as { id: string; scheduled_at: string | null; meet_url: string | null } | null;
   const staff = (staffRows ?? []) as Person[];
   const nameOf = new Map(staff.map((s) => [s.user_id, s.full_name]));
   const active = staff.filter((s) => s.active);
@@ -142,6 +144,14 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
                     <p>The lead books the call on {lead.reviewer_id ? `${nameOf.get(lead.reviewer_id) ?? "the reviewer"}'s` : "the reviewer's"} free times from the booking link, with a Meet link. Or arrange it yourself and record it below.</p>
                   )}
                 </div>
+                {bookedCall?.scheduled_at && (
+                  <CancelBooking
+                    action={cancelCallAction.bind(null, id, bookedCall.id)}
+                    label="Cancel the call"
+                    confirmLabel="Cancel the call"
+                    reasonHint="Optional. It goes in the email to the lead and the notice to the team."
+                  />
+                )}
                 {!bookedCall?.scheduled_at && lead.reviewer_id && (stage === "lead" || stage === "prospect") && <BookingLink leadId={id} />}
                 <DiscoveryCallForm leadId={id} defaultAt={manilaNowLocal()} />
               </div>

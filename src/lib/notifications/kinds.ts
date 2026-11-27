@@ -49,6 +49,9 @@ export const NOTIFICATION_KINDS = {
   lead_new: { group: "leads", audience: "staff", label: "A new inquiry from the website", action: "Open the lead", ownerOnly: true },
   discovery_call_booked: { group: "leads", audience: "staff", label: "A discovery call was booked", action: "Open the lead" },
   client_meeting_booked: { group: "leads", audience: "staff", label: "A client booked a meeting with me", action: "Open the calendar" },
+  discovery_call_cancelled: { group: "leads", audience: "staff", label: "A discovery call was cancelled", action: "Open the lead" },
+  client_meeting_cancelled: { group: "leads", audience: "staff", label: "A client meeting with me was cancelled", action: "Open the calendar" },
+  meeting_cancelled: { group: "leads", audience: "client", label: "A meeting with us was cancelled", action: "Book another time" },
 } as const satisfies Record<string, NotificationKindInfo>;
 
 export type NotificationKind = keyof typeof NOTIFICATION_KINDS;

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireOwnerOrReviewer } from "@/lib/auth";
+import { cancelReason } from "@/lib/calendar/cancel";
+import { cancelDiscoveryCall } from "@/lib/calendar/cancel-server";
 import { addDays } from "@/lib/deadlines/dates";
 import { auditIndependenceWarning, buildProposalQuote, parseSales, readJobs } from "@/lib/fees/proposal";
 import { parsePrice } from "@/lib/fees/schedule";
@@ -50,6 +52,16 @@ export async function recordCallAction(leadId: string, _: LeadState, form: FormD
   if (error) return { error: error.message };
   refresh(leadId);
   return { ok: "Discovery call recorded." };
+}
+
+/** The Owner or the lead's reviewer cancels the booked discovery call, with an optional reason. */
+export async function cancelCallAction(leadId: string, callId: string, _: LeadState, form: FormData): Promise<LeadState> {
+  await requireOwnerOrReviewer();
+  const r = await cancelDiscoveryCall(callId, cancelReason(form.get("reason")));
+  if ("error" in r) return r;
+  refresh(leadId);
+  revalidatePath("/app/calendar");
+  return r;
 }
 
 /**

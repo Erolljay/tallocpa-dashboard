@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/react";
+import { AttachBatchImage } from "@/components/attach-batch-image";
 import { Badge, Card, LinkButton, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { showMonth } from "@/lib/documents/labels";
@@ -21,7 +22,7 @@ export default function RegisterPage(props: PageProps<"/app/clients/[id]/registe
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const amt = (c: number) => (c === 0 ? "—" : formatAmount(c));
-const SOURCE: Record<RegisterLine["source"], string> = { portal: "Portal", staff: "Staff", email: "Email", batch: "Batch · no image", telegram: "Telegram" };
+const SOURCE: Record<RegisterLine["source"], string> = { portal: "Portal", staff: "Staff", email: "Email", batch: "Batch", telegram: "Telegram" };
 const COLUMNS = "id, document_id, kind, source, month, line_date, reference, party_name, party_tin, terms, vatable, vat_exempt, zero_rated, vat, total, discount, vat_withheld, other_deduction, atc, withholding, net, slp_category, vat_registered, ledger_accounts!register_lines_client_id_account_id_fkey(name, fs_line, bir_line), payment:ledger_accounts!register_lines_payment_account_fkey(name), other:ledger_accounts!register_lines_other_account_fkey(name)";
 
 function shiftMonth(month: string, n: number) {
@@ -51,6 +52,12 @@ async function Register({ params, searchParams }: Pick<PageProps<"/app/clients/[
   const { data, error } = await supabase.from("register_lines").select(COLUMNS).eq("client_id", id).eq("month", `${month}-01`).order("line_date", { ascending: true, nullsFirst: false }).order("reference");
   if (error) throw new Error(`Could not load the register: ${error.message}`);
   const lines = ((data ?? []) as unknown as RegisterRow[]).map(toRegisterLine);
+  // Batch rows still without their image (B1): marked, with a way to attach it.
+  // (The register line's month is its document's month.)
+  const { data: bare } = lines.some((l) => l.source === "batch")
+    ? await supabase.from("documents").select("id").eq("client_id", id).eq("source", "batch").eq("document_month", `${month}-01`).is("storage_path", null)
+    : { data: [] as { id: string }[] };
+  const noImage = new Set((bare ?? []).map((d) => d.id));
   const byKind = (k: RegisterKind) => lines.filter((l) => l.kind === k);
   const selected = lines.find((l) => l.id === one(sp.line)) ?? null;
   const base = `/app/clients/${id}/register`;
@@ -86,8 +93,8 @@ async function Register({ params, searchParams }: Pick<PageProps<"/app/clients/[
           <Card><p className="text-body-regular text-text-secondary">No approved documents for {showMonth(`${month}-01`)}.</p></Card>
         )}
 
-        {byKind("sale").length > 0 && <SalesTable lines={byKind("sale")} href={href} selected={selected?.id} />}
-        {byKind("purchase").length > 0 && <PurchasesTable lines={byKind("purchase")} href={href} selected={selected?.id} />}
+        {byKind("sale").length > 0 && <SalesTable lines={byKind("sale")} href={href} selected={selected?.id} noImage={noImage} />}
+        {byKind("purchase").length > 0 && <PurchasesTable lines={byKind("purchase")} href={href} selected={selected?.id} noImage={noImage} />}
         {(["cwt_received", "ewt_issued"] as const).map((k) => byKind(k).length > 0 && <CertificatesTable key={k} kind={k} lines={byKind(k)} href={href} selected={selected?.id} />)}
 
         {selected && <LineParts line={selected} />}
@@ -109,6 +116,17 @@ function th(label: string, numeric = false) {
 const num = "px-2 py-2 text-end tabular-nums whitespace-nowrap";
 const cell = "px-2 py-2";
 
+/** Where the line came from; a batch row without its image says so and offers to attach it. */
+function SourceCell({ line: l, noImage }: { line: RegisterLine; noImage: Set<string> }) {
+  if (!noImage.has(l.documentId)) return <Badge>{SOURCE[l.source]}</Badge>;
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <Badge tone="waiting">Batch · no image</Badge>
+      <AttachBatchImage documentId={l.documentId} />
+    </span>
+  );
+}
+
 function PartsLink({ line, href, selected }: { line: RegisterLine; href: Href; selected?: string }) {
   return (
     <Link href={`${href({ line: line.id })}#parts`} aria-current={selected === line.id ? "true" : undefined} className={cx("text-caption-1-medium hover:underline", selected === line.id ? "text-text-primary" : "text-button-ghost-foreground")}>
@@ -117,7 +135,7 @@ function PartsLink({ line, href, selected }: { line: RegisterLine; href: Href; s
   );
 }
 
-function SalesTable({ lines, href, selected }: { lines: RegisterLine[]; href: Href; selected?: string }) {
+function SalesTable({ lines, href, selected, noImage }: { lines: RegisterLine[]; href: Href; selected?: string; noImage: Set<string> }) {
   const t = totals(lines);
   return (
     <Card title={`Sales (${lines.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Net receipt is what reached cash</span>}>
@@ -132,7 +150,7 @@ function SalesTable({ lines, href, selected }: { lines: RegisterLine[]; href: Hr
                 <td className={cx(cell, "tabular-nums whitespace-nowrap text-text-secondary")}>{l.date ?? "—"}</td>
                 <td className={cx(cell, "whitespace-nowrap")}><Link href={`/app/documents/${l.documentId}`} className="text-button-ghost-foreground hover:underline">{l.reference ?? "No number"}</Link>{l.terms === "charge" && <span className="ms-1.5 text-caption-1-regular text-text-tertiary">charge</span>}</td>
                 <td className={cell}>{l.partyName ?? "—"}</td>
-                <td className={cell}><Badge>{SOURCE[l.source]}</Badge></td>
+                <td className={cell}><SourceCell line={l} noImage={noImage} /></td>
                 <td className={num}>{amt(l.vatable)}</td>
                 <td className={num}>{amt(l.vatExempt)}</td>
                 <td className={num}>{amt(l.zeroRated)}</td>
@@ -158,7 +176,7 @@ function SalesTable({ lines, href, selected }: { lines: RegisterLine[]; href: Hr
   );
 }
 
-function PurchasesTable({ lines, href, selected }: { lines: RegisterLine[]; href: Href; selected?: string }) {
+function PurchasesTable({ lines, href, selected, noImage }: { lines: RegisterLine[]; href: Href; selected?: string; noImage: Set<string> }) {
   const t = totals(lines);
   return (
     <Card title={`Purchases and expenses (${lines.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Net paid is what left cash</span>}>
@@ -171,7 +189,7 @@ function PurchasesTable({ lines, href, selected }: { lines: RegisterLine[]; href
             {lines.map((l) => (
               <tr key={l.id} className={cx("border-b border-separator-border last:border-0", selected === l.id && "bg-background-secondary-default")}>
                 <td className={cx(cell, "tabular-nums whitespace-nowrap text-text-secondary")}>{l.date ?? "—"}</td>
-                <td className={cx(cell, "whitespace-nowrap")}><Link href={`/app/documents/${l.documentId}`} className="text-button-ghost-foreground hover:underline">{l.reference ?? "No number"}</Link>{l.terms === "charge" && <span className="ms-1.5 text-caption-1-regular text-text-tertiary">charge</span>}</td>
+                <td className={cx(cell, "whitespace-nowrap")}><Link href={`/app/documents/${l.documentId}`} className="text-button-ghost-foreground hover:underline">{l.reference ?? "No number"}</Link>{l.terms === "charge" && <span className="ms-1.5 text-caption-1-regular text-text-tertiary">charge</span>}{noImage.has(l.documentId) && <span className="mt-1 block"><SourceCell line={l} noImage={noImage} /></span>}</td>
                 <td className={cell}>{l.partyName ?? "—"}</td>
                 <td className={cx(cell, l.account ? "text-text-primary" : "text-text-tertiary")}>{l.account?.name ?? "Not chosen"}</td>
                 <td className={cell}>{l.slpCategory ? <Badge tone={l.slpCategory === "capital_goods" ? "progress" : "neutral"}>{SLP_CATEGORIES[l.slpCategory]}</Badge> : <span className="text-text-tertiary">—</span>}</td>
