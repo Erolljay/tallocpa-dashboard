@@ -4,6 +4,7 @@ import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { AGENCIES, CASE_KINDS, daysOpen, progress, routingSlip, STEP_STATUSES, waitingOn, type StepStatus } from "@/lib/registration/steps";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { YearRenewalsForm } from "./forms";
@@ -37,7 +38,7 @@ interface Row {
   opened_at: string;
   closed_at: string | null;
   target_date: string | null;
-  clients: { name: string; code: string } | null;
+  clients: { name: string; code: string; status: string } | null;
   registration_steps: { code: string; agency: keyof typeof AGENCIES; label: string; status: StepStatus; sort_order: number; done_on: string | null }[];
 }
 
@@ -55,7 +56,7 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
   const supabase = await supabaseServer();
   const query = supabase
     .from("registration_cases")
-    .select("id, kind, period_year, details, status, opened_at, closed_at, target_date, clients(name, code), registration_steps(code, agency, label, status, sort_order, done_on)")
+    .select("id, kind, period_year, details, status, opened_at, closed_at, target_date, clients(name, code, status), registration_steps(code, agency, label, status, sort_order, done_on)")
     .order("opened_at", { ascending: false });
   const filtered = kindFilter ? query.eq("kind", kindFilter) : query;
   const { data, error } = await (closed ? filtered.neq("status", "open") : filtered.eq("status", "open"));
@@ -72,6 +73,8 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
   const pill = (on: boolean) => cx("rounded-full px-3 py-1", on ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover");
 
   const rows = ((data ?? []) as unknown as Row[])
+    // Open cases of inactive and archived clients are hidden; the closed list keeps history.
+    .filter((r) => closed || !r.clients || currentClientStatuses.includes(r.clients.status))
     .filter((r) => matchesSearch(search, [r.clients?.name, r.clients?.code, CASE_KINDS[r.kind], r.period_year ? String(r.period_year) : null, r.details.branch_name]))
     .map((r) => {
     const steps = r.registration_steps.map((s) => ({ ...s, sortOrder: s.sort_order, doneOn: s.done_on }));

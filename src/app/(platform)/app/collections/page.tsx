@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
+import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { ageOpenItems, AGING_BUCKETS, agingLabel, groupReady, readyReasonLabel, totalHeld, type ReadyItem } from "@/lib/collections/collections";
 import { addDays } from "@/lib/deadlines/dates";
 import { showMonth } from "@/lib/documents/labels";
@@ -37,18 +38,20 @@ async function Overview() {
     supabase.rpc("ready_to_bill", { p_date: today }),
     supabase.from("due_balances").select("client_id, due_on, open_amount, kind, soa_id").gt("open_amount", 0),
     supabase.from("deposit_balances").select("client_id, unallocated").gt("unallocated", 0),
-    supabase.from("clients").select("id, name, code, payment_mode, status").in("status", ["onboarding", "active"]).order("name"),
+    // Every client, so balances left by inactive and archived ones can be noted below.
+    supabase.from("clients").select("id, name, code, payment_mode, status").order("name"),
     supabase.rpc("cash_for_remittance"),
     supabase
       .from("filing_instances")
       .select("id, form, period_label, due_date, status, clients!inner(id, name, payment_mode)")
       .eq("clients.payment_mode", "firm_remits")
+      .in("clients.status", currentClientStatuses)
       .in("status", ["not_started", "prepared", "reviewed"])
       .or("tax_due.is.null,tax_due.gt.0")
       .gte("due_date", today)
       .lte("due_date", addDays(today, 20))
       .order("due_date"),
-    supabase.from("soas").select("id, reference, billing_date, due_on, client_id, clients(name)").order("billing_date", { ascending: false }).order("reference").limit(15),
+    supabase.from("soas").select("id, reference, billing_date, due_on, client_id, clients!inner(name)").in("clients.status", currentClientStatuses).order("billing_date", { ascending: false }).order("reference").limit(15),
     supabase
       .from("payment_proofs")
       .select("id, soa_id, amount, paid_on, method, submitted_at, soas(reference), clients(name), brand_payment_accounts(institution)")
@@ -57,7 +60,13 @@ async function Overview() {
     // Late-submission surcharges waiting for the Owner (fee schedule's late_surcharge_auto off).
     supabase.from("late_surcharges").select("id, client_id, month, amount, clients(name, code)").eq("status", "pending").order("month").order("created_at"),
   ]);
-  const pendingSurcharges = (surcharges.data ?? []) as unknown as { id: string; client_id: string; month: string; amount: string; clients: { name: string; code: string } | null }[];
+  // Inactive and archived clients are left out of this page, as on Home, Filings and
+  // Documents, except: payments they sent still wait here for verification, and cash
+  // held for remittance stays in its total (it is owed to the BIR either way).
+  const everyClient = (clients.data ?? []) as Client[];
+  const isCurrent = new Set(everyClient.filter((c) => currentClientStatuses.includes(c.status)).map((c) => c.id));
+  const current = <T extends { client_id: string }>(rows: T[]) => rows.filter((r) => isCurrent.has(r.client_id));
+  const pendingSurcharges = current((surcharges.data ?? []) as unknown as { id: string; client_id: string; month: string; amount: string; clients: { name: string; code: string } | null }[]);
   const toVerify = (proofs.data ?? []) as unknown as {
     id: string;
     soa_id: string;
@@ -70,10 +79,16 @@ async function Overview() {
   }[];
   const verifying = new Set(toVerify.map((p) => p.soa_id));
 
-  const open = (dues.data ?? []) as OpenDue[];
+  const everyDue = (dues.data ?? []) as OpenDue[];
+  const open = current(everyDue);
   const all = ageOpenItems(open, today);
+  // What inactive and archived clients still owe, so it is not lost from sight.
+  const formerOwing = everyClient
+    .filter((c) => !isCurrent.has(c.id))
+    .map((c) => ({ client: c, owed: everyDue.filter((d) => d.client_id === c.id).reduce((sum, d) => sum + Number(d.open_amount), 0) }))
+    .filter((r) => r.owed > 0);
   const creditByClient = new Map<string, number>();
-  for (const c of credits.data ?? []) creditByClient.set(c.client_id, (creditByClient.get(c.client_id) ?? 0) + Number(c.unallocated));
+  for (const c of current((credits.data ?? []) as { client_id: string; unallocated: string }[])) creditByClient.set(c.client_id, (creditByClient.get(c.client_id) ?? 0) + Number(c.unallocated));
   const totalCredit = [...creditByClient.values()].reduce((a, b) => a + b, 0);
   // Decision 16: tax and contribution money received from clients is cash for
   // remittance (held for them, not earned) until the return is Filed & paid or the
@@ -81,13 +96,13 @@ async function Overview() {
   const remitRows = (remittance.data ?? []) as { client_id: string; held: string }[];
   const held = totalHeld(remitRows);
 
-  const clientList = (clients.data ?? []) as Client[];
+  const clientList = everyClient.filter((c) => isCurrent.has(c.id));
   const byClient = clientList
     .map((c) => ({ client: c, aging: ageOpenItems(open.filter((d) => d.client_id === c.id), today), credit: creditByClient.get(c.id) ?? 0 }))
     .filter((r) => r.aging.total > 0 || r.credit > 0)
     .sort((a, b) => b.aging.overdue - a.aging.overdue || b.aging.total - a.aging.total);
 
-  const readyClients = groupReady((ready.data ?? []) as ReadyItem[]);
+  const readyClients = groupReady(current((ready.data ?? []) as ReadyItem[]));
   const readyTotal = readyClients.reduce((sum, c) => sum + Math.round(c.total * 100), 0) / 100;
 
   const soaRows = (soas.data ?? []) as unknown as { id: string; reference: string; billing_date: string; due_on: string; client_id: string; clients: { name: string } | null }[];
@@ -117,6 +132,19 @@ async function Overview() {
         <Stat label="Client credits" value={totalCredit} note="Overpayments, used on the next statement." />
         <Stat label="Cash for remittance" value={held.total} note="Tax and contribution money received, not yet remitted." />
       </div>
+
+      {formerOwing.length > 0 && (
+        <Notice tone="waiting">
+          Not counted above: inactive or archived clients still owe{" "}
+          {formerOwing.map(({ client, owed }, i) => (
+            <span key={client.id}>
+              {i > 0 && ", "}
+              <Link href={`/app/collections/${client.id}`} className="text-body-medium underline">{client.name}</Link> <span className="amount">{peso.format(owed)}</span>
+            </span>
+          ))}
+          .
+        </Notice>
+      )}
 
       <Card
         title="Ready to bill"

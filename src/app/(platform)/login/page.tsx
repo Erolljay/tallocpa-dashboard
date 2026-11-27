@@ -6,7 +6,7 @@ import { IDLE_MINUTES } from "@/lib/session/idle";
 import { SignInForm } from "./sign-in-form";
 
 const errors: Record<string, string> = {
-  no_access: "Your account is not linked to Tallo CPA staff or a client yet. Ask the firm to invite you.",
+  no_access: "Your account is not linked to Tallo CPA staff or a current client. If we no longer handle your business, your view-only access ended two months after that. Ask the firm if you need a copy of your files.",
   link_expired: "That sign-in link has expired or was already used. Request a new one.",
   google: "Google sign-in did not finish. Try again, or use your email instead.",
   signin_failed: "Sign-in did not finish. The link may have expired or been opened in a different browser. Request a new one here.",

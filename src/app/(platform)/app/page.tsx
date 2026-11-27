@@ -8,6 +8,7 @@ import { addDays } from "@/lib/deadlines/dates";
 import { showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadBoard, loadCoverage } from "@/lib/deadlines/safeguards-load";
 import { FilingTable, type FilingListRow } from "./deadlines/filing-table";
@@ -88,7 +89,7 @@ async function AmendmentNotice() {
   const me = await requireStaff();
   if (me.staff.role !== "owner") return null;
   const supabase = await supabaseServer();
-  const { data } = await supabase.from("ledger_amendments").select("id, client_id, clients(name)").eq("status", "requested").order("requested_at").limit(20);
+  const { data } = await supabase.from("ledger_amendments").select("id, client_id, clients!inner(name)").eq("status", "requested").in("clients.status", currentClientStatuses).order("requested_at").limit(20);
   const rows = (data ?? []) as unknown as { id: string; client_id: string; clients: { name: string } | null }[];
   if (!rows.length) return null;
   const clients = [...new Map(rows.map((r) => [r.client_id, r.clients?.name ?? "A client"])).entries()];
@@ -145,7 +146,8 @@ async function OwnerView() {
   );
 }
 
-const select = "id, form, period_label, due_date, statutory_due_date, status, clients(id, name, code)";
+// Inner join so the counts below can leave out inactive and archived clients.
+const select = "id, form, period_label, due_date, statutory_due_date, status, clients!inner(id, name, code)";
 
 async function Summary() {
   const me = await requireStaff();
@@ -153,12 +155,12 @@ async function Summary() {
   const today = manilaToday();
   const in14 = addDays(today, 14);
   const [clients, overdue, next14, missed, exceptions, catchUp] = await Promise.all([
-    supabase.from("clients").select("id", { count: "exact", head: true }).in("status", ["onboarding", "active"]),
-    supabase.from("filing_instances").select(select, { count: "exact" }).lt("due_date", today).not("status", "in", "(filed,paid,proof_uploaded)").order("due_date").limit(50),
-    supabase.from("filing_instances").select(select, { count: "exact" }).gte("due_date", today).lte("due_date", in14).not("status", "in", "(filed,paid,proof_uploaded)").order("due_date").limit(100),
+    supabase.from("clients").select("id", { count: "exact", head: true }).in("status", currentClientStatuses),
+    supabase.from("filing_instances").select(select, { count: "exact" }).lt("due_date", today).not("status", "in", "(filed,paid,proof_uploaded)").in("clients.status", currentClientStatuses).order("due_date").limit(50),
+    supabase.from("filing_instances").select(select, { count: "exact" }).gte("due_date", today).lte("due_date", in14).not("status", "in", "(filed,paid,proof_uploaded)").in("clients.status", currentClientStatuses).order("due_date").limit(100),
     // Months still open where the client sent nothing by the cutoff (spec §3.10, §3.11).
-    supabase.from("document_cycles").select("client_id, period, cutoff_date, clients(name)", { count: "exact" }).eq("missed_cutoff", true).is("closed_at", null).order("cutoff_date", { ascending: false }).limit(8),
-    supabase.from("documents").select("id", { count: "exact", head: true }).eq("exception_status", "open").neq("status", "split"),
+    supabase.from("document_cycles").select("client_id, period, cutoff_date, clients!inner(name)", { count: "exact" }).eq("missed_cutoff", true).in("clients.status", currentClientStatuses).is("closed_at", null).order("cutoff_date", { ascending: false }).limit(8),
+    supabase.from("documents").select("id, clients!inner(status)", { count: "exact", head: true }).eq("exception_status", "open").in("clients.status", currentClientStatuses).neq("status", "split"),
     catchUpOpenIds(supabase),
   ]);
   // Returns of catch-up periods were filed outside the app: not overdue (migration 20270104000001).

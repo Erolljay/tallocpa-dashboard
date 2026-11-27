@@ -3,6 +3,7 @@ import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import type { Branch } from "@/lib/branches";
 import { loadPoints } from "@/lib/people/schema";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { InviteStaffForm, StaffRowForm } from "./forms";
 
@@ -25,7 +26,8 @@ async function StaffList() {
   const supabase = await supabaseServer();
   const results = await Promise.all([
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active, branch_id").order("full_name"),
-    supabase.from("staff_assignments").select("user_id, client_id, role"),
+    // Load counts current clients only.
+    supabase.from("staff_assignments").select("user_id, client_id, role, clients!inner(status)").in("clients.status", currentClientStatuses),
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
   ]);

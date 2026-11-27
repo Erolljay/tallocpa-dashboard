@@ -8,6 +8,7 @@ import { loadPoints } from "@/lib/people/schema";
 import { complianceScore, SCORE_RULES, type ClientMonth } from "@/lib/scores/compliance";
 import type { LateFiling } from "@/lib/scores/late";
 import { lastMonths, pct } from "@/lib/scores/staff";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 
 interface Queue { user_id: string | null; queue: "documents" | "returns"; items: number; oldest: string }
@@ -26,14 +27,14 @@ export async function OwnerSections() {
   const scoreMonths = lastMonths(today, SCORE_RULES.months);
 
   const [clients, cards, late, dues, ocr, queues, staff, assignments, engagements, ready] = await Promise.all([
-    supabase.from("clients").select("id, name").in("status", ["onboarding", "active"]),
+    supabase.from("clients").select("id, name").in("status", currentClientStatuses),
     supabase.rpc("client_scorecard", { p_from: scoreMonths[0], p_to: scoreMonths[scoreMonths.length - 1] }),
     supabase.rpc("late_filings", { p_from: year[0], p_to: today }),
     supabase.from("due_balances").select("due_on, open_amount").gt("open_amount", 0),
     supabase.rpc("ocr_correction_rates", { p_from: addDays(today, -90) }),
     supabase.rpc("work_queues"),
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active").order("full_name"),
-    supabase.from("staff_assignments").select("user_id, client_id, role"),
+    supabase.from("staff_assignments").select("user_id, client_id, role, clients!inner(status)").in("clients.status", currentClientStatuses),
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
     // Decision 16c: billing waits for the Owner; Collections lists what is ready.
     supabase.rpc("ready_to_bill", { p_date: today }).select("client_id"),
@@ -49,7 +50,8 @@ export async function OwnerSections() {
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const lateRows = (late.data ?? []) as LateFiling[];
+  // Inactive and archived clients are left out, like the counts above.
+  const lateRows = ((late.data ?? []) as LateFiling[]).filter((l) => nameOfClient.has(l.client_id));
   const byClient = lateRows.filter((l) => l.cause === "client").length;
   const byStaff = lateRows.length - byClient;
 

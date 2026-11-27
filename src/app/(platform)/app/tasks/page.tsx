@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { monthLabel } from "@/lib/remittances/labels";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadJobs } from "@/lib/tasks/jobs";
 import { PRIORITIES, sortTasks, taskBadge, type Priority, type TaskStage, type TaskStatus } from "@/lib/tasks/labels";
@@ -35,7 +36,7 @@ export interface TaskRow {
   assigned_to: string;
   created_by: string | null;
   created_at: string;
-  clients: { name: string } | null;
+  clients: { name: string; status: string } | null;
 }
 
 const VIEWS = { mine: "Assigned to me", review: "To review", given: "I gave others", all: "Everyone's" } as const;
@@ -53,7 +54,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
   const supabase = await supabaseServer();
   let q = supabase
     .from("staff_tasks")
-    .select("id, title, status, stage, reviewer_id, job_label, priority, due_date, period_month, client_id, request_id, assigned_to, created_by, created_at, clients(name)")
+    .select("id, title, status, stage, reviewer_id, job_label, priority, due_date, period_month, client_id, request_id, assigned_to, created_by, created_at, clients(name, status)")
     .order("due_date", { ascending: true, nullsFirst: false })
     .limit(300);
   q = done ? q.neq("status", "open") : q.eq("status", "open");
@@ -69,7 +70,8 @@ async function Tasks({ searchParams }: Pick<PageProps<"/app/tasks">, "searchPara
   ]);
   if (error) throw error;
   const today = manilaToday();
-  const rows = sortTasks((data ?? []) as unknown as TaskRow[]);
+  // Open tasks for inactive and archived clients are hidden; Done keeps every client's.
+  const rows = sortTasks(((data ?? []) as unknown as TaskRow[]).filter((t) => done || !t.clients || currentClientStatuses.includes(t.clients.status)));
   const names = new Map((staff ?? []).map((s) => [s.user_id, s.full_name]));
   const link = (v: View, d = done) => `/app/tasks?${new URLSearchParams({ ...(v !== "mine" ? { view: v } : {}), ...(d ? { show: "done" } : {}) })}`;
   const pill = (on: boolean) => cx("rounded-full px-3 py-1 outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring", on ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover");
@@ -160,13 +162,15 @@ async function registrationSteps(supabase: Awaited<ReturnType<typeof supabaseSer
   }
   let q = supabase
     .from("registration_steps")
-    .select("id, label, status, case_id, registration_cases!inner(client_id, status, target_date, clients(name))")
+    .select("id, label, status, case_id, registration_cases!inner(client_id, status, target_date, clients(name, status))")
     .in("status", ["pending", "in_progress", "waiting_client", "waiting_agency"])
     .eq("registration_cases.status", "open")
     .order("sort_order")
     .limit(100);
   if (clientIds) q = q.in("registration_cases.client_id", clientIds);
   const { data } = await q;
-  return ((data ?? []) as unknown as { id: string; label: string; status: string; case_id: string; registration_cases: { target_date: string | null; clients: { name: string } | null } }[])
+  return ((data ?? []) as unknown as { id: string; label: string; status: string; case_id: string; registration_cases: { target_date: string | null; clients: { name: string; status: string } | null } }[])
+    // Steps of inactive and archived clients are hidden.
+    .filter((s) => !s.registration_cases.clients || currentClientStatuses.includes(s.registration_cases.clients.status))
     .map((s) => ({ id: s.id, label: s.label, status: s.status, case_id: s.case_id, target_date: s.registration_cases.target_date, client: s.registration_cases.clients?.name ?? "" }));
 }

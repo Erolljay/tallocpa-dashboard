@@ -9,6 +9,7 @@ import { openMonth } from "@/lib/documents/cutoff";
 import { DOC_TYPES, showMonth, type DocType } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CloseCycleButton, DecideExceptionForm, NothingToSubmitButton } from "@/components/cycle-forms";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
@@ -75,7 +76,7 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
   const period = parseMonth(typeof month === "string" ? month : null) ?? openMonth(today, 5);
 
   const [cycles, docs, exceptions, assignments] = await Promise.all([
-    supabase.from("document_cycles").select("*, clients(name, code)").eq("period", period).order("cutoff_date"),
+    supabase.from("document_cycles").select("*, clients!inner(name, code)").in("clients.status", currentClientStatuses).eq("period", period).order("cutoff_date"),
     supabase
       .from("documents")
       .select("client_id, status, late, carried_from")
@@ -85,7 +86,8 @@ async function Cycle({ searchParams }: { searchParams: PageProps<"/app/cycle">["
       .limit(5000),
     supabase
       .from("documents")
-      .select("id, doc_type, period, document_month, exception_reason, file_name, client_id, clients(name)")
+      .select("id, doc_type, period, document_month, exception_reason, file_name, client_id, clients!inner(name)")
+      .in("clients.status", currentClientStatuses)
       .eq("exception_status", "open")
       .neq("status", "split")
       .order("created_at")
