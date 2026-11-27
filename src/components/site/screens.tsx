@@ -100,7 +100,7 @@ export function OnboardingScreen() {
 const CATEGORIES = [
   { name: "Sales", hint: "Sales invoices, official receipts, 2307s from customers", Icon: RiStore2Line },
   { name: "Purchases & Expenses", hint: "Receipts and invoices for what you bought or paid", Icon: RiShoppingBag3Line },
-  { name: "Payroll", hint: "Your payroll in any format: Excel, PDF or a photo", Icon: RiTeamLine },
+  { name: "Payroll", hint: "Your payroll as an Excel or CSV file", Icon: RiTeamLine },
   { name: "Other", hint: "Bank statements, contracts, anything else", Icon: RiFileList2Line },
 ];
 

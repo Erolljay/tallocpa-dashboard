@@ -35,6 +35,13 @@ export const streamOf = (t: DocType): Stream | null =>
 /** A spreadsheet can only be sent as payroll: OCR reads photos and PDFs. */
 export const SPREADSHEET_TYPES = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"];
 
+/**
+ * Payroll is taken only as Excel or CSV, and a spreadsheet only as payroll. Payroll
+ * cells are read directly (lib/payroll/read), so it never costs a full OCR read; a
+ * payroll PDF or photo would.
+ */
+export const fitsDocType = (docType: DocType, mimeType: string): boolean => SPREADSHEET_TYPES.includes(mimeType) === (docType === "payroll");
+
 /** How a document came in (documents.source). */
 export const SOURCE_LABELS: Record<string, string> = {
   portal: "Portal",

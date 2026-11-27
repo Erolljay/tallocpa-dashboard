@@ -2,7 +2,7 @@
  * Telegram intake rules (docs/SETUP.md, "Telegram uploads"): what the bot accepts and the
  * buttons it shows. Pure, so the webhook and the tests share them.
  */
-import { CLIENT_DOC_TYPES, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
+import { CLIENT_DOC_TYPES, fitsDocType, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
 
 /** The Bot API lets a bot download files up to 20 MB, the same limit as the portal. */
 export const MAX_BYTES = 20 * 1024 * 1024;
@@ -68,7 +68,7 @@ function mimeFromName(name: string): string {
   );
 }
 
-/** Short button labels; a spreadsheet can only be payroll (OCR reads photos and PDFs). */
+/** Short button labels; a spreadsheet can only be payroll, and payroll only a spreadsheet. */
 export const BUTTON_LABELS: Partial<Record<DocType, string>> = {
   sales_invoice: "Sales invoice / OR",
   bir_2307_received: "2307 from customer",
@@ -86,7 +86,7 @@ export type InlineKeyboard = { text: string; callback_data: string }[][];
 
 /** The buttons under a received file (callback data "f:<code>:<upload id>", under Telegram's 64 bytes). */
 export function typeButtons(uploadId: string, mimeType: string): InlineKeyboard {
-  const types: DocType[] = SPREADSHEET_TYPES.includes(mimeType) ? ["payroll"] : [...CLIENT_DOC_TYPES];
+  const types: DocType[] = CLIENT_DOC_TYPES.filter((t) => fitsDocType(t, mimeType));
   const buttons = types.map((t) => ({ text: BUTTON_LABELS[t] ?? t, callback_data: `f:${CODE_OF[t]}:${uploadId}` }));
   const rows: InlineKeyboard = [];
   for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2));
@@ -112,7 +112,7 @@ export function clientButtons(clients: { id: string; code: string; name: string 
 
 /**
  * /send ("choose the type first"): the kind before any file arrives (callback "t:<code>").
- * Every client type is offered; a spreadsheet sent later is taken only as Payroll.
+ * Every client type is offered; a spreadsheet sent later is taken only as Payroll, and Payroll only takes a spreadsheet.
  */
 export function sendTypeButtons(): InlineKeyboard {
   const buttons = CLIENT_DOC_TYPES.map((t) => ({ text: BUTTON_LABELS[t] ?? t, callback_data: `t:${CODE_OF[t]}` }));
@@ -138,9 +138,9 @@ export function sendModeState(mode: { send_doc_type: string | null; send_active_
   return now.getTime() - Date.parse(mode.send_active_at) <= SEND_IDLE_MS ? "active" : "expired";
 }
 
-/** A spreadsheet can only be payroll (OCR reads photos and PDFs). */
+/** A spreadsheet can only be payroll, and payroll only a spreadsheet (lib/documents/labels fitsDocType). */
 export function fitsType(docType: DocType, mimeType: string): boolean {
-  return !SPREADSHEET_TYPES.includes(mimeType) || docType === "payroll";
+  return fitsDocType(docType, mimeType);
 }
 
 export type Choice =

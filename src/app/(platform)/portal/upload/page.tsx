@@ -30,7 +30,7 @@ export default function PortalUpload(props: PageProps<"/portal/upload">) {
 const STREAM_INFO: Record<Stream, { icon: RemixiconComponentType; hint: string }> = {
   sales: { icon: RiStore2Line, hint: "Sales invoices, official receipts, 2307s from customers" },
   purchases: { icon: RiShoppingBag3Line, hint: "Receipts and invoices for what you bought or paid, 2307s you issued" },
-  payroll: { icon: RiGroupLine, hint: "Your payroll in any format: Excel, PDF or a photo" },
+  payroll: { icon: RiGroupLine, hint: "Your payroll as an Excel or CSV file" },
   other: { icon: RiFileList3Line, hint: "Bank statements, contracts, your COR, anything else" },
 };
 const ORDER = Object.keys(STREAMS) as Stream[];

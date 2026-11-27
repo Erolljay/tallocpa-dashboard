@@ -44,10 +44,11 @@ describe("fileFromMessage", () => {
 });
 
 describe("buttons", () => {
-  it("offers every client type for a photo, and round-trips the choice", () => {
+  it("offers every client type but Payroll for a photo, and round-trips the choice", () => {
     const rows = typeButtons(ID, "image/jpeg");
     const all = rows.flat();
-    expect(all).toHaveLength(8);
+    expect(all).toHaveLength(7);
+    expect(all.some((b) => parseChoice(b.callback_data)?.action === "file" && (parseChoice(b.callback_data) as { docType: string }).docType === "payroll")).toBe(false);
     for (const b of all) expect(Buffer.byteLength(b.callback_data)).toBeLessThanOrEqual(64);
     expect(parseChoice(all[0].callback_data)).toEqual({ action: "file", docType: "sales_invoice", uploadId: ID });
     expect(parseChoice(all.at(-1)!.callback_data)).toEqual({ action: "cancel", uploadId: ID });
@@ -133,8 +134,10 @@ describe("/send: the type first", () => {
     expect(sendModeState({ send_doc_type: "payroll", send_active_at: "2026-11-27T09:29:59Z" }, now)).toBe("expired");
   });
 
-  it("takes a spreadsheet only as payroll", () => {
+  it("takes a spreadsheet only as payroll, and payroll only as a spreadsheet", () => {
     expect(fitsType("payroll", "text/csv")).toBe(true);
+    expect(fitsType("payroll", "application/pdf")).toBe(false);
+    expect(fitsType("payroll", "image/jpeg")).toBe(false);
     expect(fitsType("purchase_receipt", "text/csv")).toBe(false);
     expect(fitsType("purchase_receipt", "application/pdf")).toBe(true);
   });

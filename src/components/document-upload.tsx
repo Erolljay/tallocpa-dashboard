@@ -140,7 +140,8 @@ export function DocumentUpload(props: {
         )}
       </div>
 
-      <div className="grid gap-3 @sm:grid-cols-2">
+      <div className={payroll ? "grid gap-3" : "grid gap-3 @sm:grid-cols-2"}>
+        {!payroll && (
         <button
           type="button"
           disabled={busy || !clientId}
@@ -149,16 +150,17 @@ export function DocumentUpload(props: {
         >
           <RiScan2Line aria-hidden className="size-5" /> Scan document
         </button>
+        )}
         <button
           type="button"
           disabled={busy || !clientId}
           onClick={() => files.current?.click()}
           className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-border-button-default bg-background-primary-default px-4 py-3 text-headline-medium text-text-primary hover:bg-background-tertiary-default disabled:opacity-60"
         >
-          <RiFileUploadLine aria-hidden className="size-5" /> {payroll ? "Choose Excel, PDF or photos" : "Choose photos or PDFs"}
+          <RiFileUploadLine aria-hidden className="size-5" /> {payroll ? "Choose Excel or CSV files" : "Choose photos or PDFs"}
         </button>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
-        <input ref={files} type="file" accept={payroll ? "image/*,application/pdf,.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" : "image/*,application/pdf"} multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
+        <input ref={files} type="file" accept={payroll ? ".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" : "image/*,application/pdf"} multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => send(e.target.files)} />
       </div>
 
       {items.length > 0 && (

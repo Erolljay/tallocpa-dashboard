@@ -248,7 +248,10 @@ async function sendUnderMode(admin: SupabaseClient, tg: TelegramApi, link: Link,
   const chatId = link.chat_id;
   const docType = link.send_doc_type as DocType;
   if (!fitsType(docType, file.mimeType)) {
-    await tg.sendMessage(chatId, `${file.fileName}: a spreadsheet can only be sent as Payroll, so it was not sent. Send /send, choose Payroll, then send it again.`, {
+    const why = docType === "payroll"
+      ? "payroll is taken only as an Excel or CSV file, so it was not sent. Export the payroll from your spreadsheet or payroll system and send that file."
+      : "a spreadsheet can only be sent as Payroll, so it was not sent. Send /send, choose Payroll, then send it again.";
+    await tg.sendMessage(chatId, `${file.fileName}: ${why}`, {
       replyTo: m.message_id,
     });
     return null;
@@ -322,6 +325,8 @@ async function fileUploads(admin: SupabaseClient, tg: TelegramApi, uploads: Uplo
   const failed: string[] = [];
   for (const u of uploads) {
     try {
+      // An album can mix kinds: each file must fit the kind chosen (payroll only as Excel or CSV).
+      if (!fitsType(docType, u.mime_type)) throw new Error(docType === "payroll" ? "Payroll is taken only as an Excel or CSV file." : "A spreadsheet can only be sent as Payroll.");
       const bytes = await tg.download(u.file_id);
       const id = crypto.randomUUID();
       const path = `${u.client_id}/${id}/${safeName(u.file_name)}`;
