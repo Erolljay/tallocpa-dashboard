@@ -61,4 +61,4 @@ Database changes go in `supabase/migrations/` as new files; never edit a migrati
 
 ## Stack
 
-Next.js on Vercel · Supabase (Singapore) · Gemini OCR · self-hosted n8n · Resend
+Next.js on Vercel · Supabase (Singapore) · Gemini OCR · Resend · GitHub Actions (migrations, backups)

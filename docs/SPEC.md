@@ -41,7 +41,7 @@ Access is enforced in the database with Postgres row-level security (RLS), not o
 - Time tracking: **not planned at all**, the firm charges fixed retainers (Q37)
 - BIR LOA Services with LOA risk analytics (Phase 4), see §2
 - **Not in the OS at all (Q66):** FS Audit, Agreed-Upon Procedures, Receivership & Liquidation, Business Processing, Systems Implementation, AI & Business Automation. These run on another platform.
-- Viber, SMS, Messenger channels (later, through n8n, Q10, Q38)
+- Viber, SMS, Messenger channels (later, sent by the app itself like Telegram, Q10, Q38, Q81)
 - Registering clients' books as a computerized accounting system (CAS) with BIR (Q18)
 - The nationwide brand (later, Q56, Q60)
 
@@ -275,13 +275,13 @@ Per client per month:
 ### 3.13 Notifications & automation (Q11, Q12, Q38)
 
 - **Email** (Resend) + **in-app** notifications in v1.
-- **n8n** (self-hosted) handles plumbing only: reminder emails, the nightly Google Drive backup, future Viber/SMS. **Tax rules, deadlines and accounting logic stay in the app**, where they are version-controlled and tested.
+- **No separate automation server (Q81, replaces n8n).** Reminder and notification emails, the monthly document requests and the morning email run as the app's own scheduled jobs (Vercel cron) and send through Resend; Telegram runs in the app; mailboxes are read through the Gmail API (eSubmission now, email intake later); database migrations and the nightly backup run on GitHub Actions. **Tax rules, deadlines and accounting logic stay in the app**, where they are version-controlled and tested.
 
 ### 3.14 Privacy, security, retention (Q13, Q45)
 
 - All data (database + files) in **Supabase, Singapore region**.
 - Data Privacy Act basics: consent at client signup, a log of who viewed which document, staff see only assigned clients (RLS), client users see only their own client.
-- **Backups:** Supabase daily backups with point-in-time recovery, plus a nightly n8n export of the database and documents to the firm's Google Drive.
+- **Backups:** Supabase daily backups with point-in-time recovery, plus a nightly encrypted export of the database and documents to the firm's Google Drive, run by GitHub Actions (Q81).
 - **Retention:** nothing is deleted automatically; keep at least **10 years** (above the 5-year BIR requirement under the EOPT Act).
 
 ---
@@ -352,7 +352,7 @@ Main tables (Postgres, all with RLS; all amounts `numeric(18,2)`; all tables hav
 | UI | Tailwind CSS + shadcn/ui, styled with the **Tallo CPA brand design system**; design guidance from the **UI UX Pro Max** skill; **Hallmark** to be considered at production |
 | OCR | Google Gemini API (paid tier), behind an `ocr-provider` interface |
 | Background work | Supabase Queues + scheduled jobs + Edge Functions (OCR pipeline, nightly deadline generation) |
-| Automation | **n8n self-hosted** with Docker on a Singapore VPS — Docker Compose file and setup guide go in this repo |
+| Automation | The app's scheduled jobs (Vercel cron) and **GitHub Actions** (migrations, nightly backup); no self-hosted automation server (Q81) |
 | Email | Resend |
 | PDFs | HTML → PDF (books, SOAs, reports, worksheets) |
 | Quality | Vitest (unit tests — **every tax rule and ledger calculation**), Playwright (end-to-end), Sentry (errors) |
@@ -401,7 +401,7 @@ Last checked against the code and the live database: 26 Nov 2026; O6, O9 and O11
 | O6 | ~~Opening trial balances as of 31 Dec 2026 for each bookkeeping client~~ **Not a go-live blocker (Owner, 27 Nov 2026):** books can start on any month and the opening balances are entered as of the day before, whenever each client is ready (docs/OPENING-BALANCES.md) | Staff | Phase 1B, per client when its books start |
 | O7 | Board of Accountancy firm-name rules before choosing the nationwide brand; whether it needs a registered partnership or corporation | Owner | Nationwide brand (later) |
 | O8 | ~~Separate bank account for client tax funds~~ **Closed:** Unionbank and BPI accounts are set up for client tax funds in Settings → Payment channels | Owner | Collections (§3.9) |
-| O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure. **Partly done:** the Google Cloud project, Gmail and Calendar APIs are set up (REWORK.md, 26 Nov 2026) and 2 calendars are linked. Resend is set up (O11, 27 Nov 2026). Not verifiable from here: the n8n VPS and the backup account |
+| O9 | Google Workspace account (or shared drive) for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure. **Partly done:** the Google Cloud project, Gmail and Calendar APIs are set up (REWORK.md, 26 Nov 2026) and 2 calendars are linked. Resend is set up (O11, 27 Nov 2026). Not verifiable from here: the backup account. No VPS is needed: n8n was dropped (Q81) |
 | O10 | ~~Which firm bank accounts / e-wallets appear on the SOA~~ **Closed:** five channels with QR codes: Unionbank and BPI (client tax funds), GCash, GoTyme and Maya (fees) | Owner | SOA |
 | O11 | ~~Add `RESEND_API_KEY` and `EMAIL_FROM` to Vercel and redeploy~~ **Set up and merged (Owner, 27 Nov 2026). Open:** send one test document request and confirm it arrives from the tallocpa.com sender | Owner | Emailed monthly document requests and cutoff reminders (§3.10) |
 | O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |

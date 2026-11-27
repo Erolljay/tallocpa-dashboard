@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
       { source: "/portal/payroll/:path*", destination: "/portal/reports", permanent: true },
     ];
   },
+  // The OAuth consent page (AI employees' connectors) must never be framed by another site.
+  headers() {
+    return Promise.resolve([
+      {
+        source: "/oauth/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ]);
+  },
   partialPrefetching: true,
   experimental: {
     // Keep a visited page in the browser for 30 seconds, so going back to a tab you just
