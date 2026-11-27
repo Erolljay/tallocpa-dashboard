@@ -72,8 +72,8 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const prev = bundle && at > 0 ? bundle.children[at - 1] : null;
   const next = bundle && at >= 0 && at < bundle.children.length - 1 ? bundle.children[at + 1] : null;
   const fileHref = doc.bundle_page ? `/files/${doc.id}#page=${doc.bundle_page}` : `/files/${doc.id}`;
-  // An approved document stays editable until a return covering its month is filed.
-  const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[]) : null;
+  // An approved document stays editable until a return prepared from its kind of document is filed for its month.
+  const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[], doc.doc_type) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
   const confidence = (ext?.approved_fields ? {} : ext?.confidence ?? {}) as OcrConfidence;
 

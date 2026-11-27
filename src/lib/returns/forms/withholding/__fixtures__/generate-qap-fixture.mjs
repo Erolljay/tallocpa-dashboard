@@ -16,7 +16,8 @@ const api = fn(...Object.values(ctx));
 api.setMap({
   acme: { companyName: "ACME Services Corp", tin: "111-222-333", branchCode: "0000" },
   beta: { companyName: "Beta Lessor Co.", tin: "777-888-999", branchCode: "0001" },
-  juan: { lastName: "DELA CRUZ", firstName: "JUAN", tin: "444-555-666" },
+  // No branch on the TIN: head office 0000 (taxify itself defaulted to 0001).
+  juan: { lastName: "DELA CRUZ", firstName: "JUAN", tin: "444-555-666", branchCode: "0000" },
 });
 const m = (a, b, c) => [a, b, c].map(([base, ewt]) => ({ base, ewt }));
 const rows = [

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { form2551Q } from "./percentage";
+import { buildSawt } from "./sawt";
 import { amounts, cert2307, ctxFor, lineNo, sale } from "./testing";
 
 const individual = { taxpayerType: "individual" as const, name: "Juan Dela Cruz", tin: "123-456-789-000" };
@@ -124,7 +125,7 @@ describe("2551Q", () => {
     expect(feb.body).toBe(
       [
         'HSAWT,H2551Q,123456789,0000,"JUAN DELA CRUZ","DELA CRUZ","JUAN","SANTOS",02/2026,050',
-        'DSAWT,D2551Q,1,222333444,0001,"CITY OF MAKATI",,,,02/2026,,WB080,3.00,16666.67,500.00',
+        'DSAWT,D2551Q,1,222333444,0000,"CITY OF MAKATI",,,,02/2026,,WB080,3.00,16666.67,500.00',
         "CSAWT,C2551Q,123456789,0000,02/2026,16666.67,500.00",
         "",
       ].join("\r\n"),
@@ -133,8 +134,20 @@ describe("2551Q", () => {
     expect(sheet[0]).toBe("﻿BIR FORM 2551Q");
     expect(sheet[2]).toBe("FOR THE PERIOD JANUARY 2026 TO MARCH 2026");
     expect(sheet[5]).toBe("TIN : 123-456-789-0000");
-    expect(sheet[15]).toBe("1,222-333-444-0001,CITY OF MAKATI,,WB080,Percentage tax withheld by government (Sec. 109BB),26666.67,3,800.00");
+    expect(sheet[15]).toBe("1,222-333-444-0000,CITY OF MAKATI,,WB080,Percentage tax withheld by government (Sec. 109BB),26666.67,3,800.00");
     expect(sheet[17]).toBe("Grand Total :,0,,,,,26666.67,,800.00");
     expect(sheet[19]).toBe("END OF REPORT");
+  });
+});
+
+describe("SAWT branches", () => {
+  it("keeps each branch of a withholding agent on its own row; no branch on the TIN is head office", () => {
+    const docs = [
+      cert2307({ id: "a", month: "2026-01-01", partyName: "CITY OF MAKATI", partyTin: "222-333-444", atc: "WB080", total: 1000, withholding: 30 }),
+      cert2307({ id: "b", month: "2026-01-01", partyName: "CITY OF MAKATI", partyTin: "222-333-444-00000", atc: "WB080", total: 1000, withholding: 30 }),
+      cert2307({ id: "c", month: "2026-01-01", partyName: "CITY OF MAKATI", partyTin: "222-333-444-00003", atc: "WB080", total: 1000, withholding: 30 }),
+    ];
+    const { rows } = buildSawt(docs, ["percentage"]);
+    expect(rows.map((r) => [r.partyTin, r.documentIds])).toEqual([["222-333-444", ["a", "b"]], ["222-333-444-00003", ["c"]]]);
   });
 });

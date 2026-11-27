@@ -22,6 +22,7 @@
  *     module when a previous employer is present.
  * The Excel workbook is written as one CSV per schedule (Excel opens them).
  */
+import { branch4 as branch4Of, branchOfTin, tin9, tinDashed } from "@/lib/parties/tin";
 import { toDecimalString } from "@/lib/returns/money";
 import type { AttachmentFile, Centavos } from "@/lib/returns/types";
 import { annualSummary, type AnnualSummary } from "./compute";
@@ -136,23 +137,15 @@ export interface AlphalistAgent {
   name: string;
 }
 
-/** taxify tin9Alpha: first nine TIN digits, zero-padded. */
-export function tin9(t: string | null | undefined): string {
-  const digits = (t ?? "").replace(/\D/g, "");
-  return digits.substring(0, 9).padEnd(9, "0").substring(0, 9) || "000000000";
-}
+/** taxify tin9Alpha / tinDashed1601: the shared TIN helpers. */
+export { tin9, tinDashed };
 
-/** Branch code as four digits: the TIN's digits after the ninth (123-456-789-000 → 0000). */
+/**
+ * Branch code as four digits (last four, zero-padded): from the TIN's digits after the
+ * ninth (123-456-789-00002 → 0002), or from a branch code given on its own; "0000" when none.
+ */
 export function branch4(tinOrBranch: string | null | undefined, fromTin = true): string {
-  const digits = (tinOrBranch ?? "").replace(/\D/g, "");
-  const b = fromTin ? digits.slice(9) : digits;
-  return b.padStart(4, "0").substring(0, 4) || "0000";
-}
-
-/** taxify tinDashed1601. */
-export function tinDashed(t: string | null | undefined): string {
-  const d = (t ?? "").replace(/\D/g, "").padEnd(9, "0").substring(0, 9);
-  return `${d.substring(0, 3)}-${d.substring(3, 6)}-${d.substring(6, 9)}`;
+  return fromTin ? branchOfTin(tinOrBranch) : branch4Of(tinOrBranch);
 }
 
 /** taxify datDateAlpha: YYYY-MM-DD → MM/DD/YYYY ("" if empty). */

@@ -53,7 +53,8 @@ const docLabel = (d: SourceDocument) =>
     : `2307${d.number ? ` no. ${d.number}` : ""}${d.partyName ? ` to ${d.partyName}` : ""}${d.date ? ` (${d.date})` : ""}`;
 
 /** 9+ digits, as the alphalist validation module needs. */
-export const tinDigits = (tin: string | null) => (tin ?? "").replace(/\D/g, "");
+import { tinDigits } from "@/lib/parties/tin";
+export { tinDigits };
 
 /**
  * EWT lines from the 2307s issued in `documents`. A 2307 without the payee's

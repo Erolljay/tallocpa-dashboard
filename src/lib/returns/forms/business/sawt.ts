@@ -9,11 +9,12 @@
  * taxable year: the same layout under the annual form code (H1702 / H1701,
  * D…, C…), with the return period the fiscal year-end month (MM/YYYY).
  */
+import { branchOfTin, payeeKeyOf } from "@/lib/parties/tin";
 import { grossUp } from "../../money";
 import type { AttachmentFile, Centavos, SourceDocument, WorksheetContext, WorksheetSchedule } from "../../types";
 import { atcInfo, atcKind, normalizeAtc, type AtcKind } from "./atc";
 import {
-  MONTH_NAMES, branchCode, crlf, csv, datMonth, docLabel, filerOf, monthKeyOf, monthsBetween, plain, qd, stripSpecial, tin9, tinDashed, tinDigits,
+  MONTH_NAMES, crlf, csv, datMonth, docLabel, filerOf, monthKeyOf, monthsBetween, plain, qd, stripSpecial, tin9, tinDashed, tinDigits,
 } from "./util";
 
 export type SawtForm = "2551Q" | "2550Q" | "1701Q" | "1702Q";
@@ -98,7 +99,8 @@ export function buildSawt(docs: SourceDocument[], kinds: AtcKind[]): SawtResult 
       );
     }
     const base = incomePayment(d, rate);
-    const key = `${tinDigits(d.partyTin).substring(0, 9) || "n:" + (d.partyName ?? "").trim().toUpperCase()}|${atc}`;
+    // One row per withholding agent per branch (head office when the TIN shows none) per ATC.
+    const key = `${payeeKeyOf(d.partyTin) ?? "n:" + (d.partyName ?? "").trim().toUpperCase()}|${atc}`;
     let g = groups.get(key);
     if (!g) {
       g = { partyName: d.partyName ?? "", partyTin: d.partyTin, atc, desc: info?.desc ?? atc, rate, base: 0, withheld: 0, months: {}, documentIds: [] };
@@ -146,7 +148,7 @@ export function sawtDat(ctx: WorksheetContext, form: SawtForm | SawtAnnualForm, 
     totBase += r.base;
     totTax += r.withheld;
     lines.push(
-      ["DSAWT", `D${form}`, i + 1, tin9(r.partyTin), branchCode(r.partyTin), qd(stripSpecial(r.partyName).toUpperCase()), "", "", "", period, "", r.atc, r.rate.toFixed(2), plain(r.base), plain(r.withheld)].join(","),
+      ["DSAWT", `D${form}`, i + 1, tin9(r.partyTin), branchOfTin(r.partyTin), qd(stripSpecial(r.partyName).toUpperCase()), "", "", "", period, "", r.atc, r.rate.toFixed(2), plain(r.base), plain(r.withheld)].join(","),
     );
   });
   lines.push(["CSAWT", `C${form}`, f.tin9, "0000", period, plain(totBase), plain(totTax)].join(","));
@@ -185,7 +187,7 @@ export function sawtCsv(ctx: WorksheetContext, form: SawtForm | SawtAnnualForm, 
   rows.forEach((r, i) => {
     totBase += r.base;
     totTax += r.withheld;
-    data.push([i + 1, `${tinDashed(r.partyTin)}-${branchCode(r.partyTin)}`, r.partyName.toUpperCase(), "", r.atc, r.desc, plain(r.base), r.rate, plain(r.withheld)]);
+    data.push([i + 1, `${tinDashed(r.partyTin)}-${branchOfTin(r.partyTin)}`, r.partyName.toUpperCase(), "", r.atc, r.desc, plain(r.base), r.rate, plain(r.withheld)]);
   });
   data.push(["", "", "", "", "", "", "------------------", "------------------", "------------------"]);
   data.push(["Grand Total :", 0, "", "", "", "", plain(totBase), "", plain(totTax)]);

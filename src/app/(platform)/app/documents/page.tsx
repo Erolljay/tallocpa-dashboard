@@ -471,7 +471,7 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
   const approved: ApprovedRow[] = sorted.map((r) => {
     const f = r.extractions?.approved_fields ?? {};
     const total = f.total != null && f.total !== "" ? Number(f.total) : null;
-    const lock = lockingFiling(r.client_id, r.document_month, filings);
+    const lock = lockingFiling(r.client_id, r.document_month, filings, r.doc_type);
     return {
       id: r.id,
       approved: when(r.extractions?.approved_at ?? r.created_at),

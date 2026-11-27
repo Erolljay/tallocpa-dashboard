@@ -28,7 +28,8 @@ const QUARTER = ["1st", "2nd", "3rd", "4th"];
 
 export interface AnnualPayeeRow {
   tin: string | null;
-  branchCode: string | null;
+  /** Four digits; "0000" (head office) when the TIN shows no branch. */
+  branchCode: string;
   name: string;
   individual: { lastName: string; firstName: string; middleName: string } | null;
   atc: string;
@@ -62,7 +63,7 @@ export function form1604eDat(rows: AnnualPayeeRow[], agent: QapAgent, year: numb
     totWithheld += r.withheld;
     lines.push(
       [
-        "D3", "1604E", ourTin, branch, asOf, i + 1, tin9(r.tin), r.branchCode || "0000",
+        "D3", "1604E", ourTin, branch, asOf, i + 1, tin9(r.tin), r.branchCode,
         qd(stripSpecial(r.individual ? "" : r.name).toUpperCase()),
         qd(stripSpecial(r.individual?.lastName).toUpperCase()),
         qd(stripSpecial(r.individual?.firstName).toUpperCase()),
@@ -103,7 +104,7 @@ export function form1604eCsv(rows: AnnualPayeeRow[], agent: QapAgent, year: numb
     const ind = r.individual;
     data.push([
       i + 1,
-      `${tinDashed(r.tin)}-${r.branchCode || "0000"}`,
+      `${tinDashed(r.tin)}-${r.branchCode}`,
       ind ? "" : r.name.toUpperCase(),
       ind ? [ind.lastName, ind.firstName, ind.middleName].filter(Boolean).join(", ").toUpperCase() : "",
       r.atc,

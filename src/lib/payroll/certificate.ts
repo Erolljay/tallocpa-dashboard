@@ -187,7 +187,7 @@ export function form2316(y: EmployeeYear, year: number, employer: Form2316Employ
   const warnings: string[] = [];
   if (!e.tin) warnings.push("No employee TIN (item 3).");
   if (!employer.tin) warnings.push("No employer TIN (item 12): add it to the client's record.");
-  if (!employer.zipCode) warnings.push("No employer ZIP code (item 14A): set it in Payroll setup.");
+  if (!employer.zipCode) warnings.push("No employer ZIP code (item 14A): add it to the client's record.");
   if (!signatory.name) warnings.push("No authorized representative (items 53 and 55): set the signatory in Payroll setup.");
   if (isMwe && e.mweMonthlyRate == null) warnings.push("Minimum wage earner with no monthly minimum wage on file: item 10 is blank.");
   if (i52 !== i21) warnings.push(`Item 52 (${(i52 / 100).toFixed(2)}) does not equal item 21 (${(i21 / 100).toFixed(2)}): basic pay is less than the contributions in some month. Check the payroll.`);

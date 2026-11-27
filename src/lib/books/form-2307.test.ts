@@ -172,7 +172,8 @@ describe("certificates", () => {
     const cruz = set.forms[0];
     expect(cruz.warnings).toEqual(expect.arrayContaining([
       "No supplier registered address (item 4): complete the supplier in the parties directory.",
-      "No client ZIP code (item 8A): set it in Payroll setup.",
+      "No supplier ZIP code (item 4A): add it to the supplier in the parties directory.",
+      "No client ZIP code (item 8A): add it to the client's record.",
       "No authorized representative to sign: set the signatory in Payroll setup.",
     ]));
     // WI010 is 5%: 1,000.00 on 20,000.00 is right.

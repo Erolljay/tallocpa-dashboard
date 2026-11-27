@@ -13,6 +13,7 @@ export interface PayrollClient {
   tin: string | null;
   rdo_code: string | null;
   registered_address: string | null;
+  zip_code: string | null;
 }
 
 /**
@@ -22,7 +23,7 @@ export interface PayrollClient {
 export async function payrollAccess(clientId: string) {
   const me = await requireStaff();
   const supabase = await supabaseServer();
-  const { data: client } = await supabase.from("clients").select("id, name, tin, rdo_code, registered_address").eq("id", clientId).maybeSingle();
+  const { data: client } = await supabase.from("clients").select("id, name, tin, rdo_code, registered_address, zip_code").eq("id", clientId).maybeSingle();
   if (!client) notFound();
   if (me.staff.role !== "owner") {
     const { data: a } = await supabase.from("staff_assignments").select("user_id").eq("client_id", clientId).eq("user_id", me.userId).limit(1);

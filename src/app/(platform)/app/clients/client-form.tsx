@@ -16,6 +16,7 @@ export interface ClientValues {
   tin: string | null;
   rdo_code: string | null;
   registered_address: string | null;
+  zip_code: string | null;
   fiscal_year_end_month: number;
   filing_channel: "ebirforms" | "efps";
   efps_group: string | null;
@@ -94,6 +95,9 @@ export function ClientForm(props: Props) {
                 <Input id="registered_address" name="registered_address" defaultValue={initial?.registered_address ?? undefined} />
               </Field>
             </div>
+            <Field label="ZIP code" htmlFor="zip_code" hint="For the 2307, 2316 and SLS / SLP files." error={e.zip_code}>
+              <Input id="zip_code" name="zip_code" inputMode="numeric" maxLength={4} placeholder="5000" defaultValue={initial?.zip_code ?? undefined} />
+            </Field>
           </div>
         </Card>
 

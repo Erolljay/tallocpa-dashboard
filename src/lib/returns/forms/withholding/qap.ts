@@ -10,13 +10,15 @@
  *
  * What this OS does not capture (taxify read it from Manager's supplier card):
  *   - the payee's branch code: taken from the TIN's digits after the 9th
- *     (123-456-789-00000 → 0000); taxify's default '0001' when absent;
+ *     (123-456-789-00002 → 0002); head office '0000' when the TIN shows none.
+ *     Each branch of a payee is its own row;
  *   - an individual payee's last / first / middle name: the 2307 has one
  *     name. A payee whose ATC is for individuals (WI…) and whose name is
  *     written "LAST, FIRST MIDDLE" goes in the individual columns (last name
  *     before the comma, the rest as first name); otherwise the name goes in
  *     the registered-name column.
  */
+import { branchOfTin, payeeKeyOf, tin9, tinHasBranch } from "@/lib/parties/tin";
 import { lookupAtc } from "../../atc";
 import { toDecimalString } from "../../money";
 import type { AttachmentFile, Centavos, WorksheetContext } from "../../types";
@@ -28,7 +30,8 @@ const MONTH_NAMES = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JU
 
 export interface QapRow {
   tin: string | null;
-  branchCode: string | null;
+  /** Four digits; "0000" (head office) when the TIN shows no branch. */
+  branchCode: string;
   name: string;
   /** Set when the payee is an individual whose name is written "LAST, FIRST MIDDLE". */
   individual: { lastName: string; firstName: string; middleName: string } | null;
@@ -42,9 +45,7 @@ export interface QapRow {
 
 /** Branch code from the TIN's digits after the 9th, as 4 digits; null if the TIN has none. */
 export function branchFromTin(tin: string | null): string | null {
-  const extra = tinDigits(tin).slice(9);
-  if (extra === "") return null;
-  return extra.length >= 4 ? extra.slice(-4) : extra.padStart(4, "0");
+  return tinHasBranch(tin) ? branchOfTin(tin) : null;
 }
 
 /** "DELA CRUZ, JUAN" → individual name parts, for payees whose ATC is for individuals. */
@@ -65,13 +66,14 @@ export function buildQapRows(lines: EwtLine[], quarterStart: string): QapRow[] {
   const months = quarterMonths(quarterStart);
   const agg = new Map<string, QapRow>();
   for (const l of lines) {
-    const payeeKey = tinDigits(l.payeeTin).slice(0, 9) || l.payeeName.toUpperCase();
+    // One row per payee per branch (head office when the TIN shows none) per ATC.
+    const payeeKey = payeeKeyOf(l.payeeTin) ?? l.payeeName.toUpperCase();
     const k = `${payeeKey}|${l.atc}`;
     let r = agg.get(k);
     if (!r) {
       r = {
         tin: l.payeeTin,
-        branchCode: branchFromTin(l.payeeTin),
+        branchCode: branchOfTin(l.payeeTin),
         name: l.payeeName,
         individual:
           l.party?.kind === "individual" && l.party.lastName
@@ -88,7 +90,6 @@ export function buildQapRows(lines: EwtLine[], quarterStart: string): QapRow[] {
       };
       agg.set(k, r);
     }
-    r.branchCode ??= branchFromTin(l.payeeTin);
     // taxify: monthIdx = clamp(month - quarter start month, 0, 2).
     const idx = Math.max(0, months.indexOf(l.month.slice(0, 10)));
     r.base += l.base;
@@ -114,10 +115,7 @@ export function quarterMonths(quarterStart: string): string[] {
 const mmYYYY = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 /** taxify tin9: first 9 digits, zero-padded; '000000000' when blank. */
-export function tin9(t: string | null | undefined): string {
-  const digits = (t ?? "").replace(/\D/g, "");
-  return (digits.substring(0, 9) || "").padEnd(9, "0").substring(0, 9) || "000000000";
-}
+export { tin9 };
 
 /** taxify stripSpecial: the validation module rejects names with commas and most symbols. */
 export function stripSpecial(v: string | null | undefined): string {
@@ -139,7 +137,7 @@ export function qapWarnings(rows: QapRow[]): string[] {
   for (const r of rows) {
     const issues: string[] = [];
     if (tinDigits(r.tin).length < 9) issues.push("missing/invalid TIN");
-    if (!r.branchCode) issues.push("no branch code in the TIN (the QAP uses 0001; add the branch digits, e.g. 123-456-789-00000)");
+    if (tinDigits(r.tin).length === 9) issues.push("no branch code in the TIN, so it is filed as head office (0000); if the payee is a branch, add its branch digits, e.g. 123-456-789-00002");
     if (!r.individual && (lookupAtc(r.atc)?.payee === "individual" || (!lookupAtc(r.atc) && r.atc.startsWith("WI")))) {
       issues.push(`individual payee (ATC ${r.atc}): write the name as LAST, FIRST MIDDLE so it goes in the individual columns`);
     }
@@ -170,7 +168,7 @@ export function qapDat(rows: QapRow[], agent: QapAgent, quarterStart: string): A
     const m = r.months;
     lines.push(
       [
-        "D1", FORM_TYPE, i + 1, tin9(r.tin), r.branchCode || "0001",
+        "D1", FORM_TYPE, i + 1, tin9(r.tin), r.branchCode,
         qd(corpName), qd(ln), qd(fn), qd(mn),
         monthsInQ[0], r.atc, r.rate.toFixed(2), toDecimalString(m[0].base), toDecimalString(m[0].withheld),
         monthsInQ[1], toDecimalString(m[1].base), toDecimalString(m[1].withheld),
@@ -237,7 +235,7 @@ export function qapCsv(rows: QapRow[], agent: QapAgent, quarterStart: string, pe
     totEwt += r.withheld;
     data.push([
       i + 1,
-      `${tinDashed(r.tin)}-${r.branchCode || "0001"}`,
+      `${tinDashed(r.tin)}-${r.branchCode}`,
       corpName,
       indName,
       r.atc,

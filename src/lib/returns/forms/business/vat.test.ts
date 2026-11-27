@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { withoutZip } from "./util";
 import { form2550Q } from "./vat";
 import { amounts, cert2307, ctxFor, lineNo, purchase, sale } from "./testing";
 
@@ -180,6 +181,22 @@ describe("2550Q", () => {
     expect(r.errors[0]).toMatch(/exceed the VATable purchases/);
   });
 
+  it("puts the client's and the party's ZIP codes in address 2 of the SLS / SLP DAT", () => {
+    const ctx = ctxFor({
+      form: "2550Q", periodStart: "2026-01-01", periodEnd: "2026-03-31",
+      client: { vatRegistered: true, registeredAddress: "1 Ayala Ave., Makati City 1226", zipCode: "1226" },
+      documents: [
+        sale({ month: "2026-01", vatable: 100_000, vat: 12_000, total: 112_000, partyName: "Customer One Corp.", partyTin: "123-456-789-000", partyAddress: "Jaro, Iloilo City 5000", partyZip: "5000" }),
+        sale({ month: "2026-01", vatable: 10_000, vat: 1_200, total: 11_200, partyName: "Walk In Tin", partyTin: "987-654-321", partyAddress: "Quezon City" }),
+      ],
+    });
+    const att = form2550Q.attachments!(ctx, form2550Q.compute(ctx));
+    const lines = att.find((a) => a.kind === "sls_dat_2026-01")!.build().body.split("\r\n");
+    expect(lines[0]).toContain(',"1 AYALA AVE. MAKATI CITY","1226",');
+    expect(lines[1]).toBe('D,S,"123456789","CUSTOMER ONE CORP.",,,,"JARO ILOILO CITY","5000",0.00,0.00,100000.00,12000.00,"000123456",01/31/2026');
+    expect(lines[2]).toBe('D,S,"987654321","WALK IN TIN",,,,"QUEZON CITY",,0.00,0.00,10000.00,1200.00,"000123456",01/31/2026');
+  });
+
   it("writes the SLS, SLP and SAWT DAT files in taxify's BIR layout, one per month", () => {
     const ctx = quarter();
     const att = form2550Q.attachments!(ctx, form2550Q.compute(ctx));
@@ -219,7 +236,7 @@ describe("2550Q", () => {
     expect(sawt.fileName).toBe("00012345600000320262550Q.DAT");
     expect(sawt.body).toBe(
       'HSAWT,H2550Q,000123456,0000,"ACME TRADING INC.","","","",03/2026,050\r\n' +
-        'DSAWT,D2550Q,1,222333444,0001,"CITY GOVERNMENT OF MAKATI",,,,03/2026,,WV010,5.00,50000.00,2500.00\r\n' +
+        'DSAWT,D2550Q,1,222333444,0000,"CITY GOVERNMENT OF MAKATI",,,,03/2026,,WV010,5.00,50000.00,2500.00\r\n' +
         "CSAWT,C2550Q,000123456,0000,03/2026,50000.00,2500.00\r\n",
     );
   });
@@ -244,5 +261,14 @@ describe("2550Q", () => {
     const p = att.find((a) => a.kind === "slp_csv")!.build().body.split("\r\n");
     expect(p[14]).toBe("01/31/2026,111-222-333,SUPPLIER ONE,,,40000.00,0.00,0.00,40000.00,16000.00,8000.00,16000.00,4800.00,44800.00");
     expect(p.find((l) => l.includes("Grand Total"))).toBe(",,,,Grand Total :,54120.00,4120.00,0.00,50000.00,20000.00,10000.00,20000.00,6000.00,56000.00");
+  });
+});
+
+describe("withoutZip", () => {
+  it("drops a trailing ZIP code that has its own column, and nothing else", () => {
+    expect(withoutZip("Jaro, Iloilo City 5000", "5000")).toBe("Jaro, Iloilo City");
+    expect(withoutZip("Jaro, Iloilo City, 5000", "5000")).toBe("Jaro, Iloilo City");
+    expect(withoutZip("Lot 15000", "5000")).toBe("Lot 15000");
+    expect(withoutZip("Jaro, Iloilo City", "")).toBe("Jaro, Iloilo City");
   });
 });
