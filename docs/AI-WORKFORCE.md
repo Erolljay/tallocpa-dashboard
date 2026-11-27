@@ -371,8 +371,7 @@ granted draft tool that a person confirms.
 5. **FS template, notes library and release validator** (useful to staff without AI);
    then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
    Annual Reviewer's tools and desk.
-6. Pre-Review Assistant, Collections Clerk, Registration Runner, BIR Mail Clerk,
-   Chief of Staff (including `my_schedule`, §8b).
+6. **Pre-Review Assistant** (built): returns waiting for review, prior periods, the app's tie-outs, 2307s, the ₱3M VAT threshold; review memos as drafts on the return's page. **Collections Clerk** (built): receivables aging, payment history, ready to bill, billed vs collected split by tax dues (UnionBank), SSS / PhilHealth / Pag-IBIG remittances (Security Bank), retainers and others (BPI); payment reminders as Owner-only drafts. Billing stays Owner-only: the Clerk reads it through narrow functions only it may call. Then Registration Runner, BIR Mail Clerk, Chief of Staff (including `my_schedule`, §8b).
 7. Marketing & Growth.
 
 Each step ships with its tests and goes live switched off until the Owner turns it on.
