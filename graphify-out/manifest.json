@@ -1860,9 +1860,9 @@
     "semantic_hash": ""
   },
   "src/lib/deadlines/safeguards-load.ts": {
-    "mtime": 1795785226.1644402,
-    "seen": 1795785471.8305361,
-    "ast_hash": "2db13da4081a8e6e99ac7f2efd43c4ba",
+    "mtime": 1795788853.240671,
+    "seen": 1795788939.1759121,
+    "ast_hash": "6e81002f632eefff7175f762ffefb5cd",
     "semantic_hash": ""
   },
   "src/lib/deadlines/safeguards.test.ts": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "src/lib/work/load.ts": {
-    "mtime": 1795785226.1814294,
-    "seen": 1795785471.8308005,
-    "ast_hash": "32437791c9edda0a835c15106358c14d",
+    "mtime": 1795788853.2409556,
+    "seen": 1795788939.1808708,
+    "ast_hash": "052a68e9191b9ccdb172587287178656",
     "semantic_hash": ""
   },
   "src/lib/work/next-actions.test.ts": {
@@ -3882,9 +3882,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/cycle/page.tsx": {
-    "mtime": 1795785226.1472883,
-    "seen": 1795785471.8300877,
-    "ast_hash": "27fc0bca4ddf5ec0cab985bf9c662649",
+    "mtime": 1795788853.2412703,
+    "seen": 1795788939.168542,
+    "ast_hash": "e7e8d3dc885045f37265550712fd98cf",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/dashboard-stats.tsx": {
@@ -4146,9 +4146,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/owner-sections.tsx": {
-    "mtime": 1795786693.9519596,
-    "seen": 1795786711.5724502,
-    "ast_hash": "3f251b9c1a69c08ba68d5ee27bb4df85",
+    "mtime": 1795788874.6509445,
+    "seen": 1795788939.1696618,
+    "ast_hash": "d97a1863c3e9178169f6c2c8ad804c9d",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/page.tsx": {
@@ -4212,9 +4212,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/page.tsx": {
-    "mtime": 1795785226.1510568,
-    "seen": 1795785471.8301606,
-    "ast_hash": "afb91f28eb5e13965c5b202ce9202175",
+    "mtime": 1795788874.6497178,
+    "seen": 1795788939.1698685,
+    "ast_hash": "211303c3f9b6175fe8b7547ce8e20fa6",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/requests/[id]/page.tsx": {
@@ -4230,9 +4230,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/requests/page.tsx": {
-    "mtime": 1795785226.1517298,
-    "seen": 1795785471.8301709,
-    "ast_hash": "67bf58ce6d85a1d9fe49edd9aadbbdce",
+    "mtime": 1795788874.6504214,
+    "seen": 1795788939.169979,
+    "ast_hash": "b9ff5b3aca1988eac5117f0ca8c8c725",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/review/page.tsx": {
@@ -4332,9 +4332,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/fees/gap/page.tsx": {
-    "mtime": 1795785226.1526058,
-    "seen": 1795785471.8301916,
-    "ast_hash": "77cb2f14571a87fdd17dacc22f3e6416",
+    "mtime": 1795788874.6510823,
+    "seen": 1795788939.1703966,
+    "ast_hash": "1319e398bf9bc60c580fcbaaba0b5c52",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/fees/page.tsx": {
@@ -4392,9 +4392,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/staff/page.tsx": {
-    "mtime": 1795785226.1533237,
-    "seen": 1795785471.8302288,
-    "ast_hash": "49df7034ef933eae822f32665ae6e409",
+    "mtime": 1795788874.6507545,
+    "seen": 1795788939.1705906,
+    "ast_hash": "e533d03c8f5e7ebede60bb745a7508ff",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/unlock-requests.tsx": {
@@ -4980,9 +4980,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/remittances/page.tsx": {
-    "mtime": 1795785226.1515512,
-    "seen": 1795785471.8301678,
-    "ast_hash": "ca91558d851d8409c525bcf6e1ab126b",
+    "mtime": 1795788853.241536,
+    "seen": 1795788939.169937,
+    "ast_hash": "83af200bb2fce663259439fc1b193b7a",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/tasks/[id]/page.tsx": {
@@ -4992,9 +4992,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/tasks/page.tsx": {
-    "mtime": 1795785226.1534052,
-    "seen": 1795785471.8302317,
-    "ast_hash": "9bc22228248092bd0d9d1136e970b319",
+    "mtime": 1795788924.334059,
+    "seen": 1795788939.1706147,
+    "ast_hash": "a46fd10b0c897d253194ac207ab3dfec",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/remittances/page.tsx": {

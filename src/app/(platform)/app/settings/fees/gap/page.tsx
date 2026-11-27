@@ -7,6 +7,7 @@ import { manilaToday } from "@/lib/filings/run";
 import { gapFor, lastWholeMonths, type GapRow } from "@/lib/fees/gap";
 import { isLegacySchedule } from "@/lib/fees/template";
 import { toSettings } from "@/lib/fees/schedule";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { loadItems, loadSchedules, loadTaxOnFee } from "../data";
 
@@ -56,7 +57,8 @@ async function Gap() {
   const [items, taxOnFee, engagements, obligations, volume] = await Promise.all([
     loadItems(supabase, active.id),
     loadTaxOnFee(supabase, owner.staff.brandId),
-    supabase.from("engagements").select("client_id, service_line, monthly_retainer, start_date, clients(id, name, code, taxpayer_type, brand_id)").eq("status", "active"),
+    // Current clients only: an inactive client's retainer would skew the comparison.
+    supabase.from("engagements").select("client_id, service_line, monthly_retainer, start_date, clients!inner(id, name, code, taxpayer_type, brand_id)").eq("status", "active").in("clients.status", currentClientStatuses),
     supabase.from("obligations").select("client_id, form, end_date"),
     supabase.rpc("client_document_volume", { p_from: months[0], p_to: months[months.length - 1] }),
   ]);

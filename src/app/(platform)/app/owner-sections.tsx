@@ -34,7 +34,7 @@ export async function OwnerSections() {
     supabase.rpc("ocr_correction_rates", { p_from: addDays(today, -90) }),
     supabase.rpc("work_queues"),
     supabase.from("staff_profiles").select("user_id, full_name, role, capacity_points, active").order("full_name"),
-    supabase.from("staff_assignments").select("user_id, client_id, role"),
+    supabase.from("staff_assignments").select("user_id, client_id, role, clients!inner(status)").in("clients.status", currentClientStatuses),
     supabase.from("engagements").select("client_id, monthly_retainer, status"),
     // Decision 16c: billing waits for the Owner; Collections lists what is ready.
     supabase.rpc("ready_to_bill", { p_date: today }).select("client_id"),

@@ -6,6 +6,7 @@ import "server-only";
  * signed-in user's client (row-level security limits what they see) and with the
  * admin client used by the morning email job.
  */
+import { currentClientStatuses } from "@/lib/clients/labels";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { catchUpOpenIds, withoutCatchUp } from "@/lib/filings/catch-up";
 import type { TaxpayerType, TaxType } from "@/lib/clients/obligations";
@@ -63,7 +64,9 @@ export async function loadBoard(db: SupabaseClient, today: IsoDate, opts: { days
   const [{ data: filings, error }, holidays, catchUp] = await Promise.all([
     db
       .from("filing_instances")
-      .select("id, client_id, form, period_label, period_start, period_end, due_date, status, tax_due, clients(name, code, submission_cutoff_day)")
+      .select("id, client_id, form, period_label, period_start, period_end, due_date, status, tax_due, clients!inner(name, code, submission_cutoff_day)")
+      // Current clients only: inactive and archived ones stay off the board, the morning email and My work.
+      .in("clients.status", currentClientStatuses)
       .neq("status", "filed")
       .lte("due_date", until)
       .gte("due_date", addDays(today, -120))

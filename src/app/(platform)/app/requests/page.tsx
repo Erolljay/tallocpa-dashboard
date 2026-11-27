@@ -4,6 +4,7 @@ import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
 import { PRIORITIES, PRIORITY_KEYS, type Priority } from "@/lib/tasks/labels";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { daysBetween } from "@/lib/registration/steps";
@@ -31,7 +32,7 @@ interface Row {
   due_date: string | null;
   updated_at: string;
   created_at: string;
-  clients: { name: string } | null;
+  clients: { name: string; status: string } | null;
   registration_steps: { label: string; case_id: string } | null;
 }
 
@@ -63,7 +64,7 @@ async function Requests({ searchParams }: Pick<PageProps<"/app/requests">, "sear
   const supabase = await supabaseServer();
   const query = supabase
     .from("client_requests")
-    .select("id, direction, subject, status, priority, assigned_to, due_date, updated_at, created_at, clients(name), registration_steps(label, case_id)")
+    .select("id, direction, subject, status, priority, assigned_to, due_date, updated_at, created_at, clients(name, status), registration_steps(label, case_id)")
     .order("updated_at", { ascending: false })
     .limit(300);
   const [{ data, error }, { data: clients }, { data: staff }] = await Promise.all([
@@ -76,6 +77,8 @@ async function Requests({ searchParams }: Pick<PageProps<"/app/requests">, "sear
   const names = new Map((staff ?? []).map((s) => [s.user_id, s.full_name]));
   const rank: Record<Priority, number> = { high: 0, normal: 1, low: 2 };
   const rows = ((data ?? []) as unknown as Row[])
+    // Open items of inactive and archived clients are hidden; Closed keeps every client's.
+    .filter((r) => closed || !r.clients || currentClientStatuses.includes(r.clients.status))
     .map((r) => ({ ...r, view: statusFor("firm", r.direction, r.status) }))
     .filter((r) => (view === "us" ? r.view.actionNeeded : view === "client" ? !r.view.actionNeeded : true))
     .filter((r) => matchesSearch(search, [r.subject, r.clients?.name, r.registration_steps?.label, r.assigned_to ? names.get(r.assigned_to) : null, r.direction === "to_client" ? "request" : "ticket"]))
