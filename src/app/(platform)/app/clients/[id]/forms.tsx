@@ -85,8 +85,8 @@ export function IncomeTaxMethodForm({ clientId, value, individual, canEdit }: { 
 
 const statusConfirm: Record<ClientStatusTarget, string | null> = {
   active: null,
-  inactive: "Mark this client inactive? Their records stay; they drop out of active work.",
-  archived: "Archive this client? Their records stay, but they are hidden from setup prompts and Telegram. You can reactivate them later.",
+  inactive: "Mark this client inactive? Their records stay; they drop out of active work. Their portal contacts get view-only access for two months to download their files, then lose access.",
+  archived: "Archive this client? Their records stay, but they are hidden from setup prompts and Telegram. Their portal contacts get view-only access for two months (counted from when they first became inactive), then lose access. You can reactivate them later.",
 };
 
 export function StatusButton({ clientId, to, label }: { clientId: string; to: ClientStatusTarget; label: string }) {

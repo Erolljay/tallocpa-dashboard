@@ -11,6 +11,7 @@ import { ACCOUNT_TYPES } from "@/lib/ledger/types";
 import { booksMonthStatus, pendingDocumentTaxCodes, type BooksMonthRow, type PendingTaxCodes } from "@/lib/books/actions";
 import { loadTaxCodes } from "@/lib/books/data";
 import { LOW_CONFIDENCE, normalizeFields, type OcrConfidence, type OcrFields } from "@/lib/ocr/fields";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { ClientSelect, PeriodFilter } from "./filters";
@@ -82,9 +83,10 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const range = periodRange(one(sp.period), manilaToday(), one(sp.from), one(sp.to));
   const supabase = await supabaseServer();
 
-  // Clients this person works on: every client for the Owner, assigned ones for staff.
+  // Clients this person works on: every current client for the Owner, assigned ones for
+  // staff. Inactive and archived clients are left out, as on Home and Filings.
   const [{ data: clientRows }, { data: assignments }] = await Promise.all([
-    supabase.from("clients").select("id, name").neq("status", "archived").order("name"),
+    supabase.from("clients").select("id, name").in("status", currentClientStatuses).order("name"),
     owner ? Promise.resolve({ data: null }) : supabase.from("staff_assignments").select("client_id").eq("user_id", me.userId),
   ]);
   const mine = new Set((assignments ?? []).map((a) => a.client_id));

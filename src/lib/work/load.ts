@@ -4,6 +4,7 @@ import "server-only";
  * Runs as that person, so row-level security limits it to their clients. The roles
  * decide what is theirs (src/lib/work/next-actions.ts).
  */
+import { currentClientStatuses } from "@/lib/clients/labels";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { monthTotals } from "@/lib/assets/schedule";
 import { loadAssets } from "@/lib/assets/load";
@@ -32,7 +33,7 @@ export interface MyWork {
 export async function loadMyWork(db: SupabaseClient, me: { userId: string; role: string }, today: IsoDate, everything: boolean): Promise<MyWork> {
   const owner = me.role === "owner";
   const { data: assigned } = await db.from("staff_assignments").select("client_id, role").eq("user_id", me.userId);
-  const { data: clientRows } = await db.from("clients").select("id, name").neq("status", "archived");
+  const { data: clientRows } = await db.from("clients").select("id, name").in("status", currentClientStatuses);
   const names = new Map((clientRows ?? []).map((c) => [c.id, c.name as string]));
   const rolesOf = new Map<string, Set<Role>>();
   for (const c of clientRows ?? []) {

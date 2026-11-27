@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { isQueue, monthLabel, QUEUES, REMITTANCE_KINDS, remittanceBadge, type Queue, type RemittanceKind, type RemittanceStatus } from "@/lib/remittances/labels";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { FilingsTabs } from "@/app/(platform)/app/nav/section-tabs";
@@ -41,10 +42,13 @@ async function Remittances({ searchParams }: Pick<PageProps<"/app/remittances">,
   const owner = me.staff.role === "owner";
   const queue: Queue = typeof sp.queue === "string" && isQueue(sp.queue) ? sp.queue : owner ? "approve" : "prepare";
   const supabase = await supabaseServer();
-  const { data, error } = await supabase
+  // Open queues are for current clients; Done keeps every client's history.
+  let query = supabase
     .from("contribution_remittances")
-    .select("id, client_id, kind, period_month, due_date, status, total, prn, clients(name, payment_mode)")
-    .in("status", [...QUEUES[queue].statuses])
+    .select("id, client_id, kind, period_month, due_date, status, total, prn, clients!inner(name, payment_mode)")
+    .in("status", [...QUEUES[queue].statuses]);
+  if (queue !== "done") query = query.in("clients.status", currentClientStatuses);
+  const { data, error } = await query
     .order("due_date", { ascending: queue !== "done" })
     .order("period_month", { ascending: false })
     .limit(400);
@@ -53,7 +57,11 @@ async function Remittances({ searchParams }: Pick<PageProps<"/app/remittances">,
   const today = manilaToday();
   const counts = await Promise.all(
     (Object.keys(QUEUES) as Queue[]).filter((q) => q !== "done").map(async (q) => {
-      const { count } = await supabase.from("contribution_remittances").select("id", { count: "exact", head: true }).in("status", [...QUEUES[q].statuses]);
+      const { count } = await supabase
+        .from("contribution_remittances")
+        .select("id, clients!inner(status)", { count: "exact", head: true })
+        .in("status", [...QUEUES[q].statuses])
+        .in("clients.status", currentClientStatuses);
       return [q, count ?? 0] as const;
     }),
   );
