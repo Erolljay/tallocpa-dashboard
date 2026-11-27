@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
+import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { currentClientStatuses } from "@/lib/clients/labels";
 import { ageOpenItems, AGING_BUCKETS, agingLabel, groupReady, readyReasonLabel, totalHeld, type ReadyItem } from "@/lib/collections/collections";
@@ -18,6 +18,7 @@ export default function CollectionsPage() {
       <PageHeader
         title="Collections"
         description="What is ready to bill, what each client owes, and what they have paid."
+        actions={<LinkButton href="/app/collections/new">New Bill</LinkButton>}
       />
       <Suspense fallback={<Skeleton rows={8} />}>
         <Overview />
