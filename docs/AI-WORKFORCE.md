@@ -81,7 +81,8 @@ without written consent. Nothing is published without the Owner.
 
 A Cowork desk holds: the job description (project instructions), a working procedure
 (a skill), reference copies, the TalloCPA OS connector with that employee's
-credential, and optional scheduled tasks. It does **not** hold the master templates
+credential, and optional scheduled tasks. The files for each desk are in
+[`docs/ai-desks/`](ai-desks/README.md) (first: the Chief of Staff's morning brief). It does **not** hold the master templates
 or any finished work: drafts are saved in the app, where people review them.
 
 ### 4.1 The in-app model is swappable
