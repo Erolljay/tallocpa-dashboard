@@ -25,6 +25,7 @@ import { PayrollIntake } from "./payroll-intake";
 import { ColumnMapping, PayrollReadReview, ReadPayrollButton, SheetPreview } from "./payroll-read";
 import { ReviewForm, type Booking } from "./review-form";
 import { CwtMatch } from "./cwt-match";
+import { ZoomPreview } from "./zoom-preview";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
   return (
@@ -105,8 +106,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
           {isPdf ? (
             <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed link, not an optimisable asset
-            <img src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} className="max-h-[75vh] w-full rounded-lg border border-separator-border object-contain" />
+            <ZoomPreview src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} />
           )}
           <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
         </Card>
@@ -201,8 +201,7 @@ async function PayrollDocument({ doc, canAct, via }: { via: string; doc: { id: s
           {isPdf ? (
             <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : isImage ? (
-            // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed link, not an optimisable asset
-            <img src={`/files/${doc.id}`} alt={`Payroll for ${showMonth(doc.period)} sent by the client`} className="max-h-[75vh] w-full rounded-lg border border-separator-border object-contain" />
+            <ZoomPreview src={`/files/${doc.id}`} alt={`Payroll for ${showMonth(doc.period)} sent by the client`} />
           ) : read?.sheet ? (
             <>
               <p className="mb-2 text-body-2-regular text-text-secondary">Sheet “{read.sheet.name}” as read; the heading row is shaded.</p>
