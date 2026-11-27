@@ -17,7 +17,7 @@ import { ClientFileForm, RemoveFileButton, TickForm } from "./forms";
 export default function OnboardingPage(props: PageProps<"/app/clients/[id]/onboarding">) {
   return (
     <Suspense fallback={<Skeleton rows={10} />}>
-      <Onboarding params={props.params} />
+      <Onboarding params={props.params} searchParams={props.searchParams} />
     </Suspense>
   );
 }
@@ -29,8 +29,10 @@ const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "me
  * the proposal and the signed contract. Items follow the data where the data
  * records them; staff tick the rest.
  */
-async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboarding">, "params">) {
+async function Onboarding({ params, searchParams }: Pick<PageProps<"/app/clients/[id]/onboarding">, "params" | "searchParams">) {
   const { id } = await params;
+  // Set when the client was made from a lead but its contact could not be given portal access.
+  const portalError = (await searchParams).portal_error;
   const me = await requireStaff();
   const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
@@ -60,6 +62,9 @@ async function Onboarding({ params }: Pick<PageProps<"/app/clients/[id]/onboardi
           </div>
         }
       />
+      {typeof portalError === "string" && portalError && (
+        <div className="mb-6"><Notice tone="blocked">The client was made, but its contact did not get portal access: {portalError} Add them on the client page under Portal contacts.</Notice></div>
+      )}
       <ClientTabs clientId={id} active="onboarding" work={canWork} onboarding={progress} />
 
       <div className="space-y-6">

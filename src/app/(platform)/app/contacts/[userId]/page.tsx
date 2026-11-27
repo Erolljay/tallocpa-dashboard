@@ -8,7 +8,7 @@ import { ACCESS_HINT, ACCESS_LABEL, ACCESS_TONE, CONTACT_ACCESS, isContactAccess
 import { loadContacts } from "@/lib/contacts/load";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
-import { AccessRowForm, AddBusinessForm, RemoveBusinessButton, RenameContactForm } from "../forms";
+import { AccessRowForm, AddBusinessForm, ContactDetailsForm, RemoveBusinessButton } from "../forms";
 
 export default function ContactPage(props: PageProps<"/app/contacts/[userId]">) {
   return (
@@ -78,6 +78,7 @@ async function Contact({ params }: Pick<PageProps<"/app/contacts/[userId]">, "pa
         description={
           <>
             <bdi dir="ltr">{contact.email ?? "—"}</bdi>
+            {contact.mobile && <>{" · "}<bdi dir="ltr">{contact.mobile}</bdi></>}
             {" · "}
             {contact.lastSignInAt ? `last signed in ${when.format(new Date(contact.lastSignInAt))}` : "has not signed in yet"}
           </>
@@ -139,8 +140,8 @@ async function Contact({ params }: Pick<PageProps<"/app/contacts/[userId]">, "pa
         )}
 
         {isOwner && (
-          <Card title="Name">
-            <RenameContactForm userId={contact.userId} fullName={contact.fullName} />
+          <Card title="Details">
+            <ContactDetailsForm userId={contact.userId} fullName={contact.fullName} mobile={contact.mobile} />
           </Card>
         )}
 

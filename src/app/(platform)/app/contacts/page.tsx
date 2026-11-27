@@ -50,7 +50,7 @@ async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "sear
 
         <form role="search" className="max-w-sm">
           <label htmlFor="contacts_q" className="sr-only">Search contacts</label>
-          <Input id="contacts_q" name="q" type="search" defaultValue={search} placeholder="Search name, email or business" />
+          <Input id="contacts_q" name="q" type="search" defaultValue={search} placeholder="Search name, email, mobile or business" />
         </form>
 
         {shown.length === 0 ? (
@@ -74,6 +74,7 @@ async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "sear
                     <td className="px-4 py-3">
                       <Link href={`/app/contacts/${c.userId}`} className="text-body-medium text-text-primary hover:underline">{c.fullName}</Link>
                       <p className="text-caption-1-regular text-text-tertiary"><bdi dir="ltr">{c.email ?? "—"}</bdi></p>
+                      {c.mobile && <p className="text-caption-1-regular text-text-tertiary"><bdi dir="ltr">{c.mobile}</bdi></p>}
                     </td>
                     <td className="px-4 py-3">
                       <ul className="flex flex-col gap-1.5">

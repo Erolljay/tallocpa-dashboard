@@ -16,6 +16,7 @@ export interface Contact {
   userId: string;
   fullName: string;
   email: string | null;
+  mobile: string | null;
   lastSignInAt: string | null;
   businesses: ContactBusiness[];
 }
@@ -24,6 +25,7 @@ interface Row {
   user_id: string;
   client_id: string;
   full_name: string;
+  mobile: string | null;
   position: string | null;
   access: string;
   created_at: string;
@@ -37,7 +39,7 @@ interface Row {
 export async function loadContacts(supabase: SupabaseClient, userId?: string): Promise<Contact[]> {
   let query = supabase
     .from("client_users")
-    .select("user_id, client_id, full_name, position, access, created_at, clients(name, code, status)")
+    .select("user_id, client_id, full_name, mobile, position, access, created_at, clients(name, code, status)")
     .order("full_name")
     .limit(5000);
   if (userId) query = query.eq("user_id", userId);
@@ -53,9 +55,10 @@ export async function loadContacts(supabase: SupabaseClient, userId?: string): P
     let c = byUser.get(r.user_id);
     if (!c) {
       const e = emailOf.get(r.user_id);
-      c = { userId: r.user_id, fullName: r.full_name, email: e?.email ?? null, lastSignInAt: e?.last_sign_in_at ?? null, businesses: [] };
+      c = { userId: r.user_id, fullName: r.full_name, email: e?.email ?? null, mobile: r.mobile, lastSignInAt: e?.last_sign_in_at ?? null, businesses: [] };
       byUser.set(r.user_id, c);
     }
+    c.mobile ??= r.mobile;
     c.businesses.push({
       clientId: r.client_id,
       clientName: r.clients?.name ?? "Business",
@@ -74,9 +77,12 @@ export async function loadContacts(supabase: SupabaseClient, userId?: string): P
 export function contactMatches(c: Contact, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
+  // Mobile numbers match on their digits, so "0917 123" finds "0917-123-4567".
+  const digits = needle.replace(/\D/g, "");
   return (
     c.fullName.toLowerCase().includes(needle) ||
     (c.email ?? "").toLowerCase().includes(needle) ||
+    (digits.length >= 3 && (c.mobile ?? "").replace(/\D/g, "").includes(digits)) ||
     c.businesses.some((b) => b.clientName.toLowerCase().includes(needle) || b.clientCode.toLowerCase().includes(needle))
   );
 }

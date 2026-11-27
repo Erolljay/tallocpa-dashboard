@@ -104,6 +104,9 @@ export function ClientUserForm({ clientId }: { clientId: string }) {
       <Field label="Email" htmlFor="cu_email" error={e.email}>
         <Input id="cu_email" name="email" type="email" required />
       </Field>
+      <Field label="Mobile (optional)" htmlFor="cu_mobile" error={e.mobile}>
+        <Input id="cu_mobile" name="mobile" type="tel" inputMode="tel" placeholder="0917 123 4567" dir="ltr" />
+      </Field>
       <Field label="Position (optional)" htmlFor="cu_position" error={e.position}>
         <Input id="cu_position" name="position" placeholder="Owner, bookkeeper…" />
       </Field>

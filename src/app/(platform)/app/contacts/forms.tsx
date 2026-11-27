@@ -7,7 +7,7 @@ import {
   addContactBusinessAction,
   createContactAction,
   removeContactBusinessAction,
-  renameContactAction,
+  saveContactDetailsAction,
   updateContactAccessAction,
   type ContactFormState,
 } from "./actions";
@@ -36,6 +36,9 @@ export function NewContactForm({ businesses }: { businesses: Business[] }) {
       </Field>
       <Field label="Email" htmlFor="nc_email" error={e.email} hint="Their login. An email already used for another business is reused.">
         <Input id="nc_email" name="email" type="email" required autoComplete="off" />
+      </Field>
+      <Field label="Mobile (optional)" htmlFor="nc_mobile" error={e.mobile}>
+        <Input id="nc_mobile" name="mobile" type="tel" inputMode="tel" placeholder="0917 123 4567" dir="ltr" autoComplete="off" />
       </Field>
       <Field label="Business" htmlFor="nc_client" error={e.client_id}>
         <Select id="nc_client" name="client_id" required defaultValue="">
@@ -120,16 +123,23 @@ export function RemoveBusinessButton({ userId, clientId, clientName }: { userId:
   );
 }
 
-export function RenameContactForm({ userId, fullName }: { userId: string; fullName: string }) {
-  const [state, action, pending] = useActionState(renameContactAction.bind(null, userId), {} as ContactFormState);
+/** The contact's own name and mobile number, the same on every business. */
+export function ContactDetailsForm({ userId, fullName, mobile }: { userId: string; fullName: string; mobile: string | null }) {
+  const [state, action, pending] = useActionState(saveContactDetailsAction.bind(null, userId), {} as ContactFormState);
+  const e = state.fieldErrors ?? {};
   return (
-    <form action={action} className="flex flex-wrap items-end gap-2">
-      <Field label="Full name" htmlFor="rc_full_name" error={state.fieldErrors?.full_name}>
-        <Input id="rc_full_name" name="full_name" defaultValue={fullName} required className="w-64" />
+    <form action={action} className="grid gap-3 sm:grid-cols-2">
+      <Field label="Full name" htmlFor="cd_full_name" error={e.full_name}>
+        <Input id="cd_full_name" name="full_name" defaultValue={fullName} required />
       </Field>
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Rename"}</Button>
-      {state.ok && <span role="status" className="text-caption-1-regular text-text-secondary">{state.ok}</span>}
-      {state.error && !state.fieldErrors && <span role="alert" className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+      <Field label="Mobile (optional)" htmlFor="cd_mobile" error={e.mobile}>
+        <Input id="cd_mobile" name="mobile" type="tel" inputMode="tel" defaultValue={mobile ?? ""} placeholder="0917 123 4567" dir="ltr" />
+      </Field>
+      <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+        <Button type="submit" size="sm" variant="secondary" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+        {state.ok && <span role="status" className="text-caption-1-regular text-text-secondary">{state.ok}</span>}
+        {state.error && !state.fieldErrors && <span role="alert" className="text-caption-1-regular text-text-error-primary">{state.error}</span>}
+      </div>
     </form>
   );
 }
