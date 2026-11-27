@@ -37,6 +37,8 @@ const BOOKS = [
   "book_settlements", "book_settlement_allocations", "books_month_locks", "book_invoice_list",
 ];
 const OWN = ["ai_employees", "ai_assignments", "ai_tool_grants"];
+/** Client records granted with the client (step 2, migration 20270107000002). */
+const CLIENT_RECORDS = ["clients", "obligations", "filing_instances"];
 
 describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read only what is granted", () => {
   const admin = new Client({ connectionString: url });
@@ -262,7 +264,7 @@ describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read on
       await setClerk({ enabled: true, books_level: "full", all_clients: false });
       const extra: string[] = [];
       for (const t of relations) {
-        if (BOOKS.includes(t) || OWN.includes(t) || t === "clients") continue;
+        if (BOOKS.includes(t) || OWN.includes(t) || CLIENT_RECORDS.includes(t)) continue;
         const ai = await count(CLERK, t);
         const stranger = await count(STRANGER, t);
         if (ai > stranger) extra.push(`${t} (${ai} vs ${stranger})`);
@@ -279,6 +281,13 @@ describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read on
       expect(await count(CLERK, "journal_entries")).toBe(1);
       expect(await count(CLERK, "journal_lines")).toBeGreaterThan(0);
       expect(await count(CLERK, "ledger_accounts")).toBeGreaterThan(0);
+    });
+
+    it("reads the filings and obligations of its client only", async () => {
+      for (const t of ["obligations", "filing_instances"]) {
+        expect(await count(CLERK, t), t).toBeGreaterThan(0);
+        expect((await clientIdsSeen(CLERK, t)).every((c) => c === jaro), t).toBe(true);
+      }
     });
 
     it("reads only its own record, assignments and tool grants", async () => {
@@ -328,6 +337,21 @@ describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read on
       expect(await level(molo)).toBe("none");
       await setClerk({ enabled: false });
       expect(await level(jaro)).toBe("none");
+    });
+
+    it("gets totals by account at Summary or Full access, and nothing at None or for other clients", async () => {
+      const tb = (user: string, client: string) => attempt(user, `select code, debit::text, credit::text from public.ai_trial_balance($1, '2026-01-01', '2026-01-31') where debit <> 0 or credit <> 0`, [client]);
+      for (const level of ["summary", "full"]) {
+        await setClerk({ enabled: true, books_level: level });
+        const r = await tb(CLERK, jaro);
+        expect(r.error, level).toBeNull();
+        expect(r.rows).toHaveLength(2);
+        expect((await tb(CLERK, molo)).error).toMatch(/No books access/);
+      }
+      await setClerk({ books_level: "none" });
+      expect((await tb(CLERK, jaro)).error).toMatch(/No books access/);
+      expect((await tb(PREPARER, jaro)).error).toMatch(/No books access/);
+      await setClerk({ enabled: false, books_level: "full" });
     });
 
     it("staff still read the books as before", async () => {
