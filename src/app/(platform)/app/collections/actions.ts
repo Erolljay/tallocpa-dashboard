@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { contributionDescription, isContribution, type Contribution } from "@/lib/collections/collections";
@@ -17,6 +18,7 @@ function refresh(clientId?: string) {
   revalidatePath("/app/collections");
   revalidatePath("/app");
   if (clientId) revalidatePath(`/app/collections/${clientId}`);
+  revalidatePath("/app/collections/statements/[id]", "page");
   revalidatePath("/portal/billing", "layout");
 }
 
@@ -96,7 +98,16 @@ export async function addChargeAction(clientId: string, _: MoneyState, form: For
   });
   if (error) return { error: error.message };
   refresh(clientId);
-  return { ok: "Added. It goes on the next statement." };
+  if (text(form.get("then")) !== "bill") return { ok: "Added. It goes on the next statement." };
+
+  // "Add and bill now": an ad hoc job done today is billed at once, on today's statement,
+  // then the Owner lands on it to copy the link for the client.
+  const today = manilaToday();
+  const billed = await supabase.rpc("run_billing", { p_billing_date: today, p_client: clientId });
+  if (billed.error) return { error: `Added, but billing did not run: ${billed.error.message}` };
+  const { data: soa } = await supabase.from("soas").select("id").eq("client_id", clientId).eq("billing_date", today).maybeSingle();
+  if (!soa) return { error: "Added, but no statement was issued. Use Bill this client now." };
+  redirect(`/app/collections/statements/${soa.id}`);
 }
 
 export async function voidDepositAction(clientId: string, depositId: string, _: MoneyState, form: FormData): Promise<MoneyState> {

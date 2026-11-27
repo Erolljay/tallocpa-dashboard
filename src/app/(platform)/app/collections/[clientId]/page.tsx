@@ -146,7 +146,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
             />
           </Card>
           <div className="space-y-6">
-            <Card title="Add a Contribution or Charge">
+            <Card title="Add a Fee or Charge">
               <AddChargeForm clientId={client.id} today={today} />
               {unbilled.length > 0 && (
                 <p className="mt-4 text-body-regular text-text-secondary">
