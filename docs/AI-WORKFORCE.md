@@ -200,8 +200,8 @@ it in the app.
 | For | Tools |
 |---|---|
 | Everyone | who am I; my work queue; search (uses the global search behind Ctrl/Cmd K); open a client file; add a note; draft a request to a client; open a ticket |
-| Document Clerk | documents awaiting review; OCR fields and image; suggest type, period and account title; flag a duplicate; draft a return note |
-| Onboarding Officer | onboarding checklist; read a COR into a client draft; draft the engagement; suggest a team; send a portal invite (approved template only); draft opening balances; propose kickoff times |
+| Document Clerk | **Built (step 3):** `documents_to_review`, `read_document` (OCR reading, the app's checks, possible duplicates, supplier, account history at Full), `suggest_document_review` (draft: type, period, account, duplicate, return note). Images: later |
+| Onboarding Officer | **Built (step 3):** `onboarding_clients`, `onboarding_checklist` (the app's own checklist, COR facts), `staff_for_team` (names, roles, branch, load only), `draft_onboarding_item` (draft: engagement, team, chart of accounts, opening balances that balance, kickoff brief, client request). Sending invites: later, as a person's action |
 | Client Concierge | client status (deadlines, missing documents, open requests); 2307 list; registration status |
 | Pre-Review Assistant | a filing with its prior periods; ledger summary; 2307s against sales; save a draft review memo |
 | BIR Mail Clerk | unmatched BIR emails; propose a match to a filing; attach proof as a draft |
@@ -366,7 +366,7 @@ granted draft tool that a person confirms.
    library (house rules, my job, the workforce), daily limit, activity log, tool grants
    in Settings. **2b** (built): OAuth sign-in for Cowork and claude.ai connectors, with
    Connected apps and Disconnect in Settings.
-3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks.
+3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks (built). **Drafts** (`ai_drafts`): what an AI employee prepares waits for a person to accept or reject, on the document review page and the client's Onboarding tab; accepting records the decision and applies nothing.
 4. **`ai-provider` with Qwen**; Client Concierge on Telegram and the portal.
 5. **FS template, notes library and release validator** (useful to staff without AI);
    then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
