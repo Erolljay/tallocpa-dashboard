@@ -173,8 +173,10 @@ describe.skipIf(!url)("business registration", () => {
       { code: "bir_loa", available: false },
     ]);
   });
+  /** Codes from a counter, not at random: random codes collided now and then (TC-9680 twice). */
+  let nextCode = 9500;
   async function activeClient(name: string) {
-    const id = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type, tin) values ($1, $2, $3, 'corporation', '111-222-333-00000') returning id`, [brand, `TC-9${Math.floor(Math.random() * 900 + 100)}`, name])).rows[0].id as string;
+    const id = (await db.query(`insert into public.clients (brand_id, code, name, taxpayer_type, tin) values ($1, $2, $3, 'corporation', '111-222-333-00000') returning id`, [brand, `TC-${nextCode++}`, name])).rows[0].id as string;
     await db.query(`insert into public.staff_assignments (client_id, user_id, role) values ($1, $2, 'preparer')`, [id, STAFF]);
     return id;
   }
