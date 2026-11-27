@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Lockup } from "@/components/brand/lockup";
 import { Badge, Card, peso } from "@/components/ui";
 import { firmBlockLines } from "@/lib/brand/profile";
@@ -21,7 +22,8 @@ const statusBadge: Record<StatementStatus, { tone: "done" | "waiting" | "blocked
  * all payments in one place).
  */
 /** `payBlocked`: shown in place of Pay when the signed-in contact may not pay for this business. */
-export function StatementView({ s, today, owner = false, payments = true, payBlocked }: { s: Statement; today: string; owner?: boolean; payments?: boolean; payBlocked?: string }) {
+/** `signInHref`: the public share page, where uploading a proof means signing in first. */
+export function StatementView({ s, today, owner = false, payments = true, payBlocked, signInHref, actions }: { s: Statement; today: string; owner?: boolean; payments?: boolean; payBlocked?: string; signInHref?: string; actions?: ReactNode }) {
   const settled = s.totalDue <= 0;
   const pending = s.proofs.filter((p) => p.status === "for_verification").length;
   const status = statusBadge[statementStatus(s.totalDue, pending, s.soa.due_on, today)];
@@ -47,7 +49,7 @@ export function StatementView({ s, today, owner = false, payments = true, payBlo
             <p className="text-title-3-semibold text-text-primary">Statement of Account</p>
             <p className="tabular-nums text-body-regular text-text-secondary">{s.soa.reference}</p>
             <div className="mt-2"><Badge tone={status.tone}>{status.label}</Badge></div>
-            <div className="mt-2 print:hidden"><PrintButton /></div>
+            <div className="mt-2 flex flex-wrap items-center gap-1 sm:justify-end print:hidden"><PrintButton />{actions}</div>
           </div>
         </div>
 
@@ -151,7 +153,11 @@ export function StatementView({ s, today, owner = false, payments = true, payBlo
             the date of this statement or prior to the deadline for tax due. Please make all checks payable to{" "}
             <span className="font-semibold text-text-primary">&ldquo;{payee}&rdquo;</span>.
           </p>
-          <p>For check payments and direct bank deposits, please upload the bank-validated deposit slip as your proof of payment in your client portal, under Billing.</p>
+          <p>
+            {signInHref === ""
+              ? "For check payments and direct bank deposits, please send us the bank-validated deposit slip as your proof of payment."
+              : "For check payments and direct bank deposits, please upload the bank-validated deposit slip as your proof of payment in your client portal, under Billing."}
+          </p>
           <p className="text-caption-1-regular">This statement is not an official receipt. We issue the BIR invoice once your payment is received.</p>
         </footer>
       </Card>
@@ -167,7 +173,7 @@ export function StatementView({ s, today, owner = false, payments = true, payBlo
           {payBlocked ? (
             <p className="text-body-regular text-text-secondary">{payBlocked}</p>
           ) : (
-            <PayNow accounts={s.accounts} reference={s.soa.reference} hasTax={s.hasTax} soaId={s.soa.id} amountDue={s.totalDue} today={today} />
+            <PayNow accounts={s.accounts} reference={s.soa.reference} hasTax={s.hasTax} soaId={s.soa.id} amountDue={s.totalDue} today={today} signInHref={signInHref} />
           )}
         </Card>
       )}

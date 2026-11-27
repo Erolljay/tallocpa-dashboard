@@ -12,7 +12,11 @@ import { ProofUpload } from "./proof-upload";
  * when there is one (Q26); fees go to the firm's own accounts. With a single
  * channel it is chosen already.
  */
-export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTax: boolean; soaId: string; amountDue: number; today: string }) {
+/**
+ * `signInHref`: on the public share page the client signs in to upload a proof, so this
+ * links there instead; an empty string (no portal sign-in) asks for the proof back by message.
+ */
+export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTax: boolean; soaId: string; amountDue: number; today: string; signInHref?: string }) {
   const { accounts, reference, hasTax } = props;
   const [chosen, setChosen] = useState<string | null>(accounts.length === 1 ? accounts[0].id : null);
   const account = accounts.find((a) => a.id === chosen) ?? null;
@@ -22,7 +26,7 @@ export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTa
     return (
       <div className="space-y-4">
         <p className="text-body-regular text-text-secondary">Payment details will appear here once the firm adds them. Please contact us for how to pay.</p>
-        <ProofUpload soaId={props.soaId} accounts={accounts} account={null} amountDue={props.amountDue} today={props.today} />
+        {props.signInHref !== undefined ? <SignInToUpload href={props.signInHref} /> : <ProofUpload soaId={props.soaId} accounts={accounts} account={null} amountDue={props.amountDue} today={props.today} />}
       </div>
     );
   }
@@ -83,8 +87,27 @@ export function PayNow(props: { accounts: PayAccount[]; reference: string; hasTa
         Put the payment reference in the transfer note so we can match your payment.
         {hasTax && hasTaxAccount ? " Please send tax amounts to the account marked for tax payments, and our fees to an account for our fees." : ""}
       </p>
-      <ProofUpload soaId={props.soaId} accounts={accounts} account={account} amountDue={props.amountDue} today={props.today} />
+      {props.signInHref !== undefined ? <SignInToUpload href={props.signInHref} /> : <ProofUpload soaId={props.soaId} accounts={accounts} account={account} amountDue={props.amountDue} today={props.today} />}
     </div>
+  );
+}
+
+function SignInToUpload({ href }: { href: string }) {
+  if (!href) {
+    return (
+      <p className="rounded-2xl bg-background-secondary-default p-4 text-body-regular text-text-secondary">
+        Already paid? Please send us the screenshot of the transfer or the bank-validated deposit slip in reply to the message with this link (Messenger, Viber or email).
+      </p>
+    );
+  }
+  return (
+    <p className="rounded-2xl bg-background-secondary-default p-4 text-body-regular text-text-secondary">
+      Already paid?{" "}
+      <a href={href} className="font-medium text-button-ghost-foreground underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring">
+        Sign in to your client portal
+      </a>{" "}
+      and upload the screenshot or bank-validated deposit slip under Billing, or send it to us in reply to this message.
+    </p>
   );
 }
 

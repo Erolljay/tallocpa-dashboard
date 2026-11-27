@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ShareLink } from "@/components/statement/share-link";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
+import { shareMessage } from "@/lib/collections/share-message";
 import { requireOwner } from "@/lib/auth";
 import { ageOpenItems, dueKindLabel, methodLabel, readyReasonLabel, toCents, totalHeld, type DepositMethod, type DueKind, type ReadyItem, type RemittanceItem } from "@/lib/collections/collections";
 import { showDate } from "@/lib/filings/labels";
@@ -54,7 +56,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
   const { data: client } = await supabase.from("clients").select("id, name, code, payment_mode, brand_id").eq("id", clientId).maybeSingle();
   if (!client) notFound();
 
-  const [ready, dues, deposits, soas, accounts, staff, remittance] = await Promise.all([
+  const [ready, dues, deposits, soas, accounts, staff, remittance, brand] = await Promise.all([
     // Decision 16c: what a billing run would bill for this client today.
     supabase.rpc("ready_to_bill", { p_date: today }).eq("client_id", clientId),
     supabase.from("due_balances").select("id, soa_id, kind, description, due_on, amount, paid, open_amount, waived_at, waive_reason").eq("client_id", clientId).order("due_on").order("created_at"),
@@ -67,11 +69,14 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
       .select("due_id, kind, description, due_on, received, remitted, remitted_on, remit_reference, held")
       .eq("client_id", clientId)
       .order("due_on", { ascending: false }),
+    supabase.from("brands").select("display_name").eq("id", client.brand_id).maybeSingle(),
   ]);
 
   const allDues = (dues.data ?? []) as Due[];
   const open = allDues.filter((d) => Number(d.open_amount) > 0);
   const unbilled = open.filter((d) => !d.soa_id);
+  // What a statement's "Total amount due" shows: everything open on any statement.
+  const statementDue = open.filter((d) => d.soa_id).reduce((sum, d) => sum + toCents(Number(d.open_amount)), 0) / 100;
   const aging = ageOpenItems(open, today);
   const deps = (deposits.data ?? []) as Deposit[];
   const credit = deps.reduce((s, d) => s + Number(d.unallocated), 0);
@@ -289,10 +294,19 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
               <p className="text-body-regular text-text-secondary">No statements yet.</p>
             ) : (
               <ul className="divide-y divide-separator-border text-body-regular">
-                {(soas.data ?? []).map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-4 py-2.5">
-                    <Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-button-ghost-foreground hover:underline">{s.reference}</Link>
-                    <span className="tabular-nums text-text-secondary">{showDate(s.billing_date)}</span>
+                {(soas.data ?? []).map((s, i) => (
+                  <li key={s.id} className="flex flex-col gap-2 py-2.5">
+                    <div className="flex items-center justify-between gap-4">
+                      <Link href={`/app/collections/statements/${s.id}`} className="font-medium tabular-nums text-button-ghost-foreground hover:underline">{s.reference}</Link>
+                      <span className="tabular-nums text-text-secondary">{showDate(s.billing_date)}</span>
+                    </div>
+                    {/* The latest statement carries everything still open: the one to send the client. */}
+                    {i === 0 && (
+                      <ShareLink
+                        soaId={s.id}
+                        message={shareMessage({ soa: s, client, brand: { display_name: brand.data?.display_name ?? "" }, totalDue: statementDue })}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
