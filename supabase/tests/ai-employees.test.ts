@@ -39,6 +39,8 @@ const BOOKS = [
 const OWN = ["ai_employees", "ai_assignments", "ai_tool_grants", "ai_drafts"];
 /** Client records granted with the client (step 2, migration 20270107000002). */
 const CLIENT_RECORDS = ["clients", "obligations", "filing_instances"];
+/** The Document Clerk's reading (step 3, migration 20270108000002): documents, OCR readings, its clients' suppliers. */
+const DOCUMENT_RECORDS = ["documents", "extractions", "client_parties", "parties"];
 
 describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read only what is granted", () => {
   const admin = new Client({ connectionString: url });
@@ -264,7 +266,7 @@ describe.skipIf(!url)("AI employees: managed by the Owner, sign nothing, read on
       await setClerk({ enabled: true, books_level: "full", all_clients: false });
       const extra: string[] = [];
       for (const t of relations) {
-        if (BOOKS.includes(t) || OWN.includes(t) || CLIENT_RECORDS.includes(t)) continue;
+        if (BOOKS.includes(t) || OWN.includes(t) || CLIENT_RECORDS.includes(t) || DOCUMENT_RECORDS.includes(t)) continue;
         const ai = await count(CLERK, t);
         const stranger = await count(STRANGER, t);
         if (ai > stranger) extra.push(`${t} (${ai} vs ${stranger})`);

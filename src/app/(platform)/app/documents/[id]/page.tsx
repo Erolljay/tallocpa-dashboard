@@ -29,6 +29,7 @@ import { ReviewForm, type Booking } from "./review-form";
 import { CwtMatch } from "./cwt-match";
 import { ZoomPreview } from "./zoom-preview";
 import { AttachBatchImage } from "@/components/attach-batch-image";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { AddBundleInvoice, BundlePage, ReadBundleAgain, RemoveBundleInvoice } from "./bundle-tools";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
@@ -188,6 +189,9 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
           )}
           {ext?.approved_at && !lock && (
             <Notice tone="done">Approved. {posted && canAct ? "You can still correct these figures until the return for this month is filed." : "These are the approved figures."}</Notice>
+          )}
+          {canAct && ["received", "under_review"].includes(doc.status) && (
+            <AiDraftsPanel subject={{ table: "documents", id: doc.id }} path={`/app/documents/${doc.id}`} title="Suggested by the Document Clerk" />
           )}
           <ReviewForm
             documentId={doc.id}
