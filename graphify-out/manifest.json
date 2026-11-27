@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795760566.4798353,
-    "seen": 1795760582.258291,
-    "ast_hash": "0f078e5b3e9f162195000ebebfc09bc7",
+    "mtime": 1795760615.2118382,
+    "seen": 1795760623.7481933,
+    "ast_hash": "f5f14250123ba2fea06a5ba2af799266",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000005_calendar_year_rules_and_2026_holidays.sql": {
@@ -1716,27 +1716,27 @@
     "semantic_hash": ""
   },
   "src/lib/registration/schema.ts": {
-    "mtime": 1795618725.7779515,
-    "seen": 1795760252.722763,
-    "ast_hash": "4f93c551cd3fcd075a28978371c90f41",
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.7426322,
+    "ast_hash": "cccba6de622f48322a1734b8c5a2372b",
     "semantic_hash": ""
   },
   "src/lib/registration/steps.test.ts": {
-    "mtime": 1795618725.7780693,
-    "seen": 1795760252.7227678,
-    "ast_hash": "86d5985d34d0c72c0dd290788c24eb04",
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.742667,
+    "ast_hash": "ffebeb2a7432adfb92ac812f973d758f",
     "semantic_hash": ""
   },
   "src/lib/registration/steps.ts": {
-    "mtime": 1795618725.7780693,
-    "seen": 1795760252.7227705,
-    "ast_hash": "91939fd1b4f10448e913f5e8f6abb47f",
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.7426696,
+    "ast_hash": "ac1096098543c6a99ad0f87f01b6df52",
     "semantic_hash": ""
   },
   "supabase/tests/registration.test.ts": {
-    "mtime": 1795618725.7842128,
-    "seen": 1795760252.723127,
-    "ast_hash": "bdee9a720222aa6839224304a900bf37",
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.7472832,
+    "ast_hash": "672ce6a7926036da6003a082e554f46f",
     "semantic_hash": ""
   },
   "src/components/requests/reply-form.tsx": {
@@ -3660,9 +3660,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/page.tsx": {
-    "mtime": 1795760242.03486,
-    "seen": 1795760252.721359,
-    "ast_hash": "9be5d7eaac54cebbf4d5f631b565ae79",
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.723615,
+    "ast_hash": "e8ace7d87fcc50b4f2e87542f3903d39",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/actions.ts": {
@@ -4188,27 +4188,27 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/[id]/page.tsx": {
-    "mtime": 1795705732.1319597,
-    "seen": 1795760252.721598,
-    "ast_hash": "f361ede4c0b03dbd3a0a1064b72781ce",
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.7271092,
+    "ast_hash": "7b81c44e6c52b81e2ec3fdba0427d924",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/actions.ts": {
-    "mtime": 1795705732.1319597,
-    "seen": 1795760252.7216,
-    "ast_hash": "f459a4918851c528696bf8660a3562c4",
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.727111,
+    "ast_hash": "72f59762807f52c7c94a0051ccd2cefa",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/forms.tsx": {
-    "mtime": 1795705732.1319597,
-    "seen": 1795760252.721602,
-    "ast_hash": "9d3b009fb69dac31b74ab44a460444f0",
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.7271128,
+    "ast_hash": "b84d8916f21553bfd70cb6a71a2a9c0b",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/new/page.tsx": {
-    "mtime": 1795705732.1319597,
-    "seen": 1795760252.721604,
-    "ast_hash": "9ddbb9c5558769617fadebc2d6447a8d",
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.7271142,
+    "ast_hash": "5147374d5b61f85a1e25b5b54b9d7988",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/page.tsx": {
@@ -4602,9 +4602,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/registration/page.tsx": {
-    "mtime": 1795705732.135704,
-    "seen": 1795760252.7217855,
-    "ast_hash": "66ea99f6fb6447a68201b66c0de2f477",
+    "mtime": 1795760615.2678382,
+    "seen": 1795760623.72963,
+    "ast_hash": "e914161a19be6975b6060b8fa70c4977",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/reports/2307/page.tsx": {
@@ -5355,6 +5355,24 @@
     "mtime": 1795760566.5118353,
     "seen": 1795760582.2575905,
     "ast_hash": "c6df946ae5640677ac7ec5b77604e9f7",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/app/registrations/step-files.tsx": {
+    "mtime": 1795760615.2638383,
+    "seen": 1795760623.727153,
+    "ast_hash": "54a9edb95f7b99342637ab3a36b6cc04",
+    "semantic_hash": ""
+  },
+  "src/app/(platform)/registration-files/[id]/route.ts": {
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.7305737,
+    "ast_hash": "56b39ceea5d2b66298a66b88a8eac349",
+    "semantic_hash": ""
+  },
+  "supabase/tests/registration-fee-jobs.test.ts": {
+    "mtime": 1795760615.271568,
+    "seen": 1795760623.7472794,
+    "ast_hash": "11042100a5676878d64ed5cee3fecd94",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
