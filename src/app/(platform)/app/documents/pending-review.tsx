@@ -1,5 +1,6 @@
 "use client";
 
+import { RiTelegram2Line } from "@remixicon/react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Pick } from "@/components/books/pick";
@@ -18,6 +19,9 @@ export interface PendingRow {
   received: string;
   typeLabel: string;
   fileName: string;
+  /** How it came in and who sent it, e.g. "Telegram · Maria Molo". */
+  via: string;
+  telegram: boolean;
   month: string;
   /** The month it is reported in ("YYYY-MM-01"). */
   documentMonth: string;
@@ -184,6 +188,10 @@ export function PendingReview({ clientId, rows, accounts, cashAccounts = [], tax
                       <td className="py-2 pe-4">
                         <Link href={`/app/documents/${r.id}`} className="font-medium text-button-ghost-foreground hover:underline">{r.typeLabel}{r.number ? ` ${r.number}` : ""}</Link>
                         <p className="max-w-56 truncate text-caption-1-regular text-text-tertiary">{r.party ?? r.fileName}</p>
+                        <p className="mt-0.5 flex max-w-56 items-center gap-1 text-caption-1-regular text-text-tertiary">
+                          {r.telegram && <RiTelegram2Line aria-hidden className="size-3.5 shrink-0 text-foreground-icon-tertiary" />}
+                          <span className="truncate">via {r.via}</span>
+                        </p>
                       </td>
                       <td className="py-2 pe-4 text-text-secondary">
                         {r.month}

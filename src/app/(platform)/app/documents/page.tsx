@@ -4,7 +4,7 @@ import { RiArrowDownLine, RiArrowUpLine, RiCheckLine } from "@remixicon/react";
 import { Badge, Card, LinkButton, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
-import { DOC_TYPES, docStatusTone, showMonth, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
+import { DOC_TYPES, docStatusTone, showMonth, SOURCE_LABELS, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
@@ -49,6 +49,8 @@ interface Row {
   deferred_reason: string | null;
   file_name: string;
   status: keyof typeof docStatusTone;
+  source: string;
+  uploaded_by: string;
   created_at: string;
   extractions: { status: string; fields: Record<string, string | null> | null; confidence: Record<string, number> | null; error: string | null; approved_at: string | null; approved_fields: Record<string, string | null> | null } | null;
 }
@@ -96,7 +98,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const canMove = Boolean(clientId) && (owner || Boolean(reviewerOf));
   const fyeMonth = Number(clientInfo?.fiscal_year_end_month ?? 12) || 12;
 
-  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, deferred_from, deferred_reason, file_name, status, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
+  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, deferred_from, deferred_reason, file_name, status, source, uploaded_by, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
   // Everything waiting, across the streams: the tab counts need all of it.
   let pendingQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").in("status", ["received", "under_review"]).order("created_at").limit(1000);
   // Payroll registers clients sent in the Tallo template (portal Payroll tab) wait in the Payroll tab too.
@@ -335,6 +337,15 @@ const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", 
  */
 async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[]; clientId: string; canMove: boolean; fyeMonth: number }) {
   const supabase = await supabaseServer();
+  // Who sent each document, by name (staff or the client's portal user).
+  const senders = [...new Set(rows.map((r) => r.uploaded_by))];
+  const [{ data: staffNames }, { data: clientNames }] = senders.length
+    ? await Promise.all([
+        supabase.from("staff_profiles").select("user_id, full_name").in("user_id", senders),
+        supabase.from("client_users").select("user_id, full_name").eq("client_id", clientId).in("user_id", senders),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const nameOf = new Map([...(clientNames ?? []), ...(staffNames ?? [])].map((u) => [u.user_id as string, u.full_name as string]));
   const [{ data: books }, { data: accounts }, { data: suggestions }, { data: approved }] = await Promise.all([
     supabase.from("client_books").select("client_id").eq("client_id", clientId).maybeSingle(),
     supabase.from("ledger_accounts").select("id, code, name, type, active, control").eq("client_id", clientId).eq("active", true).order("sort_order").order("code"),
@@ -383,6 +394,8 @@ async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       received: when(r.created_at),
       typeLabel: DOC_TYPES[r.doc_type],
       fileName: r.file_name,
+      via: [SOURCE_LABELS[r.source] ?? r.source, nameOf.get(r.uploaded_by)].filter(Boolean).join(" · "),
+      telegram: r.source === "telegram",
       month: showMonth(r.period),
       documentMonth: r.document_month,
       flags: monthFlags(r),

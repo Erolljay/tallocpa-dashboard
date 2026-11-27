@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
+import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SOURCE_LABELS, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
@@ -40,7 +40,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const supabase = await supabaseServer();
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, return_reason, client_reply, created_at, ledger_account_id, clients(name)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, uploaded_by, return_reason, client_reply, created_at, ledger_account_id, clients(name)")
     .eq("id", id)
     .maybeSingle();
   if (!doc) notFound();
@@ -53,7 +53,13 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       : Promise.resolve({ data: [] as LockFiling[] }),
   ]);
   const canAct = me.staff.role === "owner" || (team ?? []).length > 0;
-  if (doc.doc_type === "payroll") return <PayrollDocument doc={doc} canAct={canAct} />;
+  // How it came in and who sent it, e.g. "via Telegram · Maria Molo".
+  const [{ data: staffName }, { data: clientName }] = await Promise.all([
+    supabase.from("staff_profiles").select("full_name").eq("user_id", doc.uploaded_by).maybeSingle(),
+    supabase.from("client_users").select("full_name").eq("user_id", doc.uploaded_by).eq("client_id", doc.client_id).maybeSingle(),
+  ]);
+  const via = `via ${[SOURCE_LABELS[doc.source] ?? doc.source, staffName?.full_name ?? clientName?.full_name].filter(Boolean).join(" · ")}`;
+  if (doc.doc_type === "payroll") return <PayrollDocument doc={doc} canAct={canAct} via={via} />;
   // An approved document stays editable until a return covering its month is filed.
   const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[]) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
@@ -89,7 +95,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
         description={
           <span>
             <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link> · {showMonth(doc.period)}
-            {doc.late ? " · late" : ""}{doc.prior_year ? " · prior taxable year" : ""} · {doc.source === "staff" ? "staff upload" : "from client"}
+            {doc.late ? " · late" : ""}{doc.prior_year ? " · prior taxable year" : ""} · {via}
           </span>
         }
         actions={<Badge tone={docStatusTone[doc.status as keyof typeof docStatusTone]}>{docStatusLabel[doc.status]}</Badge>}
@@ -144,7 +150,7 @@ const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", 
  * Tallo register read from it, for staff on the client to check, edit and load
  * into the month; or the manual steps when it has not been read.
  */
-async function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; file_name: string; mime_type: string; status: string; source: string; clients: unknown }; canAct: boolean }) {
+async function PayrollDocument({ doc, canAct, via }: { via: string; doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; file_name: string; mime_type: string; status: string; source: string; clients: unknown }; canAct: boolean }) {
   const client = doc.clients as { name: string } | null;
   const ym = doc.period.slice(0, 7);
   const isPdf = doc.mime_type === "application/pdf";
@@ -185,7 +191,7 @@ async function PayrollDocument({ doc, canAct }: { doc: { id: string; client_id: 
         description={
           <span>
             <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link>
-            {doc.late ? " · late" : ""} · {doc.source === "staff" ? "staff upload" : "from client"}
+            {doc.late ? " · late" : ""} · {via}
           </span>
         }
         actions={<Badge tone={docStatusTone[doc.status as keyof typeof docStatusTone]}>{doc.status === "posted" ? "Loaded" : docStatusLabel[doc.status]}</Badge>}

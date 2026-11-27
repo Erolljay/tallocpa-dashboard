@@ -35,6 +35,15 @@ export const streamOf = (t: DocType): Stream | null =>
 /** A spreadsheet can only be sent as payroll: OCR reads photos and PDFs. */
 export const SPREADSHEET_TYPES = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"];
 
+/** How a document came in (documents.source). */
+export const SOURCE_LABELS: Record<string, string> = {
+  portal: "Portal",
+  staff: "Staff upload",
+  email: "Email",
+  batch: "Batch",
+  telegram: "Telegram",
+};
+
 export const docStatusLabel: Record<string, string> = {
   uploading: "Uploading",
   received: "Received",
