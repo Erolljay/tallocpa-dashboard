@@ -10,6 +10,7 @@ import { keepBooksReady } from "@/lib/filings/books-ready";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { monthName } from "@/lib/lock/month-lock";
+import { currentClientStatuses } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
 import { monthLabel, REMITTANCE_KINDS, remittanceBadge, type RemittanceKind, type RemittanceStatus } from "@/lib/remittances/labels";
 import { addDays } from "@/lib/deadlines/dates";
@@ -49,14 +50,20 @@ async function Deadlines({ searchParams }: Pick<PageProps<"/app/deadlines">, "se
   const mine = one(sp.show) === "mine" || (!owner && one(sp.show) !== "all");
   const supabase = await supabaseServer();
   const today = manilaToday();
-  const [board, gaps, flags, stillOpen, { data: team }, { data: people }] = await Promise.all([
+  const [allBoard, gaps, allFlags, allStillOpen, { data: team }, { data: people }, { data: currentRows }] = await Promise.all([
     loadBoard(supabase, today, mine ? { userId: me.userId } : {}),
     owner ? loadCoverage(supabase, today) : Promise.resolve([]),
     filingsNeedingAmendment(),
     booksStillOpen(today),
     supabase.from("staff_assignments").select("client_id, user_id, role"),
     supabase.from("staff_profiles").select("user_id, full_name"),
+    supabase.from("clients").select("id").in("status", currentClientStatuses),
   ]);
+  // Inactive and archived clients are left off this page, as on Home.
+  const current = new Set(((currentRows ?? []) as { id: string }[]).map((c) => c.id));
+  const board = allBoard.filter((r) => current.has(r.clientId));
+  const flags = allFlags.filter((f) => current.has(f.client_id));
+  const stillOpen = allStillOpen.filter((r) => current.has(r.client_id));
   // Returns appear only for locked periods (decision 10).
   const ready = await keepBooksReady(board, supabase);
   const held = board.length - ready.length;
@@ -123,7 +130,7 @@ async function Deadlines({ searchParams }: Pick<PageProps<"/app/deadlines">, "se
         (["overdue", "this_week", "later"] as const).map((g) => <FilingGroup key={g} group={g} rows={groups[g]} today={today} flagOf={flagOf} />)
       )}
 
-      <RemittancesDue supabase={supabase} today={today} clients={mine ? myClients : null} />
+      <RemittancesDue supabase={supabase} today={today} clients={mine ? new Set([...myClients].filter((id) => current.has(id))) : current} />
 
       {shownFlags.length > 0 && <AmendmentCard flags={shownFlags} clientName={clientName} />}
 
