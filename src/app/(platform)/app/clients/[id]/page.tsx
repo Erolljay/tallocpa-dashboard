@@ -88,6 +88,9 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
             <Badge tone={statusTone[client.status as keyof typeof statusTone]}>{statusLabel[client.status]}</Badge>
             {isOwner && <LinkButton href={`/app/clients/${id}/edit`} variant="secondary">Edit</LinkButton>}
             {isOwner && client.status === "onboarding" && !openNewBusiness && <StatusButton clientId={id} to="active" label="Mark active" />}
+            {isOwner && client.status === "active" && <StatusButton clientId={id} to="inactive" label="Mark inactive" />}
+            {isOwner && (client.status === "inactive" || client.status === "archived") && <StatusButton clientId={id} to="active" label="Reactivate" />}
+            {isOwner && client.status !== "archived" && client.status !== "onboarding" && <StatusButton clientId={id} to="archived" label="Archive" />}
           </div>
         }
       />
