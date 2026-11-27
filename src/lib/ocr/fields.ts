@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { splitPersonName } from "@/lib/parties/names";
+import { parsePrintedDate } from "./dates";
 
 export const OCR_FIELDS = [
   { key: "doc_type", label: "Document type", kind: "doc_type" },
@@ -101,14 +102,14 @@ export function normalizeTin(v: string | null | undefined): string | null {
   return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9), d.slice(9)].filter(Boolean).join("-");
 }
 
-/** Tidies what a provider read: amounts to two decimals, TINs dashed, dates kept only if YYYY-MM-DD. */
+/** Tidies what a provider read: amounts to two decimals, TINs dashed, dates as printed → YYYY-MM-DD (month first; ./dates). */
 export function normalizeFields(f: OcrFields): OcrFields {
   const out: OcrFields = { ...f };
   for (const def of OCR_FIELDS) {
     const v = f[def.key];
     if (def.kind === "amount") out[def.key] = normalizeAmount(v);
     if (def.kind === "tin") out[def.key] = v == null ? null : (normalizeTin(v) ?? v);
-    if (def.kind === "date") out[def.key] = v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    if (def.kind === "date") out[def.key] = parsePrintedDate(v);
     if (def.kind === "terms") out[def.key] = normalizeTerms(v);
     if (def.kind === "party_kind") out[def.key] = normalizePartyKind(v);
     if (def.kind === "slp") out[def.key] = v && (SLP_CATEGORY_KEYS as readonly string[]).includes(v) ? v : null;

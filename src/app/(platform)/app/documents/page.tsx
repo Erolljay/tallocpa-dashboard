@@ -4,7 +4,7 @@ import { RiArrowDownLine, RiArrowUpLine, RiCheckLine } from "@remixicon/react";
 import { Badge, Card, LinkButton, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
-import { DOC_TYPES, docStatusTone, showMonth, SOURCE_LABELS, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
+import { bundleLabel, DOC_TYPES, docStatusTone, showMonth, SOURCE_LABELS, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
 import { ACCOUNT_TYPES } from "@/lib/ledger/types";
@@ -48,6 +48,9 @@ interface Row {
   deferred_from: string | null;
   deferred_reason: string | null;
   file_name: string;
+  bundle_id: string | null;
+  bundle_page: number | null;
+  bundle_index: number | null;
   status: keyof typeof docStatusTone;
   source: string;
   uploaded_by: string;
@@ -98,7 +101,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/app/documents">, "se
   const canMove = Boolean(clientId) && (owner || Boolean(reviewerOf));
   const fyeMonth = Number(clientInfo?.fiscal_year_end_month ?? 12) || 12;
 
-  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, deferred_from, deferred_reason, file_name, status, source, uploaded_by, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
+  const select = "id, client_id, doc_type, period, document_month, late, prior_year, carried_from, deferred_from, deferred_reason, file_name, bundle_id, bundle_page, bundle_index, status, source, uploaded_by, created_at, extractions(status, fields, confidence, error, approved_at, approved_fields)";
   // Everything waiting, across the streams: the tab counts need all of it.
   let pendingQuery = supabase.from("documents").select(select).not("doc_type", "in", "(filed_return,payment_proof)").in("status", ["received", "under_review"]).order("created_at").limit(1000);
   // Payroll registers clients sent in the Tallo template (portal Payroll tab) wait in the Payroll tab too.
@@ -331,6 +334,17 @@ const monthFlags = (r: Row): { label: string; title?: string; tone: "warn" | "ba
 
 const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
 
+/** "Invoice 3 of 25 · page 4" for each row that is an invoice of a bundled PDF. */
+async function bundleLabels(supabase: Awaited<ReturnType<typeof supabaseServer>>, rows: Row[]): Promise<Map<string, string>> {
+  const ids = [...new Set(rows.map((r) => r.bundle_id).filter((b): b is string => Boolean(b)))];
+  const out = new Map<string, string>();
+  if (ids.length === 0) return out;
+  const { data } = await supabase.from("documents").select("id, bundle_count").in("id", ids);
+  const count = new Map((data ?? []).map((b) => [b.id as string, b.bundle_count as number | null]));
+  for (const r of rows) if (r.bundle_id && r.bundle_index && r.bundle_page) out.set(r.id, bundleLabel(r.doc_type, r.bundle_index, count.get(r.bundle_id), r.bundle_page));
+  return out;
+}
+
 /**
  * One client's documents waiting for review (P1): titles from this client's chart,
  * where each came from, and "Approve selected" for the ones OCR read cleanly.
@@ -357,6 +371,7 @@ async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[
     ? await Promise.all([pendingDocumentTaxCodes(clientId, supabase).catch(() => [] as PendingTaxCodes[]), loadTaxCodes(supabase)])
     : [[] as PendingTaxCodes[], []];
   const codesOf = new Map(taxSuggestions.map((t) => [t.document_id, t]));
+  const inBundle = await bundleLabels(supabase, rows);
   const suggested = new Map(((suggestions ?? []) as { document_id: string; account_id: string | null; source: AccountSource }[]).map((x) => [x.document_id, x]));
   const dupes = new Set(
     (approved ?? []).map((a) => {
@@ -373,6 +388,7 @@ async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       priorYear: r.prior_year,
       duplicate: Boolean(fields.party_tin && fields.number && dupes.has(`${fields.party_tin}|${fields.number}`)),
       docType: r.doc_type,
+      documentMonth: r.document_month,
     });
     const low = e?.status === "done" ? Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length : 0;
     const ocr: PendingRow["ocr"] = !e
@@ -394,6 +410,7 @@ async function ClientPending({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       received: when(r.created_at),
       typeLabel: DOC_TYPES[r.doc_type],
       fileName: r.file_name,
+      bundle: inBundle.get(r.id) ?? null,
       via: [SOURCE_LABELS[r.source] ?? r.source, nameOf.get(r.uploaded_by)].filter(Boolean).join(" · "),
       telegram: r.source === "telegram",
       month: showMonth(r.period),
@@ -436,6 +453,7 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
     .eq("client_id", clientId)
     .in("status", LOCKED_STATUSES);
   const filings = (data ?? []) as LockFiling[];
+  const inBundle = await bundleLabels(supabase, rows);
   const sorted = [...rows].sort((a, b) => (b.extractions?.approved_at ?? b.created_at).localeCompare(a.extractions?.approved_at ?? a.created_at));
   // The Books lock of each month shown: a reviewer's lock must be lifted before a document in it moves.
   const years = [...new Set(rows.map((r) => Number(r.document_month.slice(0, 4))))];
@@ -458,7 +476,7 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
       id: r.id,
       approved: when(r.extractions?.approved_at ?? r.created_at),
       label: `${DOC_TYPES[r.doc_type]}${f.number ? ` ${f.number}` : ""}`,
-      party: f.party_name ?? r.file_name,
+      party: [inBundle.get(r.id), f.party_name ?? r.file_name].filter(Boolean).join(" · "),
       month: showMonth(r.period),
       flags: [
         ...monthFlags(r),

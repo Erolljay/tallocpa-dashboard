@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { DocumentUpload } from "@/components/document-upload";
 import { Badge, Card } from "@/components/ui";
 import { monthChoices, openMonth } from "@/lib/documents/cutoff";
-import { CLIENT_DOC_TYPES, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { bundleSummary, CLIENT_DOC_TYPES, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DocReviewActions } from "./doc-review-actions";
@@ -15,6 +16,8 @@ interface Doc {
   file_name: string;
   source: string;
   status: keyof typeof docStatusTone;
+  bundle_count: number | null;
+  bundle_pages: number | null;
   return_reason: string | null;
   client_reply: string | null;
   created_at: string;
@@ -27,9 +30,11 @@ export async function DocumentsCard({ clientId, clientName, cutoffDay, canAct }:
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("documents")
-    .select("id, doc_type, period, late, prior_year, file_name, source, status, return_reason, client_reply, created_at")
+    .select("id, doc_type, period, late, prior_year, file_name, source, status, bundle_count, bundle_pages, return_reason, client_reply, created_at")
     .eq("client_id", clientId)
     .neq("status", "uploading")
+    // A bundled PDF shows once, with how many invoices were found; they are reviewed from the Inbox.
+    .is("bundle_id", null)
     .order("created_at", { ascending: false })
     .limit(50);
   const docs = (data ?? []) as Doc[];
@@ -54,6 +59,11 @@ export async function DocumentsCard({ clientId, clientName, cutoffDay, canAct }:
                 </div>
                 <Badge tone={docStatusTone[d.status]}>{docStatusLabel[d.status]}</Badge>
               </div>
+              {d.status === "split" && (
+                <Link href={`/app/documents/${d.id}`} className="text-caption-1-medium text-button-ghost-foreground hover:underline">
+                  {bundleSummary(d.doc_type, d.bundle_count, d.bundle_pages)}
+                </Link>
+              )}
               {d.status === "returned" && d.return_reason && <p className="text-caption-1-regular text-text-secondary">Returned: “{d.return_reason}”</p>}
               {d.client_reply && d.status !== "returned" && <p className="text-caption-1-regular text-text-secondary">Client replied: “{d.client_reply}”</p>}
               {canAct && <DocReviewActions documentId={d.id} status={d.status} />}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { RiArrowDownSLine, RiFileTextLine, RiFolder3Line } from "@remixicon/react";
 import { Badge, Skeleton } from "@/components/ui";
-import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
+import { bundleLabel, bundleSummary, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, type DocType } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { cx } from "@/utils/cx";
 import { portalContext } from "../client-context";
@@ -26,6 +26,10 @@ interface Doc {
   late: boolean;
   file_name: string;
   status: keyof typeof docStatusTone;
+  bundle_count: number | null;
+  bundle_pages: number | null;
+  bundle_index: number | null;
+  bundle_page: number | null;
   return_reason: string | null;
   client_reply: string | null;
   created_at: string;
@@ -98,9 +102,11 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
   const [{ data: docRows }, { data: payrollRows }, { data: returnedRows }] = await Promise.all([
     supabase
       .from("documents")
-      .select("id, client_id, doc_type, period, document_month, late, file_name, status, return_reason, client_reply, created_at")
+      .select("id, client_id, doc_type, period, document_month, late, file_name, status, bundle_count, bundle_pages, bundle_index, bundle_page, return_reason, client_reply, created_at")
       .not("doc_type", "in", "(filed_return,payment_proof)")
       .neq("status", "uploading")
+      // A bundled PDF is one file sent: it shows once, with how many invoices were found in it.
+      .is("bundle_id", null)
       .gte("document_month", from)
       .lte("document_month", to)
       .order("created_at", { ascending: false })
@@ -115,7 +121,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
     // Returned documents need an answer whatever year they are for.
     supabase
       .from("documents")
-      .select("id, client_id, doc_type, period, document_month, late, file_name, status, return_reason, client_reply, created_at")
+      .select("id, client_id, doc_type, period, document_month, late, file_name, status, bundle_count, bundle_pages, bundle_index, bundle_page, return_reason, client_reply, created_at")
       .eq("status", "returned")
       .not("doc_type", "in", "(filed_return,payment_proof)")
       .order("created_at", { ascending: false }),
@@ -132,7 +138,7 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
     name: d.file_name,
     href: `/files/${d.id}`,
     month: d.document_month,
-    detail: `${DOC_TYPES[d.doc_type]} · sent ${when(d.created_at)}${d.late ? " · late" : ""}${business(d.client_id)}`,
+    detail: `${DOC_TYPES[d.doc_type]}${d.status === "split" ? ` · ${bundleSummary(d.doc_type, d.bundle_count, d.bundle_pages)}` : ""} · sent ${when(d.created_at)}${d.late ? " · late" : ""}${business(d.client_id)}`,
     tone: d.status,
     status: docStatusLabel[d.status],
   });
@@ -180,7 +186,11 @@ async function Documents({ searchParams }: Pick<PageProps<"/portal/documents">, 
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <a href={`/files/${d.id}`} target="_blank" rel="noopener" className="block truncate text-body-medium text-button-ghost-foreground underline">{d.file_name}</a>
-                  <p className="text-caption-1-regular text-text-secondary">{DOC_TYPES[d.doc_type]} · {showMonth(d.document_month)}{business(d.client_id)}</p>
+                  <p className="text-caption-1-regular text-text-secondary">
+                    {DOC_TYPES[d.doc_type]}
+                    {d.bundle_index && d.bundle_page ? ` · ${bundleLabel(d.doc_type, d.bundle_index, null, d.bundle_page)}` : ""} · {showMonth(d.document_month)}
+                    {business(d.client_id)}
+                  </p>
                 </div>
                 <Badge tone="blocked">Returned</Badge>
               </div>

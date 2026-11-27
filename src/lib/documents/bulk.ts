@@ -17,14 +17,14 @@ export interface Readiness {
 
 export function bulkReadiness(
   e: { status: string; fields: OcrFields | null; confidence: OcrConfidence | null } | null,
-  ctx: { today: string; priorYear: boolean; duplicate: boolean; docType?: string },
+  ctx: { today: string; priorYear: boolean; duplicate: boolean; docType?: string; documentMonth?: string | null },
 ): Readiness {
   if (!e) return { ready: false, reason: "Not read yet" };
   if (e.status === "pending") return { ready: false, reason: "Reading…" };
   if (e.status !== "done") return { ready: false, reason: "OCR failed" };
   const low = Object.values(e.confidence ?? {}).filter((c) => c < LOW_CONFIDENCE).length;
   if (low) return { ready: false, reason: `${low} to check` };
-  const issues = checkFields(e.fields ?? {}, { today: ctx.today, duplicateOf: ctx.duplicate ? "yes" : null, priorYear: ctx.priorYear });
+  const issues = checkFields(e.fields ?? {}, { today: ctx.today, duplicateOf: ctx.duplicate ? "yes" : null, priorYear: ctx.priorYear, documentMonth: ctx.documentMonth });
   if (issues.length) return { ready: false, reason: issues[0].message };
   // Bank or card charges need their account chosen on the document's own page.
   if (Number(e.fields?.other_deduction ?? 0) > 0 && !e.fields?.other_deduction_account) return { ready: false, reason: "Choose the account for the other deduction" };

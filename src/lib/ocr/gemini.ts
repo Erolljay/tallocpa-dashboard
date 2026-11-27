@@ -3,6 +3,7 @@
  * tier may use data for training). High media resolution for handwritten
  * receipts; the reply is constrained to a JSON schema and then validated.
  */
+import { parseMany, type OcrManyOutput } from "./bundle";
 import { OCR_DOC_TYPES, OCR_READ_FIELDS, normalizeFields, ocrOutputSchema, type OcrOutput } from "./fields";
 import type { OcrInput, OcrProvider } from "./provider";
 
@@ -13,7 +14,7 @@ const PROMPT = `You read Philippine business documents for an accounting firm: s
 
 Return every field you can read; use null for a field that is not on the document or that you cannot read. Never guess.
 - doc_type: one of ${OCR_DOC_TYPES.join(", ")} ("bir_2307" for Form 2307).
-- date: the document date as YYYY-MM-DD.
+- date: the document date copied EXACTLY as printed or written (for example "11/27/2026", "11-27-26" or "Nov. 27, 2026"); do not reorder, convert or complete it, and never take the year from today's date. Philippine invoices print dates month first (MM/DD/YYYY). Read each digit of the year carefully.
 - number: the invoice / receipt / serial number as printed.
 - party_name, party_tin, party_address: the OTHER party — the seller on a purchase receipt, the buyer/customer on a sales invoice, the payor (withholding agent) on a 2307.
 - party_kind: "individual" when the other party is a natural person (a sole proprietor, a professional, a person buying or selling in their own name), "non_individual" for a corporation, partnership, cooperative or other entity. A sole proprietor's business is still "individual": its BIR registered name is the owner's name (often printed as "JUAN S. DELA CRUZ - Prop." under the trade name).
@@ -34,6 +35,39 @@ const responseSchema = {
     confidence: { type: "OBJECT", properties: Object.fromEntries(OCR_READ_FIELDS.map((f) => [f.key, { type: "NUMBER" }])) },
   },
   required: ["fields", "confidence"],
+};
+
+/**
+ * A file that may bundle several documents (a PDF of many invoices): the same field
+ * instructions as PROMPT, for each document found, with where it is.
+ */
+const MANY_PROMPT = `${PROMPT}
+
+This file may hold more than one separate document: several pages, and a page may hold one or more invoices, receipts or 2307s. Return one entry in "documents" for EACH separate document, in the order they appear, with the fields and confidence above for that document alone:
+- page: the page (1 = first page of the file) the document starts on.
+- position: where it is on that page when a page holds more than one ("top", "bottom", "left", "right", "1 of 3"…); null when it fills the page.
+A document that runs over several pages is one entry, on its first page. Do not return the same document twice (a duplicate copy, a carbon copy or a continuation page is not a new document). Pages with no document (a cover page, a blank page) have no entry.
+- page_count: the number of pages in the file.`;
+
+const manyResponseSchema = {
+  type: "OBJECT",
+  properties: {
+    page_count: { type: "INTEGER" },
+    documents: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          page: { type: "INTEGER" },
+          position: nullableString,
+          fields: responseSchema.properties.fields,
+          confidence: responseSchema.properties.confidence,
+        },
+        required: ["page", "fields", "confidence"],
+      },
+    },
+  },
+  required: ["page_count", "documents"],
 };
 
 function base64(bytes: Uint8Array): string {
@@ -147,6 +181,16 @@ export function geminiProvider(opts: GeminiOptions): OcrProvider {
         { highRes: true },
       );
       return { fields: normalizeFields(data.fields), confidence: data.confidence, model };
+    },
+    /** Every document in the file, each with its page; same retries and fallback as extract(). */
+    async extractMany(input: OcrInput): Promise<OcrManyOutput> {
+      const { data, model } = await gemini.generate(
+        [{ text: `${MANY_PROMPT}\n\nThe uploader says these are: ${input.docTypeHint}.` }, inlineFile(input.mimeType, input.bytes)],
+        manyResponseSchema,
+        parseMany,
+        { highRes: true },
+      );
+      return { ...data, model };
     },
   };
 }

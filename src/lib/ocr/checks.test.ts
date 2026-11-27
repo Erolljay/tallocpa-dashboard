@@ -29,8 +29,11 @@ describe("normalizing what OCR read", () => {
     expect(normalizeTin("123456789000")).toBe("123-456-789-000");
     expect(normalizeTin("12")).toBeNull();
   });
-  it("keeps only ISO dates", () => {
-    expect(normalizeFields({ date: "11/10/2026", total: "1,000" })).toMatchObject({ date: null, total: "1000.00" });
+  it("reads dates as printed, month first, and drops what is not a date", () => {
+    expect(normalizeFields({ date: "11/10/2026", total: "1,000" })).toMatchObject({ date: "2026-11-10", total: "1000.00" });
+    expect(normalizeFields({ date: "11/10/26" })).toMatchObject({ date: "2026-11-10" });
+    expect(normalizeFields({ date: "2026-11-10" })).toMatchObject({ date: "2026-11-10" });
+    expect(normalizeFields({ date: "sometime" })).toMatchObject({ date: null });
   });
   it("rejects provider output in the wrong shape", () => {
     expect(ocrOutputSchema.safeParse({ fields: { total: 5 }, confidence: { total: 0.9 } }).success).toBe(true);
@@ -53,5 +56,13 @@ describe("normalizeFields for the party's kind", () => {
     expect(normalizeFields({ party_kind: "individual", party_name: "Juan Dela Cruz", party_last_name: "DELA CRUZ", party_first_name: "JUAN" })).toMatchObject({ party_last_name: "DELA CRUZ", party_middle_name: null });
     expect(normalizeFields({ party_kind: "non_individual", party_last_name: "X" })).toMatchObject({ party_last_name: null });
     expect(normalizeFields({ party_kind: "someone" })).toMatchObject({ party_kind: null });
+  });
+});
+
+describe("a date far from the month it was sent for", () => {
+  it("is flagged, usually a misread year", () => {
+    expect(msgs({ date: "2024-11-10" }, { documentMonth: "2026-11-01" })).toContain("date");
+    expect(msgs({ date: "2026-11-10" }, { documentMonth: "2026-11-01" })).not.toContain("date");
+    expect(msgs({ date: "2026-10-28" }, { documentMonth: "2026-11-01" })).not.toContain("date");
   });
 });

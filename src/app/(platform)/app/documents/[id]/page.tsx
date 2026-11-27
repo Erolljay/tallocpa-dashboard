@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
+import { RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/react";
+import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SOURCE_LABELS, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
+import { bundleLabel, bundleSummary, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SOURCE_LABELS, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
+import { isSplittable, MAX_BUNDLE_PAGES } from "@/lib/ocr/bundle";
 import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
@@ -26,6 +28,7 @@ import { ColumnMapping, PayrollReadReview, ReadPayrollButton, SheetPreview } fro
 import { ReviewForm, type Booking } from "./review-form";
 import { CwtMatch } from "./cwt-match";
 import { ZoomPreview } from "./zoom-preview";
+import { AddBundleInvoice, BundlePage, ReadBundleAgain, RemoveBundleInvoice } from "./bundle-tools";
 
 export default function DocumentReviewPage(props: PageProps<"/app/documents/[id]">) {
   return (
@@ -41,7 +44,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const supabase = await supabaseServer();
   const { data: doc } = await supabase
     .from("documents")
-    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, uploaded_by, return_reason, client_reply, created_at, ledger_account_id, clients(name)")
+    .select("id, client_id, doc_type, period, document_month, late, prior_year, file_name, mime_type, status, source, uploaded_by, return_reason, client_reply, created_at, ledger_account_id, bundle_id, bundle_page, bundle_index, bundle_count, bundle_pages, clients(name)")
     .eq("id", id)
     .maybeSingle();
   if (!doc) notFound();
@@ -61,6 +64,13 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   ]);
   const via = `via ${[SOURCE_LABELS[doc.source] ?? doc.source, staffName?.full_name ?? clientName?.full_name].filter(Boolean).join(" · ")}`;
   if (doc.doc_type === "payroll") return <PayrollDocument doc={doc} canAct={canAct} via={via} />;
+  if (doc.status === "split") return <BundleDocument doc={doc} canAct={canAct} via={via} />;
+  // An invoice of a bundled PDF: its place in the bundle, and the bundle's file at its page.
+  const bundle = doc.bundle_id ? await loadBundle(supabase, doc.bundle_id) : null;
+  const at = bundle ? bundle.children.findIndex((c) => c.id === doc.id) : -1;
+  const prev = bundle && at > 0 ? bundle.children[at - 1] : null;
+  const next = bundle && at >= 0 && at < bundle.children.length - 1 ? bundle.children[at + 1] : null;
+  const fileHref = doc.bundle_page ? `/files/${doc.id}#page=${doc.bundle_page}` : `/files/${doc.id}`;
   // An approved document stays editable until a return covering its month is filed.
   const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[]) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
@@ -84,15 +94,19 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   // A directory that cannot be read never blocks the review.
   const entry = key ? (await lookupParties(supabase, [fields.party_tin]).catch(() => null))?.get(key) : undefined;
   const resolved = entry ? resolveParty(fields.party_name, fields.party_tin, fields.party_address, entry) : null;
-  const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year });
+  const issues = checkFields(fields, { today: manilaToday(), duplicateOf, priorYear: doc.prior_year, documentMonth: doc.document_month });
   const client = doc.clients as unknown as { name: string } | null;
   const booking = await loadBooking(supabase, doc, entry?.id ?? null);
   const isPdf = doc.mime_type === "application/pdf";
+  const maxPage = bundle?.pages ?? MAX_BUNDLE_PAGES;
+  const place = bundle && doc.bundle_index && doc.bundle_page ? bundleLabel(doc.doc_type, doc.bundle_index, bundle.count, doc.bundle_page) : null;
+  // A PDF read as one invoice that holds more: staff can add the others by hand.
+  const canSplit = canAct && !bundle && isSplittable(doc.doc_type, doc.mime_type) && ["received", "under_review"].includes(doc.status);
 
   return (
     <>
       <PageHeader
-        title={DOC_TYPES[doc.doc_type as DocType]}
+        title={place ? `${DOC_TYPES[doc.doc_type as DocType]} · ${place}` : DOC_TYPES[doc.doc_type as DocType]}
         description={
           <span>
             <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link> · {showMonth(doc.period)}
@@ -104,13 +118,48 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={doc.file_name}>
           {isPdf ? (
-            <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
+            // Keyed by its address so moving to an invoice on another page reloads the viewer there.
+            <iframe key={fileHref} src={fileHref} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
           ) : (
             <ZoomPreview src={`/files/${doc.id}`} alt={`${DOC_TYPES[doc.doc_type as DocType]} uploaded by the client`} />
           )}
-          <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
+          <a href={fileHref} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
         </Card>
         <div className="space-y-4">
+          {bundle && place && doc.bundle_page && (
+            <div className="space-y-3 rounded-3xl border border-border-button-default bg-background-primary-default p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-body-medium text-text-primary">
+                  {place}
+                  <span className="text-body-regular text-text-secondary">
+                    {" · from "}
+                    <Link href={`/app/documents/${bundle.id}`} className="text-button-ghost-foreground hover:underline">{bundleSummary(doc.doc_type, bundle.count, bundle.pages)}</Link>
+                  </span>
+                </p>
+                <nav aria-label="Invoices in this PDF" className="flex items-center gap-1">
+                  {prev && (
+                    <LinkButton href={`/app/documents/${prev.id}`} size="sm" variant="ghost" aria-label={`Previous: ${prev.bundle_index}`}>
+                      <RiArrowLeftSLine aria-hidden className="size-4 rtl:rotate-180" />
+                      {prev.bundle_index}
+                    </LinkButton>
+                  )}
+                  {next && (
+                    <LinkButton href={`/app/documents/${next.id}`} size="sm" variant="ghost" aria-label={`Next: ${next.bundle_index}`}>
+                      {next.bundle_index}
+                      <RiArrowRightSLine aria-hidden className="size-4 rtl:rotate-180" />
+                    </LinkButton>
+                  )}
+                </nav>
+              </div>
+              {canAct && (
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <BundlePage documentId={doc.id} page={doc.bundle_page} maxPage={maxPage} />
+                  {!posted && <RemoveBundleInvoice documentId={doc.id} label={place} />}
+                </div>
+              )}
+              {canAct && <AddBundleInvoice documentId={doc.id} maxPage={maxPage} defaultPage={doc.bundle_page} />}
+            </div>
+          )}
           {doc.client_reply && <Notice tone="waiting">Client replied: “{doc.client_reply}”</Notice>}
           {!ext && <Notice>OCR has not read this document yet{process.env.GEMINI_API_KEY ? "." : " (no GEMINI_API_KEY is set). You can type the figures yourself."}</Notice>}
           {ext?.status === "pending" && <Notice>OCR is reading this document. Refresh in a moment.</Notice>}
@@ -129,11 +178,20 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
             issues={issues}
             canAct={canAct && (["received", "under_review"].includes(doc.status) || (posted && !lock))}
             mode={posted ? "edit" : "approve"}
-            canRead={canAct && !ext?.approved_at}
+            canRead={canAct && !ext?.approved_at && !bundle}
             model={ext?.model ?? null}
             directory={resolved && { partyId: resolved.party!.id, name: resolved.name, tin: resolved.tin, address: resolved.address, verified: Boolean(resolved.party!.verified_at), warning: resolved.warning }}
             booking={booking}
           />
+          {canSplit && (
+            <details className="rounded-3xl border border-border-button-default bg-background-primary-default p-4">
+              <summary className="cursor-pointer text-body-medium text-button-ghost-foreground">This PDF holds more than one invoice?</summary>
+              <div className="mt-3 space-y-2">
+                <p className="text-caption-1-regular text-text-tertiary">Adding one splits the PDF into one line per invoice: what was read above becomes invoice 1, on page 1. Or read it again with OCR.</p>
+                <AddBundleInvoice documentId={doc.id} maxPage={maxPage} defaultPage={2} />
+              </div>
+            </details>
+          )}
           {doc.doc_type === "bir_2307_received" && doc.status !== "returned" && (
             <CwtMatch supabase={supabase} doc={doc} fields={fields} partyId={entry?.id ?? null} canAct={canAct} />
           )}
@@ -144,6 +202,98 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
 }
 
 const BOOKED_TYPES = ["sales_invoice", "purchase_receipt", "bir_2307_received", "bir_2307_issued"];
+
+type Supabase = Awaited<ReturnType<typeof supabaseServer>>;
+interface BundleChild {
+  id: string;
+  bundle_index: number;
+  bundle_page: number;
+  status: string;
+  extractions: { fields: Record<string, string | null> | null; approved_fields: Record<string, string | null> | null } | null;
+}
+
+/** A bundled PDF and its invoices in order. */
+async function loadBundle(supabase: Supabase, bundleId: string) {
+  const [{ data: b }, { data: children }] = await Promise.all([
+    supabase.from("documents").select("id, bundle_count, bundle_pages").eq("id", bundleId).maybeSingle(),
+    supabase.from("documents").select("id, bundle_index, bundle_page, status, extractions(fields, approved_fields)").eq("bundle_id", bundleId).order("bundle_index"),
+  ]);
+  if (!b) return null;
+  const list = (children ?? []) as unknown as BundleChild[];
+  return { id: b.id as string, count: (b.bundle_count as number | null) ?? list.length, pages: (b.bundle_pages as number | null) ?? null, children: list };
+}
+
+/**
+ * A bundled PDF (split into one line per invoice): the file, what was found, and the
+ * invoices to open one by one. The bundle itself is not reviewed.
+ */
+async function BundleDocument({ doc, canAct, via }: { via: string; canAct: boolean; doc: { id: string; client_id: string; doc_type: string; period: string; late: boolean; prior_year: boolean; file_name: string; clients: unknown } }) {
+  const supabase = await supabaseServer();
+  const [bundle, { data: ext }] = await Promise.all([
+    loadBundle(supabase, doc.id),
+    supabase.from("extractions").select("status, error").eq("document_id", doc.id).maybeSingle(),
+  ]);
+  const client = doc.clients as { name: string } | null;
+  const children = bundle?.children ?? [];
+  const approved = children.filter((c) => c.status === "posted").length;
+  const summary = bundleSummary(doc.doc_type, bundle?.count ?? children.length, bundle?.pages);
+  return (
+    <>
+      <PageHeader
+        title={`${DOC_TYPES[doc.doc_type as DocType]} · bundled PDF`}
+        description={
+          <span>
+            <Link href={`/app/clients/${doc.client_id}`} className="text-button-ghost-foreground hover:underline">{client?.name}</Link> · {showMonth(doc.period)}
+            {doc.late ? " · late" : ""}{doc.prior_year ? " · prior taxable year" : ""} · {via}
+          </span>
+        }
+        actions={<Badge tone="done">{summary}</Badge>}
+      />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={doc.file_name}>
+          <iframe src={`/files/${doc.id}`} title={doc.file_name} className="h-[70vh] w-full rounded-lg border border-separator-border" />
+          <a href={`/files/${doc.id}`} target="_blank" rel="noopener" className="mt-2 inline-block text-body-regular text-button-ghost-foreground hover:underline">Open full size</a>
+        </Card>
+        <div className="space-y-4">
+          <Notice tone="done">
+            {summary}. Each is its own line in the Inbox, reviewed and approved on its own{approved ? `; ${approved} approved so far` : ""}.
+          </Notice>
+          {ext?.status === "failed" && <Notice tone="blocked">The last read failed: {ext.error}</Notice>}
+          {ext?.status === "pending" && <Notice>OCR is reading the PDF again. Refresh in a moment.</Notice>}
+          <Card title="Invoices in this PDF" actions={canAct && approved === 0 && Boolean(process.env.GEMINI_API_KEY) ? <ReadBundleAgain documentId={doc.id} /> : null}>
+            <ul className="divide-y divide-separator-border">
+              {children.map((c) => {
+                const f = c.extractions?.approved_fields ?? c.extractions?.fields ?? {};
+                const total = f.total != null && f.total !== "" ? Number(f.total) : null;
+                return (
+                  <li key={c.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="min-w-0">
+                      <Link href={`/app/documents/${c.id}`} className="text-body-medium text-button-ghost-foreground hover:underline">
+                        {bundleLabel(doc.doc_type, c.bundle_index, bundle?.count, c.bundle_page)}
+                        {f.number ? ` · ${f.number}` : ""}
+                      </Link>
+                      <p className="truncate text-caption-1-regular text-text-tertiary">{f.party_name ?? "Not read: type the figures"}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="amount text-body-regular tabular-nums text-text-primary">{total == null || Number.isNaN(total) ? "—" : peso.format(total)}</span>
+                      <Badge tone={docStatusTone[c.status as keyof typeof docStatusTone]}>{docStatusLabel[c.status]}</Badge>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {canAct && (
+              <div className="mt-4 space-y-2 border-t border-separator-border pt-4">
+                <AddBundleInvoice documentId={doc.id} maxPage={bundle?.pages ?? MAX_BUNDLE_PAGES} />
+                {approved > 0 && <p className="text-caption-1-regular text-text-tertiary">Some invoices are approved, so the PDF is not read again (it would duplicate them). Add or remove invoices by hand.</p>}
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
 
 /**
  * Payroll in the client's own format (no register line): the file beside the

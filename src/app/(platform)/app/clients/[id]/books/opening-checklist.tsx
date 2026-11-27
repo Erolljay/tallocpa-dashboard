@@ -32,7 +32,7 @@ export async function OpeningChecklist({ access, accounts, balances, entered }: 
     supabase.from("employees").select("id", { count: "exact", head: true }).eq("client_id", id),
     supabase.from("payroll_entries").select("pay_month").eq("client_id", id).gte("pay_month", calendarStart).lt("pay_month", books.booksStart),
     supabase.from("filing_instances").select("form, period_label, status").eq("client_id", id).gte("period_start", cutoff.yearStart).lt("period_end", books.booksStart).order("period_end"),
-    supabase.from("documents").select("id", { count: "exact", head: true }).eq("client_id", id).eq("doc_type", "bir_2307_received").gte("document_month", cutoff.yearStart).lte("document_month", cutoff.openingAsOf).neq("status", "uploading"),
+    supabase.from("documents").select("id", { count: "exact", head: true }).eq("client_id", id).eq("doc_type", "bir_2307_received").gte("document_month", cutoff.yearStart).lte("document_month", cutoff.openingAsOf).not("status", "in", "(uploading,split)"),
     supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("client_id", id).neq("source", "opening"),
   ]);
   const opening: OpeningBalance[] | null = entered

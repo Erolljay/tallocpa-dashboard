@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { clientButtons, clientQuery, fileFromMessage, monthButtons, parseChoice, safeName, startCode, typeButtons, type TgMessage } from "./intake";
+import {
+  clientButtons,
+  clientQuery,
+  fileFromMessage,
+  fitsType,
+  isCommand,
+  monthButtons,
+  parseChoice,
+  safeName,
+  sendModeState,
+  sendMonthButtons,
+  sendResult,
+  sendTypeButtons,
+  startCode,
+  typeButtons,
+  type TgMessage,
+} from "./intake";
 
 const base: TgMessage = { message_id: 7, chat: { id: 1, type: "private" } };
 const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
@@ -80,5 +96,54 @@ describe("staff: client and month", () => {
     for (const b of all) expect(Buffer.byteLength(b.callback_data)).toBeLessThanOrEqual(64);
     expect(parseChoice(all[1].callback_data)).toEqual({ action: "month", docType: "purchase_receipt", month: "2026-10-01", uploadId: ID });
     expect(parseChoice(`m:p:202613:${ID}`)).toBeNull();
+  });
+});
+
+describe("/send: the type first", () => {
+  it("offers every client type, round-trips the choice, and stays within 64 bytes", () => {
+    const all = sendTypeButtons().flat();
+    expect(all).toHaveLength(7);
+    for (const b of all) expect(Buffer.byteLength(b.callback_data)).toBeLessThanOrEqual(64);
+    expect(all.map((b) => parseChoice(b.callback_data))).toContainEqual({ action: "sendType", docType: "purchase_receipt" });
+    expect(parseChoice("t:z")).toBeNull();
+    expect(parseChoice("t:p:extra")).toBeNull();
+  });
+
+  it("round-trips a staff month button", () => {
+    const all = sendMonthButtons("payroll", ["2026-11-01", "2026-10-01", "2026-09-01", "2026-08-01"]).flat();
+    expect(all.map((b) => b.text)).toEqual(["Nov 2026", "Oct 2026", "Sep 2026", "Aug 2026"]);
+    for (const b of all) expect(Buffer.byteLength(b.callback_data)).toBeLessThanOrEqual(64);
+    expect(parseChoice(all[1].callback_data)).toEqual({ action: "sendMonth", docType: "payroll", month: "2026-10-01" });
+    expect(parseChoice("tm:y:202600")).toBeNull();
+    expect(parseChoice(`tm:y:202610:${ID}`)).toBeNull();
+  });
+
+  it("reads /send and /done, with or without the bot's name", () => {
+    expect(isCommand("/send", "send")).toBe(true);
+    expect(isCommand(" /done@TalloCpaBot ", "done")).toBe(true);
+    expect(isCommand("/sending", "send")).toBe(false);
+    expect(isCommand("/send now", "send")).toBe(false);
+    expect(isCommand(undefined, "done")).toBe(false);
+  });
+
+  it("is active for 30 minutes after the last file, then expired", () => {
+    const now = new Date("2026-11-27T10:00:00Z");
+    expect(sendModeState({ send_doc_type: null, send_active_at: null }, now)).toBe("none");
+    expect(sendModeState({ send_doc_type: "payroll", send_active_at: "2026-11-27T09:31:00Z" }, now)).toBe("active");
+    expect(sendModeState({ send_doc_type: "payroll", send_active_at: "2026-11-27T09:29:59Z" }, now)).toBe("expired");
+  });
+
+  it("takes a spreadsheet only as payroll", () => {
+    expect(fitsType("payroll", "text/csv")).toBe(true);
+    expect(fitsType("purchase_receipt", "text/csv")).toBe(false);
+    expect(fitsType("purchase_receipt", "application/pdf")).toBe(true);
+  });
+
+  it("words the one reply for a file or album as it fills", () => {
+    expect(sendResult({ filed: 0, failed: [], pending: 1 }, "Purchase / expense", "", "November 2026")).toBe("Sending to Tallo CPA as Purchase / expense, November 2026…");
+    expect(sendResult({ filed: 2, failed: [], pending: 3 }, "Payroll", " for Molo Bakeshop", "October 2026")).toBe("Sending to Tallo CPA as Payroll for Molo Bakeshop, October 2026… 2 of 5 done.");
+    expect(sendResult({ filed: 4, failed: ["a.jpg"], pending: 0 }, "Other", "", "November 2026")).toBe(
+      "✓ Sent to Tallo CPA: 4 files as Other for November 2026.\nCould not send a.jpg. Please send it again or use the portal.",
+    );
   });
 });

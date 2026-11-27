@@ -157,7 +157,7 @@ async function Summary() {
     supabase.from("filing_instances").select(select, { count: "exact" }).gte("due_date", today).lte("due_date", in14).not("status", "in", "(filed,paid,proof_uploaded)").order("due_date").limit(100),
     // Months still open where the client sent nothing by the cutoff (spec §3.10, §3.11).
     supabase.from("document_cycles").select("client_id, period, cutoff_date, clients(name)", { count: "exact" }).eq("missed_cutoff", true).is("closed_at", null).order("cutoff_date", { ascending: false }).limit(8),
-    supabase.from("documents").select("id", { count: "exact", head: true }).eq("exception_status", "open"),
+    supabase.from("documents").select("id", { count: "exact", head: true }).eq("exception_status", "open").neq("status", "split"),
   ]);
   const missedRows = (missed.data ?? []) as unknown as { client_id: string; period: string; cutoff_date: string; clients: { name: string } | null }[];
   // Returns appear only for locked periods (docs/REWORK.md, decision 10); Filings lists the Books still open.
