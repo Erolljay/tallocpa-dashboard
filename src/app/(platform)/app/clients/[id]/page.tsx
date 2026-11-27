@@ -9,6 +9,8 @@ import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { CASE_KINDS } from "@/lib/registration/steps";
 import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
 import { supabaseServer } from "@/lib/supabase/server";
+import { telegramEnv } from "@/lib/env";
+import { TelegramSwitch, TelegramUnlinkButton } from "@/components/telegram/telegram-link";
 import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
 import { EmployerCard } from "./employer-card";
@@ -48,6 +50,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("branches").select("id, code, name, address, active").order("name"),
     supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
   ]);
+  const { data: telegramLinks } = await supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
   const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
@@ -227,6 +230,29 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
               })}
             </ul>
           )}
+        </Card>
+
+        <Card title="Telegram uploads" actions={<Badge tone={client.telegram_enabled ? "done" : "neutral"}>{client.telegram_enabled ? "On" : "Off"}</Badge>}>
+          <p className="mb-4 text-body-regular text-text-secondary">
+            {client.telegram_enabled
+              ? "Portal users can link Telegram from their Upload page and send documents to the bot. They arrive in the Inbox as Telegram uploads, and the client's notifications are also sent there."
+              : "Off: the client does not see Telegram anywhere. Turn it on only if the client asks to send documents by Telegram."}
+          </p>
+          {!telegramEnv() && <div className="mb-4"><Notice tone="waiting">The Telegram bot is not set up yet (docs/SETUP.md, “Telegram uploads”).</Notice></div>}
+          {(telegramLinks ?? []).length > 0 && (
+            <ul className="mb-4 divide-y divide-separator-border text-body-regular">
+              {telegramLinks!.map((l) => (
+                <li key={l.chat_id} className="flex items-center justify-between gap-4 py-2">
+                  <span className="text-text-primary">
+                    {(portalUsers.data ?? []).find((u) => u.user_id === l.user_id)?.full_name ?? "Portal user"}
+                    {l.username ? <span className="text-text-secondary"> · <bdi dir="ltr">@{l.username}</bdi></span> : null}
+                  </span>
+                  {canWork && <TelegramUnlinkButton chatId={l.chat_id} />}
+                </li>
+              ))}
+            </ul>
+          )}
+          {canWork && <TelegramSwitch clientId={id} on={Boolean(client.telegram_enabled)} />}
         </Card>
 
         <Card title="Portal users">

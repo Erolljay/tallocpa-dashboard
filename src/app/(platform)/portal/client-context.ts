@@ -8,6 +8,8 @@ export interface PortalClient {
   name: string;
   submission_cutoff_day: number;
   payment_mode: string;
+  /** Telegram uploads switched on for this client by staff (opt-in). */
+  telegram_enabled: boolean;
 }
 
 /** The signed-in client user and the businesses they are linked to. Staff go to /app. */
@@ -17,7 +19,7 @@ export async function portalContext() {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("clients")
-    .select("id, name, submission_cutoff_day, payment_mode")
+    .select("id, name, submission_cutoff_day, payment_mode, telegram_enabled")
     .in("id", id.clients.map((c) => c.clientId))
     .order("name");
   return { id, supabase, clients: (data ?? []) as PortalClient[] };

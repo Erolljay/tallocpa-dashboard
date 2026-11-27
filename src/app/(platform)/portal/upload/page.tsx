@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { RiArrowRightSLine, RiFileList3Line, RiGroupLine, RiShoppingBag3Line, RiStore2Line, type RemixiconComponentType } from "@remixicon/react";
 import { DocumentUpload } from "@/components/document-upload";
+import { TelegramLinkButton, TelegramUnlinkButton } from "@/components/telegram/telegram-link";
 import { NothingToSubmitButton } from "@/components/cycle-forms";
 import { Badge, Card, Notice, Skeleton } from "@/components/ui";
 import { monthChoices, nextCutoff } from "@/lib/documents/cutoff";
@@ -37,7 +38,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searchParams">) {
   const sp = await searchParams;
   const stream: Stream = ORDER.find((s) => s === one(sp.stream)) ?? "sales";
-  const { supabase, clients } = await portalContext();
+  const { id, supabase, clients } = await portalContext();
   if (clients.length === 0) {
     return <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
   }
@@ -56,6 +57,11 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
     return { client, month, cutoff, daysLeft, open: !!y && !y.closed_at, nothing: !!y?.nothing_to_submit_at, confirmed: !!y?.client_confirmed_at, count };
   });
   const main = status[0];
+  // Telegram is opt-in per client (staff switch it on); others never see it.
+  const telegram = clients.filter((c) => c.telegram_enabled);
+  const { data: links } = telegram.length
+    ? await supabase.from("telegram_links").select("chat_id, client_id, username").in("client_id", telegram.map((c) => c.id)).eq("user_id", id.userId)
+    : { data: [] as { chat_id: number; client_id: string; username: string | null }[] };
   const types = STREAMS[stream].types as readonly DocType[];
 
   return (
@@ -113,6 +119,34 @@ async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searc
           defaultMonth={main.month}
         />
       </Card>
+
+      {telegram.length > 0 && (
+        <Card title="Send by Telegram">
+          <p className="mb-4 text-body-regular text-text-secondary">
+            Send photos or PDFs to our Telegram bot, many at a time if you like, then tap what they are. Each file arrives here as its own document.
+            For the clearest reading, send photos as files.
+          </p>
+          <ul className="space-y-4">
+            {telegram.map((c) => {
+              const mine = (links ?? []).filter((l) => l.client_id === c.id);
+              return (
+                <li key={c.id} className="flex flex-col gap-2">
+                  {telegram.length > 1 && <span className="text-body-medium text-text-primary">{c.name}</span>}
+                  {mine.map((l) => (
+                    <p key={l.chat_id} className="flex flex-wrap items-center gap-3 text-body-regular text-text-secondary">
+                      Linked{l.username ? <> to <bdi dir="ltr">@{l.username}</bdi></> : null}
+                      <TelegramUnlinkButton chatId={l.chat_id} />
+                    </p>
+                  ))}
+                  <div className="max-w-xs">
+                    <TelegramLinkButton clientId={c.id} label={mine.length ? "Link another chat" : "Link Telegram"} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       <Card title="This month">
         <ul className="space-y-3">

@@ -5,6 +5,7 @@ import { emailConfigured, sendEmail } from "@/lib/cycle/email";
 import { loadEmailBrand, requestOrigin, siteOrigin } from "@/lib/email/brand";
 import { renderEmail, settingsUrlFor } from "@/lib/email/layout";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { notifyTelegram } from "@/lib/telegram/notify";
 import { isNotificationKind, NOTIFICATION_KINDS } from "./kinds";
 
 /** A row from public.claim_notification_emails (migration 20261213000001_notifications.sql). */
@@ -63,6 +64,8 @@ export async function dispatchNotificationEmails(admin: SupabaseClient, origin: 
   const base = origin.replace(/\/+$/, "");
   const configured = emailConfigured();
   for (const n of rows) {
+    // Clients who linked Telegram also get it there (opt-in per client).
+    await notifyTelegram(admin, n, base);
     if (!configured) {
       await finish(admin, n.id, "skipped", "email not configured");
       result.skipped += 1;
