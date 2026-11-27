@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner, requireOwnerOrReviewer } from "@/lib/auth";
+import { emailConfigured, sendBrandedEmail } from "@/lib/cycle/email";
 import { addDays } from "@/lib/deadlines/dates";
 import { auditIndependenceWarning, buildProposalQuote, parseSales, readJobs } from "@/lib/fees/proposal";
 import { parsePrice } from "@/lib/fees/schedule";
 import { manilaToday } from "@/lib/filings/run";
+import { loadEmailBrand, requestOrigin, siteOrigin } from "@/lib/email/brand";
+import { NOTE_MAX, proposalDate, proposalEmail } from "@/lib/funnel/proposal-email";
 import { proposalStart } from "@/lib/funnel/proposal-quote";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -86,7 +89,65 @@ export async function sendProposalAction(leadId: string, _: LeadState, form: For
   refresh(leadId);
   const keepsBooks = built.quote.monthly.some((l) => l.component === "F") || ((lead.services as string[] | null) ?? []).includes("bookkeeping");
   const warning = auditIndependenceWarning(built.quote.audit ? [built.quote.audit] : [], keepsBooks);
-  return { ok: `Proposal ready. Send the link to the prospect.${warning ? ` ${warning}` : ""}`, link: `/proposal/${(data as { token: string }).token}` };
+  return { ok: `Proposal ready. Email it to the prospect, or copy the link.${warning ? ` ${warning}` : ""}`, link: `/proposal/${(data as { token: string }).token}` };
+}
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const EMAIL_NOT_SET_UP = "Email is not set up on this app (RESEND_API_KEY and EMAIL_FROM), so nothing was sent. Copy the link and send it yourself.";
+
+/**
+ * Emails the open proposal's link to the prospect through Resend, in the brand's
+ * layout, then records to whom, when and by whom on the proposal. Test leads still
+ * send, with "[Test]" in the subject. Every failure is reported with the link to copy.
+ */
+export async function emailProposalAction(proposalId: string, _: LeadState, form: FormData): Promise<LeadState> {
+  const me = await requireOwnerOrReviewer();
+  const supabase = await supabaseServer();
+  const { data: p } = await supabase
+    .from("proposals")
+    .select("id, lead_id, token, status, quote, valid_until, leads(business_name, contact_name, brand_id, test, stage, reviewer_id)")
+    .eq("id", proposalId)
+    .maybeSingle();
+  if (!p) return { error: "Proposal not found." };
+  const link = `/proposal/${p.token}`;
+  const lead = p.leads as unknown as { business_name: string; contact_name: string; brand_id: string; test: boolean; stage: string; reviewer_id: string | null };
+  if (me.staff.role !== "owner" && lead.reviewer_id !== me.userId) return { error: "Only the Owner or the lead's reviewer can send proposals." };
+  if (p.status === "withdrawn") return { error: "This proposal has been replaced; send the latest one." };
+  if (p.status === "accepted") return { error: "This proposal has already been accepted." };
+  if (lead.stage !== "lead" && lead.stage !== "prospect") return { error: "This lead is no longer open for a proposal.", link };
+  if (String(p.valid_until) < manilaToday()) return { error: `This proposal expired on ${proposalDate(String(p.valid_until))}. Prepare a new one.`, link };
+  const to = text(form, "to").toLowerCase();
+  if (!EMAIL_RE.test(to) || to.length > 320) return { error: "Enter a valid email address.", link };
+  const note = text(form, "note");
+  if (note.length > NOTE_MAX) return { error: `Keep the note under ${NOTE_MAX} characters.`, link };
+  if (!emailConfigured()) return { error: EMAIL_NOT_SET_UP, link };
+  const origin = siteOrigin() ?? (await requestOrigin());
+  if (!origin) return { error: "The app's public address is not known (NEXT_PUBLIC_SITE_URL), so nothing was sent. Copy the link and send it yourself.", link };
+
+  const brand = await loadEmailBrand(lead.brand_id);
+  const quote = p.quote as { monthlyRetainer: number; tax?: { note?: string } };
+  const content = proposalEmail({
+    brandName: brand.displayName,
+    businessName: lead.business_name,
+    contactName: lead.contact_name,
+    monthlyRetainer: Number(quote.monthlyRetainer),
+    taxNote: quote.tax?.note ?? null,
+    validUntil: String(p.valid_until),
+    url: `${origin}${link}`,
+    note,
+    senderName: me.staff.fullName,
+    test: lead.test,
+  });
+  try {
+    const sent = await sendBrandedEmail(to, content, { brand, footerNote: `you asked ${brand.displayName} for a proposal`, hideSettings: true });
+    if (sent !== "sent") return { error: EMAIL_NOT_SET_UP, link };
+  } catch (e) {
+    return { error: `The email was not sent: ${e instanceof Error ? e.message : String(e)}. Try again, or copy the link and send it yourself.`, link };
+  }
+  const { error } = await supabase.rpc("record_proposal_email", { p_proposal: p.id, p_to: to });
+  refresh(p.lead_id);
+  if (error) return { error: `The email was sent to ${to}, but it could not be recorded: ${error.message}`, link };
+  return { ok: `Sent to ${to}.`, link };
 }
 
 /** Lost needs its reason. */
