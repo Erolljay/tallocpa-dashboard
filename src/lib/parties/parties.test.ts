@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { datAddress, datNameCols, displayName, listNameCols, type Party } from "./format";
 import { fillFromDirectory, resolveParty, sameName } from "./resolve";
-import { branch4, normalizeBranch, parseTin, partyKey, tin9 } from "./tin";
+import { branch4, branchOfTin, normalizeBranch, parseTin, partyKey, payeeKeyOf, tin9, tinDashed } from "./tin";
 
 vi.mock("server-only", () => ({}));
 
@@ -58,6 +58,19 @@ describe("TINs", () => {
     expect(branch4("00000")).toBe("0000");
     expect(branch4("00012")).toBe("0012");
     expect(branch4("001")).toBe("0001");
+  });
+
+  it("takes the DAT branch from the TIN as written, head office when it shows none", () => {
+    expect(tinDashed("123456789-00002")).toBe("123-456-789");
+    expect(branchOfTin("123-456-789")).toBe("0000");
+    expect(branchOfTin("123-456-789-000")).toBe("0000");
+    expect(branchOfTin("123-456-789-001")).toBe("0001");
+    expect(branchOfTin("123-456-789-00002")).toBe("0002");
+    expect(branchOfTin("123-456-789-00012")).toBe("0012");
+    expect(payeeKeyOf("123-456-789")).toBe("123456789-0000");
+    expect(payeeKeyOf("123-456-789-00000")).toBe("123456789-0000");
+    expect(payeeKeyOf("123-456-789-00002")).toBe("123456789-0002");
+    expect(payeeKeyOf("123-45")).toBeNull();
   });
 });
 

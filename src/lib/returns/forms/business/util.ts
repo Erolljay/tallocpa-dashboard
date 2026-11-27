@@ -196,24 +196,9 @@ export function uncodedErrors(docs: SourceDocument[]): string[] {
 
 // ── TINs and alphalist text (taxify reports/sls-report.js, reports/sawt-report.js) ──
 
-export const tinDigits = (t: string | null | undefined) => (t ?? "").replace(/\D/g, "");
-
-/** First 9 digits of a TIN, zero-padded (taxify `tin9`). */
-export function tin9(t: string | null | undefined): string {
-  return tinDigits(t).substring(0, 9).padEnd(9, "0").substring(0, 9);
-}
-
-/** "123-456-789" (taxify `tinDashed`). */
-export function tinDashed(t: string | null | undefined): string {
-  const d = tin9(t);
-  return `${d.substring(0, 3)}-${d.substring(3, 6)}-${d.substring(6, 9)}`;
-}
-
-/** Branch code from the digits after the 9-digit TIN (last four, zero-padded), else taxify's default "0001". */
-export function branchCode(t: string | null | undefined): string {
-  const rest = tinDigits(t).substring(9);
-  return rest ? rest.slice(-4).padStart(4, "0") : "0001";
-}
+// TIN helpers live in the parties directory module so every DAT file formats TINs alike.
+import { tin9, tinDigits } from "@/lib/parties/tin";
+export { tinDigits, tin9, tinDashed } from "@/lib/parties/tin";
 
 /** Keeps letters, digits, spaces, period, hyphen, slash — BIR's Validation Module rejects the rest (taxify `stripSpecial`). */
 export const stripSpecial = (v: string | null | undefined) => (v ?? "").replace(/[^A-Za-z0-9\s.\-/]/g, "");

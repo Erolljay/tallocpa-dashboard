@@ -166,7 +166,7 @@ describe("1701Q", () => {
     expect(att.map((a) => a.kind)).toEqual(["sawt_dat_2026-01", "sawt_csv"]);
     expect(att[0].build().body).toBe(
       'HSAWT,H1701Q,123456789,0000,"JUAN DELA CRUZ","DELA CRUZ","JUAN","",01/2026,050\r\n' +
-        'DSAWT,D1701Q,1,999888777,0001,"ALPHA CO",,,,01/2026,,WI160,2.00,10000.00,200.00\r\n' +
+        'DSAWT,D1701Q,1,999888777,0000,"ALPHA CO",,,,01/2026,,WI160,2.00,10000.00,200.00\r\n' +
         // The second 2307 had no income payment read: grossed up from ₱500 at 5%.
         'DSAWT,D1701Q,2,333444555,0000,"CLIENT B INC.",,,,01/2026,,WI010,5.00,30000.00,1500.00\r\n' +
         "CSAWT,C1701Q,123456789,0000,01/2026,40000.00,1700.00\r\n",

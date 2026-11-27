@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 import { PAYROLL_FORMS } from "@/lib/returns/forms/payroll";
 import type { WorksheetContext } from "@/lib/returns/types";
-import { alphaCols, alphalistCsv, alphalistDat, buildAlphalist } from "./alphalist";
+import { alphaCols, alphalistCsv, alphalistDat, branch4, buildAlphalist } from "./alphalist";
 import { annualSummary, annualTax, computeEmployeeYear, monthlyTable, monthlyWithholding, suggestWithholding } from "./compute";
 import { checkRegister, ID_HEADERS, registerHeaders, TOTAL_HEADERS, type RegisterRow } from "./register";
 import { buildRegisterTemplate, readRegister, REGISTER_SHEET } from "./register-xlsx";
@@ -452,5 +452,16 @@ describe("saving a month", () => {
     const [e] = toEntries(stored, ITEMS);
     expect(e).toMatchObject({ basic: P(20000.25), otherDeductions: P(500), adjustment: P(-1.5), note: "1st half" });
     expect(sameMonth(stored[0], { lines: new Map(stored[0].lines), adjustment: P(-1.5), note: "1st half" })).toBe(true);
+  });
+});
+
+describe("alphalist branch codes", () => {
+  it("keeps the last four branch digits, head office when none", () => {
+    expect(branch4("123-456-789")).toBe("0000");
+    expect(branch4("123-456-789-00002")).toBe("0002");
+    expect(branch4("123-456-789-00012")).toBe("0012");
+    expect(branch4("00012", false)).toBe("0012");
+    expect(branch4("001", false)).toBe("0001");
+    expect(branch4(null, false)).toBe("0000");
   });
 });
