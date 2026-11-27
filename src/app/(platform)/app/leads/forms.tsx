@@ -9,6 +9,7 @@ import {
   assignReviewerAction,
   bookingLinkAction,
   convertLeadAction,
+  emailProposalAction,
   markLostAction,
   recordCallAction,
   reopenLeadAction,
@@ -194,6 +195,70 @@ export function ProposalForm({ leadId, defaultTerms, setup }: { leadId: string; 
           <button type="button" className="underline" onClick={() => navigator.clipboard.writeText(url).then(() => setCopied(true))}>{copied ? "Link copied" : "Copy the link"}</button>
         </Notice>
       )}
+    </form>
+  );
+}
+
+/** Copies an app path as a full link (this window's origin). */
+function CopyLink({ path }: { path: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="underline outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring"
+      onClick={() => navigator.clipboard?.writeText(`${window.location.origin}${path}`).then(() => setCopied(true), () => setCopied(false))}
+    >
+      {copied ? "Link copied" : "Copy the link"}
+    </button>
+  );
+}
+
+/** The last time the proposal was emailed, as the lead page shows it. */
+export interface ProposalSent {
+  to: string;
+  on: string;
+  by: string | null;
+  count: number;
+}
+
+/**
+ * Emails the open proposal's link to the prospect (prefilled with the lead's address),
+ * with an optional personal note. Without email set up it says so and offers the link.
+ */
+export function ProposalEmailForm({ proposalId, link, defaultTo, emailReady, test, sent }: { proposalId: string; link: string; defaultTo: string; emailReady: boolean; test: boolean; sent: ProposalSent | null }) {
+  const [state, action, pending] = useActionState(emailProposalAction.bind(null, proposalId), {} as LeadState);
+  return (
+    <form action={action} className="space-y-4">
+      {sent && (
+        <p className="text-body-regular text-text-secondary">
+          Sent to <bdi dir="ltr" className="text-text-primary">{sent.to}</bdi> on {sent.on}{sent.by ? ` by ${sent.by}` : ""}
+          {sent.count > 1 ? ` (${sent.count} times)` : ""}.
+        </p>
+      )}
+      {!emailReady && (
+        <Notice tone="waiting">
+          Email is not set up on this app (RESEND_API_KEY and EMAIL_FROM), so the proposal cannot be emailed from here. <CopyLink path={link} /> and send it yourself.
+        </Notice>
+      )}
+      <Field label="To" htmlFor="pe-to" hint={test ? "A test lead: the subject starts with [Test]." : "The lead's email address. Change it if needed."}>
+        <Input id="pe-to" name="to" type="email" required defaultValue={defaultTo} dir="ltr" className="w-full max-w-sm" />
+      </Field>
+      <Field label="Personal note (optional)" htmlFor="pe-note" hint="A line or two above the proposal summary.">
+        <Textarea id="pe-note" name="note" rows={3} maxLength={1000} />
+      </Field>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending || !emailReady}>{pending ? "Sending…" : sent ? "Send again" : "Send the proposal by email"}</Button>
+        <span className="text-body-regular text-text-secondary">
+          <a href={link} target="_blank" rel="noreferrer" className="underline">Open it</a>{" · "}<CopyLink path={link} />
+        </span>
+      </div>
+      {state.error && (
+        <Notice tone="blocked">
+          {state.error}
+          {state.link && <>{" "}<CopyLink path={state.link} /></>}
+        </Notice>
+      )}
+      {state.ok && <Notice tone="done">{state.ok}</Notice>}
     </form>
   );
 }

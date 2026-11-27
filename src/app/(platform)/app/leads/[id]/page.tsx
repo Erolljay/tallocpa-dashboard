@@ -8,6 +8,7 @@ import { NotesTimeline } from "@/components/leads/notes-timeline";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwnerOrReviewer } from "@/lib/auth";
 import { taxpayerTypeLabel } from "@/lib/clients/labels";
+import { emailConfigured } from "@/lib/cycle/email";
 import { addDays } from "@/lib/deadlines/dates";
 import { manilaToday } from "@/lib/filings/run";
 import { LEAD_STAGES, isOpenStage, type LeadStage } from "@/lib/funnel/labels";
@@ -18,7 +19,7 @@ import { channelLabel, leadChannel, type LeadSourceRow } from "@/lib/marketing/l
 import { proposalSetup } from "@/lib/funnel/proposal-quote";
 import { supabaseServer } from "@/lib/supabase/server";
 import { cancelCallAction } from "../actions";
-import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalForm, ReopenForm, ReviewerForm } from "../forms";
+import { BookingLink, ConvertForm, DiscoveryCallForm, LostForm, ProposalEmailForm, ProposalForm, ReopenForm, ReviewerForm, type ProposalSent } from "../forms";
 
 export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
   return (
@@ -31,6 +32,7 @@ export default function LeadPage(props: PageProps<"/app/leads/[id]">) {
 type Person = { user_id: string; full_name: string; role: string; active: boolean };
 
 const bookedTime = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" });
+const sentDate = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
 
 async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const { id } = await params;
@@ -60,6 +62,10 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
   const nextMonth = `${addDays(`${manilaToday().slice(0, 7)}-28`, 7).slice(0, 7)}-01`;
   const timeline = notesTimeline((notes ?? []) as NoteRow[]);
   const calls = timeline.filter((n) => n.source === "discovery_call").length;
+  const sentOf = (p: Record<string, unknown>): ProposalSent | null =>
+    p.emailed_at
+      ? { to: String(p.emailed_to), on: sentDate.format(new Date(String(p.emailed_at))), by: p.emailed_by ? nameOf.get(String(p.emailed_by)) ?? null : null, count: Number(p.emailed_count ?? 1) }
+      : null;
 
   return (
     <>
@@ -100,9 +106,10 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
                     <span>
                       <a href={`/proposal/${p.token}`} target="_blank" rel="noreferrer" className="underline">{String(p.created_at).slice(0, 10)}</a>
                       <span className="text-text-tertiary"> · {peso.format(Number(p.monthly_retainer))} / month · valid to {p.valid_until}</span>
+                      {p.emailed_at && <span className="block text-caption-1-regular text-text-tertiary">Emailed to <bdi dir="ltr">{p.emailed_to}</bdi> on {sentDate.format(new Date(p.emailed_at))}</span>}
                     </span>
                     <Badge tone={p.status === "accepted" ? "done" : p.status === "withdrawn" ? "neutral" : "waiting"}>
-                      {p.status === "accepted" ? `Accepted by ${p.accepted_name}` : p.status === "withdrawn" ? "Replaced" : "Sent"}
+                      {p.status === "accepted" ? `Accepted by ${p.accepted_name}` : p.status === "withdrawn" ? "Replaced" : p.emailed_at ? "Sent" : "Not sent yet"}
                     </Badge>
                   </li>
                 ))}
@@ -162,8 +169,21 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
             <NotesTimeline entries={timeline} nameOf={nameOf} empty="No notes yet." />
           </Card>
 
+          {canWork && latest && latest.status === "sent" && (stage === "lead" || stage === "prospect") && (
+            <Card title={latest.emailed_at ? "Proposal sent" : "Send the proposal by email"}>
+              <ProposalEmailForm
+                key={latest.id}
+                proposalId={latest.id}
+                link={`/proposal/${latest.token}`}
+                defaultTo={latest.emailed_to ?? lead.email}
+                emailReady={emailConfigured()}
+                test={!!lead.test}
+                sent={sentOf(latest)}
+              />
+            </Card>
+          )}
           {canWork && (stage === "lead" || stage === "prospect") && (
-            <Card title={latest ? "Send a new proposal" : "Send a proposal"}>
+            <Card title={latest ? "Prepare a new proposal" : "Prepare a proposal"}>
               <ProposalForm leadId={id} defaultTerms={defaultTerms(brand.legal_name, lead.services as string[])} setup={await proposalSetup(supabase, me.staff.brandId, lead.profile, lead.services as string[])} />
             </Card>
           )}

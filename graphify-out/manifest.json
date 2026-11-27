@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795760559.7543845,
-    "seen": 1795760562.9092681,
-    "ast_hash": "2adabcbd324d9c989db308c903ad6474",
+    "mtime": 1795760566.4798353,
+    "seen": 1795760582.258291,
+    "ast_hash": "0f078e5b3e9f162195000ebebfc09bc7",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000005_calendar_year_rules_and_2026_holidays.sql": {
@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "src/lib/documents/actions.ts": {
-    "mtime": 1795759419.794509,
-    "seen": 1795760252.7223423,
-    "ast_hash": "18347c3d964c61acca84adfb07856149",
+    "mtime": 1795760563.531835,
+    "seen": 1795760582.2501907,
+    "ast_hash": "61439dfd264c647ae762ed9361bfd4d3",
     "semantic_hash": ""
   },
   "src/lib/documents/cutoff.test.ts": {
@@ -588,9 +588,9 @@
     "semantic_hash": ""
   },
   "src/lib/cycle/email.ts": {
-    "mtime": 1795705732.145191,
-    "seen": 1795760252.7222815,
-    "ast_hash": "f869623d1949846be64e00ec8caf04de",
+    "mtime": 1795760566.5118353,
+    "seen": 1795760582.2495987,
+    "ast_hash": "7894f0fb5539df54d8b94e72df3e337b",
     "semantic_hash": ""
   },
   "src/lib/cycle/messages.test.ts": {
@@ -1800,9 +1800,9 @@
     "semantic_hash": ""
   },
   "docs/UX-REVIEW.md": {
-    "mtime": 1795730938.6149378,
-    "seen": 1795760252.723199,
-    "ast_hash": "10b9d94ab5d42e7be0f744dba9390c93",
+    "mtime": 1795760566.4798353,
+    "seen": 1795760582.2582924,
+    "ast_hash": "55004a9957cd12a2178a55a682c9338e",
     "semantic_hash": ""
   },
   "docs/mockups/tallocpa-ux-review.html": {
@@ -2184,9 +2184,9 @@
     "semantic_hash": ""
   },
   "docs/REWORK.md": {
-    "mtime": 1795730938.615614,
-    "seen": 1795760252.723192,
-    "ast_hash": "b5edd8420dcce53cdf50c96792822c56",
+    "mtime": 1795760563.479835,
+    "seen": 1795760582.2582717,
+    "ast_hash": "e2c466630033778779d63dffc86c4f19",
     "semantic_hash": ""
   },
   "src/lib/books/actions.ts": {
@@ -2646,9 +2646,9 @@
     "semantic_hash": ""
   },
   "src/lib/calendar/staff.ts": {
-    "mtime": 1795705732.145191,
-    "seen": 1795760252.7222512,
-    "ast_hash": "e845a7e967ed98a181e09dc8151b8784",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2493312,
+    "ast_hash": "676fa0186ad91ab6b4101cdc92c761bc",
     "semantic_hash": ""
   },
   "src/lib/calendar/week.test.ts": {
@@ -2664,9 +2664,9 @@
     "semantic_hash": ""
   },
   "src/lib/google/calendar.ts": {
-    "mtime": 1795705732.151247,
-    "seen": 1795760252.7224698,
-    "ast_hash": "1fa57ece47edb9abfdae81d9f400785b",
+    "mtime": 1795760563.531835,
+    "seen": 1795760582.2513843,
+    "ast_hash": "4a6f07992ce51f22c03b9efc592e06b0",
     "semantic_hash": ""
   },
   "src/lib/google/crypto.test.ts": {
@@ -2910,9 +2910,9 @@
     "semantic_hash": ""
   },
   "src/lib/notifications/kinds.ts": {
-    "mtime": 1795705732.1543715,
-    "seen": 1795760252.7225733,
-    "ast_hash": "4a98a169824bcd4fdf335133c30472ef",
+    "mtime": 1795760563.531835,
+    "seen": 1795760582.2523944,
+    "ast_hash": "240499f0b90c8d71e57379572913e199",
     "semantic_hash": ""
   },
   "src/lib/notifications/queries.ts": {
@@ -3174,9 +3174,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/calendar/actions.ts": {
-    "mtime": 1795705732.122006,
-    "seen": 1795760252.7211595,
-    "ast_hash": "7f85796ffe10056cee86eb1f61665b2c",
+    "mtime": 1795760563.5238352,
+    "seen": 1795760582.2367084,
+    "ast_hash": "9ea44f406f6539930507083723750536",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/calendar/callback/route.ts": {
@@ -3198,9 +3198,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/calendar/page.tsx": {
-    "mtime": 1795705732.1220608,
-    "seen": 1795760252.7211714,
-    "ast_hash": "95995fcadc83caa864b42eb8d68ac67e",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2368388,
+    "ast_hash": "f23db541630919dd78c0465edcd8f443",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/batch/actions.ts": {
@@ -3756,9 +3756,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/register/page.tsx": {
-    "mtime": 1795759419.7837672,
-    "seen": 1795760252.7213984,
-    "ast_hash": "ba69395efc2b0c3efd5f17372f44a2cc",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2399168,
+    "ast_hash": "f705df03db6fe86821afc8ffea03aa0b",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/returns/page.tsx": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/[id]/page.tsx": {
-    "mtime": 1795759419.7877672,
-    "seen": 1795760252.721482,
-    "ast_hash": "76fd8a1b6ee9f73f3d2f937dbf625789",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2407563,
+    "ast_hash": "80bacb8c35d2fea14c077dd57a2c2fc9",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/documents/[id]/payroll-intake.tsx": {
@@ -4098,21 +4098,21 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/[id]/page.tsx": {
-    "mtime": 1795705732.1311057,
-    "seen": 1795760252.7215674,
-    "ast_hash": "d2e2d8c2f5cd9e464a27b455c7967e3c",
+    "mtime": 1795760575.9500906,
+    "seen": 1795760582.2415624,
+    "ast_hash": "d5021eff8553cd458c23cba383e7e604",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/actions.ts": {
-    "mtime": 1795705732.1311057,
-    "seen": 1795760252.7215695,
-    "ast_hash": "ebbd8dd88a0965416ad645f2f42a5043",
+    "mtime": 1795760575.950223,
+    "seen": 1795760582.2415643,
+    "ast_hash": "5858e5bb287666f3491afc7298cbe520",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/forms.tsx": {
-    "mtime": 1795705732.1311057,
-    "seen": 1795760252.7215717,
-    "ast_hash": "b64a72cafb34266ff5a57fafca148ba3",
+    "mtime": 1795760566.5118353,
+    "seen": 1795760582.241567,
+    "ast_hash": "2a2224f5d35b790859247d5524d24230",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/page.tsx": {
@@ -4506,15 +4506,15 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/book/actions.ts": {
-    "mtime": 1795705732.1351497,
-    "seen": 1795760252.7217226,
-    "ast_hash": "d34ee33b62455b87a23066b06745d049",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2433984,
+    "ast_hash": "8d5a4a63d073c246d12ee7fca641b9bb",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/book/page.tsx": {
-    "mtime": 1795705732.1352694,
-    "seen": 1795760252.7217247,
-    "ast_hash": "5e55f0f320b8fe9c7b6fdd5e4f58535b",
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2434008,
+    "ast_hash": "a5305a36a5665cdbd0ba6423e7274f07",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/client-context.ts": {
@@ -5295,6 +5295,66 @@
     "mtime": 1795760426.968327,
     "seen": 1795760562.9087944,
     "ast_hash": "7765dc31d85ca2a9266fd41a981a0566",
+    "semantic_hash": ""
+  },
+  "src/components/attach-batch-image.tsx": {
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.245649,
+    "ast_hash": "ea0850dd61789a4064d3949e96ef8897",
+    "semantic_hash": ""
+  },
+  "src/components/booking/cancel-booking.tsx": {
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2470815,
+    "ast_hash": "3a897719eed644cdaadaff6d58f2941f",
+    "semantic_hash": ""
+  },
+  "src/lib/calendar/cancel-server.ts": {
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2492347,
+    "ast_hash": "60097e1a0a56f765c6cb4fe42c67ba67",
+    "semantic_hash": ""
+  },
+  "src/lib/calendar/cancel.test.ts": {
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.249237,
+    "ast_hash": "32a5e442de2b3c5e49af30bb56d9dd08",
+    "semantic_hash": ""
+  },
+  "src/lib/calendar/cancel.ts": {
+    "mtime": 1795760563.5278351,
+    "seen": 1795760582.2492385,
+    "ast_hash": "908a9498c972417c027e745fd3af00d0",
+    "semantic_hash": ""
+  },
+  "src/lib/funnel/proposal-email.test.ts": {
+    "mtime": 1795760566.5118353,
+    "seen": 1795760582.2512946,
+    "ast_hash": "1c323d0a193d41cfc66a591e4c962041",
+    "semantic_hash": ""
+  },
+  "src/lib/funnel/proposal-email.ts": {
+    "mtime": 1795760566.5118353,
+    "seen": 1795760582.251297,
+    "ast_hash": "8e9989b8f4e8c4f7f7502f900710b469",
+    "semantic_hash": ""
+  },
+  "supabase/tests/batch-row-images.test.ts": {
+    "mtime": 1795760563.531835,
+    "seen": 1795760582.2567282,
+    "ast_hash": "ca7609413ecc402dd4d2c924beffa397",
+    "semantic_hash": ""
+  },
+  "supabase/tests/cancel-meetings.test.ts": {
+    "mtime": 1795760563.531835,
+    "seen": 1795760582.2568376,
+    "ast_hash": "efeef017686529fa328e1cf3d955031c",
+    "semantic_hash": ""
+  },
+  "supabase/tests/proposal-email.test.ts": {
+    "mtime": 1795760566.5118353,
+    "seen": 1795760582.2575905,
+    "ast_hash": "c6df946ae5640677ac7ec5b77604e9f7",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {
