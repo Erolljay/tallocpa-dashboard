@@ -5,7 +5,7 @@ import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import type { Branch } from "@/lib/branches";
 import { ACCESS_LABEL, CONTACT_ACCESS } from "@/lib/contacts/access";
 import { StaffOptions } from "../client-form";
-import { addEngagementAction, assignStaffAction, removeAssignmentAction, setCatchUpAction, setClientStatusAction, setIncomeTaxMethodAction, type FormState } from "../actions";
+import { addEngagementAction, assignStaffAction, removeAssignmentAction, setCatchUpAction, setClientStatusAction, setIncomeTaxMethodAction, type ClientStatusTarget, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
 
 export function EngagementForm({ clientId, serviceLines }: { clientId: string; serviceLines: { code: string; name: string }[] }) {
@@ -83,10 +83,22 @@ export function IncomeTaxMethodForm({ clientId, value, individual, canEdit }: { 
   );
 }
 
-export function StatusButton({ clientId, to, label }: { clientId: string; to: "active" | "inactive"; label: string }) {
+const statusConfirm: Record<ClientStatusTarget, string | null> = {
+  active: null,
+  inactive: "Mark this client inactive? Their records stay; they drop out of active work.",
+  archived: "Archive this client? Their records stay, but they are hidden from setup prompts and Telegram. You can reactivate them later.",
+};
+
+export function StatusButton({ clientId, to, label }: { clientId: string; to: ClientStatusTarget; label: string }) {
   const [state, action, pending] = useActionState(setClientStatusAction.bind(null, clientId, to), {} as FormState);
+  const message = statusConfirm[to];
   return (
-    <form action={action}>
+    <form
+      action={action}
+      onSubmit={(ev) => {
+        if (message && !window.confirm(message)) ev.preventDefault();
+      }}
+    >
       <Button type="submit" variant={to === "active" ? "primary" : "secondary"} disabled={pending}>{label}</Button>
       {state.error && <p className="mt-2 text-caption-1-regular text-text-error-primary">{state.error}</p>}
     </form>

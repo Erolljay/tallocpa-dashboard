@@ -184,7 +184,9 @@ export async function setIncomeTaxMethodAction(clientId: string, _: FormState, f
   return { ok: true };
 }
 
-export async function setClientStatusAction(clientId: string, status: "active" | "inactive"): Promise<FormState> {
+export type ClientStatusTarget = "active" | "inactive" | "archived";
+
+export async function setClientStatusAction(clientId: string, status: ClientStatusTarget): Promise<FormState> {
   await requireOwner();
   const supabase = await supabaseServer();
   const { error } = await supabase.from("clients").update({ status }).eq("id", clientId);
