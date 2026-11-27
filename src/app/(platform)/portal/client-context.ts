@@ -16,6 +16,8 @@ export interface PortalClient {
   telegram_enabled: boolean;
   /** What this contact may do for this business. */
   access: ContactAccess;
+  /** Last day of view-only access when the firm no longer handles this business (YYYY-MM-DD), else null. */
+  accessEndsOn: string | null;
 }
 
 /**
@@ -34,8 +36,12 @@ export const portalContext = cache(async () => {
     .select("id, name, submission_cutoff_day, payment_mode, telegram_enabled")
     .in("id", id.clients.map((c) => c.clientId))
     .order("name");
-  const accessOf = new Map(id.clients.map((c) => [c.clientId, c.access]));
-  const all = ((data ?? []) as Omit<PortalClient, "access">[]).map((c) => ({ ...c, access: accessOf.get(c.id) ?? "full" })) as PortalClient[];
+  const linkOf = new Map(id.clients.map((c) => [c.clientId, c]));
+  const all = ((data ?? []) as Omit<PortalClient, "access" | "accessEndsOn">[]).map((c) => ({
+    ...c,
+    access: linkOf.get(c.id)?.access ?? "full",
+    accessEndsOn: linkOf.get(c.id)?.accessEndsOn ?? null,
+  })) as PortalClient[];
   const chosen = (await cookies()).get(PORTAL_BUSINESS_COOKIE)?.value;
   // One business: it is always the active one. Several: the remembered choice, else all.
   const active = all.length === 1 ? all[0] : chosen && chosen !== ALL_BUSINESSES ? (all.find((c) => c.id === chosen) ?? null) : null;

@@ -10,14 +10,18 @@ export interface Identity {
   userId: string;
   email: string | null;
   staff: { fullName: string; role: StaffRole; brandId: string } | null;
-  /** For a client contact: each business they are linked to and what they may do there. */
-  clients: { clientId: string; fullName: string; clientName: string; access: ContactAccess }[];
+  /**
+   * For a client contact: each business they are linked to and what they may do there.
+   * `accessEndsOn` (YYYY-MM-DD) is set when the firm no longer handles the business: the
+   * contact has view-only access until that day, then the business drops off.
+   */
+  clients: { clientId: string; fullName: string; clientName: string; access: ContactAccess; accessEndsOn: string | null }[];
 }
 
 interface IdentityRow {
   user_id: string;
   staff: { full_name: string; role: StaffRole; brand_id: string } | null;
-  clients: { client_id: string; full_name: string; client_name: string; access?: ContactAccess }[];
+  clients: { client_id: string; full_name: string; client_name: string; access?: ContactAccess; access_ends_on?: string | null }[];
 }
 
 /**
@@ -36,7 +40,7 @@ export const getIdentity = cache(async (): Promise<Identity> => {
     userId: row.user_id,
     email: (claims.claims.email as string | undefined) ?? null,
     staff: row.staff ? { fullName: row.staff.full_name, role: row.staff.role, brandId: row.staff.brand_id } : null,
-    clients: row.clients.map((c) => ({ clientId: c.client_id, fullName: c.full_name, clientName: c.client_name, access: c.access ?? "full" })),
+    clients: row.clients.map((c) => ({ clientId: c.client_id, fullName: c.full_name, clientName: c.client_name, access: c.access ?? "full", accessEndsOn: c.access_ends_on ?? null })),
   };
 });
 

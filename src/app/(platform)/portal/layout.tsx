@@ -4,7 +4,9 @@ import { Bell, BellFallback } from "@/components/application/notifications/bell"
 import { IdleWatcher } from "@/components/application/session/idle-watcher";
 import { ThemeToggle } from "@/components/application/theme/theme-toggle";
 import { Lockup } from "@/components/brand/lockup";
+import { Notice } from "@/components/ui";
 import { canAct } from "@/lib/contacts/access";
+import { showDate } from "@/lib/filings/labels";
 import { BusinessSwitcher } from "./business/business-switcher";
 import { portalContext } from "./client-context";
 import { PortalNav } from "./nav/portal-nav";
@@ -38,7 +40,12 @@ export default function PortalLayout({ children }: LayoutProps<"/portal">) {
           </Suspense>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-28 sm:pb-10 print:max-w-none print:p-0">{children}</main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-28 sm:pb-10 print:max-w-none print:p-0">
+        <Suspense fallback={null}>
+          <ClosingNotice />
+        </Suspense>
+        {children}
+      </main>
       <nav aria-label="Portal" className="fixed inset-x-0 bottom-0 z-10 border-t border-separator-border bg-background-secondary-default/90 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden">
         <Suspense fallback={null}>
           <Nav variant="bottom" />
@@ -62,6 +69,30 @@ async function Nav({ variant }: { variant: "top" | "bottom" }) {
       ])
     : [{ count: 0 }, { count: 0 }];
   return <PortalNav variant={variant} registration={(cases ?? 0) > 0} pending={pending ?? 0} />;
+}
+
+/**
+ * For each business the firm no longer handles: access is view only, and ends on a
+ * set day (two months after the client was marked inactive; see
+ * supabase/migrations/20270105000001_inactive_client_portal.sql).
+ */
+async function ClosingNotice() {
+  const { all } = await portalContext();
+  const closing = all.filter((c) => c.accessEndsOn);
+  if (closing.length === 0) return null;
+  return (
+    <div className="mb-6 flex flex-col gap-3 print:hidden">
+      {closing.map((c) => (
+        <Notice key={c.id} tone="waiting">
+          <p className="text-body-medium">Tallo CPA no longer handles {c.name}.</p>
+          <p className="mt-1 text-text-secondary">
+            Your access is now view only. Please download your returns, reports and files by{" "}
+            <span className="text-body-medium text-text-primary">{showDate(c.accessEndsOn!)}</span>. After that day you will no longer be able to see {c.name} here.
+          </p>
+        </Notice>
+      ))}
+    </div>
+  );
 }
 
 /** Under the contact's name: the business the portal is showing, and the switch to another (several businesses only). */

@@ -66,15 +66,15 @@
     "semantic_hash": ""
   },
   "src/lib/auth.ts": {
-    "mtime": 1795785226.160984,
-    "seen": 1795785471.8304539,
-    "ast_hash": "1aa42e8ea6e16f9de0f5093c81ba6ead",
+    "mtime": 1795787371.5591927,
+    "seen": 1795787658.7923295,
+    "ast_hash": "bf8c933559b8c866fe24305f07a0ae62",
     "semantic_hash": ""
   },
   "src/lib/clients/labels.ts": {
-    "mtime": 1795786690.475135,
-    "seen": 1795786711.578364,
-    "ast_hash": "77f0ec9b628524103fa320a7e5d0a5c5",
+    "mtime": 1795787406.7621992,
+    "seen": 1795787658.7930586,
+    "ast_hash": "f37747b4996a52ddad84c6f13caf57c5",
     "semantic_hash": ""
   },
   "src/lib/clients/obligations.test.ts": {
@@ -3618,9 +3618,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/forms.tsx": {
-    "mtime": 1795785340.2936819,
-    "seen": 1795785471.8300235,
-    "ast_hash": "a68f167848456d84e8e7140c3c5baf78",
+    "mtime": 1795787387.7287755,
+    "seen": 1795787658.785076,
+    "ast_hash": "b09e28d3d0ffb97b1943195f57866ff5",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/notes-actions.ts": {
@@ -3660,9 +3660,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/page.tsx": {
-    "mtime": 1795785340.293943,
-    "seen": 1795785471.830036,
-    "ast_hash": "1cbeadd82f2975925cf4a74e6aab347a",
+    "mtime": 1795787406.7636693,
+    "seen": 1795787658.7852426,
+    "ast_hash": "b760baeab1f9fa3bfce64de8d5add68d",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/actions.ts": {
@@ -4476,9 +4476,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/login/page.tsx": {
-    "mtime": 1795785226.1540768,
-    "seen": 1795785471.8302493,
-    "ast_hash": "fea63b11c83a2bfdf57eccffd3406c3d",
+    "mtime": 1795787387.7285776,
+    "seen": 1795787658.788584,
+    "ast_hash": "a6464dfae16cf17df733240f37179134",
     "semantic_hash": ""
   },
   "src/app/(platform)/login/sign-in-form.tsx": {
@@ -4518,9 +4518,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/client-context.ts": {
-    "mtime": 1795785226.1544344,
-    "seen": 1795785471.8302608,
-    "ast_hash": "09d6528dfaed9b0de6b86ba9c98df814",
+    "mtime": 1795787371.5594382,
+    "seen": 1795787658.7887688,
+    "ast_hash": "190b38dd04eef85180c00c8737d2c8ba",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/documents/page.tsx": {
@@ -4542,9 +4542,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/layout.tsx": {
-    "mtime": 1795785226.154587,
-    "seen": 1795785471.8302648,
-    "ast_hash": "74c5d7ca29568f238603fe38fbc68375",
+    "mtime": 1795787387.7283409,
+    "seen": 1795787658.7888443,
+    "ast_hash": "9e5c6ec1a08388d8f490aa76589746d5",
     "semantic_hash": ""
   },
   "src/app/(platform)/portal/missing-2307/actions.ts": {
@@ -5523,6 +5523,12 @@
     "mtime": 1795785226.1868796,
     "seen": 1795785471.8308256,
     "ast_hash": "18216efd68dbec3c4d040d49bab659fe",
+    "semantic_hash": ""
+  },
+  "supabase/tests/inactive-client-portal.test.ts": {
+    "mtime": 1795787250.6986852,
+    "seen": 1795787658.7994359,
+    "ast_hash": "32d199f3606ccb12aca068f846c431b6",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

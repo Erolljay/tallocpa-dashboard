@@ -5,7 +5,9 @@ import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/c
 import { requireStaff } from "@/lib/auth";
 import { ACCESS_LABEL, ACCESS_TONE, isContactAccess } from "@/lib/contacts/access";
 import type { Branch } from "@/lib/branches";
-import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
+import { months, portalAccessEndsOn, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
+import { showDate } from "@/lib/filings/labels";
+import { manilaToday } from "@/lib/filings/run";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
 import { CASE_KINDS } from "@/lib/registration/steps";
 import { PARTY_ROLES, type PartyRole } from "@/lib/parties/format";
@@ -95,6 +97,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         }
       />
       <ClientTabs clientId={id} active="overview" work={canWork} />
+      {client.inactive_since && <PortalClosingNote endsOn={portalAccessEndsOn(client.inactive_since)} />}
       <nav aria-label="Work areas" className="mb-6 flex flex-wrap gap-2">
         <LinkButton href={`/app/clients/${id}/onboarding`} variant="secondary" size="sm">Onboarding</LinkButton>
         {canWork && (
@@ -343,5 +346,19 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
         </Suspense>
       </div>
     </>
+  );
+}
+
+/** On an inactive or archived client: what its portal contacts can still do, and until when. */
+function PortalClosingNote({ endsOn }: { endsOn: string }) {
+  const ended = endsOn < manilaToday();
+  return (
+    <div className="mb-6">
+      <Notice tone={ended ? "blocked" : "waiting"}>
+        {ended
+          ? `Portal access for this client's contacts ended on ${showDate(endsOn)}. Reactivate the client to give it back.`
+          : `This client's contacts have view-only portal access until ${showDate(endsOn)}, to download their returns and files. After that they lose access. Reactivating gives back their usual access.`}
+      </Notice>
+    </div>
   );
 }
