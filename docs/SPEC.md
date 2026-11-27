@@ -389,7 +389,7 @@ The **Tallo CPA brand design system** (built from tallocpa.com and the logo file
 
 ## 9. Open items
 
-Last checked against the code and the live database: 26 Nov 2026.
+Last checked against the code and the live database: 26 Nov 2026; O6, O9 and O11 updated from the Owner, 27 Nov 2026.
 
 | # | Item | Owner | Needed for |
 |---|---|---|---|
@@ -398,12 +398,12 @@ Last checked against the code and the live database: 26 Nov 2026.
 | O3 | Check every deadline rule in §3.3 against current BIR issuances (EOPT Act RRs, eFPS group dates) and the 2027 holiday proclamation | Staff, Owner review | Deadline engine go-live. **Open:** none of the 14 deadline rules is marked verified, and the 18 holidays loaded for 2027 are all marked UNVERIFIED |
 | O4 | Gemini test on ~50 real receipts (Flash vs Pro), confidence thresholds | Build | OCR go-live. **Open:** the code has a default model (Flash, with `GEMINI_MODEL` to compare Pro) and flags fields below 0.8 confidence (`src/lib/ocr/fields.ts`); the 50-receipt test and the final threshold are not recorded |
 | O5 | Original logo vector files, or approval of the SVG redraw | Owner | Portal and website. **Open:** a logo is uploaded on the brand in Settings; the Owner's approval of the SVG mark is not recorded |
-| O6 | Opening trial balances as of 31 Dec 2026 for each bookkeeping client | Staff | Phase 1B. **Open, due after 31 Dec 2026:** the 2 clients with Books now are test clients (books starting 1 Jan and 1 Oct 2026) |
+| O6 | ~~Opening trial balances as of 31 Dec 2026 for each bookkeeping client~~ **Not a go-live blocker (Owner, 27 Nov 2026):** books can start on any month and the opening balances are entered as of the day before, whenever each client is ready (docs/OPENING-BALANCES.md) | Staff | Phase 1B, per client when its books start |
 | O7 | Board of Accountancy firm-name rules before choosing the nationwide brand; whether it needs a registered partnership or corporation | Owner | Nationwide brand (later) |
 | O8 | ~~Separate bank account for client tax funds~~ **Closed:** Unionbank and BPI accounts are set up for client tax funds in Settings → Payment channels | Owner | Collections (§3.9) |
-| O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure. **Partly done:** the Google Cloud project, Gmail and Calendar APIs are set up (REWORK.md, 26 Nov 2026) and 2 calendars are linked. Not verifiable from here: the n8n VPS, the backup account and the Resend domain |
+| O9 | VPS provider account for n8n; Google Workspace account for backups; Resend domain verification for tallocpa.com | Owner | Infrastructure. **Partly done:** the Google Cloud project, Gmail and Calendar APIs are set up (REWORK.md, 26 Nov 2026) and 2 calendars are linked. Resend is set up (O11, 27 Nov 2026). Not verifiable from here: the n8n VPS and the backup account |
 | O10 | ~~Which firm bank accounts / e-wallets appear on the SOA~~ **Closed:** five channels with QR codes: Unionbank and BPI (client tax funds), GCash, GoTyme and Maya (fees) | Owner | SOA |
-| O11 | Add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Tallo CPA <documents@tallocpa.com>`, on the domain verified in O9) to the Vercel project's Production and Preview environment variables, redeploy, then send one test document request | Owner | Emailed monthly document requests and cutoff reminders (§3.10); until then they show in the portal only. **Open:** the brand's sender address (Settings) is still empty; the Vercel variables could not be checked from here |
+| O11 | ~~Add `RESEND_API_KEY` and `EMAIL_FROM` to Vercel and redeploy~~ **Set up and merged (Owner, 27 Nov 2026). Open:** send one test document request and confirm it arrives from the tallocpa.com sender | Owner | Emailed monthly document requests and cutoff reminders (§3.10) |
 | O12 | ~~Confirm the client compliance score thresholds~~ **Closed 23 Nov 2026:** Owner approved as drafted (in `src/lib/scores/compliance.ts`: documents by the cutoff ≥ 90% green / ≥ 70% yellow; returned documents ≤ 5% / ≤ 15%; paid on time ≥ 90% / ≥ 70%; client-caused late returns 0 / 1; over the last 6 months, worst part wins) | Owner | Compliance score (§3.11) |
 | O13 | Brand details for Settings → Brand: TIN and branch code, RDO, COR, addresses, contact details, CPA / PRC-BOA / BIR tax agent / PTR / DTI numbers and validity, signatory name and title, Service Invoice method and series | Owner | Statements, quotes, engagement letters |
 | O14 | ~~Whether fee advances count toward the gross receipts watch~~ **Closed 23 Nov 2026:** no. Only collected retainer and other fees applied to a charge count; unapplied advances and client tax money are excluded (as built) | Owner | Gross receipts watch (§3.1) |
