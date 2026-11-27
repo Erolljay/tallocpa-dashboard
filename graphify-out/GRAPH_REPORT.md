@@ -1,17 +1,17 @@
 # Graph Report - tallocpa-dashboard  (2026-11-27)
 
 ## Corpus Check
-- 1111 files · ~915,695 words
+- 1111 files · ~915,718 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: .css 10, (none) 4, .woff2 3)
 
 ## Summary
-- 6773 nodes · 23842 edges · 212 communities (192 shown, 20 thin omitted)
+- 6773 nodes · 23845 edges · 210 communities (190 shown, 20 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 225 edges (avg confidence: 0.85)
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `20db90c1`
+- Built from commit: `4b1a20bd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,20 +61,20 @@
 - webhook.ts
 - leads/[id]/page.tsx
 - lock-bar.tsx
-- ai-oauth.test.ts
+- [month]/page.tsx
 - quote/page.tsx
 - returns/load.ts
 - authorize/page.tsx
-- [month]/page.tsx
-- ledger/data.ts
 - dropdown.tsx
+- ledger/data.ts
+- contacts/forms.tsx
 - theme-toggle.tsx
 - year-end/page.tsx
 - marketing/page.tsx
 - Apple Design
 - generate.ts
 - testing.ts
-- getIdentity
+- requireStaff
 - payroll/data.ts
 - books/forms.tsx
 - work/load.ts
@@ -99,18 +99,18 @@
 - intake-picker.tsx
 - LinkButton
 - employees-xlsx.ts
-- next
+- manilaToday
 - Recipes
 - sawt.ts
 - BoardUI page patterns
 - Pro templates
 - toCentavos
 - ledger/books.ts
-- work/page.tsx
+- site/brand.ts
 - combobox.tsx
 - calendar/page.tsx
 - boardui
-- site/brand.ts
+- remittances/forms.tsx
 - layout.ts
 - chrome.tsx
 - leads/actions.ts
@@ -121,30 +121,30 @@
 - portal/page.tsx
 - opening.ts
 - requireOwner
-- obligations.ts
+- (site)/page.tsx
 - apply-migrations.sh
 - fees/schedule.ts
-- (site)/page.tsx
+- devDependencies
 - notification-bell.tsx
 - tieouts.ts
-- devDependencies
+- onboarding/forms.tsx
 - batch/register.ts
 - Staff and Owner UX review (Phase 1)
 - brand/forms.tsx
-- onboarding/forms.tsx
-- people/schema.ts
+- Collections Clerk's desk
+- filed-returns.ts
 - read.test.ts
 - sign-in-form.tsx
 - return-file-actions.ts
 - tax-codes.ts
 - module-pages.tsx
 - ocr/run.ts
-- Collections Clerk's desk
+- portal/reports/cwt-2307/page.tsx
 - blocks.tsx
 - supabaseServer
-- filed-returns.ts
-- portal/reports/cwt-2307/page.tsx
 - collections/summary.ts
+- pre-review-assistant/README.md
+- sign-off-actions.tsx
 - invoice-pages.tsx
 - payroll/forms.tsx
 - workpapers/load.ts
@@ -164,50 +164,48 @@
 - cycle/page.tsx
 - requireOwner
 - idle-watcher.tsx
-- pre-review-assistant/README.md
+- package.json
 - index.ts
 - Rework: one flow from lead to year-end
 - book/actions.ts
-- sign-off-actions.tsx
+- getSiteBrand
 - portal-billing.test.ts
 - protocol.ts
 - register/page.tsx
 - opengraph-image.tsx
 - ledger.test.ts
-- package.json
-- getSiteBrand
 - cycle-forms.tsx
-- memo.ts
 - ai-employees.test.ts
 - deadlines/actions.ts
-- acting-approver.test.ts
+- memo.ts
 - filters.tsx
 - ticked-allocation.test.ts
+- acting-approver.test.ts
+- cwt-forms.tsx
+- books/periods.ts
 - register-books.test.ts
 - site/calendar.ts
-- cwt-forms.tsx
+- db.test.ts
 - morning.ts
 - app/settings/page.tsx
 - books/reports/cwt-2307/page.tsx
 - rates.ts
-- books/periods.ts
-- db.test.ts
 - lead-attribution.test.ts
-- social-button.tsx
-- [id]/books/page.tsx
 - eslint.config.mjs
 - ledger-lock.test.ts
-- profile.ts
-- site-document.tsx
+- social-button.tsx
+- [id]/books/page.tsx
 - contribution-remittances.test.ts
 - funnel.test.ts
+- profile.ts
+- site-document.tsx
 - books-migration.test.ts
+- tests/books.test.ts
+- fixed-assets.test.ts
 - onboarding-officer/project-instructions.md
 - react
-- tests/books.test.ts
-- fields.ts
-- fixed-assets.test.ts
 - ledger-closing.test.ts
+- fields.ts
 - returns-books.test.ts
 - templates/README.md
 - filings/actions.ts
@@ -249,7 +247,7 @@
 - **Return lifecycle: intake to filed return** — docs_spec_ocr_intake_review_queue, docs_spec_bookkeeping, docs_spec_tax_computation_returns, docs_spec_sign_off_chain, docs_spec_period_lock [EXTRACTED 1.00]
 - **Deadline generation flow** — docs_spec_deadline_rules_as_data, docs_spec_holiday_rollforward, docs_spec_calendar_year_withholding, docs_spec_filing_instance_generation, readme_bir_deadline_engine, docs_setup_generate_filings_cron [INFERRED 0.85]
 
-## Communities (212 total, 20 thin omitted)
+## Communities (210 total, 20 thin omitted)
 
 ### Community 0 - "form-2307.ts"
 Cohesion: 0.09
@@ -277,7 +275,7 @@ Nodes (16): dependencies, exceljs@4.4.0, @internationalized/date@^3.12.4, next@1
 
 ### Community 6 - "Card"
 Cohesion: 0.06
-Nodes (60): NewBillPage(), Client, OpenDue, Overview(), Stat(), Detail(), maskNumber(), StatementPage() (+52 more)
+Nodes (58): Client, OpenDue, Overview(), Stat(), Detail(), maskNumber(), StatementPage(), metadata (+50 more)
 
 ### Community 7 - "TypeScript Config"
 Cohesion: 0.11
@@ -304,8 +302,8 @@ Cohesion: 0.20
 Nodes (9): First Owner Bootstrap (staff_profiles insert), Google OAuth Sign-In, Magic Link Email with 6-digit Code, Resend Custom SMTP, Setup Guide, Vercel Deployment (app.tallocpa.com), ocr-provider Interface (Gemini paid tier), Technology Stack (+1 more)
 
 ### Community 13 - "PageHeader"
-Cohesion: 0.08
-Nodes (61): ClientList(), ClientsPage(), Row, SORTS, STATUS_GROUPS, Contacts(), ContactsPage(), SORTS (+53 more)
+Cohesion: 0.06
+Nodes (72): @remixicon/react, ClientList(), ClientsPage(), Row, SORTS, STATUS_GROUPS, Contacts(), ContactsPage() (+64 more)
 
 ### Community 14 - "Sign-off, Ledger & Payments"
 Cohesion: 0.25
@@ -404,8 +402,8 @@ Cohesion: 0.09
 Nodes (38): ProposalSetup, acceptProposalAction(), AcceptState, complexity(), count(), EWT_CHOICES, first(), MAX_MONTHS_BEHIND (+30 more)
 
 ### Community 52 - "remittances/forms.tsx"
-Cohesion: 0.23
-Nodes (22): HandlesContributionsSwitch(), RemittanceButton(), RemittanceFileUpload(), send(), addRemittanceFile(), approveRemittanceAction(), generateRemittancesAction(), prepareRemittanceAction() (+14 more)
+Cohesion: 0.11
+Nodes (37): nextConfig, next, EmployerCard(), NewBillPage(), GET(), ListRow, ORDER, Remittance() (+29 more)
 
 ### Community 53 - "webhook.ts"
 Cohesion: 0.08
@@ -419,9 +417,9 @@ Nodes (41): NotesCard(), BookingLink(), FunnelSwitch(), ProposalSent, ReopenForm
 Cohesion: 0.15
 Nodes (24): BooksLockBar(), ICON, LockBarFor(), MonthLock(), loadLockContext(), LockContext, BooksMonthsPage(), Months() (+16 more)
 
-### Community 56 - "ai-oauth.test.ts"
+### Community 56 - "[month]/page.tsx"
 Cohesion: 0.09
-Nodes (30): maxDuration, POST(), OPTIONS, POST(), RFC-7591, OPTIONS, POST(), GET() (+22 more)
+Nodes (35): EmployeeDetail(), EmployeePage(), NewEmployee(), NewEmployeePage(), PayrollMonth(), PayrollMonthPage(), when(), postPayrollAction() (+27 more)
 
 ### Community 57 - "quote/page.tsx"
 Cohesion: 0.09
@@ -432,20 +430,20 @@ Cohesion: 0.08
 Nodes (45): row(), withNonDeductible(), dayBefore(), FilingRow, listInvoices(), loadEwtRemittances(), loadEwtYear(), loadLedger() (+37 more)
 
 ### Community 59 - "authorize/page.tsx"
-Cohesion: 0.11
-Nodes (38): RFC-7636, RFC-8414, copy(), allowAction(), check(), Checked, ConsentState, denyAction() (+30 more)
+Cohesion: 0.05
+Nodes (67): RFC-7636, RFC-8414, maxDuration, POST(), copy(), allowAction(), check(), Checked (+59 more)
 
-### Community 60 - "[month]/page.tsx"
-Cohesion: 0.09
-Nodes (35): EmployeeDetail(), EmployeePage(), NewEmployee(), NewEmployeePage(), PayrollMonth(), PayrollMonthPage(), when(), postPayrollAction() (+27 more)
+### Community 60 - "dropdown.tsx"
+Cohesion: 0.12
+Nodes (25): DropdownContext, DropdownContextValue, DropdownGroupProps, DropdownItemProps, DropdownPopoverProps, DropdownProps, DropdownVariant, DropdownVariantContext (+17 more)
 
 ### Community 61 - "ledger/data.ts"
 Cohesion: 0.07
 Nodes (58): dayBefore(), GET(), safe(), AmendmentDecision(), ArapDecision(), ArapUpload(), BookPicker(), ConfirmAllButton() (+50 more)
 
-### Community 62 - "dropdown.tsx"
+### Community 62 - "contacts/forms.tsx"
 Cohesion: 0.12
-Nodes (25): DropdownContext, DropdownContextValue, DropdownGroupProps, DropdownItemProps, DropdownPopoverProps, DropdownProps, DropdownVariant, DropdownVariantContext (+17 more)
+Nodes (29): addContactBusinessAction(), ContactFormState, createContactAction(), errorsOf(), refresh(), removeContactBusinessAction(), saveContactDetailsAction(), updateContactAccessAction() (+21 more)
 
 ### Community 63 - "theme-toggle.tsx"
 Cohesion: 0.11
@@ -471,9 +469,9 @@ Nodes (64): Rule, compareIso(), IsoDate, lastDayOfMonth(), describeDue(), FREQUE
 Cohesion: 0.18
 Nodes (19): vitest, year, individual, individual, amounts(), cert2307(), ctxFor(), doc() (+11 more)
 
-### Community 69 - "getIdentity"
-Cohesion: 0.09
-Nodes (47): @remixicon/react, amount, CatchUpState, confirmCatchUpAction(), recordCatchUpAction(), refresh(), text(), Row (+39 more)
+### Community 69 - "requireStaff"
+Cohesion: 0.06
+Nodes (63): addClientNoteAction(), NoteState, amount, CatchUpState, confirmCatchUpAction(), recordCatchUpAction(), refresh(), text() (+55 more)
 
 ### Community 70 - "payroll/data.ts"
 Cohesion: 0.07
@@ -571,9 +569,9 @@ Nodes (15): amount(), BoxCells(), cx(), DateBoxes(), Form2316(), Form2316Set(), 
 Cohesion: 0.12
 Nodes (19): cellText(), CheckedEmployees, checkEmployeeImport(), code(), EMPLOYEE_IMPORT_COLUMNS, EMPLOYEE_SHEET, EmployeeImportRow, readEmployeeFile() (+11 more)
 
-### Community 94 - "next"
-Cohesion: 0.05
-Nodes (76): nextConfig, next, addClientNoteAction(), NoteState, markCwtFollowedUpAction(), recomputeWorksheetAction(), WorksheetState, GET() (+68 more)
+### Community 94 - "manilaToday"
+Cohesion: 0.06
+Nodes (75): RequestDetail(), RequestPage(), Row, TaskDetail(), TaskPage(), registrationSteps(), STEP_STATUS, TaskRow (+67 more)
 
 ### Community 95 - "Recipes"
 Cohesion: 0.15
@@ -599,9 +597,9 @@ Nodes (30): applyColumnsAction(), done(), payrollDocument(), PayrollReadState, r
 Cohesion: 0.09
 Nodes (34): BookPrint(), BookPrintPage(), PrintButton(), LooseLeafHead, LooseLeafPages(), Pad(), BOOK_KINDS, BOOK_TITLES (+26 more)
 
-### Community 101 - "work/page.tsx"
+### Community 101 - "site/brand.ts"
 Cohesion: 0.17
-Nodes (20): Action(), MyWork(), MyWorkPage(), short(), TONE, standingLine(), lastMonth(), loadMyWork() (+12 more)
+Nodes (18): robots(), sitemap(), FALLBACK_BRAND, SiteBrand, BRAND_NAME, PRACTITIONER, siteUrl(), TAGLINE (+10 more)
 
 ### Community 102 - "combobox.tsx"
 Cohesion: 0.07
@@ -615,9 +613,9 @@ Nodes (56): disconnectCalendarAction(), FormState, GET(), GET(), DisconnectButto
 Cohesion: 0.40
 Nodes (4): DO_NOT_TRACK, NODE_USE_ENV_PROXY, npx, boardui
 
-### Community 105 - "site/brand.ts"
-Cohesion: 0.17
-Nodes (18): robots(), sitemap(), FALLBACK_BRAND, SiteBrand, BRAND_NAME, PRACTITIONER, siteUrl(), TAGLINE (+10 more)
+### Community 105 - "remittances/forms.tsx"
+Cohesion: 0.23
+Nodes (22): HandlesContributionsSwitch(), RemittanceButton(), RemittanceFileUpload(), send(), addRemittanceFile(), approveRemittanceAction(), generateRemittancesAction(), prepareRemittanceAction() (+14 more)
 
 ### Community 106 - "layout.ts"
 Cohesion: 0.12
@@ -659,17 +657,17 @@ Nodes (17): CheckedOpening, checkOpening(), fmt(), ItemRow, OpeningItem, Opening
 Cohesion: 0.06
 Nodes (73): addChargeAction(), applyCreditAction(), approveLateSurchargeAction(), clearRemittedAction(), date, depositSchema, markRemittedAction(), MoneyState (+65 more)
 
-### Community 116 - "obligations.ts"
-Cohesion: 0.19
-Nodes (13): ClientValues, EditClient(), EditClientPage(), obligationChanges(), obligationsForTaxTypes(), TAX_TYPES, TaxType, TaxTypeError (+5 more)
+### Community 116 - "(site)/page.tsx"
+Cohesion: 0.15
+Nodes (16): FLOW_ICONS, GROUP_SPAN, metadata, metadata, H2_ON_NAVY, SectionHeading(), QUOTE_LABEL, Faq (+8 more)
 
 ### Community 118 - "fees/schedule.ts"
 Cohesion: 0.13
 Nodes (35): GET(), Link, pageAttribution(), previewQuoteAction(), PreviewState, quoteFields(), requestQuoteAction(), SERVICES (+27 more)
 
-### Community 119 - "(site)/page.tsx"
-Cohesion: 0.15
-Nodes (16): FLOW_ICONS, GROUP_SPAN, metadata, metadata, H2_ON_NAVY, SectionHeading(), QUOTE_LABEL, Faq (+8 more)
+### Community 119 - "devDependencies"
+Cohesion: 0.12
+Nodes (16): devDependencies, @tailwindcss/turbopack@4.3.3, tsx@^4.23.15, @types/node@^20, @types/pg@^8.23.1, @types/react@^19, @types/react-dom@^19, typescript@^5 (+8 more)
 
 ### Community 120 - "notification-bell.tsx"
 Cohesion: 0.05
@@ -679,9 +677,9 @@ Nodes (78): GET(), SheetPreview(), emit(), listeners, markReadLocally(), notifyN
 Cohesion: 0.13
 Nodes (14): LedgerTotals, purchases(), sales(), base, books, buy, sale, tieOuts() (+6 more)
 
-### Community 122 - "devDependencies"
-Cohesion: 0.12
-Nodes (16): devDependencies, @tailwindcss/turbopack@4.3.3, tsx@^4.23.15, @types/node@^20, @types/pg@^8.23.1, @types/react@^19, @types/react-dom@^19, typescript@^5 (+8 more)
+### Community 122 - "onboarding/forms.tsx"
+Cohesion: 0.28
+Nodes (12): addClientFile(), KINDS, OnboardingState, refresh(), removeClientFileAction(), startClientFileUpload(), tickOnboardingAction(), send() (+4 more)
 
 ### Community 123 - "batch/register.ts"
 Cohesion: 0.09
@@ -695,13 +693,13 @@ Nodes (10): Build order, Capital expenditure and depreciation, Data flow: one re
 Cohesion: 0.33
 Nodes (8): finishBrandUpload(), startBrandUpload(), BrandFileUpload(), upload(), FieldDef, FIELDS, pesoInput(), SUBMIT
 
-### Community 126 - "onboarding/forms.tsx"
-Cohesion: 0.28
-Nodes (12): addClientFile(), KINDS, OnboardingState, refresh(), removeClientFileAction(), startClientFileUpload(), tickOnboardingAction(), send() (+4 more)
+### Community 126 - "Collections Clerk's desk"
+Cohesion: 0.14
+Nodes (11): Collections run, Rules, Steps, Where to deposit, How you work, Your job, Before you start (TalloCPA OS), Check it (+3 more)
 
-### Community 127 - "people/schema.ts"
-Cohesion: 0.20
-Nodes (12): access, clientUserSchema, contactAccessSchema, contactDetailsSchema, contactLinkSchema, email, inviteStaffSchema, mobile (+4 more)
+### Community 127 - "filed-returns.ts"
+Cohesion: 0.21
+Nodes (11): TAX_TYPE_GROUPS, FiledFileRow, FiledReturn, FiledReturnRow, filedYears(), groupFiledReturns(), LegacyFileRow, returnYear() (+3 more)
 
 ### Community 128 - "read.test.ts"
 Cohesion: 0.06
@@ -727,29 +725,29 @@ Nodes (25): BankAccountsRoute(), fmtDate(), fmtMonth(), BooksList(), Column, Lis
 Cohesion: 0.11
 Nodes (17): OCR_READ_FIELDS, BACKOFF, base64(), DEFAULT_FALLBACK_MODEL, DEFAULT_GEMINI_MODEL, GeminiError, geminiJson(), call() (+9 more)
 
-### Community 134 - "Collections Clerk's desk"
-Cohesion: 0.14
-Nodes (11): Collections run, Rules, Steps, Where to deposit, How you work, Your job, Before you start (TalloCPA OS), Check it (+3 more)
+### Community 134 - "portal/reports/cwt-2307/page.tsx"
+Cohesion: 0.35
+Nodes (11): PortalCwt2307Page(), Tracker(), CwtLooseDocuments(), CwtTrackerGroups(), CwtTrackerSummary(), dateFmt, Figure(), money() (+3 more)
 
 ### Community 135 - "blocks.tsx"
 Cohesion: 0.14
 Nodes (28): AboutPage(), HOW, metadata, FaqPage(), metadata, metadata, Part(), PrivacyPage() (+20 more)
 
 ### Community 136 - "supabaseServer"
-Cohesion: 0.06
-Nodes (78): addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), removeAssignmentAction(), setCatchUpAction(), setClientStatusAction(), setIncomeTaxMethodAction() (+70 more)
+Cohesion: 0.05
+Nodes (74): addEngagementAction(), assignStaffAction(), createClientAction(), fieldErrors(), removeAssignmentAction(), setCatchUpAction(), setClientStatusAction(), setIncomeTaxMethodAction() (+66 more)
 
-### Community 137 - "filed-returns.ts"
-Cohesion: 0.21
-Nodes (11): TAX_TYPE_GROUPS, FiledFileRow, FiledReturn, FiledReturnRow, filedYears(), groupFiledReturns(), LegacyFileRow, returnYear() (+3 more)
-
-### Community 138 - "portal/reports/cwt-2307/page.tsx"
-Cohesion: 0.35
-Nodes (11): PortalCwt2307Page(), Tracker(), CwtLooseDocuments(), CwtTrackerGroups(), CwtTrackerSummary(), dateFmt, Figure(), money() (+3 more)
-
-### Community 139 - "collections/summary.ts"
+### Community 137 - "collections/summary.ts"
 Cohesion: 0.24
 Nodes (11): bucketFor(), bucketLabel, DEPOSIT_TO, ItemCategory, othersName(), REMITTANCE_BUCKETS, summarize(), SUMMARY_BUCKETS (+3 more)
+
+### Community 138 - "pre-review-assistant/README.md"
+Cohesion: 0.17
+Nodes (9): Pre-review, Rules, Steps, How you work, Your job, Before you start (TalloCPA OS), Check it, Pre-Review Assistant's desk (+1 more)
+
+### Community 139 - "sign-off-actions.tsx"
+Cohesion: 0.24
+Nodes (11): SignOffState, checkTone, checkWord, needsNote(), noteLabel(), noteRequired(), PaymentCheck, PaymentCheckView() (+3 more)
 
 ### Community 140 - "invoice-pages.tsx"
 Cohesion: 0.11
@@ -764,8 +762,8 @@ Cohesion: 0.18
 Nodes (19): amt(), Binder(), BinderPage(), MonthSection(), one(), RegisterTable(), TIE_STATUS, RegisterLine (+11 more)
 
 ### Community 143 - "deadlines/page.tsx"
-Cohesion: 0.04
-Nodes (101): DashboardStats(), FilingTable(), AmendmentCard(), BooksStillOpen(), Deadlines(), DeadlinesPage(), documentsWaiting(), FilingGroup() (+93 more)
+Cohesion: 0.06
+Nodes (72): DashboardStats(), FilingTable(), ActingNotice(), AmendmentNotice(), DashboardPage(), OwnerView(), SafeguardsNotice(), Summary() (+64 more)
 
 ### Community 144 - "slots.ts"
 Cohesion: 0.13
@@ -808,28 +806,28 @@ Cohesion: 0.19
 Nodes (15): badgeText(), bellLabel(), clock, DayGroup, dayLabel(), daysBetween(), groupByDay(), longDay (+7 more)
 
 ### Community 154 - "filings/[id]/page.tsx"
-Cohesion: 0.05
-Nodes (89): EmployerCard(), ClientReturnsPage(), FilingRow, Returns(), FilingListRow, RemittancesDue(), amt(), ApprovalMemo() (+81 more)
+Cohesion: 0.04
+Nodes (90): ClientReturnsPage(), FilingRow, Returns(), FilingListRow, AmendmentCard(), BooksStillOpen(), Deadlines(), DeadlinesPage() (+82 more)
 
 ### Community 155 - "pending-review.tsx"
 Cohesion: 0.33
 Nodes (12): moveSelectedAction(), MoveState, plural(), requestUnlockToDeferAction(), unapproveSelectedAction(), MoveBar(), MoveItem, crossesYear() (+4 more)
 
 ### Community 156 - "cycle/page.tsx"
-Cohesion: 0.09
-Nodes (39): DocumentsCard(), when(), Cycle(), CyclePage(), CycleWithClient, DocRow, ExceptionRow, shift() (+31 more)
+Cohesion: 0.13
+Nodes (27): DocumentsCard(), when(), Cycle(), CyclePage(), CycleWithClient, DocRow, ExceptionRow, shift() (+19 more)
 
 ### Community 157 - "requireOwner"
-Cohesion: 0.04
-Nodes (85): RFC-2606, addWorkforceAction(), AiState, createAiLogin(), createKeyAction(), disconnectAppAction(), fieldErrors(), grantToolsAction() (+77 more)
+Cohesion: 0.05
+Nodes (83): RFC-2606, addWorkforceAction(), AiState, createAiLogin(), createKeyAction(), disconnectAppAction(), fieldErrors(), grantToolsAction() (+75 more)
 
 ### Community 158 - "idle-watcher.tsx"
 Cohesion: 0.19
 Nodes (19): POST(), ACTIVITY, IdleWatcher(), readCookie(), writeCookie(), formatIdleCookie(), IDLE_COOKIE, IDLE_COOKIE_MAX_AGE (+11 more)
 
-### Community 159 - "pre-review-assistant/README.md"
-Cohesion: 0.17
-Nodes (9): Pre-review, Rules, Steps, How you work, Your job, Before you start (TalloCPA OS), Check it, Pre-Review Assistant's desk (+1 more)
+### Community 159 - "package.json"
+Cohesion: 0.18
+Nodes (10): motion@^12.43.0, @techstark/opencv-js@4.12.0-release.1, tailwindcss@4.3.3, name, packageManager, private, version, motion (+2 more)
 
 ### Community 160 - "index.ts"
 Cohesion: 0.03
@@ -843,17 +841,17 @@ Nodes (14): After the rework (Owner, 26 November 2026), Books (Manager.io style,
 Cohesion: 0.22
 Nodes (15): cancelMeetingAction(), cancelMyMeetingAction(), CancelState, calendarNote(), CalendarOutcome, cancelledMessage(), cancelReason(), leadCancellationEmail() (+7 more)
 
-### Community 163 - "sign-off-actions.tsx"
-Cohesion: 0.24
-Nodes (11): SignOffState, checkTone, checkWord, needsNote(), noteLabel(), noteRequired(), PaymentCheck, PaymentCheckView() (+3 more)
+### Community 163 - "getSiteBrand"
+Cohesion: 0.29
+Nodes (10): metadata, QuotesClosed(), Start(), StartPage(), funnelLive(), clean(), getSiteBrand(), first() (+2 more)
 
 ### Community 164 - "portal-billing.test.ts"
 Cohesion: 0.33
 Nodes (3): as(), root, signIn()
 
 ### Community 165 - "protocol.ts"
-Cohesion: 0.07
-Nodes (43): asAi(), borrow(), callsToday(), instructionsFor(), log(), manilaDay(), McpRequest, McpResponse (+35 more)
+Cohesion: 0.06
+Nodes (45): asAi(), borrow(), callsToday(), denied(), instructionsFor(), log(), manilaDay(), McpRequest (+37 more)
 
 ### Community 166 - "register/page.tsx"
 Cohesion: 0.12
@@ -867,41 +865,41 @@ Nodes (5): alt, contentType, Image(), montserrat(), size
 Cohesion: 0.33
 Nodes (3): asCommit(), failsAtCommit(), root
 
-### Community 169 - "package.json"
-Cohesion: 0.18
-Nodes (10): motion@^12.43.0, @techstark/opencv-js@4.12.0-release.1, tailwindcss@4.3.3, name, packageManager, private, version, motion (+2 more)
-
-### Community 170 - "getSiteBrand"
-Cohesion: 0.29
-Nodes (10): metadata, QuotesClosed(), Start(), StartPage(), funnelLive(), clean(), getSiteBrand(), first() (+2 more)
-
-### Community 171 - "cycle-forms.tsx"
+### Community 169 - "cycle-forms.tsx"
 Cohesion: 0.33
 Nodes (8): CloseCycleButton(), Message(), closeCycleAction(), CycleState, decideExceptionAction(), nothingToSubmitAction(), refresh(), text()
+
+### Community 170 - "ai-employees.test.ts"
+Cohesion: 0.22
+Nodes (5): BOOKS, CLIENT_RECORDS, DOCUMENT_RECORDS, OWN, root
+
+### Community 171 - "deadlines/actions.ts"
+Cohesion: 0.43
+Nodes (6): generateFilingsNow(), generatePastFilingsAction(), GenerateState, GenerateButton(), runFilingGeneration(), splitHolidays()
 
 ### Community 172 - "memo.ts"
 Cohesion: 0.20
 Nodes (12): approvalMemo(), Memo, MemoInput, MemoMonth, ALWAYS, REFS_FOR_FORM, refsToSign(), reviewGaps() (+4 more)
 
-### Community 173 - "ai-employees.test.ts"
-Cohesion: 0.22
-Nodes (5): BOOKS, CLIENT_RECORDS, DOCUMENT_RECORDS, OWN, root
+### Community 173 - "filters.tsx"
+Cohesion: 0.39
+Nodes (5): ClientSelect(), PeriodKey, periodRange(), PERIODS, ym()
 
-### Community 174 - "deadlines/actions.ts"
-Cohesion: 0.43
-Nodes (6): generateFilingsNow(), generatePastFilingsAction(), GenerateState, GenerateButton(), runFilingGeneration(), splitHolidays()
+### Community 174 - "ticked-allocation.test.ts"
+Cohesion: 0.32
+Nodes (4): root, signIn(), submit(), verify()
 
 ### Community 175 - "acting-approver.test.ts"
 Cohesion: 0.29
 Nodes (3): as(), root, signIn()
 
-### Community 176 - "filters.tsx"
-Cohesion: 0.39
-Nodes (5): ClientSelect(), PeriodKey, periodRange(), PERIODS, ym()
+### Community 176 - "cwt-forms.tsx"
+Cohesion: 0.57
+Nodes (5): Rematch2307Button(), CwtActionState, markCwtFollowedUp(), rematch2307(), trackerPath()
 
-### Community 177 - "ticked-allocation.test.ts"
-Cohesion: 0.32
-Nodes (4): root, signIn(), submit(), verify()
+### Community 177 - "books/periods.ts"
+Cohesion: 0.52
+Nodes (5): BOOKS_MONTH_STATUS_LABELS, isLocked(), monthsInPeriod(), onlyBooksReady(), periodLocked()
 
 ### Community 178 - "register-books.test.ts"
 Cohesion: 0.50
@@ -910,10 +908,6 @@ Nodes (3): approved(), as(), root
 ### Community 179 - "site/calendar.ts"
 Cohesion: 0.29
 Nodes (10): BirCalendarPage(), metadata, FilingCalendar(), BIR_FORMS, BirForm, deadlinesIn(), FormGroup, formsIn() (+2 more)
-
-### Community 180 - "cwt-forms.tsx"
-Cohesion: 0.57
-Nodes (5): Rematch2307Button(), CwtActionState, markCwtFollowedUp(), rematch2307(), trackerPath()
 
 ### Community 181 - "morning.ts"
 Cohesion: 0.15
@@ -931,13 +925,17 @@ Nodes (21): ClientTab, ClientTabs(), UNDER, RemoveFileButton(), TickForm(), fmtD
 Cohesion: 0.24
 Nodes (18): AmountRate, CorporateRate, corporateRates(), eightPercentRate(), graduatedIncomeTax(), IncomeTaxTable, mcitRate(), percentageTaxNonbankRate() (+10 more)
 
-### Community 185 - "books/periods.ts"
-Cohesion: 0.52
-Nodes (5): BOOKS_MONTH_STATUS_LABELS, isLocked(), monthsInPeriod(), onlyBooksReady(), periodLocked()
-
-### Community 187 - "lead-attribution.test.ts"
+### Community 185 - "lead-attribution.test.ts"
 Cohesion: 0.29
 Nodes (4): LEAD, LinkRow, ReportRow, root
+
+### Community 186 - "eslint.config.mjs"
+Cohesion: 0.33
+Nodes (5): eslintConfig, eslint@^9, eslint-config-next@16.4.6, eslint, eslint-config-next
+
+### Community 187 - "ledger-lock.test.ts"
+Cohesion: 0.33
+Nodes (3): BOOK_LOCK_FORMS, doc(), root
 
 ### Community 188 - "social-button.tsx"
 Cohesion: 0.09
@@ -947,13 +945,13 @@ Nodes (29): GET(), GET(), code, email, sendSignInEmail(), SignInState, signInWit
 Cohesion: 0.24
 Nodes (16): BooksFrame(), BooksSummaryPage(), Summary(), SummaryCard(), Cwt2307TrackerPage(), Tracker(), fmtDate(), lastMonth() (+8 more)
 
-### Community 190 - "eslint.config.mjs"
-Cohesion: 0.33
-Nodes (5): eslintConfig, eslint@^9, eslint-config-next@16.4.6, eslint, eslint-config-next
+### Community 190 - "contribution-remittances.test.ts"
+Cohesion: 0.40
+Nodes (3): as(), postRun(), root
 
-### Community 191 - "ledger-lock.test.ts"
+### Community 191 - "funnel.test.ts"
 Cohesion: 0.33
-Nodes (3): BOOK_LOCK_FORMS, doc(), root
+Nodes (3): HASH, LEAD, root
 
 ### Community 192 - "profile.ts"
 Cohesion: 0.07
@@ -963,17 +961,17 @@ Nodes (41): BrandSettingsState, refresh(), saveBrandSectionAction(), SAVED, BRAN
 Cohesion: 0.11
 Nodes (16): GlobalNotFound(), metadata, inter, metadata, montserrat, metadata, SiteLayout(), SiteNotFound() (+8 more)
 
-### Community 194 - "contribution-remittances.test.ts"
-Cohesion: 0.40
-Nodes (3): as(), postRun(), root
-
-### Community 195 - "funnel.test.ts"
-Cohesion: 0.33
-Nodes (3): HASH, LEAD, root
-
-### Community 196 - "books-migration.test.ts"
+### Community 194 - "books-migration.test.ts"
 Cohesion: 0.50
 Nodes (3): approved(), as(), root
+
+### Community 195 - "tests/books.test.ts"
+Cohesion: 0.50
+Nodes (3): approved(), as(), root
+
+### Community 196 - "fixed-assets.test.ts"
+Cohesion: 0.50
+Nodes (3): as(), purchase(), root
 
 ### Community 197 - "onboarding-officer/project-instructions.md"
 Cohesion: 0.15
@@ -983,21 +981,13 @@ Nodes (10): Onboard a client, Rules, Steps, How you work, Never, Your job, Befor
 Cohesion: 0.07
 Nodes (48): react, SearchParams, CustomersRoute(), NewEntry(), NewEntryPage(), ReportsIndex(), KINDS, PartyList() (+40 more)
 
-### Community 199 - "tests/books.test.ts"
+### Community 199 - "ledger-closing.test.ts"
 Cohesion: 0.50
-Nodes (3): approved(), as(), root
+Nodes (3): as(), books(), root
 
 ### Community 200 - "fields.ts"
 Cohesion: 0.08
 Nodes (27): msgs(), ok, dateFarFromMonth(), iso(), month(), MONTHS, parsePrintedDate(), year() (+19 more)
-
-### Community 201 - "fixed-assets.test.ts"
-Cohesion: 0.50
-Nodes (3): as(), purchase(), root
-
-### Community 202 - "ledger-closing.test.ts"
-Cohesion: 0.50
-Nodes (3): as(), books(), root
 
 ### Community 210 - "filings/actions.ts"
 Cohesion: 0.27
@@ -1027,17 +1017,17 @@ Nodes (24): ExplainState, explainTieAction(), noteAction(), raiseNoteAction(), S
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vitest` connect `testing.ts` to `form-2307.ts`, `december-rehearsal.test.ts`, `ui.ts`, `fees/types.ts`, `Card`, `money.ts`, `PageHeader`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `returns/types.ts`, `ocr/run.ts`, `registrations/actions.ts`, `public.ts`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `ai-oauth.test.ts`, `quote/page.tsx`, `returns/load.ts`, `authorize/page.tsx`, `ledger/data.ts`, `year-end/page.tsx`, `generate.ts`, `getIdentity`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `formatAmount`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `settings/actions.ts`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `next`, `toCentavos`, `ledger/books.ts`, `work/page.tsx`, `calendar/page.tsx`, `site/brand.ts`, `layout.ts`, `leads/actions.ts`, `portal/page.tsx`, `opening.ts`, `requireOwner`, `obligations.ts`, `fees/schedule.ts`, `tieouts.ts`, `devDependencies`, `batch/register.ts`, `people/schema.ts`, `read.test.ts`, `return-file-actions.ts`, `tax-codes.ts`, `ocr/run.ts`, `supabaseServer`, `filed-returns.ts`, `collections/summary.ts`, `invoice-pages.tsx`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `vitest`, `onboarding/ai-tools.ts`, `documents/[id]/page.tsx`, `notifications/format.ts`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `index.ts`, `book/actions.ts`, `portal-billing.test.ts`, `protocol.ts`, `register/page.tsx`, `ledger.test.ts`, `package.json`, `memo.ts`, `ai-employees.test.ts`, `acting-approver.test.ts`, `filters.tsx`, `ticked-allocation.test.ts`, `register-books.test.ts`, `site/calendar.ts`, `morning.ts`, `books/reports/cwt-2307/page.tsx`, `rates.ts`, `books/periods.ts`, `db.test.ts`, `lead-attribution.test.ts`, `social-button.tsx`, `ledger-lock.test.ts`, `profile.ts`, `contribution-remittances.test.ts`, `funnel.test.ts`, `books-migration.test.ts`, `tests/books.test.ts`, `fields.ts`, `fixed-assets.test.ts`, `ledger-closing.test.ts`, `returns-books.test.ts`, `parallel-run.test.ts`, `returns-sign-off.test.ts`?**
+- **Why does `vitest` connect `testing.ts` to `form-2307.ts`, `december-rehearsal.test.ts`, `ui.ts`, `fees/types.ts`, `Card`, `money.ts`, `PageHeader`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `returns/types.ts`, `ocr/run.ts`, `registrations/actions.ts`, `public.ts`, `remittances/forms.tsx`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `quote/page.tsx`, `returns/load.ts`, `authorize/page.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `year-end/page.tsx`, `generate.ts`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `formatAmount`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `settings/actions.ts`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `site/brand.ts`, `calendar/page.tsx`, `layout.ts`, `leads/actions.ts`, `portal/page.tsx`, `opening.ts`, `requireOwner`, `fees/schedule.ts`, `devDependencies`, `tieouts.ts`, `batch/register.ts`, `filed-returns.ts`, `read.test.ts`, `return-file-actions.ts`, `tax-codes.ts`, `ocr/run.ts`, `supabaseServer`, `collections/summary.ts`, `invoice-pages.tsx`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `vitest`, `onboarding/ai-tools.ts`, `documents/[id]/page.tsx`, `notifications/format.ts`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `index.ts`, `book/actions.ts`, `portal-billing.test.ts`, `protocol.ts`, `register/page.tsx`, `ledger.test.ts`, `ai-employees.test.ts`, `memo.ts`, `filters.tsx`, `ticked-allocation.test.ts`, `acting-approver.test.ts`, `books/periods.ts`, `register-books.test.ts`, `site/calendar.ts`, `db.test.ts`, `morning.ts`, `books/reports/cwt-2307/page.tsx`, `rates.ts`, `lead-attribution.test.ts`, `ledger-lock.test.ts`, `social-button.tsx`, `contribution-remittances.test.ts`, `funnel.test.ts`, `profile.ts`, `books-migration.test.ts`, `tests/books.test.ts`, `fixed-assets.test.ts`, `ledger-closing.test.ts`, `fields.ts`, `returns-books.test.ts`, `parallel-run.test.ts`, `returns-sign-off.test.ts`?**
   _High betweenness centrality (0.168) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _31 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `form-2307.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.08717948717948718 - nodes in this community are weakly interconnected._
-- **Why does `next` connect `next` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `public.ts`, `remittances/forms.tsx`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `ai-oauth.test.ts`, `quote/page.tsx`, `authorize/page.tsx`, `[month]/page.tsx`, `ledger/data.ts`, `year-end/page.tsx`, `marketing/page.tsx`, `getIdentity`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `portalContext`, `settings/actions.ts`, `theme-toggle.tsx`, `intake-picker.tsx`, `LinkButton`, `toCentavos`, `ledger/books.ts`, `work/page.tsx`, `calendar/page.tsx`, `site/brand.ts`, `chrome.tsx`, `leads/actions.ts`, `lib/books/actions.ts`, `tin.ts`, `portal/page.tsx`, `requireOwner`, `obligations.ts`, `fees/schedule.ts`, `(site)/page.tsx`, `notification-bell.tsx`, `batch/register.ts`, `brand/forms.tsx`, `onboarding/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `blocks.tsx`, `supabaseServer`, `portal/reports/cwt-2307/page.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `book/actions.ts`, `sign-off-actions.tsx`, `register/page.tsx`, `opengraph-image.tsx`, `package.json`, `getSiteBrand`, `deadlines/actions.ts`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `profile.ts`, `site-document.tsx`, `react`, `filings/actions.ts`, `workpapers/page.tsx`?**
+- **Why does `next` connect `remittances/forms.tsx` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `public.ts`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `[month]/page.tsx`, `quote/page.tsx`, `authorize/page.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `requireStaff`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `portalContext`, `settings/actions.ts`, `theme-toggle.tsx`, `intake-picker.tsx`, `LinkButton`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `site/brand.ts`, `calendar/page.tsx`, `remittances/forms.tsx`, `chrome.tsx`, `leads/actions.ts`, `lib/books/actions.ts`, `tin.ts`, `portal/page.tsx`, `requireOwner`, `(site)/page.tsx`, `fees/schedule.ts`, `notification-bell.tsx`, `onboarding/forms.tsx`, `batch/register.ts`, `brand/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `portal/reports/cwt-2307/page.tsx`, `blocks.tsx`, `supabaseServer`, `sign-off-actions.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `book/actions.ts`, `getSiteBrand`, `register/page.tsx`, `opengraph-image.tsx`, `deadlines/actions.ts`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `profile.ts`, `site-document.tsx`, `react`, `filings/actions.ts`, `workpapers/page.tsx`?**
   _High betweenness centrality (0.114) - this node is a cross-community bridge._
 - **Should `december-rehearsal.test.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.03771043771043771 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `react` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `remittances/forms.tsx`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `quote/page.tsx`, `authorize/page.tsx`, `[month]/page.tsx`, `ledger/data.ts`, `dropdown.tsx`, `theme-toggle.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `getIdentity`, `books/forms.tsx`, `work/load.ts`, `stat-cards.tsx`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `how-we-work/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `modal.tsx`, `button.tsx`, `portalContext`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `next`, `toCentavos`, `ledger/books.ts`, `work/page.tsx`, `combobox.tsx`, `calendar/page.tsx`, `chrome.tsx`, `leads/actions.ts`, `Notice`, `lib/books/actions.ts`, `portal/page.tsx`, `requireOwner`, `obligations.ts`, `fees/schedule.ts`, `notification-bell.tsx`, `batch/register.ts`, `brand/forms.tsx`, `onboarding/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `blocks.tsx`, `supabaseServer`, `portal/reports/cwt-2307/page.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `sign-off-actions.tsx`, `register/page.tsx`, `package.json`, `getSiteBrand`, `cycle-forms.tsx`, `deadlines/actions.ts`, `filters.tsx`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `site-document.tsx`, `workpapers/page.tsx`?**
+- **Why does `react` connect `react` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `remittances/forms.tsx`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `[month]/page.tsx`, `quote/page.tsx`, `authorize/page.tsx`, `dropdown.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `theme-toggle.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `requireStaff`, `books/forms.tsx`, `work/load.ts`, `stat-cards.tsx`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `how-we-work/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `modal.tsx`, `button.tsx`, `portalContext`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `combobox.tsx`, `calendar/page.tsx`, `remittances/forms.tsx`, `chrome.tsx`, `leads/actions.ts`, `Notice`, `lib/books/actions.ts`, `portal/page.tsx`, `requireOwner`, `fees/schedule.ts`, `notification-bell.tsx`, `onboarding/forms.tsx`, `batch/register.ts`, `brand/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `portal/reports/cwt-2307/page.tsx`, `blocks.tsx`, `supabaseServer`, `sign-off-actions.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `getSiteBrand`, `register/page.tsx`, `cycle-forms.tsx`, `deadlines/actions.ts`, `filters.tsx`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `site-document.tsx`, `workpapers/page.tsx`?**
   _High betweenness centrality (0.099) - this node is a cross-community bridge._
 - **Should `migrate.yml` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
