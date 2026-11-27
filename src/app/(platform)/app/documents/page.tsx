@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { RiArrowDownLine, RiArrowUpLine, RiCheckLine } from "@remixicon/react";
 import { Badge, Card, LinkButton, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
+import { LOCKED_STATUSES, lockKind, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { bundleLabel, DOC_TYPES, docStatusTone, showMonth, SOURCE_LABELS, STREAMS, streamOf, type DocType, type Stream } from "@/lib/documents/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { bulkReadiness, type AccountSource } from "@/lib/documents/bulk";
@@ -471,7 +471,7 @@ async function ApprovedTable({ rows, clientId, canMove, fyeMonth }: { rows: Row[
   const approved: ApprovedRow[] = sorted.map((r) => {
     const f = r.extractions?.approved_fields ?? {};
     const total = f.total != null && f.total !== "" ? Number(f.total) : null;
-    const lock = lockingFiling(r.client_id, r.document_month, filings, r.doc_type);
+    const lock = lockingFiling(r.client_id, r.document_month, filings, lockKind(r.doc_type, f));
     return {
       id: r.id,
       approved: when(r.extractions?.approved_at ?? r.created_at),

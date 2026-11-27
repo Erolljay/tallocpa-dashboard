@@ -142,8 +142,8 @@ export function CatchUpForm({ clientId, through }: { clientId: string; through: 
   return (
     <div className="space-y-3">
       <form action={set} className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-        <Field label="Catch up through" htmlFor="catch_up_through" hint="The last month whose returns were already filed outside the app.">
-          <Input id="catch_up_through" name="through" type="month" required defaultValue={through ? through.slice(0, 7) : undefined} />
+        <Field label="Catch up through" htmlFor="catch_up_through" hint="The last month whose returns are filed outside the app, in your current tools.">
+          <Input id="catch_up_through" name="through" type="month" required defaultValue={through ? through.slice(0, 7) : `${new Date().getFullYear()}-12`} />
         </Field>
         <Button type="submit" variant={through ? "secondary" : "primary"} disabled={setting}>{setting ? "Saving…" : through ? "Change" : "Start catch-up"}</Button>
       </form>

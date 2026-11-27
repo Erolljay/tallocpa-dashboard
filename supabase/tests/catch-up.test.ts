@@ -107,7 +107,7 @@ describe.skipIf(!url)("catch-up accounting", () => {
     // Staff cannot change the client row directly either (nothing is updated).
     await as(PREPARER, `update public.clients set catch_up_through = '2026-10-31' where id = $1`, [client]).catch(() => null);
     expect((await db.query(`select catch_up_through from public.clients where id = $1`, [client])).rows[0].catch_up_through).toBeNull();
-    await expect(as(OWNER, `select public.set_catch_up($1, '2027-03-01')`, [client])).rejects.toThrow(/this month at the latest/);
+    await expect(as(OWNER, `select public.set_catch_up($1, '2027-03-01')`, [client])).rejects.toThrow(/up to December/);
     const r = await as(OWNER, `select catch_up_through::text as t from public.set_catch_up($1, '2026-10-15')`, [client]);
     expect(r.rows[0].t).toBe("2026-10-31");
   });

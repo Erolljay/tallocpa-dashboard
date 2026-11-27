@@ -6,7 +6,7 @@ import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/c
 import { requireStaff } from "@/lib/auth";
 import { bundleLabel, bundleSummary, DOC_TYPES, docStatusLabel, docStatusTone, showMonth, SOURCE_LABELS, SPREADSHEET_TYPES, type DocType } from "@/lib/documents/labels";
 import { isSplittable, MAX_BUNDLE_PAGES } from "@/lib/ocr/bundle";
-import { LOCKED_STATUSES, lockingFiling, type LockFiling } from "@/lib/documents/lock";
+import { LOCKED_STATUSES, lockKind, lockingFiling, type LockFiling } from "@/lib/documents/lock";
 import { checkFields } from "@/lib/ocr/checks";
 import type { OcrConfidence, OcrFields } from "@/lib/ocr/fields";
 import { manilaToday } from "@/lib/filings/run";
@@ -73,7 +73,7 @@ async function Review({ params }: { params: PageProps<"/app/documents/[id]">["pa
   const next = bundle && at >= 0 && at < bundle.children.length - 1 ? bundle.children[at + 1] : null;
   const fileHref = doc.bundle_page ? `/files/${doc.id}#page=${doc.bundle_page}` : `/files/${doc.id}`;
   // An approved document stays editable until a return prepared from its kind of document is filed for its month.
-  const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[], doc.doc_type) : null;
+  const lock = posted ? lockingFiling(doc.client_id, doc.document_month, (filed ?? []) as LockFiling[], lockKind(doc.doc_type, ext?.approved_fields ?? ext?.fields)) : null;
   const fields = (ext?.approved_fields ?? ext?.fields ?? {}) as OcrFields;
   const confidence = (ext?.approved_fields ? {} : ext?.confidence ?? {}) as OcrConfidence;
 

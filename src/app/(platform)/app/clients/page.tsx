@@ -3,9 +3,7 @@ import { Suspense } from "react";
 import { RiAddLine } from "@remixicon/react";
 import { Badge, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { BOOKS_GO_LIVE } from "@/lib/ledger/types";
-import { manilaToday } from "@/lib/filings/run";
 import { SetupCharts } from "./setup-charts";
-import { CatchUpOnboarding } from "./catch-up-onboarding";
 import { requireStaff } from "@/lib/auth";
 import { statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -83,10 +81,6 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
       }
     });
   const noChart = isOwner ? rows.filter((r) => r.status !== "archived" && !charted.has(r.id)).map((r) => r.name) : [];
-  // Onboarding clients not yet in catch-up (migration 20270104000001), for the Owner.
-  const notCaughtUp = isOwner ? rows.filter((r) => r.status === "onboarding" && !r.catch_up_through).map((r) => r.name) : [];
-  // Default: the month before this one (this month's returns are still ahead).
-  const lastMonth = (() => { const [y, m] = manilaToday().slice(0, 7).split("-").map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`; })();
 
   return (
     <>
@@ -97,7 +91,6 @@ async function ClientList({ searchParams }: Pick<PageProps<"/app/clients">, "sea
       />
       <SectionTabs section="clients" active="clients" />
       {noChart.length > 0 && <SetupCharts missing={noChart} defaultMonth={BOOKS_GO_LIVE.slice(0, 7)} />}
-      {notCaughtUp.length > 0 && <CatchUpOnboarding clients={notCaughtUp} defaultMonth={lastMonth} />}
       {rows.length > 0 && (
         <ListToolbar
           label="Search clients"

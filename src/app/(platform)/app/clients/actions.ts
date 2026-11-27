@@ -240,25 +240,3 @@ export async function setCatchUpAction(clientId: string, mode: "set" | "end", _:
   revalidatePath("/app");
   return { ok: true };
 }
-
-/**
- * Catch-up for every onboarding client at once (migration 20270104000001): each is put
- * in catch-up through `through` (YYYY-MM). Their status stays onboarding.
- */
-export async function catchUpOnboardingAction(_: { ok?: string; error?: string }, form: FormData): Promise<{ ok?: string; error?: string }> {
-  await requireOwner();
-  const month = String(form.get("through") ?? "");
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return { error: "Choose the last month to catch up." };
-  const supabase = await supabaseServer();
-  const { data: clients, error: listError } = await supabase.from("clients").select("id, name").eq("status", "onboarding").is("catch_up_through", null);
-  if (listError) return { error: listError.message };
-  const failed: string[] = [];
-  for (const c of clients ?? []) {
-    const { error } = await supabase.rpc("set_catch_up", { p_client: c.id, p_through: `${month}-01` });
-    if (error) failed.push(`${c.name}: ${error.message}`);
-  }
-  revalidatePath("/app", "layout");
-  const done = (clients ?? []).length - failed.length;
-  const ok = `${done} onboarding client${done === 1 ? "" : "s"} put in catch-up.`;
-  return failed.length ? { ok, error: `Not changed: ${failed.join("; ")}` } : { ok };
-}

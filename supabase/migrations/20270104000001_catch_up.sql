@@ -79,8 +79,9 @@ begin
   if c.id is null then raise exception 'Client not found' using errcode = 'P0002'; end if;
 
   if p_through is not null then
-    if through > (date_trunc('month', today) + interval '1 month - 1 day')::date then
-      raise exception 'Catch-up runs up to this month at the latest' using errcode = '22023';
+    -- Up to the end of this calendar year (e.g. through December 2026, decided 27 Nov 2026).
+    if through > make_date(extract(year from today)::int, 12, 31) then
+      raise exception 'Catch-up runs up to December % at the latest', extract(year from today)::int using errcode = '22023';
     end if;
   else
     select count(*) into waiting from public.filing_instances
