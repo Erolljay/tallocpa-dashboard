@@ -230,6 +230,30 @@ describe.skipIf(!url)("registration fee jobs and proof files", () => {
     ]);
   });
 
+  it("puts the employer numbers from the steps on the client when the case is completed", async () => {
+    const client = await activeClient("Numbers Corp");
+    // PhilHealth is already on the client: it is kept.
+    await db.query(`insert into public.client_employer_numbers (client_id, agency, employer_number, start_month) values ($1, 'philhealth', '11-000000001-1', '2026-01-01')`, [client]);
+    const k = await openCase(client, "employer", {}, employerStepsFor({ sss: true, philhealth: true, pagibig: true }));
+    const steps = (await db.query(`select id, code from public.registration_steps where case_id = $1 and status <> 'not_applicable'`, [k.id])).rows;
+    const number: Record<string, string> = { sss_employer: "03-1234567-8", philhealth_employer: "11-999999999-9", pagibig_employer: "2010-1234-5678" };
+    for (const r of steps) {
+      // The SSS step is done without its number first.
+      const ref = r.code === "sss_employer" ? null : (number[r.code] ?? "REF");
+      await as(STAFF, `select public.update_registration_step($1, 'done', $2, '2027-03-15', null, null)`, [r.id, ref]);
+    }
+    await expect(as(OWNER, `select public.complete_registration_case($1)`, [k.id])).rejects.toThrow(/Enter the SSS employer no\./);
+    const sss = steps.find((r) => r.code === "sss_employer")!.id;
+    await as(STAFF, `select public.update_registration_step($1, 'done', $2, '2027-03-15', null, null)`, [sss, " 03-1234567-8 "]);
+    await as(OWNER, `select public.complete_registration_case($1)`, [k.id]);
+    const rows = (await db.query(`select agency, employer_number, start_month::text from public.client_employer_numbers where client_id = $1 order by agency`, [client])).rows;
+    expect(rows).toEqual([
+      { agency: "pagibig", employer_number: "2010-1234-5678", start_month: "2027-03-01" },
+      { agency: "philhealth", employer_number: "11-000000001-1", start_month: "2026-01-01" },
+      { agency: "sss", employer_number: "03-1234567-8", start_month: "2027-03-01" },
+    ]);
+  });
+
   it("gives the Owner a task to price a certificate the schedule quotes per job", async () => {
     const client = await activeClient("Clearance Corp");
     const k = await openCase(client, "certificate", { certificate: "tax_clearance" }, certificateStepsFor("tax_clearance"));

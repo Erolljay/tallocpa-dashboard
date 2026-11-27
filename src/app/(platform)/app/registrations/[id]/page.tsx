@@ -234,7 +234,7 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
               <p className="text-body-regular text-text-secondary">Completing closes the certificate. Attach the released certificate to its step so the client has a copy.</p>
             ) : k.kind === "employer" ? (
               <Notice>
-                Enter the new employer numbers on <Link href={`/app/clients/${client.id}`} className="font-medium underline">the client</Link> so the monthly SSS, PhilHealth and Pag-IBIG remittances start; then complete.
+                Completing puts each employer number from its step on <Link href={`/app/clients/${client.id}`} className="font-medium underline">the client</Link>, with the month the step was done as the first month with employees (a number the client already has is kept). Switch on &ldquo;We handle this client&rsquo;s SSS, PhilHealth and Pag-IBIG&rdquo; there if we remit them.
               </Notice>
             ) : k.kind === "bir_update" ? (
               ((k.details as { changes?: string[] }).changes ?? []).includes("tax_types") ? (

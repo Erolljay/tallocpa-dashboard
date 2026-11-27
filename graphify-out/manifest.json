@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "docs/SPEC.md": {
-    "mtime": 1795763486.2959194,
-    "seen": 1795763492.5583687,
-    "ast_hash": "aaeae045e0b4b3bf07a7f55e7f9f6633",
+    "mtime": 1795763697.4740796,
+    "seen": 1795763861.41723,
+    "ast_hash": "591b184b607e14ab239aad334b160b9a",
     "semantic_hash": ""
   },
   "supabase/migrations/20261123000005_calendar_year_rules_and_2026_holidays.sql": {
@@ -4188,9 +4188,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/[id]/page.tsx": {
-    "mtime": 1795762846.9443774,
-    "seen": 1795763473.874086,
-    "ast_hash": "6a256b24fcdae9a04bbf5b1169e62aab",
+    "mtime": 1795763692.929032,
+    "seen": 1795763861.3965826,
+    "ast_hash": "780765f59ca2985f07e1d08e2941c91a",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/actions.ts": {
@@ -5370,9 +5370,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/registration-fee-jobs.test.ts": {
-    "mtime": 1795762945.6925108,
-    "seen": 1795763473.8915246,
-    "ast_hash": "49b8c208c49f15c3d8793f32ba266a73",
+    "mtime": 1795763692.9298155,
+    "seen": 1795763861.416419,
+    "ast_hash": "4043511acafefbd9ada083148ebc9ff7",
     "semantic_hash": ""
   },
   "supabase/tests/lock-by-return-type.test.ts": {
