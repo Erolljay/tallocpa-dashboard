@@ -19,7 +19,7 @@ export const currentClientStatuses = ["onboarding", "active"];
 /**
  * The last day (YYYY-MM-DD, Manila) a client's portal contacts can still sign in to see
  * an inactive or archived client: two months after it was marked inactive, less a day.
- * Mirrors current_identity() in supabase/migrations/20270105000001_inactive_client_portal.sql.
+ * Mirrors current_identity() in supabase/migrations/20270106000001_inactive_client_portal.sql.
  */
 export function portalAccessEndsOn(inactiveSince: string): string {
   const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date(inactiveSince)).split("-").map(Number);

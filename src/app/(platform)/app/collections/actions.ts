@@ -168,3 +168,14 @@ export async function clearRemittedAction(clientId: string, dueId: string): Prom
   refresh(clientId);
   return { ok: "Remittance undone; the money is held again." };
 }
+
+export type ShareLinkState = { error?: string; path?: string };
+
+/** The statement's share link (migration 20270105000001): the client sees it and how to pay without signing in. `renew` stops the old link. */
+export async function statementLinkAction(soaId: string, renew: boolean): Promise<ShareLinkState> {
+  await requireOwner();
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc("soa_share_token", { p_soa: soaId, p_renew: renew });
+  if (error) return { error: error.message };
+  return { path: `/pay/${data as string}` };
+}

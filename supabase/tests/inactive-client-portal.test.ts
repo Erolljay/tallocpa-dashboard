@@ -1,5 +1,5 @@
 /**
- * Portal access for clients we no longer serve (migration 20270105000001_inactive_client_portal.sql).
+ * Portal access for clients we no longer serve (migration 20270106000001_inactive_client_portal.sql).
  * An inactive or archived client's contacts keep view-only access for two months, then lose
  * it; reactivating gives back their own level. Staff are not affected.
  *

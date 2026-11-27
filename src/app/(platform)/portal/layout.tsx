@@ -74,7 +74,7 @@ async function Nav({ variant }: { variant: "top" | "bottom" }) {
 /**
  * For each business the firm no longer handles: access is view only, and ends on a
  * set day (two months after the client was marked inactive; see
- * supabase/migrations/20270105000001_inactive_client_portal.sql).
+ * supabase/migrations/20270106000001_inactive_client_portal.sql).
  */
 async function ClosingNotice() {
   const { all } = await portalContext();
