@@ -25,8 +25,8 @@ export default function PortalCwt2307Page(props: PageProps<"/portal/reports/cwt-
  */
 async function Tracker({ searchParams }: Pick<PageProps<"/portal/reports/cwt-2307">, "searchParams">) {
   const q = await searchParams;
-  const { supabase, clients } = await portalContext();
-  const client = pickClient(clients, q.client);
+  const { supabase, clients, all } = await portalContext();
+  const client = pickClient(clients, q.client, all);
   const head = (
     <div className="space-y-2">
       <Link href="/portal/reports" className="text-body-medium text-button-ghost-foreground hover:underline">← Reports</Link>

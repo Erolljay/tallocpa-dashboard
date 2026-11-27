@@ -14,8 +14,9 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
  * the invoices of locked months.
  */
 export async function portal2307(sp: SearchParams) {
-  const { supabase, clients } = await portalContext();
-  const client = clients.find((c) => c.id === one(sp.client)) ?? clients[0] ?? null;
+  const { supabase, clients, all } = await portalContext();
+  // A link to any linked business opens it, even when another business is selected.
+  const client = all.find((c) => c.id === one(sp.client)) ?? clients[0] ?? null;
   if (!client) return { clients, client: null, periods: [], set: null, by: "quarter" as By2307, supplier: null };
   const rawBy = one(sp.by);
   const supplier = one(sp.supplier) || null;

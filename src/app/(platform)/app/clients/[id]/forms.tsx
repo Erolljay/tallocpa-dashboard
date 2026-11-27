@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button, Field, Input, Notice, Select } from "@/components/ui";
 import type { Branch } from "@/lib/branches";
+import { ACCESS_LABEL, CONTACT_ACCESS } from "@/lib/contacts/access";
 import { StaffOptions } from "../client-form";
 import { addEngagementAction, assignStaffAction, removeAssignmentAction, setClientStatusAction, setIncomeTaxMethodAction, type FormState } from "../actions";
 import { addClientUserAction, removeClientUserAction, type FormState as StaffFormState } from "../../staff/actions";
@@ -106,7 +107,12 @@ export function ClientUserForm({ clientId }: { clientId: string }) {
       <Field label="Position (optional)" htmlFor="cu_position" error={e.position}>
         <Input id="cu_position" name="position" placeholder="Owner, bookkeeper…" />
       </Field>
-      <div className="flex items-end">
+      <Field label="Access" htmlFor="cu_access" error={e.access} hint="Same email for several businesses: one login, a business switcher in the portal.">
+        <Select id="cu_access" name="access" defaultValue="full">
+          {CONTACT_ACCESS.map((a) => <option key={a} value={a}>{ACCESS_LABEL[a]}</option>)}
+        </Select>
+      </Field>
+      <div className="flex items-end sm:col-span-2">
         <Button type="submit" variant="secondary" disabled={pending} className="w-full">{pending ? "Adding…" : "Give portal access"}</Button>
       </div>
       {(state.ok || (state.error && !state.fieldErrors)) && (

@@ -18,6 +18,7 @@ export const SECTIONS = {
   ],
   clients: [
     { key: "clients", label: "Clients", href: "/app/clients" },
+    { key: "contacts", label: "Contacts", href: "/app/contacts" },
     { key: "parties", label: "Customers & suppliers", href: "/app/parties" },
     { key: "requests", label: "Requests", href: "/app/requests" },
     { key: "registrations", label: "Registrations", href: "/app/registrations" },

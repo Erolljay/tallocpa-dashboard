@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/lib/auth";
 import { formToObject } from "@/lib/clients/schema";
+import { grantClientAccess } from "@/lib/contacts/grant";
 import { ensureLogin } from "@/lib/people/accounts";
 import { clientUserSchema, inviteStaffSchema, updateStaffSchema } from "@/lib/people/schema";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -55,22 +56,10 @@ export async function addClientUserAction(clientId: string, _: FormState, form: 
   const parsed = clientUserSchema.safeParse(formToObject(form));
   if (!parsed.success) return { error: "Check the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues) };
   const supabase = await supabaseServer();
-  let userId: string;
-  try {
-    userId = await ensureLogin(supabase, parsed.data.email);
-  } catch (e) {
-    return { error: `Could not create the login: ${(e as Error).message}` };
-  }
-  const { data: isStaff } = await supabase.from("staff_profiles").select("user_id").eq("user_id", userId).maybeSingle();
-  if (isStaff) return { error: "That email belongs to a staff member. Use a different email for the client." };
-  const { error } = await supabase.from("client_users").insert({
-    user_id: userId,
-    client_id: clientId,
-    full_name: parsed.data.full_name,
-    position: parsed.data.position ?? null,
-  });
-  if (error) return { error: error.code === "23505" ? "That person already has access to this client." : `Could not add: ${error.message}` };
+  const r = await grantClientAccess(supabase, { ...parsed.data, client_id: clientId });
+  if ("error" in r) return { error: r.error };
   revalidatePath(`/app/clients/${clientId}`);
+  revalidatePath("/app/contacts", "layout");
   return { ok: `${parsed.data.full_name} can now sign in to the portal with ${parsed.data.email}.` };
 }
 
@@ -80,5 +69,6 @@ export async function removeClientUserAction(clientId: string, userId: string): 
   const { error } = await supabase.from("client_users").delete().eq("client_id", clientId).eq("user_id", userId);
   if (error) return { error: `Could not remove: ${error.message}` };
   revalidatePath(`/app/clients/${clientId}`);
+  revalidatePath("/app/contacts", "layout");
   return { ok: "Removed." };
 }

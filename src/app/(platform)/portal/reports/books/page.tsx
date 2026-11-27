@@ -23,8 +23,8 @@ const chip = "inline-flex min-w-12 items-center justify-center rounded-full bord
 /** The loose-leaf books (decision 8) of a taxable year: each book bound for the year so far, and each closed month. */
 async function Books({ searchParams }: Pick<PageProps<"/portal/reports/books">, "searchParams">) {
   const q = await searchParams;
-  const { supabase, clients } = await portalContext();
-  const picked = pickClient(clients, q.client);
+  const { supabase, clients, all } = await portalContext();
+  const picked = pickClient(clients, q.client, all);
   if (!picked) notFound();
   const [client, books] = await Promise.all([portalBooksClient(supabase, picked.id), loadPortalBooks(supabase, picked.id)]);
   if (!client) notFound();

@@ -59,14 +59,24 @@ const loadLink = (admin: SupabaseClient, chatId: number) =>
 
 const label = (t: DocType) => BUTTON_LABELS[t] ?? t;
 
+/** The businesses (contacts) or clients (staff) this chat may send for, matching `query`. */
+async function choicesFor(admin: SupabaseClient, chatId: number, query: string) {
+  const { data } = await admin.rpc("telegram_staff_clients", { p_chat: chatId, p_query: query });
+  return (data ?? []) as { id: string; code: string; name: string }[];
+}
+
+/** A contact chat that may switch between several businesses, like staff switch clients. */
+const severalBusinesses = async (admin: SupabaseClient, link: Link) => !link.staff && (await choicesFor(admin, link.chat_id, "")).length > 1;
+
 /**
  * Handles one webhook update. Returns work to run after the response (filing files
  * can take a while; Telegram retries a webhook that does not answer quickly).
  *
  * Who and where: a chat sends only once linked from a signed-in account. A client's chat
- * files for that client, in the month open for documents. A staff chat files for the
- * client chosen with /client (only clients that person may upload for), in the month
- * they tap.
+ * files for that client, in the month open for documents; a contact linked to several
+ * businesses switches between them with /client, as staff do (only their own businesses
+ * with Telegram on and upload access). A staff chat files for the client chosen with
+ * /client (only clients that person may upload for), in the month they tap.
  *
  * Two ways to say what a file is: tap a button under each file (or album) after sending
  * it, or choose first with /send (staff: and the month) and then send any number of
@@ -88,11 +98,12 @@ export async function handleUpdate(admin: SupabaseClient, tg: TelegramApi, updat
     // A relinked chat starts without a /send choice.
     await admin.from("telegram_links").update(NO_SEND_MODE).eq("chat_id", chatId);
     const { data: link } = await loadLink(admin, chatId);
+    const switching = link && (await severalBusinesses(admin, link)) ? ` You can send for your other businesses too: change the business any time with /client.` : "";
     await tg.sendMessage(
       chatId,
       link?.staff
         ? `Linked to your staff account, ${data as string}. ${STAFF_HELP}. Then send photos or PDFs and tap what they are and the month. ${SEND_HELP}`
-        : `Linked to ${data as string}. Send photos or PDFs of your receipts, invoices and 2307s here, then tap what each one is. They go straight to Tallo CPA. ${SEND_HELP}`,
+        : `Linked to ${data as string}. Send photos or PDFs of your receipts, invoices and 2307s here, then tap what each one is. They go straight to Tallo CPA.${switching} ${SEND_HELP}`,
     );
     return null;
   }
@@ -111,15 +122,16 @@ export async function handleUpdate(admin: SupabaseClient, tg: TelegramApi, updat
 
   const query = clientQuery(m.text);
   if (query !== null) {
-    if (!link.staff) {
+    // A contact with one business has nothing to choose.
+    if (!link.staff && !(await severalBusinesses(admin, link))) {
       await tg.sendMessage(chatId, `This chat sends documents for ${link.clients?.name ?? "your business"}.`);
       return null;
     }
-    const { data: found } = await admin.rpc("telegram_staff_clients", { p_chat: chatId, p_query: query });
-    const list = (found ?? []) as { id: string; code: string; name: string }[];
+    const list = await choicesFor(admin, chatId, query);
+    const noun = link.staff ? "client" : "business";
     await tg.sendMessage(
       chatId,
-      list.length ? "Which client are these documents for?" : `No client of yours matches “${query}”. Try part of the name or the client code.`,
+      list.length ? `Which ${noun} are these documents for?` : `No ${noun} of yours matches “${query}”. Try part of the name or the ${link.staff ? "client" : "business"} code.`,
       list.length ? { keyboard: clientButtons(list) } : undefined,
     );
     return null;
@@ -135,7 +147,7 @@ export async function handleUpdate(admin: SupabaseClient, tg: TelegramApi, updat
       await tg.sendMessage(chatId, STAFF_HELP);
       return null;
     }
-    const forWhom = link.staff ? `For ${link.clients?.name} (${link.clients?.code}): ` : "";
+    const forWhom = link.staff || (await severalBusinesses(admin, link)) ? `For ${link.clients?.name} (${link.clients?.code}): ` : "";
     await tg.sendMessage(chatId, `${forWhom}What are you sending?`, { keyboard: sendTypeButtons() });
     return null;
   }
@@ -153,7 +165,7 @@ export async function handleUpdate(admin: SupabaseClient, tg: TelegramApi, updat
         ? link.clients
           ? `Now sending for ${link.clients.name} (${link.clients.code}). Send photos or PDFs and tap what they are, or change the client with /client. ${SEND_HELP} Send /unlink to stop.`
           : STAFF_HELP
-        : `This chat sends documents to Tallo CPA for ${link.clients?.name}. Send a photo or PDF, then tap what it is. ${SEND_HELP} Send /unlink to stop.`,
+        : `This chat sends documents to Tallo CPA for ${link.clients?.name}. Send a photo or PDF, then tap what it is.${(await severalBusinesses(admin, link)) ? " Change the business with /client." : ""} ${SEND_HELP} Send /unlink to stop.`,
     );
     return null;
   }
@@ -190,7 +202,7 @@ export async function handleUpdate(admin: SupabaseClient, tg: TelegramApi, updat
     return null;
   }
   const what = m.media_group_id ? "these files" : file.fileName.startsWith("photo_") ? "this photo" : file.fileName;
-  const forWhom = link.staff ? `For ${link.clients?.name} (${link.clients?.code}): ` : "";
+  const forWhom = link.staff || (await severalBusinesses(admin, link)) ? `For ${link.clients?.name} (${link.clients?.code}): ` : "";
   let expired = "";
   if (mode === "expired") {
     // Clear only the choice read here, so a /send made meanwhile is kept.
@@ -263,7 +275,7 @@ async function sendUnderMode(admin: SupabaseClient, tg: TelegramApi, link: Link,
     await tg.sendMessage(chatId, `Sorry, ${file.fileName} could not be received. Please try again or use the portal.`, { replyTo: m.message_id });
     return null;
   }
-  const say = { label: label(docType), forWhom: link.staff && link.clients ? ` for ${link.clients.name}` : "", month: showMonth(month) };
+  const say = { label: label(docType), forWhom: link.clients && (link.staff || (await severalBusinesses(admin, link))) ? ` for ${link.clients.name}` : "", month: showMonth(month) };
   if (prompt) {
     const sent = await tg.sendMessage(chatId, sendResult({ filed: 0, failed: [], pending: 1 }, say.label, say.forWhom, say.month), { replyTo: m.message_id });
     if (sent) await admin.from("telegram_uploads").update({ reply_message_id: sent.message_id }).eq("id", upload.id);
@@ -343,7 +355,7 @@ async function onChoice(admin: SupabaseClient, tg: TelegramApi, q: NonNullable<T
     await tg.editMessage(
       chatId,
       messageId,
-      error ? error.message : `Now sending for ${name as string}. Send the photos or PDFs, or /send to choose the type first. Change the client any time with /client.`,
+      error ? error.message : `Now sending for ${name as string}. Send the photos or PDFs, or /send to choose the type first. Change it any time with /client.`,
     );
     return null;
   }
@@ -418,7 +430,7 @@ async function onChoice(admin: SupabaseClient, tg: TelegramApi, q: NonNullable<T
     // Clients: the month open for documents. Staff: the month they tapped.
     const month = choice.action === "month" ? choice.month : openMonth(manilaToday(), client?.submission_cutoff_day ?? 10);
     const { filed, failed } = await fileUploads(admin, tg, claimed, docType, month);
-    const forWhom = link?.staff && client ? ` for ${client.name}` : "";
+    const forWhom = client && link && (link.staff || (await severalBusinesses(admin, link))) ? ` for ${client.name}` : "";
     const lines: string[] = [];
     if (filed.length) lines.push(`✓ Sent to Tallo CPA${forWhom}: ${filed.length === 1 ? "1 file" : `${filed.length} files`} as ${kind} for ${showMonth(month)}.`);
     if (failed.length) lines.push(`Could not send ${failed.join(", ")}. Please send ${failed.length === 1 ? "it" : "them"} again or use the portal.`);

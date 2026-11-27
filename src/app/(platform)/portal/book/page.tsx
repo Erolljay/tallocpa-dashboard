@@ -4,6 +4,7 @@ import { SlotPicker } from "@/components/booking/slot-picker";
 import { Notice, Skeleton } from "@/components/ui";
 import { slotsFor } from "@/lib/calendar/booking";
 import { labelledDays, CLIENT_MEETING } from "@/lib/calendar/slots";
+import { accessNote, canAct } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
 import { bookClientMeetingAction } from "./actions";
 
@@ -54,7 +55,9 @@ async function Book({ searchParams }: Pick<PageProps<"/portal/book">, "searchPar
         </section>
       )}
       <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-4 sm:p-6">
-        {!host ? (
+        {!canAct(business.access) ? (
+          <Notice tone="waiting">{accessNote(business.access, "act")}</Notice>
+        ) : !host ? (
           <Notice tone="waiting">Your team is being assigned. You can book once we introduce them on your Home page.</Notice>
         ) : !free ? (
           <Notice tone="waiting">Online booking with {host.full_name} is not available right now. Please email them from your <Link href="/portal" className="underline">Home</Link> page.</Notice>

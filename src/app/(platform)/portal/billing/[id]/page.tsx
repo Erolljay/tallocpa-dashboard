@@ -6,7 +6,8 @@ import { Skeleton } from "@/components/ui";
 import { StatementView } from "@/components/statement/statement-view";
 import { loadStatement } from "@/lib/collections/statement";
 import { manilaToday } from "@/lib/filings/run";
-import { portalContext } from "../../client-context";
+import { accessNote, canApprove } from "@/lib/contacts/access";
+import { accessFor, portalContext } from "../../client-context";
 
 /** Portal Billing: one statement, with its payments and Pay while anything is open. */
 export default function PortalStatementDetail(props: PageProps<"/portal/billing/[id]">) {
@@ -19,7 +20,7 @@ export default function PortalStatementDetail(props: PageProps<"/portal/billing/
 
 async function Detail({ params }: Pick<PageProps<"/portal/billing/[id]">, "params">) {
   const { id } = await params;
-  const { supabase } = await portalContext();
+  const { supabase, all } = await portalContext();
   // RLS shows a client user only their own businesses' statements.
   const s = await loadStatement(supabase, id);
   if (!s) notFound();
@@ -28,7 +29,7 @@ async function Detail({ params }: Pick<PageProps<"/portal/billing/[id]">, "param
       <Link href="/portal/billing" className="inline-flex items-center gap-1 text-body-regular text-button-ghost-foreground hover:underline pointer-coarse:min-h-11 print:hidden">
         <RiArrowLeftLine aria-hidden className="size-4 rtl:rotate-180" /> Billing
       </Link>
-      <StatementView s={s} today={manilaToday()} />
+      <StatementView s={s} today={manilaToday()} payBlocked={canApprove(accessFor(all, s.client.id)) ? undefined : accessNote(accessFor(all, s.client.id), "approve")} />
     </div>
   );
 }

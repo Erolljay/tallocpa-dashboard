@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { RiArrowRightSLine, RiCalendarScheduleLine, RiCheckboxCircleLine, RiErrorWarningLine, RiMailLine, RiTimeLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge, Card, LinkButton, Skeleton } from "@/components/ui";
+import { canAct, canApprove } from "@/lib/contacts/access";
 import { nextCutoff } from "@/lib/documents/cutoff";
 import { showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
@@ -82,7 +83,8 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     supabase.from("registration_steps").select("id, label, registration_cases!inner(client_id, status)").eq("status", "waiting_client").eq("registration_cases.status", "open").in("registration_cases.client_id", ids).limit(20),
     supabase.from("contribution_remittances").select("id, client_id, kind, period_month, due_date, total, due_id").in("client_id", ids).eq("status", "approved").is("due_id", null).order("due_date"),
   ]);
-  const undecided = decisions.flatMap((d) => (d.data ?? []) as { claim: string | null; closed: boolean; year_ended: boolean }[]).filter((r) => r.year_ended && !r.closed && !r.claim).length;
+  // Only businesses where this contact may keep or stop a 2307 claim (full access).
+  const undecided = decisions.filter((_, i) => canApprove(clients[i].access)).flatMap((d) => (d.data ?? []) as { claim: string | null; closed: boolean; year_ended: boolean }[]).filter((r) => r.year_ended && !r.closed && !r.claim).length;
 
   const summaryOf = new Map(clients.map((c, i) => [c.id, (summaries[i].data ?? null) as BooksSummaryRaw | null]));
   const openDues = cents((dues ?? []).reduce((a, d) => a + Number(d.open_amount), 0).toFixed(2));
@@ -92,7 +94,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
 
   const todos = todoList({
     returnedDocuments: returned ?? 0,
-    returnsToApprove: (approvals ?? []).map((f) => ({ id: f.id, form: `${prefix(f.client_id)}${f.form}`, periodLabel: f.period_label, dueDate: showDate(f.due_date) })),
+    returnsToApprove: (approvals ?? []).filter((f) => canApprove(clients.find((c) => c.id === f.client_id)?.access)).map((f) => ({ id: f.id, form: `${prefix(f.client_id)}${f.form}`, periodLabel: f.period_label, dueDate: showDate(f.due_date) })),
     requests: (requests ?? []).map((r) => ({ id: r.id, subject: `${prefix(r.client_id)}${r.subject}` })),
     dues: openDues,
     duesLabel: `${formatPeso(openDues)} open${pendingProofs ? " · a payment is being verified" : ""}`,
@@ -123,6 +125,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     };
   });
   // "I've sent everything" for each business with something sent this month (P1).
+  // View-only contacts see the month card without its confirm and undo steps.
   const completable = status.filter((x) => x.open && !x.nothing && (x.count > 0 || x.confirmedAt));
   const books = summaryOf.get(business.id);
 
@@ -189,7 +192,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
               </li>
             ))}
           </ul>
-          {!x.nothing && !x.confirmedAt && (
+          {!x.nothing && !x.confirmedAt && canAct(x.client.access) && (
             <LinkButton href="/portal/upload" className="mt-4 w-full justify-center">Upload documents</LinkButton>
           )}
         </Card>
@@ -209,7 +212,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
               <p className="text-title-2-medium tabular-nums text-text-primary">{formatPeso(openDues)}</p>
               {pendingProofs > 0 && <p className="text-caption-1-regular text-text-secondary">A payment you sent is being verified.</p>}
             </div>
-            <LinkButton href="/portal/billing">Pay</LinkButton>
+            <LinkButton href="/portal/billing">{clients.some((c) => canApprove(c.access)) ? "Pay" : "View statements"}</LinkButton>
           </div>
         ) : (
           <p className="text-body-regular text-text-secondary">You&apos;re all paid up.{pendingProofs > 0 ? " A payment you sent is being verified." : ""}</p>
@@ -378,6 +381,7 @@ async function MonthCard(props: { client: PortalClient; several: boolean; period
       cutoff={shortDay(props.cutoff)}
       daysLeft={daysLeft}
       canUndo={props.today <= props.cutoff}
+      readOnly={!canAct(client.access)}
       confirmed={confirmedOn ? { on: shortDay(confirmedOn), count: props.confirmedCount } : null}
       sent={sent}
       ranges={missingRanges(c.missing)}
