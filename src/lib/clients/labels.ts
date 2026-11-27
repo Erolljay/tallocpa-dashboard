@@ -13,6 +13,9 @@ export const statusTone = {
   archived: "neutral",
 } as const;
 
+/** Clients the firm is working for. Inactive and archived ones are left out of dashboard counts. */
+export const currentClientStatuses = ["onboarding", "active"];
+
 export const statusLabel: Record<string, string> = {
   onboarding: "Onboarding",
   active: "Active",
