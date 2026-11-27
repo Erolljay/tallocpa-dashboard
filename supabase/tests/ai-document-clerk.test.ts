@@ -177,6 +177,16 @@ describe.skipIf(!url)("AI Document Clerk: review queue, readings, duplicates, su
     expect((await db.query(`select status from public.ai_drafts where subject_id = $1 order by created_at`, [doc.waiting])).rows.map((x) => x.status)).toEqual(["withdrawn", "open"]);
   });
 
+  it("the next run leaves out documents it already suggested on, unless asked", async () => {
+    type Listed = { already_suggested: number; documents: { id: string; my_suggestion: string }[] };
+    const next = (await call("documents_to_review")).result?.structuredContent as Listed;
+    expect(next.documents.map((d) => d.id)).toEqual([doc.other]);
+    expect(next.already_suggested).toBe(1);
+    const all = (await call("documents_to_review", { include_suggested: true })).result?.structuredContent as Listed;
+    expect(all.documents.map((d) => [d.id, d.my_suggestion])).toEqual([[doc.waiting, "open"], [doc.other, "none"]]);
+    expect(all.already_suggested).toBe(1);
+  });
+
   it("refuses another client's document, a posted document, an unknown account, a cross-client duplicate and an empty suggestion", async () => {
     const msg = async (args: Record<string, unknown>) => {
       const r = await call("suggest_document_review", { reason: "Testing what is refused.", ...args });
