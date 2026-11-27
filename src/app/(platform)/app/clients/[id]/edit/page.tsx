@@ -34,6 +34,7 @@ async function EditClient({ params }: { params: PageProps<"/app/clients/[id]/edi
     tin: client.tin,
     rdo_code: client.rdo_code,
     registered_address: client.registered_address,
+    zip_code: client.zip_code ?? null,
     fiscal_year_end_month: client.fiscal_year_end_month,
     filing_channel: client.filing_channel,
     efps_group: client.efps_group,

@@ -27,6 +27,8 @@ export interface SourceDocument {
   partyName: string | null;
   partyTin: string | null;
   partyAddress: string | null;
+  /** The party's ZIP code, from the parties directory (partyAddress then ends with it). */
+  partyZip?: string | null;
   /**
    * The matching entry in the firm-wide parties directory, when the TIN is on
    * file. When present, partyName / partyAddress / partyTin above already hold
@@ -129,6 +131,8 @@ export interface WorksheetContext {
     tin: string | null;
     rdoCode: string | null;
     registeredAddress: string | null;
+    /** Four-digit ZIP code of the registered address, from the client record. */
+    zipCode?: string | null;
     taxpayerType: TaxpayerType;
     fiscalYearEndMonth: number;
     /** From the client's obligations: registered for VAT (files 2550Q). */

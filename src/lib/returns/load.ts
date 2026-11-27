@@ -43,6 +43,7 @@ interface FilingRow {
     tin: string | null;
     rdo_code: string | null;
     registered_address: string | null;
+    zip_code: string | null;
     taxpayer_type: TaxpayerType;
     fiscal_year_end_month: number;
     income_tax_method: IncomeTaxMethod | null;
@@ -91,7 +92,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
   const { data } = await db
     .from("filing_instances")
     .select(
-      "id, client_id, form, period_label, period_start, period_end, due_date, status, deadline_rules(calendar_year), clients(id, name, tin, rdo_code, registered_address, taxpayer_type, fiscal_year_end_month, income_tax_method)",
+      "id, client_id, form, period_label, period_start, period_end, due_date, status, deadline_rules(calendar_year), clients(id, name, tin, rdo_code, registered_address, zip_code, taxpayer_type, fiscal_year_end_month, income_tax_method)",
     )
     .eq("id", filingId)
     .maybeSingle();
@@ -197,6 +198,7 @@ export async function loadWorksheet(filingId: string, supabase?: Supabase): Prom
       tin: f.clients.tin,
       rdoCode: f.clients.rdo_code,
       registeredAddress: f.clients.registered_address,
+      zipCode: f.clients.zip_code,
       taxpayerType: f.clients.taxpayer_type,
       fiscalYearEndMonth: f.clients.fiscal_year_end_month,
       vatRegistered: (vat ?? []).length > 0,

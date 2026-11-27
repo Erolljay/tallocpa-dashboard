@@ -10,6 +10,7 @@ const clientFields = {
   tin: optional(z.string().trim().regex(/^\d{3}-\d{3}-\d{3}(-\d{3,5})?$/, "Use the format 123-456-789-00000.")),
   rdo_code: optional(z.string().trim().max(10)),
   registered_address: optional(z.string().trim().max(300)),
+  zip_code: optional(z.string().trim().regex(/^\d{4}$/, "Four digits.")),
   fiscal_year_end_month: z.coerce.number().int().min(1).max(12),
   filing_channel: z.enum(["ebirforms", "efps"]),
   efps_group: optional(z.enum(["A", "B", "C", "D", "E"])),

@@ -196,24 +196,9 @@ export function uncodedErrors(docs: SourceDocument[]): string[] {
 
 // ── TINs and alphalist text (taxify reports/sls-report.js, reports/sawt-report.js) ──
 
-export const tinDigits = (t: string | null | undefined) => (t ?? "").replace(/\D/g, "");
-
-/** First 9 digits of a TIN, zero-padded (taxify `tin9`). */
-export function tin9(t: string | null | undefined): string {
-  return tinDigits(t).substring(0, 9).padEnd(9, "0").substring(0, 9);
-}
-
-/** "123-456-789" (taxify `tinDashed`). */
-export function tinDashed(t: string | null | undefined): string {
-  const d = tin9(t);
-  return `${d.substring(0, 3)}-${d.substring(3, 6)}-${d.substring(6, 9)}`;
-}
-
-/** Branch code from the digits after the 9-digit TIN (last four, zero-padded), else taxify's default "0001". */
-export function branchCode(t: string | null | undefined): string {
-  const rest = tinDigits(t).substring(9);
-  return rest ? rest.slice(-4).padStart(4, "0") : "0001";
-}
+// TIN helpers live in the parties directory module so every DAT file formats TINs alike.
+import { tin9, tinDigits } from "@/lib/parties/tin";
+export { tinDigits, tin9, tinDashed } from "@/lib/parties/tin";
 
 /** Keeps letters, digits, spaces, period, hyphen, slash — BIR's Validation Module rejects the rest (taxify `stripSpecial`). */
 export const stripSpecial = (v: string | null | undefined) => (v ?? "").replace(/[^A-Za-z0-9\s.\-/]/g, "");
@@ -263,6 +248,8 @@ export interface Filer {
   /** Registered / trade name. */
   name: string;
   address: string;
+  /** Four-digit ZIP code of the registered address ("" when not on file). */
+  zip: string;
   rdo: string;
   fiscalMonthEnd: string;
 }
@@ -278,9 +265,18 @@ export function filerOf(ctx: WorksheetContext): Filer {
     middleName: t("owner_middle_name"),
     name: ctx.client.name,
     address: ctx.client.registeredAddress ?? "",
+    zip: ctx.client.zipCode ?? "",
     rdo: ctx.client.rdoCode ?? "",
     fiscalMonthEnd: String(ctx.client.fiscalYearEndMonth).padStart(2, "0"),
   };
+}
+
+/** The address without a trailing ZIP code that goes in its own column: ("Iloilo City 5000", "5000") → "Iloilo City". */
+export function withoutZip(address: string, zip: string): string {
+  const a = address.trim();
+  if (!zip || !a.endsWith(zip)) return a;
+  const rest = a.slice(0, -zip.length);
+  return /[\s,]$/.test(rest) || rest === "" ? rest.replace(/[\s,]+$/, "") : a;
 }
 
 /** Warnings about the filer data the DAT headers need. */

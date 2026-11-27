@@ -45,13 +45,39 @@ export function partyKey(raw: string | null | undefined): string | null {
   return p ? partyKeyOf(p.tin, p.branch) : null;
 }
 
-/** First 9 digits, zero-padded (taxify `tin9`): what the DAT files carry. */
+/** The TIN's digits only: "123-456-789-00000" → "12345678900000". */
+export const tinDigits = (raw: string | null | undefined) => (raw ?? "").replace(/\D/g, "");
+
+/** First 9 digits, zero-padded (taxify `tin9`): what the DAT files carry. "" → "000000000". */
 export function tin9(raw: string | null | undefined): string {
-  return (raw ?? "").replace(/\D/g, "").substring(0, 9).padEnd(9, "0");
+  return tinDigits(raw).substring(0, 9).padEnd(9, "0");
+}
+
+/** The 9-digit TIN dashed, zero-padded: "123-456-789". */
+export function tinDashed(raw: string | null | undefined): string {
+  const d = tin9(raw);
+  return `${d.substring(0, 3)}-${d.substring(3, 6)}-${d.substring(6, 9)}`;
 }
 
 /** Four-digit branch for the DAT files (taxify pads to 4 and keeps the last 4): "00000" → "0000", "001" → "0001". */
 export function branch4(branch: string | null | undefined): string {
-  const d = (branch ?? "").replace(/\D/g, "");
+  const d = tinDigits(branch);
   return (d || "0").padStart(4, "0").slice(-4);
+}
+
+/** Whether a TIN as written carries branch digits after the 9th. */
+export const tinHasBranch = (raw: string | null | undefined) => tinDigits(raw).length > 9;
+
+/**
+ * The DAT branch code of a TIN as written on the document: the digits after the
+ * 9th as 4 digits ("123-456-789-00002" → "0002"); head office "0000" when the TIN
+ * shows none.
+ */
+export function branchOfTin(raw: string | null | undefined): string {
+  return branch4(tinDigits(raw).substring(9));
+}
+
+/** One payee per TIN and branch (head office when none shown): "123456789-0000"; null when there is no 9-digit TIN. */
+export function payeeKeyOf(raw: string | null | undefined): string | null {
+  return tinDigits(raw).length >= 9 ? `${tin9(raw)}-${branchOfTin(raw)}` : null;
 }

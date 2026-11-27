@@ -213,7 +213,7 @@ describe("QAP", () => {
       ["ACME Services Corp", "WC100", "0000", [0, 150000, 0]],
       ["ACME Services Corp", "WC158", "0000", [100000, 50000, 0]],
       ["Beta Lessor Co.", "WC100", "0001", [0, 0, 50000]],
-      ["DELA CRUZ, JUAN", "WI010", null, [0, 0, 100000]],
+      ["DELA CRUZ, JUAN", "WI010", "0000", [0, 0, 100000]],
     ]);
     expect(rows[3].individual).toEqual({ lastName: "DELA CRUZ", firstName: "JUAN", middleName: "" });
   });
@@ -234,9 +234,22 @@ describe("QAP", () => {
     expect(rows[3]).toBe("TIN : 123-456-789-0000");
     expect(rows[4]).toBe(`"WITHHOLDING AGENT'S NAME: TALLO TEST TRADING, INC."`);
     expect(rows[8]).toBe(`1,111-222-333-0000,${"ACME SERVICES CORP".padEnd(50)},${"".padEnd(50)},WC100,Rentals - property/personal,0.00,5,0.00,30000.00,5,1500.00,0.00,5,0.00,30000.00,1500.00`);
-    expect(rows[11]).toBe(`4,444-555-666-0001,,"${"DELA CRUZ, JUAN".padEnd(50)}",WI010,"Professional fees, <=3M",0.00,5,0.00,0.00,5,0.00,20000.00,5,1000.00,20000.00,1000.00`);
+    expect(rows[11]).toBe(`4,444-555-666-0000,,"${"DELA CRUZ, JUAN".padEnd(50)}",WI010,"Professional fees, <=3M",0.00,5,0.00,0.00,5,0.00,20000.00,5,1000.00,20000.00,1000.00`);
     expect(rows[12]).toBe(",,,,,Grand Total :,,,,,,,,,,210000.00,4500.00");
     expect(rows.slice(13)).toEqual(["------------------", "==================", "END OF REPORT", ""]);
+  });
+
+  it("keeps each branch of a payee on its own row; no branch on the TIN is head office", () => {
+    const base = lines.find((l) => l.payeeName === "ACME Services Corp")!;
+    const rows = buildQapRows(
+      [
+        { ...base, payeeTin: "555-666-777", payeeName: "GAMMA CORP", withheld: 100 },
+        { ...base, payeeTin: "555-666-777-00000", payeeName: "GAMMA CORP", withheld: 200 },
+        { ...base, payeeTin: "555-666-777-00002", payeeName: "GAMMA CORP", withheld: 300 },
+      ],
+      "2026-01-01",
+    );
+    expect(rows.map((r) => [r.branchCode, r.withheld])).toEqual([["0000", 300], ["0002", 300]]);
   });
 
   it("helpers follow taxify", () => {

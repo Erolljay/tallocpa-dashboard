@@ -15,6 +15,7 @@ import { buildSawt, sawtAttachments, sawtSchedule } from "./sawt";
 import {
   Inputs, MONTH_NAMES, amountInput, crlf, csv, datDate, docLabel, docsWithin, filerOf, filerWarnings, labelsOf, line, monthEnd, monthKeyOf, ownerNameInputs, pct, peso,
   plain, qd, quarterOf, stripSpecial, sum, tinDashed, tin9, tinDigits, uncodedErrors, vatSplit,
+  withoutZip,
 } from "./util";
 
 const FORM = "2550Q";
@@ -56,6 +57,8 @@ export interface SlsRow {
   name: string;
   tin: string;
   address: string;
+  /** The party's ZIP code from the parties directory ("" when not on file): DAT address 2. */
+  zip: string;
   taxable: Centavos;
   zeroRated: Centavos;
   exempt: Centavos;
@@ -106,7 +109,7 @@ function groupByPartyMonth(splits: Split[], various = false) {
     groups.set(key, g);
   }
   return [...groups.values()]
-    .map((g) => ({ ...g, date: monthEnd(g.monthKey), name: g.doc.partyName ?? "", tin: g.doc.partyTin ?? "", address: g.doc.partyAddress ?? "" }))
+    .map((g) => ({ ...g, date: monthEnd(g.monthKey), name: g.doc.partyName ?? "", tin: g.doc.partyTin ?? "", address: g.doc.partyAddress ?? "", zip: g.doc.partyZip ?? "" }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
 }
 
@@ -249,7 +252,7 @@ function computeAll(ctx: WorksheetContext): VatData {
 
   // SLS / SLP rows.
   const sls: SlsRow[] = groupByPartyMonth(sales, true).map((g) => ({
-    monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address,
+    monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address, zip: g.zip,
     taxable: g.vatable, zeroRated: g.zeroRated, exempt: g.exempt, vat: g.vat, txnCount: g.txnCount,
   }));
   const slpGroups = groupByPartyMonth(purchases);
@@ -257,7 +260,7 @@ function computeAll(ctx: WorksheetContext): VatData {
   const capParts = fromLines && capGoods === catTotal("capital_goods") ? slpGroups.map((g) => g.cap) : allocate(capGoods, slpGroups.map((g) => g.vatable));
   const svcParts = fromLines && services === catTotal("services") ? slpGroups.map((g) => g.svc) : allocate(services, slpGroups.map((g) => g.vatable));
   const slp: SlpRow[] = slpGroups.map((g, i) => ({
-    monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address,
+    monthKey: g.monthKey, date: g.date, name: g.name, tin: g.tin, address: g.address, zip: g.zip,
     capGoods: capParts[i], services: svcParts[i], otherGoods: g.vatable - capParts[i] - svcParts[i],
     zeroRated: g.zeroRated, exempt: g.exempt, vat: g.vat, txnCount: g.txnCount,
   }));
@@ -365,11 +368,11 @@ export function slDat(ctx: WorksheetContext, type: "sls" | "slp", mk: string, ro
   const f = filerOf(ctx);
   const [ln, fn, mn] = f.isIndividual ? [f.lastName, f.firstName, f.middleName].map((v) => v.toUpperCase()) : ["", "", ""];
   const regName = stripSpecial(f.name).toUpperCase();
-  const addr1 = stripSpecial(f.address).toUpperCase();
-  const addr2 = "";
+  const addr1 = stripSpecial(withoutZip(f.address, f.zip)).toUpperCase();
+  const addr2 = f.zip;
   const dateStr = datDate(monthEnd(mk));
   const lines: string[] = [];
-  const party = (r: SlsRow | SlpRow) => [`"${tin9(r.tin)}"`, qd(stripSpecial(r.name).toUpperCase()), "", "", "", qd(stripSpecial(r.address).toUpperCase()), ""];
+  const party = (r: SlsRow | SlpRow) => [`"${tin9(r.tin)}"`, qd(stripSpecial(r.name).toUpperCase()), "", "", "", qd(stripSpecial(withoutZip(r.address, r.zip)).toUpperCase()), qd(r.zip)];
   if (type === "sls") {
     const rs = rows as SlsRow[];
     lines.push(
