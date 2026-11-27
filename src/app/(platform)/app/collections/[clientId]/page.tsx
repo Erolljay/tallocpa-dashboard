@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { ShareLink } from "@/components/statement/share-link";
 import { Badge, Card, PageHeader, peso, Skeleton } from "@/components/ui";
 import { shareMessage } from "@/lib/collections/share-message";
 import { requireOwner } from "@/lib/auth";
+import { REMINDER_KIND } from "@/lib/collections/ai-tools";
 import { ageOpenItems, dueKindLabel, methodLabel, readyReasonLabel, toCents, totalHeld, type DepositMethod, type DueKind, type ReadyItem, type RemittanceItem } from "@/lib/collections/collections";
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
@@ -101,6 +103,7 @@ async function Detail({ params }: Pick<PageProps<"/app/collections/[clientId]">,
         actions={<RunBillingForm clientId={client.id} today={today} />}
       />
       <div className="space-y-6">
+        <AiDraftsPanel subject={{ table: "clients", id: client.id }} kinds={[REMINDER_KIND]} path={`/app/collections/${client.id}`} title="Suggested by the Collections Clerk" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <p className="text-body-medium text-text-secondary">Owes now</p>

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
 import { currentClientStatuses } from "@/lib/clients/labels";
+import { REMINDER_KIND } from "@/lib/collections/ai-tools";
 import { ageOpenItems, AGING_BUCKETS, agingLabel, groupReady, readyReasonLabel, totalHeld, type ReadyItem } from "@/lib/collections/collections";
 import { addDays } from "@/lib/deadlines/dates";
 import { showMonth } from "@/lib/documents/labels";
@@ -146,6 +148,8 @@ async function Overview() {
           .
         </Notice>
       )}
+
+      <AiDraftsPanel kinds={[REMINDER_KIND]} path="/app/collections" title="Suggested by the Collections Clerk" />
 
       <Card
         title="Ready to bill"
