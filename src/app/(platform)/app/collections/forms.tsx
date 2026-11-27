@@ -157,9 +157,22 @@ export function RecordDepositForm(props: { clientId: string; today: string; item
 }
 
 /** Adds one item per agency and kind (SSS, PhilHealth, Pag-IBIG contributions, SSS or Pag-IBIG loan payments) or a one-off charge for the next statement. */
+/** Common one-off charges, offered as the Owner types (any other description still works). */
+const CHARGE_SUGGESTIONS = [
+  "Consultation fee",
+  "Appearance fee",
+  "Professional fee",
+  "Tax advisory fee",
+  "BIR registration",
+  "Business permit processing",
+  "Notarial fee",
+  "Out-of-pocket expenses",
+  "Transportation expenses",
+];
+
 export function AddChargeForm({ clientId, today }: { clientId: string; today: string }) {
   const [state, run, pending] = useActionState(addChargeAction.bind(null, clientId), {} as MoneyState);
-  const [kind, setKind] = useState<"contribution" | "other">("contribution");
+  const [kind, setKind] = useState<"contribution" | "other">("other");
   const lastMonth = (() => {
     const [y, m] = today.split("-").map(Number);
     return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
@@ -169,8 +182,8 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Kind" htmlFor="kind">
           <Select id="kind" name="kind" value={kind} onChange={(e) => setKind(e.target.value as "contribution" | "other")}>
+            <option value="other">Fee or other charge (consultation, appearance, ad hoc job)</option>
             <option value="contribution">Contribution or loan payment (SSS, PhilHealth, Pag-IBIG)</option>
-            <option value="other">Other charge</option>
           </Select>
         </Field>
         {kind === "contribution" ? (
@@ -187,8 +200,13 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
             </Field>
           </>
         ) : (
-          <Field label="Description" htmlFor="description" hint="As the client will read it, e.g. ORUS registration.">
-            <Input id="description" name="description" required />
+          <Field label="Description" htmlFor="description" hint="As the client will read it. Pick a suggestion or type your own, e.g. Consultation fee, 27 November 2026.">
+            <Input id="description" name="description" required list="charge-suggestions" autoComplete="off" />
+            <datalist id="charge-suggestions">
+              {CHARGE_SUGGESTIONS.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </Field>
         )}
         <Field label="Amount (₱)" htmlFor="charge_amount">
@@ -198,8 +216,12 @@ export function AddChargeForm({ clientId, today }: { clientId: string; today: st
           <Input id="due_on" name="due_on" type="date" required defaultValue={today} />
         </Field>
       </div>
+      <p className="text-caption-1-regular text-text-tertiary">
+        Add and Bill Now issues today&rsquo;s statement with this charge (and anything else ready to bill) and opens it, so you can copy the link for the client.
+      </p>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Adding…" : "Add to Next Statement"}</Button>
+        <Button type="submit" name="then" value="bill" disabled={pending}>{pending ? "Working…" : "Add and Bill Now"}</Button>
+        <Button type="submit" variant="secondary" disabled={pending}>Add to Next Statement</Button>
         <Result state={state} />
       </div>
     </form>
