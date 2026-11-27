@@ -1,7 +1,7 @@
 # TalloCPA OS — AI Workforce (design note)
 
 Status: **draft for the Owner's approval** (27 Nov 2026). Nothing here is built yet.
-Decisions already made by the Owner are in [`DECISIONS.md`](DECISIONS.md) Q75–Q79; the
+Decisions already made by the Owner are in [`DECISIONS.md`](DECISIONS.md) Q75–Q80; the
 items marked **To confirm** below are recommendations waiting for an answer.
 
 This note is about the firm's own AI employees: AI that does work inside the firm's
@@ -42,7 +42,7 @@ app on the Qwen API.
 
 ## 3. The AI employees
 
-14 AI employees in 6 departments. Org chart:
+15 AI employees in 6 departments. Org chart:
 <https://claude.ai/artifact/2Nj7saPXTEJe1QAJ1KBgrc> (private to the Owner).
 
 | Department | AI employee | Job | Supervisor | Runs on |
@@ -54,6 +54,7 @@ app on the Qwen API.
 | Tax Compliance & Bookkeeping | Pre-Review Assistant | Compares a return with prior periods, 2307s with sales, the VAT threshold, books with return lines; drafts the review memo | Reviewer | Cowork |
 | Tax Compliance & Bookkeeping | BIR Mail Clerk | Matches BIR confirmations and notices to filings, attaches proof as a draft, flags LOA / PAN / FAN | Preparer | Cowork |
 | Tax Compliance & Bookkeeping | FS Preparer | Assembles the full financial statements in the firm's design (§8) | Reviewer; Owner releases | Cowork |
+| Tax Compliance & Bookkeeping | Annual Reviewer | Checks that the whole year adds up: the books against every return filed (§8a) | Reviewer; Owner approves amendments | Cowork |
 | Business Registration | Registration Runner | Drafts Form 1901 / 1903 / 1905 fields, lists missing requirements as client requests, watches days held at each office | Preparer | Cowork |
 | Billing & Collections | Collections Clerk | Drafts reminders by aging, summarizes payment habits, flags jobs ready to bill | Owner approves sends | Cowork |
 | Marketing & Growth | Content Writer | Articles and guides for tallocpa.com | Owner | Cowork |
@@ -64,7 +65,7 @@ app on the Qwen API.
 
 Hand-offs: Sales Assistant → Onboarding Officer ← Registration Runner. Document Clerk →
 preparer → Pre-Review Assistant → Reviewer → Owner. FS Preparer → Reviewer → Owner
-releases to the portal.
+releases to the portal. Annual Reviewer → Reviewer → Owner approves any amendment.
 
 **Marketing** follows the Code of Ethics for Professional Accountants on advertising:
 no exaggerated claims, no comparison with other firms, no client names or figures
@@ -74,7 +75,7 @@ without written consent. Nothing is published without the Owner.
 
 | Where | Who | Paid by |
 |---|---|---|
-| **Cowork desk** (a Claude Cowork project per AI employee) | 11 of the 14, plus the Document Clerk's catch-up | The Owner's Claude plan, within its usage allowance. FS season (January–April) may need a higher plan |
+| **Cowork desk** (a Claude Cowork project per AI employee) | 12 of the 15, plus the Document Clerk's catch-up | The Owner's Claude plan, within its usage allowance. FS season (January–April) may need a higher plan |
 | **Inside the app** | Client Concierge, Document Clerk first pass, Onboarding Officer chat replies | Qwen API on Alibaba Cloud, pay per use (Q76) |
 | **The MCP server** | Every Cowork desk | No AI cost: it is the app's own code on Vercel |
 
@@ -136,7 +137,7 @@ Read-only at every level. Proposed defaults:
 
 | AI employee | Level |
 |---|---|
-| Document Clerk, Pre-Review Assistant, FS Preparer | Full, assigned clients |
+| Document Clerk, Pre-Review Assistant, FS Preparer, Annual Reviewer | Full, assigned clients |
 | Onboarding Officer | Full, while the client is in Onboarding |
 | Chief of Staff | Summary, all clients |
 | Client Concierge | What the client sees in its own portal, for the businesses that contact can access |
@@ -180,6 +181,7 @@ it in the app.
 | Pre-Review Assistant | a filing with its prior periods; ledger summary; 2307s against sales; save a draft review memo |
 | BIR Mail Clerk | unmatched BIR emails; propose a match to a filing; attach proof as a draft |
 | FS Preparer | statements and notes data for a period; notes library; save an FS draft; run the FS validator |
+| Annual Reviewer | the annual reconciliation for a client and year; the entries and filings behind a difference; filed-return files; draft figures for a return filed elsewhere; save the annual review memo; propose an amendment |
 | Registration Runner | a registration case; draft 1901 / 1903 / 1905 fields; create client requests |
 | Collections Clerk | receivables aging; a client's payment history; jobs ready to bill; draft a reminder |
 | Chief of Staff | dashboard summary; scores; staff load |
@@ -237,6 +239,52 @@ Settings → Notes library) that human staff use too.
 the full notes library; the framework used per client type (PFRS for SMEs, PFRS for
 Small Entities); two or three past FS of different client types to test against.
 
+## 8a. Annual Reviewer
+
+The Pre-Review Assistant checks **each return** before it is filed. The Annual Reviewer
+checks that **the whole year adds up**: the books against every return filed for the
+taxable year. Code computes every difference; the AI traces the cause and recommends
+what to do.
+
+**Annual reconciliation workpaper** (an app feature, computed by code; useful to
+reviewers without AI). For one client and taxable year it takes the latest version of
+every filed return (an amended return replaces the original, Q73), from
+`return_worksheets.figures`, and the ledger for the year. It extends the monthly
+tie-outs T-1 to T-10 (`src/lib/workpapers/tieouts.ts`) to the year, with the same ₱1
+rounding tolerance:
+
+| # | Check | Books vs returns |
+|---|---|---|
+| A-1 | Sales | Revenue per books vs 2550Q or 2551Q vs 1701Q / 1702Q vs the annual ITR |
+| A-2 | Output and input VAT | VAT accounts vs the 2550Qs, input VAT carried over |
+| A-3 | Percentage tax | Books vs the 2551Qs |
+| A-4 | Creditable withholding (CWT) | 2307s received vs SAWT vs credits claimed on the quarterly and annual ITR; missing 2307s |
+| A-5 | Expanded withholding (EWT) | Expenses subject to EWT and the payable vs 0619-E and 1601-EQ vs 1604-E / QAP |
+| A-6 | Compensation | Salaries per books vs the 1601-Cs vs 1604-C / alphalist vs the 2316s |
+| A-7 | Income tax | Taxable income per books vs the ITR (OSD or itemized, NOLCO, MCIT); Q3 cumulative vs annual |
+| A-8 | Year-end tax payables | BIR payables in the December books vs what the January returns pay |
+| A-9 | Tax payments | Payments to BIR in the cash disbursements book vs the payments on the returns |
+| A-10 | SSS, PhilHealth, Pag-IBIG | Payables vs remittances |
+| A-11 | Deductibility risk | Expenses that called for withholding but have none (non-deductible; a common LOA finding) |
+
+**The Annual Reviewer (AI)**, for each open difference:
+
+- traces the likely cause: timing or cutoff, a document booked in the next open month
+  (Q72), a 2307 received after the quarter, a misclassified account, a wrong rate, an
+  amendment not yet filed;
+- recommends one of: no action, explain in writing, adjust the books, or amend the
+  return (only the Owner approves an amendment, Q71);
+- writes the annual review memo and lists questions for the preparer or the client;
+- flags LOA risk (feeds Phase 4).
+
+**Returns filed elsewhere.** Returns filed by a previous accountant, or before the
+client joined, have no stored figures. The Annual Reviewer reads the uploaded filed
+return and drafts its figures; a staff member confirms them before they count.
+
+Runs in Cowork, Full books access for assigned clients, January to April before the
+annual ITR, 1604-C and 1604-E, or on request. The workpaper needs no input from the
+Owner and can be built at any time.
+
 ## 9. Settings → AI Employees (Owner only)
 
 - List of AI employees: department, supervisor, status (on / off), where it runs.
@@ -259,6 +307,10 @@ Small Entities); two or three past FS of different client types to test against.
 - `ai_drafts` where a feature has no draft state of its own (kind, client_id,
   payload, status: open / accepted / rejected, decided_by).
 - FS: `fs_templates`, `fs_note_library`, `fs_drafts`.
+- Annual review: `annual_reviews` (client, taxable year, status, memo) and
+  `annual_review_items` (check, books amount, returns amount, difference, status,
+  explanation, recommendation); `external_return_figures` for returns filed elsewhere
+  (drafted, confirmed_by).
 
 ## 11. Build order
 
@@ -269,7 +321,8 @@ Small Entities); two or three past FS of different client types to test against.
 3. **Document Clerk** and **Onboarding Officer** tools; their Cowork desks.
 4. **`ai-provider` with Qwen**; Client Concierge on Telegram and the portal.
 5. **FS template, notes library and release validator** (useful to staff without AI);
-   then the FS Preparer's tools and desk.
+   then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
+   Annual Reviewer's tools and desk.
 6. Pre-Review Assistant, Collections Clerk, Registration Runner, BIR Mail Clerk,
    Chief of Staff.
 7. Marketing & Growth.
@@ -287,3 +340,4 @@ Each step ships with its tests and goes live switched off until the Owner turns 
 | A5 | Which client messages the Concierge may send on its own, and which go to a preparer first | Owner |
 | A6 | Monthly spending cap per in-app AI employee | Owner |
 | A7 | Claude plan for FS season if usage limits are reached | Owner |
+| A8 | Should open annual differences block the annual ITR from being marked prepared until explained, as the monthly tie-outs do? Recommended: yes | Owner |

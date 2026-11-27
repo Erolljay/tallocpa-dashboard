@@ -83,3 +83,4 @@ Decisions from the design interview (2026-11-23) that the specification rests on
 | Q77 | TalloCPA OS MCP server | The app gets an MCP server so AI employees reach it with their own credentials; new features add their own AI tools. (Owner, 27 Nov 2026) |
 | Q78 | Marketing & Growth | AI employees for marketing, social media and SEO join the workforce as their own department. (Owner, 27 Nov 2026) |
 | Q79 | FS Preparer | An AI employee prepares financial statements in the firm's design with the firm's full notes; amounts, totals and note numbering come from the books, so the FS cannot carry those errors. Its desk is in the Owner's Cowork. (Owner, 27 Nov 2026) |
+| Q80 | Annual Reviewer | An AI employee reviews each client's books against every return filed for the year (books vs returns); code computes the differences, the AI explains them and recommends; amendments still need the Owner (Q71). (Owner, 27 Nov 2026) |
