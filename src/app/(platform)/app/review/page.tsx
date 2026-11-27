@@ -72,6 +72,9 @@ async function Queue() {
   const leaveForOwner = (r: Row) =>
     limit == null ? null : Number(r.tax_due ?? 0) > limit ? "Over your limit" : r.prepared_by === me.userId ? "Your own work" : null;
   const today = manilaToday();
+  // Catch-up returns recorded by staff, waiting for the reviewer's confirmation (migration 20270104000001).
+  const { data: catchUpRows } = await supabase.rpc("catch_up_waiting");
+  const catchUp = ((catchUpRows ?? []) as CatchUpRow[]).filter((r) => owner || reviewerOf.has(r.client_id));
 
   return (
     <div className="space-y-6">
@@ -86,6 +89,7 @@ async function Queue() {
           <Section title="Waiting for the final approval" hint="You approve for the Owner. Check payment first." rows={q.toApprove} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing waiting for the final approval." flag={leaveForOwner} />
         </>
       )}
+      {catchUp.length > 0 && <CatchUpSection rows={catchUp} nameOf={nameOf} me={me.userId} owner={owner} />}
       <Section title="Ready for review" hint={owner ? "Prepared by staff. You or the client's reviewer can review or send back." : "Prepared by staff on your clients. You cannot review your own work."} rows={q.toReview} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing to review." />
       <Section title="Waiting for the client" hint="Reviewed and with the client. A question from the client needs an answer from staff." rows={q.withClient} today={today} nameOf={nameOf} amended={flagOf} empty="Nothing with clients." />
     </div>
@@ -133,6 +137,52 @@ function Section({ title, hint, rows, today, nameOf, amended, empty, flag }: { t
           </table>
         </div>
       )}
+    </Card>
+  );
+}
+
+interface CatchUpRow {
+  filing_id: string;
+  client_id: string;
+  client_name: string;
+  form: string;
+  period_label: string;
+  tax_due: string | null;
+  filed_on: string | null;
+  recorded_by: string | null;
+}
+
+function CatchUpSection({ rows, nameOf, me, owner }: { rows: CatchUpRow[]; nameOf: Map<string, string>; me: string; owner: boolean }) {
+  return (
+    <Card title={`Catch-up returns to confirm (${rows.length})`} actions={<span className="text-caption-1-regular text-text-tertiary">Filed outside the app. Check each against the BIR copy.</span>}>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[44rem] text-body-regular">
+          <thead className="text-start text-body-medium text-text-tertiary">
+            <tr>
+              <th scope="col" className="text-start pb-2">Client</th>
+              <th scope="col" className="text-start pb-2">Return</th>
+              <th scope="col" className="pb-2 text-end">Tax due</th>
+              <th scope="col" className="text-start pb-2">Filed on</th>
+              <th scope="col" className="text-start pb-2">Recorded by</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.filing_id} className="border-t border-separator-border transition-colors duration-150 hover:bg-background-secondary-hover">
+                <td className="py-2 pr-4 text-text-primary">{r.client_name}</td>
+                <td className="py-2 pr-4">
+                  <Link href={`/app/filings/${r.filing_id}`} className="font-medium text-button-ghost-foreground hover:underline">{r.form} · {r.period_label}</Link>
+                </td>
+                <td className="amount py-2 pr-4 text-end tabular-nums text-text-primary">{r.tax_due == null ? "—" : peso.format(Number(r.tax_due))}</td>
+                <td className="py-2 pr-4 tabular-nums text-text-primary">{r.filed_on ? showDate(r.filed_on) : "—"}</td>
+                <td className="py-2 text-text-secondary">
+                  {(r.recorded_by && nameOf.get(r.recorded_by)) ?? "—"} {!owner && r.recorded_by === me && <Badge>Your own: another person confirms</Badge>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

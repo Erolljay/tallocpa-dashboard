@@ -17,7 +17,7 @@ import { ClientTabs } from "./client-tabs";
 import { DocumentsCard } from "./documents-card";
 import { EmployerCard } from "./employer-card";
 import { NotesCard } from "./notes-card";
-import { AssignForm, ClientUserForm, EngagementForm, IncomeTaxMethodForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
+import { AssignForm, CatchUpForm, ClientUserForm, EngagementForm, IncomeTaxMethodForm, RemoveAssignmentButton, RemoveClientUserButton, StatusButton } from "./forms";
 
 export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
   return (
@@ -29,6 +29,7 @@ export default function ClientPage(props: PageProps<"/app/clients/[id]">) {
 
 const frequencyLabel: Record<string, string> = { monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
 const fmtDate = (d: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
+const fmtMonth = (d: string) => new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
 
 async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clients/[id]">, "params" | "searchParams">) {
   const { id } = await params;
@@ -130,6 +131,17 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           <IncomeTaxMethodForm clientId={id} value={client.income_tax_method ?? null} individual={client.taxpayer_type === "individual"} canEdit={canWork} />
           {!canWork && <p className="mt-3 text-caption-1-regular text-text-tertiary">Only the Owner and staff assigned to this client change it.</p>}
         </Card>
+
+        {(isOwner || client.catch_up_through) && (
+          <Card title="Catch-up accounting" actions={client.catch_up_through ? <Badge tone="waiting">Through {fmtMonth(client.catch_up_through)}</Badge> : undefined}>
+            <p className="mb-4 text-body-regular text-text-secondary">
+              {client.catch_up_through
+                ? `Returns up to ${fmtMonth(client.catch_up_through)} were filed outside the app. Staff record each one on its return page and the reviewer confirms it. They skip the client's approval, the payment check and billing, and are not scored late. Documents for those months stay in their own month, with no late flag or surcharge. The Books months lock when catch-up ends.`
+                : "For a client whose past returns were already filed outside the app. Staff record each past return and the reviewer confirms it, with no other step. Use Create past returns on the Returns tab to add the returns first."}
+            </p>
+            {isOwner && <CatchUpForm clientId={id} through={client.catch_up_through ?? null} />}
+          </Card>
+        )}
 
         <Card title="Filing obligations">
           {(obligations.data ?? []).length === 0 ? (

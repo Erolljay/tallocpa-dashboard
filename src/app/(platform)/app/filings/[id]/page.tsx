@@ -18,6 +18,7 @@ import { REMITTANCE_KINDS, remittanceBadge, type RemittanceKind, type Remittance
 import { filingsBooksReady, filingsNeedingAmendment } from "@/lib/books/actions";
 import { DOC_TYPES, type DocType } from "@/lib/documents/labels";
 import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
+import { CatchUpConfirmForms, CatchUpRecordForm } from "../catch-up-forms";
 import { AmendFilingForm } from "../amend-form";
 import { ApprovalMemo } from "./approval-memo";
 import { EsubmissionControls, ReturnFileUpload, RetryBookEntry } from "./return-files";
@@ -77,11 +78,11 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
 
   const { data: f } = await supabase
     .from("filing_instances")
-    .select("id, client_id, obligation_id, amendment_no, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, esubmission_required, esubmission_files, clients(id, name, code, payment_mode)")
+    .select("id, client_id, obligation_id, amendment_no, form, period_label, period_start, period_end, due_date, statutory_due_date, status, tax_due, filing_reference, filed_on, payment_reference, paid_on, open_query, esubmission_required, esubmission_files, catch_up, catch_up_recorded_by, catch_up_recorded_at, clients(id, name, code, payment_mode, catch_up_through)")
     .eq("id", id)
     .maybeSingle();
   if (!f) notFound();
-  const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string };
+  const client = f.clients as unknown as { id: string; name: string; code: string; payment_mode: string; catch_up_through: string | null };
 
   const [{ data: events }, { data: team }, { data: staff }, { data: clientUsers }, { data: attachments }, { data: delegations }, { data: versions }, { data: files }, { data: sends }, { data: bookRows }, { data: esubState }, { data: worksheetRow }] = await Promise.all([
     supabase.from("filing_events").select("id, from_status, to_status, action, actor, note, data, created_at").eq("filing_instance_id", id).order("created_at").order("id"),
@@ -133,6 +134,15 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   const done = stepIndex(status);
   const complete = status === "filed" && (esub === "not_required" || esub === "validated");
 
+  // Catch-up (migration 20270104000001): a past return filed outside the app is recorded by
+  // staff and confirmed by the reviewer, with no other step.
+  const catchUpPeriod = client.catch_up_through != null && f.period_end <= client.catch_up_through && status === "not_started";
+  const assignedAs = (team ?? []).filter((t) => t.user_id === me.userId).map((t) => t.role);
+  const isOwnerViewer = me.staff.role === "owner";
+  const recorded = catchUpPeriod && f.catch_up_recorded_at != null;
+  const canRecord = catchUpPeriod && (isOwnerViewer || assignedAs.length > 0);
+  const canConfirm = recorded && (isOwnerViewer || (assignedAs.includes("reviewer") && f.catch_up_recorded_by !== me.userId));
+
   const actions = availableActions(
     { status, openQuery: f.open_query, preparedBy, taxDue: f.tax_due == null ? null : Number(f.tax_due) },
     {
@@ -173,7 +183,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
           </Notice>
         </div>
       )}
-      {!ready && status !== "filed" && (
+      {!ready && status !== "filed" && !catchUpPeriod && (
         <div className="mb-6">
           <Notice tone="waiting">
             The Books for this return&rsquo;s period are still open. It shows in the Filings lists once the reviewer locks every month of the period.{" "}
@@ -196,6 +206,40 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             </Suspense>
           )}
 
+          {catchUpPeriod && (
+            <Card title="Catch-up: filed outside the app" actions={<Badge tone={recorded ? "waiting" : "neutral"}>{recorded ? "Waiting for confirmation" : "Not recorded"}</Badge>}>
+              <p className="mb-4 text-body-regular text-text-secondary">
+                This client is in catch-up through {showDate(client.catch_up_through!)}. Record what was filed with the BIR. The reviewer checks it against the BIR copy and confirms it. It skips the client&rsquo;s approval and the payment check, is not billed, and is not scored late. Attach the filed copy under Return if you have it.
+              </p>
+              {recorded && (
+                <dl className="mb-4 grid grid-cols-[10rem_1fr] gap-x-4 gap-y-1 text-body-regular">
+                  <dt className="text-text-tertiary">Tax due</dt><dd className="amount tabular-nums text-text-primary">{f.tax_due == null ? "—" : peso.format(Number(f.tax_due))}</dd>
+                  <dt className="text-text-tertiary">Filed on</dt><dd className="tabular-nums text-text-primary">{f.filed_on ? showDate(f.filed_on) : "—"}{f.filing_reference ? ` · ${f.filing_reference}` : ""}</dd>
+                  <dt className="text-text-tertiary">Paid on</dt><dd className="tabular-nums text-text-primary">{f.paid_on ? showDate(f.paid_on) : "—"}{f.payment_reference ? ` · ${f.payment_reference}` : ""}</dd>
+                  <dt className="text-text-tertiary">Recorded by</dt><dd className="text-text-primary">{nameOf.get(f.catch_up_recorded_by ?? "") ?? "—"}</dd>
+                </dl>
+              )}
+              <div className="space-y-6">
+                {canConfirm && <CatchUpConfirmForms filingId={f.id} />}
+                {canRecord && (
+                  <div className={recorded ? "border-t border-separator-border pt-4" : undefined}>
+                    <CatchUpRecordForm
+                      filingId={f.id}
+                      recorded={recorded ? { taxDue: f.tax_due == null ? null : Number(f.tax_due), filedOn: f.filed_on, filingReference: f.filing_reference, paidOn: f.paid_on, paymentReference: f.payment_reference } : null}
+                    />
+                  </div>
+                )}
+                {!canRecord && !canConfirm && <p className="text-body-regular text-text-secondary">{recorded ? "Waiting for the client's reviewer or the Owner to confirm it." : "Staff assigned to this client record it."}</p>}
+                {recorded && !canConfirm && canRecord && f.catch_up_recorded_by === me.userId && <p className="text-caption-1-regular text-text-tertiary">You recorded it, so another person confirms it.</p>}
+              </div>
+            </Card>
+          )}
+
+          {f.catch_up && status === "filed" && (
+            <Notice tone="done">Catch-up return: filed outside the app, recorded and confirmed here without the client&rsquo;s approval or the payment check.</Notice>
+          )}
+
+          {!catchUpPeriod && (
           <Card title="Sign-off">
             {/* One row of steps: scrolls sideways on phones, shares the width on wider screens. */}
             <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
@@ -236,6 +280,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
               )}
             </div>
           </Card>
+          )}
 
           {(f.esubmission_required || esub !== "not_required") && (status === "owner_approved" || status === "filed") && (
             <Card title="eSubmission" actions={<Badge tone={esubmissionTone[esub]}>{esubmissionLabel[esub]}</Badge>}>
