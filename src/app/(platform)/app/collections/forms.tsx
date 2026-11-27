@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Pick } from "@/components/books/pick";
 import { Button, Field, Input, Notice, peso, Select, Textarea } from "@/components/ui";
 import { CONTRIBUTION_KEYS, CONTRIBUTIONS, methodLabel, type DepositMethod } from "@/lib/collections/collections";
 import {
@@ -176,6 +177,7 @@ const CHARGE_SUGGESTIONS = [
 export function AddChargeForm({ clientId, today, clients }: { clientId: string | null; today: string; clients?: { id: string; label: string }[] }) {
   const [state, run, pending] = useActionState(clientId ? addChargeAction.bind(null, clientId) : newBillAction, {} as MoneyState);
   const [kind, setKind] = useState<"contribution" | "other">("other");
+  const [client, setClient] = useState<string | null>(null);
   const lastMonth = (() => {
     const [y, m] = today.split("-").map(Number);
     return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
@@ -185,14 +187,9 @@ export function AddChargeForm({ clientId, today, clients }: { clientId: string |
       <div className="grid gap-3 sm:grid-cols-2">
         {!clientId && (
           <div className="sm:col-span-2">
-            <Field label="Client" htmlFor="client_id" hint="Not listed? Add the client under Clients first.">
-              <Select id="client_id" name="client_id" required defaultValue="">
-                <option value="" disabled>Choose the client…</option>
-                {(clients ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </Select>
-            </Field>
+            {/* Type part of the name or code (e.g. "espinosa", "TC-0033") and the list narrows. */}
+            <Pick id="client_id" name="client_id" label="Client" placeholder="Type a name or code…" value={client} onChange={setClient} options={clients ?? []} />
+            <p className="mt-1.5 text-caption-1-medium text-text-secondary">Not listed? Add the client under Clients first.</p>
           </div>
         )}
         <Field label="Kind" htmlFor="kind">
