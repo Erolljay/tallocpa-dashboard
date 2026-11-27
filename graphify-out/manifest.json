@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "src/lib/clients/schema.ts": {
-    "mtime": 1795588210.4456446,
-    "seen": 1795743535.8344123,
-    "ast_hash": "9c8299e24805e0707e766b756b173008",
+    "mtime": 1795760338.1296716,
+    "seen": 1795760666.6089134,
+    "ast_hash": "85503625b38084b9f9faf0634302f6d7",
     "semantic_hash": ""
   },
   "src/lib/deadlines/dates.ts": {
@@ -762,9 +762,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/certificate.ts": {
-    "mtime": 1795588210.451958,
-    "seen": 1795743535.8346393,
-    "ast_hash": "b9a65c15272095157428ac518da67be6",
+    "mtime": 1795760387.7552738,
+    "seen": 1795760666.6118958,
+    "ast_hash": "fa7cb74607ced38b9b8b37cbc01ca621",
     "semantic_hash": ""
   },
   "src/lib/payroll/compute.ts": {
@@ -774,9 +774,9 @@
     "semantic_hash": ""
   },
   "src/lib/payroll/data.ts": {
-    "mtime": 1795588210.451958,
-    "seen": 1795743535.8346412,
-    "ast_hash": "3a4d1165e5533dd106bf07f5e27a0704",
+    "mtime": 1795760387.7548306,
+    "seen": 1795760666.611916,
+    "ast_hash": "cd827f9f9d3806fffe2a3da273aa4752",
     "semantic_hash": ""
   },
   "src/lib/payroll/employees-xlsx.ts": {
@@ -900,27 +900,27 @@
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/testing.ts": {
-    "mtime": 1795588210.4558809,
-    "seen": 1795743535.8347008,
-    "ast_hash": "f61fd8b6b8f3ddb55950d168bd2fb79d",
+    "mtime": 1795760433.011886,
+    "seen": 1795760666.6130698,
+    "ast_hash": "bb71759b5cd0d445c792c32c5b051d77",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/util.ts": {
-    "mtime": 1795760119.4247785,
-    "seen": 1795760224.2210586,
-    "ast_hash": "0eea3630b9aaa09d0085d6fae328b727",
+    "mtime": 1795760378.2417436,
+    "seen": 1795760666.6130714,
+    "ast_hash": "46b2da1f785fb43ae9228977911b4008",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/vat.test.ts": {
-    "mtime": 1795760141.1183062,
-    "seen": 1795760224.2210598,
-    "ast_hash": "dda4a46e2a334ba7d442aee912f24c1f",
+    "mtime": 1795760428.499478,
+    "seen": 1795760666.6130726,
+    "ast_hash": "fff16417d81ae03a25b8df3fe6da4ed7",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/business/vat.ts": {
-    "mtime": 1795759752.0177557,
-    "seen": 1795760224.2210612,
-    "ast_hash": "74c15d31c990496b6f1c1a41474538c6",
+    "mtime": 1795760378.241382,
+    "seen": 1795760666.613074,
+    "ast_hash": "1cbc9a8be5963720517ad18ba7d65f57",
     "semantic_hash": ""
   },
   "src/lib/returns/forms/payroll.ts": {
@@ -1002,9 +1002,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/load.ts": {
-    "mtime": 1795759752.0187879,
-    "seen": 1795760224.2211545,
-    "ast_hash": "9ebe4a182189406c99c540be5dd0d5e9",
+    "mtime": 1795760378.242399,
+    "seen": 1795760666.6133802,
+    "ast_hash": "01f6517088ad27ce547da627561b6884",
     "semantic_hash": ""
   },
   "src/lib/returns/money.test.ts": {
@@ -1044,9 +1044,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/source.ts": {
-    "mtime": 1795759752.0187879,
-    "seen": 1795760224.2212377,
-    "ast_hash": "8c6e39d993027de4a83adaed0b90e933",
+    "mtime": 1795760378.2421632,
+    "seen": 1795760666.6135144,
+    "ast_hash": "31ff17147f6e49072d05f922f0dd6ff9",
     "semantic_hash": ""
   },
   "src/lib/returns/tax-rates.test.ts": {
@@ -1062,9 +1062,9 @@
     "semantic_hash": ""
   },
   "src/lib/returns/types.ts": {
-    "mtime": 1795759752.0187879,
-    "seen": 1795760224.2213,
-    "ast_hash": "b1ded5e582b33c1dcf8f30c20f3dfbcc",
+    "mtime": 1795760378.2419746,
+    "seen": 1795760666.613552,
+    "ast_hash": "9a5d047352a942cf0153a9203f510425",
     "semantic_hash": ""
   },
   "src/lib/scores/compliance.ts": {
@@ -2466,15 +2466,15 @@
     "semantic_hash": ""
   },
   "src/lib/books/form-2307.test.ts": {
-    "mtime": 1795759752.0058036,
-    "seen": 1795760224.2191975,
-    "ast_hash": "96d0648c707467335c9ef8847a03e46a",
+    "mtime": 1795760436.6907277,
+    "seen": 1795760666.608366,
+    "ast_hash": "41254e3570c72498e19d2c605b51ed37",
     "semantic_hash": ""
   },
   "src/lib/books/form-2307.ts": {
-    "mtime": 1795759752.0058036,
-    "seen": 1795760224.219199,
-    "ast_hash": "78e73152218774076aee3a887fbb19d6",
+    "mtime": 1795760387.755505,
+    "seen": 1795760666.608368,
+    "ast_hash": "316439b5ed50d5c172e907afd8640f09",
     "semantic_hash": ""
   },
   "src/lib/books/load-2307.ts": {
@@ -2526,9 +2526,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/books-2307.test.ts": {
-    "mtime": 1795759752.0292954,
-    "seen": 1795760224.2217476,
-    "ast_hash": "297b3507d9cd3912af74b63f97aa846a",
+    "mtime": 1795760566.8535016,
+    "seen": 1795760666.6145883,
+    "ast_hash": "c080e2847e2b616447af9b3cc8554b56",
     "semantic_hash": ""
   },
   "supabase/tests/portal-reports.test.ts": {
@@ -3468,9 +3468,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/reports/2307/page.tsx": {
-    "mtime": 1795759751.9908428,
-    "seen": 1795760224.2176957,
-    "ast_hash": "4ec21153c962574db2b8c788597b796f",
+    "mtime": 1795760387.7561438,
+    "seen": 1795760666.6007118,
+    "ast_hash": "b2a4a4828980f9f77196e374cc46ee6c",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/books/reports/2307/print/page.tsx": {
@@ -3594,9 +3594,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/edit/page.tsx": {
-    "mtime": 1795759751.9910676,
-    "seen": 1795760224.2177207,
-    "ast_hash": "59cd9aa1931a270a46ec6808b98a8411",
+    "mtime": 1795760338.130526,
+    "seen": 1795760666.601223,
+    "ast_hash": "72117153abd23014f811e9590ca3f884",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/fixed-assets/actions.ts": {
@@ -3660,9 +3660,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/page.tsx": {
-    "mtime": 1795759751.9917736,
-    "seen": 1795760224.217736,
-    "ast_hash": "1f08f1dfdf0bf9324d5dc92c3d582103",
+    "mtime": 1795760338.130743,
+    "seen": 1795760666.6014838,
+    "ast_hash": "ae36de3c314a01d30cca09cb0c4c50fa",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/actions.ts": {
@@ -3690,9 +3690,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/forms.tsx": {
-    "mtime": 1795759751.9920228,
-    "seen": 1795760224.2177413,
-    "ast_hash": "cca98817a1d6145b558ee91485cbe3c0",
+    "mtime": 1795760387.7558367,
+    "seen": 1795760666.601585,
+    "ast_hash": "be8f7600888f3ef7d7dd4f431968d5b8",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/month/[month]/page.tsx": {
@@ -3726,15 +3726,15 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/setup/page.tsx": {
-    "mtime": 1795759751.992395,
-    "seen": 1795760224.2177482,
-    "ast_hash": "366f90e9c015beca3d022c3b70b08633",
+    "mtime": 1795760387.7560027,
+    "seen": 1795760666.6017087,
+    "ast_hash": "d0cbea81acb3aa1d02c40ba50f4ccd69",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/year-data.ts": {
-    "mtime": 1795759751.992395,
-    "seen": 1795760224.2177494,
-    "ast_hash": "cb5039f21324b9550edb910567998675",
+    "mtime": 1795760387.7550664,
+    "seen": 1795760666.6017098,
+    "ast_hash": "c8c3320cfef764580f27c76c60042389",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/[id]/payroll/year/[year]/2316/all/page.tsx": {
@@ -3822,15 +3822,15 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/actions.ts": {
-    "mtime": 1795759751.9931734,
-    "seen": 1795760224.2177684,
-    "ast_hash": "545a4bea0285ce586ed04e31bfd683a6",
+    "mtime": 1795760338.130084,
+    "seen": 1795760666.6020455,
+    "ast_hash": "1043cd15dee213b4a38187c3b6dca2c5",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/client-form.tsx": {
-    "mtime": 1795759751.9931734,
-    "seen": 1795760224.2177696,
-    "ast_hash": "da597695ee6c67a6fda2698b12bcf5d8",
+    "mtime": 1795760338.13036,
+    "seen": 1795760666.602047,
+    "ast_hash": "0ebc8c102116a1b040aa36873f3f7a55",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/clients/new/page.tsx": {

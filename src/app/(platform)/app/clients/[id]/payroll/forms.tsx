@@ -472,7 +472,7 @@ export function PayrollSettingsForm({ clientId, settings }: { clientId: string; 
       <Field label="Title" htmlFor="signatory_title" hint="e.g. HR Manager, Treasurer." error={e.signatory_title}>
         <Input id="signatory_title" name="signatory_title" defaultValue={settings.signatoryTitle ?? ""} />
       </Field>
-      <Field label="Employer ZIP" htmlFor="employer_zip_code" hint="Item 14A." error={e.employer_zip_code}>
+      <Field label="Employer ZIP" htmlFor="employer_zip_code" hint="Item 14A. Only used while the client's record has no ZIP code." error={e.employer_zip_code}>
         <Input id="employer_zip_code" name="employer_zip_code" inputMode="numeric" defaultValue={settings.employerZipCode ?? ""} />
       </Field>
       <div className="pb-1"><Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button></div>

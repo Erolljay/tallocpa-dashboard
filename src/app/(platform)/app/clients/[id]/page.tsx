@@ -100,7 +100,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2 text-body-regular">
             <dt className="text-text-tertiary">Branch</dt><dd className="min-w-0 break-words text-text-primary">{branches.find((b) => b.id === client.branch_id)?.name ?? "—"}</dd>
             <dt className="text-text-tertiary">RDO</dt><dd className="min-w-0 break-words text-text-primary">{client.rdo_code ?? "—"}</dd>
-            <dt className="text-text-tertiary">Address</dt><dd className="min-w-0 break-words text-text-primary">{client.registered_address ?? "—"}</dd>
+            <dt className="text-text-tertiary">Address</dt><dd className="min-w-0 break-words text-text-primary">{[client.registered_address, client.zip_code].filter(Boolean).join(" ") || "—"}</dd>
             <dt className="text-text-tertiary">Registered</dt><dd className="min-w-0 break-words text-text-primary">{registration.data?.registration_date ? fmtDate(registration.data.registration_date) : "—"}</dd>
             <dt className="text-text-tertiary">Tax types</dt><dd className="min-w-0 break-words text-text-primary">{taxTypes.join(", ") || "—"}</dd>
             <dt className="text-text-tertiary">Taxable year</dt><dd className="min-w-0 break-words text-text-primary">Ends {months[client.fiscal_year_end_month - 1]}</dd>

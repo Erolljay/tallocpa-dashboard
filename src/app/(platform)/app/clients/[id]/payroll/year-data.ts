@@ -15,6 +15,7 @@ export async function yearWorksheet(supabase: SupabaseClient, client: PayrollCli
       tin: client.tin,
       rdoCode: client.rdo_code,
       registeredAddress: client.registered_address,
+      zipCode: client.zip_code,
       taxpayerType: "corporation",
       fiscalYearEndMonth: 12,
       vatRegistered: false,

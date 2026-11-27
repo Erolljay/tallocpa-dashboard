@@ -41,7 +41,7 @@ async function Certificates({ params, searchParams }: Pick<PageProps<"/app/clien
       <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-5">
         <Form2307Pickers action={path} hidden={{ month: c.month }} period={period} by={set.by} suppliers={set.suppliers} supplier={supplier} />
         <p className="mt-3 text-caption-1-regular text-text-tertiary">
-          The period follows the Books month above: per quarter, its calendar quarter; per month and per transaction, the month. The authorized representative and the client&rsquo;s ZIP code are the ones in Payroll setup (as on the 2316). The client prints these in the portal once the months are locked.
+          The period follows the Books month above: per quarter, its calendar quarter; per month and per transaction, the month. The authorized representative is the one in Payroll setup (as on the 2316); the client&rsquo;s ZIP code comes from the client&rsquo;s record. The client prints these in the portal once the months are locked.
         </p>
       </div>
       {set.openMonths.length > 0 && (

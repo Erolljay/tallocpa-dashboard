@@ -43,7 +43,7 @@ async function Setup({ params }: Pick<PageProps<"/app/clients/[id]/payroll/setup
           <ItemForm clientId={id} item={null} used={false} />
         </Card>
         <Card title="BIR 2316 signatory">
-          <p className="mb-3 text-body-regular text-text-secondary">Printed on every BIR 2316 of this client as the present employer&rsquo;s authorized agent (items 53 and 55), with the employer&rsquo;s ZIP code (item 14A).</p>
+          <p className="mb-3 text-body-regular text-text-secondary">Printed on every BIR 2316 of this client as the present employer&rsquo;s authorized agent (items 53 and 55), with the employer&rsquo;s ZIP code (item 14A) from the client&rsquo;s record.</p>
           <PayrollSettingsForm clientId={id} settings={settings} />
         </Card>
         <Card title="What the BIR categories mean">

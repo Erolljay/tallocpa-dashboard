@@ -58,6 +58,8 @@ export async function createClientAction(_: FormState, form: FormData): Promise<
   });
   if (error) return { error: `Could not save the client: ${error.message}` };
   const clientId = (data as { id: string }).id;
+  // The ZIP code is not part of create_client_with_obligations' payload.
+  if (v.zip_code) await supabase.from("clients").update({ zip_code: v.zip_code }).eq("id", clientId);
   // Every client keeps account titles (decision 2). Best effort: the Books page can set it up later.
   await supabase.rpc("setup_books", {
     p_client: clientId,
@@ -125,6 +127,9 @@ export async function updateClientAction(clientId: string, _: FormState, form: F
     p_end: end,
   });
   if (error) return { error: `Could not save the client: ${error.message}` };
+  // The ZIP code is not part of update_client_with_obligations' payload.
+  const zip = await supabase.from("clients").update({ zip_code: v.zip_code ?? null }).eq("id", clientId);
+  if (zip.error) return { error: `The client was saved, but not its ZIP code: ${zip.error.message}`, fieldErrors: { zip_code: "Not saved." } };
   revalidatePath("/app/clients");
   revalidatePath(`/app/clients/${clientId}`);
   redirect(`/app/clients/${clientId}`);

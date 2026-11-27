@@ -273,6 +273,7 @@ export function withDirectoryParty(doc: SourceDocument, directory: Map<string, P
     ...doc,
     partyName: displayName(p) || doc.partyName,
     partyAddress: fullAddress(p) || doc.partyAddress,
+    partyZip: p.zip_code,
     partyTin: partyTinLabel(p),
     party: {
       kind: p.kind,

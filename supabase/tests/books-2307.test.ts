@@ -131,6 +131,21 @@ describe.skipIf(!url)("BIR 2307 to suppliers from the Books", () => {
     expect(d.locked_months).toEqual(["2026-01-01"]);
   });
 
+  it("gives the ZIP code on the client's record before the one in Payroll setup", async () => {
+    await db.query(`update public.clients set zip_code = '5001' where id = $1`, [client]);
+    try {
+      const d = await data(PREPARER, "2026-01-01", "2026-03-31");
+      expect(d.client).toMatchObject({ zip_code: "5001" });
+      expect(d.settings).toMatchObject({ zip_code: "5001", signatory_name: "Ana Reyes" });
+    } finally {
+      await db.query(`update public.clients set zip_code = null where id = $1`, [client]);
+    }
+  });
+
+  it("refuses a client ZIP code that is not four digits", async () => {
+    await expect(db.query(`update public.clients set zip_code = '500' where id = $1`, [client])).rejects.toThrow(/zip_code_check/);
+  });
+
   it("gives the client's own users only the invoices of locked months", async () => {
     const d = await data(CLIENT_USER, "2026-01-01", "2026-03-31");
     expect(d.rows.map((r) => r.reference)).toEqual(["OR-9"]);

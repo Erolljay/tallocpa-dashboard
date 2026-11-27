@@ -26,6 +26,7 @@ export function doc(docType: SourceDocument["docType"], d: DocInput): SourceDocu
     partyName: d.partyName ?? null,
     partyTin: d.partyTin ?? null,
     partyAddress: d.partyAddress ?? null,
+    partyZip: d.partyZip ?? null,
     vatable: P(d.vatable ?? 0),
     vatExempt: P(d.vatExempt ?? 0),
     zeroRated: P(d.zeroRated ?? 0),

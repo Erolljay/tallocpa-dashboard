@@ -248,6 +248,8 @@ export interface Filer {
   /** Registered / trade name. */
   name: string;
   address: string;
+  /** Four-digit ZIP code of the registered address ("" when not on file). */
+  zip: string;
   rdo: string;
   fiscalMonthEnd: string;
 }
@@ -263,9 +265,18 @@ export function filerOf(ctx: WorksheetContext): Filer {
     middleName: t("owner_middle_name"),
     name: ctx.client.name,
     address: ctx.client.registeredAddress ?? "",
+    zip: ctx.client.zipCode ?? "",
     rdo: ctx.client.rdoCode ?? "",
     fiscalMonthEnd: String(ctx.client.fiscalYearEndMonth).padStart(2, "0"),
   };
+}
+
+/** The address without a trailing ZIP code that goes in its own column: ("Iloilo City 5000", "5000") → "Iloilo City". */
+export function withoutZip(address: string, zip: string): string {
+  const a = address.trim();
+  if (!zip || !a.endsWith(zip)) return a;
+  const rest = a.slice(0, -zip.length);
+  return /[\s,]$/.test(rest) || rest === "" ? rest.replace(/[\s,]+$/, "") : a;
 }
 
 /** Warnings about the filer data the DAT headers need. */

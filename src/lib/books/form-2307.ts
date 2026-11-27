@@ -264,8 +264,9 @@ export function forms2307(raw: Raw2307, period: Period2307, by: By2307, supplier
     const warnings: string[] = [];
     if (!payee.tin) warnings.push("No supplier TIN (item 2): add it to the supplier.");
     if (!payee.address) warnings.push("No supplier registered address (item 4): complete the supplier in the parties directory.");
+    if (!payee.zipCode) warnings.push("No supplier ZIP code (item 4A): add it to the supplier in the parties directory.");
     if (!payor.tin) warnings.push("No client TIN (item 6): add it to the client's record.");
-    if (!payor.zipCode) warnings.push("No client ZIP code (item 8A): set it in Payroll setup.");
+    if (!payor.zipCode) warnings.push("No client ZIP code (item 8A): add it to the client's record.");
     if (!signatory.name) warnings.push("No authorized representative to sign: set the signatory in Payroll setup.");
     for (const l of lines) {
       const info = lookupAtc(l.atc);
