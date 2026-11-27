@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import type { ContactAccess } from "@/lib/contacts/access";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type StaffRole = "owner" | "reviewer" | "staff";
@@ -9,13 +10,14 @@ export interface Identity {
   userId: string;
   email: string | null;
   staff: { fullName: string; role: StaffRole; brandId: string } | null;
-  clients: { clientId: string; fullName: string; clientName: string }[];
+  /** For a client contact: each business they are linked to and what they may do there. */
+  clients: { clientId: string; fullName: string; clientName: string; access: ContactAccess }[];
 }
 
 interface IdentityRow {
   user_id: string;
   staff: { full_name: string; role: StaffRole; brand_id: string } | null;
-  clients: { client_id: string; full_name: string; client_name: string }[];
+  clients: { client_id: string; full_name: string; client_name: string; access?: ContactAccess }[];
 }
 
 /**
@@ -34,7 +36,7 @@ export const getIdentity = cache(async (): Promise<Identity> => {
     userId: row.user_id,
     email: (claims.claims.email as string | undefined) ?? null,
     staff: row.staff ? { fullName: row.staff.full_name, role: row.staff.role, brandId: row.staff.brand_id } : null,
-    clients: row.clients.map((c) => ({ clientId: c.client_id, fullName: c.full_name, clientName: c.client_name })),
+    clients: row.clients.map((c) => ({ clientId: c.client_id, fullName: c.full_name, clientName: c.client_name, access: c.access ?? "full" })),
   };
 });
 

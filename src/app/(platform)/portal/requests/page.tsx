@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Skeleton } from "@/components/ui";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
+import { accessNote, canAct } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
 import { TicketForm } from "./ticket-form";
 
@@ -74,7 +75,11 @@ async function Requests() {
       <section className="space-y-3">
         <h2 className="text-headline-medium text-text-primary">Ask us something</h2>
         <div className="rounded-3xl border border-border-button-default bg-background-primary-default p-4">
-          <TicketForm clients={clients.map((c) => ({ id: c.id, name: c.name }))} />
+          {clients.some((c) => canAct(c.access)) ? (
+            <TicketForm clients={clients.filter((c) => canAct(c.access)).map((c) => ({ id: c.id, name: c.name }))} />
+          ) : (
+            <p className="text-body-regular text-text-secondary">{accessNote("viewer", "act")}</p>
+          )}
         </div>
       </section>
       {rest.length > 0 && (

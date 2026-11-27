@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
+import { ACCESS_LABEL, ACCESS_TONE, isContactAccess } from "@/lib/contacts/access";
 import type { Branch } from "@/lib/branches";
 import { months, statusLabel, statusTone, taxpayerTypeLabel } from "@/lib/clients/labels";
 import { TAX_TYPES, type TaxType } from "@/lib/clients/obligations";
@@ -45,7 +46,7 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
     supabase.from("staff_assignments").select("user_id, role, staff_profiles(full_name)").eq("client_id", id),
     supabase.from("service_lines").select("code, name").eq("available", true).order("sort_order"),
     isOwner ? supabase.from("staff_profiles").select("user_id, full_name, role, branch_id").eq("active", true).order("full_name") : Promise.resolve({ data: [] }),
-    supabase.from("client_users").select("user_id, full_name, position").eq("client_id", id).order("full_name"),
+    supabase.from("client_users").select("user_id, full_name, position, access").eq("client_id", id).order("full_name"),
     supabase.from("client_parties").select("party_id, role, last_seen, parties(display_name, tin, branch_code)").eq("client_id", id).order("last_seen", { ascending: false }).limit(10),
     supabase.from("branches").select("id, code, name, address, active").order("name"),
     supabase.from("registration_cases").select("id, kind, period_year, details, status, opened_at").eq("client_id", id).order("opened_at", { ascending: false }),
@@ -53,7 +54,15 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
   const { data: telegramLinks } = await supabase.from("telegram_links").select("chat_id, user_id, username, linked_at").eq("client_id", id).eq("staff", false);
   const branches = (branchRows.data ?? []) as Branch[];
   const portalIds = (portalUsers.data ?? []).map((u) => u.user_id);
-  const { data: portalEmails } = portalIds.length ? await supabase.rpc("user_emails", { p_user_ids: portalIds }) : { data: [] };
+  const [{ data: portalEmails }, { data: otherLinks }] = portalIds.length
+    ? await Promise.all([
+        supabase.rpc("user_emails", { p_user_ids: portalIds }),
+        // The same contacts' other businesses (the ones this staff member may see).
+        supabase.from("client_users").select("user_id, client_id").in("user_id", portalIds).neq("client_id", id),
+      ])
+    : [{ data: [] }, { data: [] as { user_id: string; client_id: string }[] }];
+  const otherCount = new Map<string, number>();
+  for (const l of otherLinks ?? []) otherCount.set(l.user_id, (otherCount.get(l.user_id) ?? 0) + 1);
   const portalEmailOf = new Map(((portalEmails ?? []) as { user_id: string; email: string; last_sign_in_at: string | null }[]).map((e) => [e.user_id, e]));
 
   const cases = registrationCase.data ?? [];
@@ -255,18 +264,27 @@ async function ClientDetail({ params, searchParams }: Pick<PageProps<"/app/clien
           {canWork && <TelegramSwitch clientId={id} on={Boolean(client.telegram_enabled)} />}
         </Card>
 
-        <Card title="Portal users">
+        <Card title="Portal contacts" actions={<Link href="/app/contacts" className="text-body-medium text-button-ghost-foreground hover:underline">All contacts</Link>}>
           {(portalUsers.data ?? []).length === 0 ? (
             <p className="text-body-regular text-text-secondary">Nobody from the client can sign in yet.</p>
           ) : (
             <ul className="divide-y divide-separator-border text-body-regular">
               {portalUsers.data!.map((u) => {
                 const info = portalEmailOf.get(u.user_id);
+                const access = isContactAccess(u.access) ? u.access : "full";
+                const others = otherCount.get(u.user_id) ?? 0;
                 return (
                   <li key={u.user_id} className="flex items-center justify-between gap-4 py-2">
-                    <div>
-                      <p className="font-medium text-text-primary">{u.full_name}{u.position ? <span className="font-normal text-text-secondary"> · {u.position}</span> : null}</p>
-                      <p className="text-caption-1-regular text-text-tertiary">{info?.email ?? "—"}{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}</p>
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <Link href={`/app/contacts/${u.user_id}`} className="text-body-medium text-text-primary hover:underline">{u.full_name}</Link>
+                        {u.position ? <span className="text-text-secondary">{u.position}</span> : null}
+                        <Badge tone={ACCESS_TONE[access]}>{ACCESS_LABEL[access]}</Badge>
+                      </p>
+                      <p className="text-caption-1-regular text-text-tertiary">
+                        <bdi dir="ltr">{info?.email ?? "—"}</bdi>{info && !info.last_sign_in_at ? " · has not signed in yet" : ""}
+                        {others > 0 ? ` · also sees ${others} other business${others === 1 ? "" : "es"}` : ""}
+                      </p>
                     </div>
                     {isOwner && <RemoveClientUserButton clientId={id} userId={u.user_id} />}
                   </li>

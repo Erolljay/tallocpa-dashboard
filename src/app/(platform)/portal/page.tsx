@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { RiArrowRightSLine, RiCalendarScheduleLine, RiCheckboxCircleLine, RiErrorWarningLine, RiMailLine, RiTimeLine } from "@remixicon/react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge, Card, LinkButton, Skeleton } from "@/components/ui";
+import { canAct, canApprove } from "@/lib/contacts/access";
 import { nextCutoff } from "@/lib/documents/cutoff";
 import { showMonth } from "@/lib/documents/labels";
 import { showDate } from "@/lib/filings/labels";
@@ -92,7 +93,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
 
   const todos = todoList({
     returnedDocuments: returned ?? 0,
-    returnsToApprove: (approvals ?? []).map((f) => ({ id: f.id, form: `${prefix(f.client_id)}${f.form}`, periodLabel: f.period_label, dueDate: showDate(f.due_date) })),
+    returnsToApprove: (approvals ?? []).filter((f) => canApprove(clients.find((c) => c.id === f.client_id)?.access)).map((f) => ({ id: f.id, form: `${prefix(f.client_id)}${f.form}`, periodLabel: f.period_label, dueDate: showDate(f.due_date) })),
     requests: (requests ?? []).map((r) => ({ id: r.id, subject: `${prefix(r.client_id)}${r.subject}` })),
     dues: openDues,
     duesLabel: `${formatPeso(openDues)} open${pendingProofs ? " · a payment is being verified" : ""}`,
@@ -123,7 +124,8 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
     };
   });
   // "I've sent everything" for each business with something sent this month (P1).
-  const completable = status.filter((x) => x.open && !x.nothing && (x.count > 0 || x.confirmedAt));
+  // Upload-only and view-only contacts: confirming the month needs upload access.
+  const completable = status.filter((x) => x.open && !x.nothing && (x.count > 0 || x.confirmedAt) && canAct(x.client.access));
   const books = summaryOf.get(business.id);
 
   return (
@@ -189,7 +191,7 @@ async function Home({ searchParams }: Pick<PageProps<"/portal">, "searchParams">
               </li>
             ))}
           </ul>
-          {!x.nothing && !x.confirmedAt && (
+          {!x.nothing && !x.confirmedAt && canAct(x.client.access) && (
             <LinkButton href="/portal/upload" className="mt-4 w-full justify-center">Upload documents</LinkButton>
           )}
         </Card>

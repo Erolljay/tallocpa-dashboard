@@ -10,6 +10,7 @@ import { showMonth, STREAMS, type DocType, type Stream } from "@/lib/documents/l
 import { showDate } from "@/lib/filings/labels";
 import { manilaToday } from "@/lib/filings/run";
 import { cx } from "@/utils/cx";
+import { accessNote, canAct } from "@/lib/contacts/access";
 import { portalContext } from "../client-context";
 
 /**
@@ -38,9 +39,19 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 async function Upload({ searchParams }: Pick<PageProps<"/portal/upload">, "searchParams">) {
   const sp = await searchParams;
   const stream: Stream = ORDER.find((s) => s === one(sp.stream)) ?? "sales";
-  const { id, supabase, clients } = await portalContext();
-  if (clients.length === 0) {
+  const { id, supabase, clients: linked } = await portalContext();
+  if (linked.length === 0) {
     return <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">Your portal is being set up. Please check back soon.</p>;
+  }
+  // Only businesses this contact may upload for (view-only access sends nothing).
+  const clients = linked.filter((c) => canAct(c.access));
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-title-1-medium text-text-primary">Upload</h1>
+        <p className="rounded-3xl border border-border-button-default bg-background-primary-default p-6 text-body-regular text-text-secondary">{accessNote("viewer", "act")}</p>
+      </div>
+    );
   }
   const today = manilaToday();
   const ids = clients.map((c) => c.id);
