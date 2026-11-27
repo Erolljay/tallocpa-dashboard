@@ -81,7 +81,8 @@ without written consent. Nothing is published without the Owner.
 
 A Cowork desk holds: the job description (project instructions), a working procedure
 (a skill), reference copies, the TalloCPA OS connector with that employee's
-credential, and optional scheduled tasks. It does **not** hold the master templates
+credential, and optional scheduled tasks. The files for each desk are in
+[`docs/ai-desks/`](ai-desks/README.md) (first: the Chief of Staff's morning brief). It does **not** hold the master templates
 or any finished work: drafts are saved in the app, where people review them.
 
 ### 4.1 The in-app model is swappable
@@ -309,6 +310,28 @@ Runs in Cowork, Full books access for assigned clients, January to April before 
 annual ITR, 1604-C and 1604-E, or on request. The workpaper needs no input from the
 Owner and can be built at any time.
 
+## 8b. Schedules (the Owner's calendar and everything dated)
+
+**Now:** the Chief of Staff reads the Owner's Google Calendar through Cowork's Google
+Calendar connector and opens the morning brief with today's schedule and the client
+matters to raise in each meeting (docs/ai-desks/chief-of-staff/). Read only: no AI
+employee creates, changes, accepts or declines an event.
+
+**Later (planned tool `my_schedule`):** one list of everything dated for a person, from
+TalloCPA OS itself, so every AI employee that needs a schedule uses the same source:
+
+- Google Calendar events of the calendars linked in the app (staff calendars, already
+  connected for booking pages);
+- client bookings (discovery calls, kickoff meetings) from the booking pages;
+- BIR filing deadlines of the person's clients, and registration office visits
+  (routing slip steps with a date);
+- later, tasks with a due date.
+
+When it exists, the morning brief switches to it with no change to its format (the skill
+already says so), and a scheduling AI employee, if the Owner wants one, builds on the same
+tool. Reading stays the default; booking or moving meetings would be a separate, explicitly
+granted draft tool that a person confirms.
+
 ## 9. Settings → AI Employees (Owner only)
 
 - List of AI employees: department, supervisor, status (on / off), where it runs.
@@ -349,7 +372,7 @@ Owner and can be built at any time.
    then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
    Annual Reviewer's tools and desk.
 6. Pre-Review Assistant, Collections Clerk, Registration Runner, BIR Mail Clerk,
-   Chief of Staff.
+   Chief of Staff (including `my_schedule`, §8b).
 7. Marketing & Growth.
 
 Each step ships with its tests and goes live switched off until the Owner turns it on.

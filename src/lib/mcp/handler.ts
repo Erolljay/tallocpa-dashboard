@@ -121,7 +121,6 @@ export async function findCaller(service: Queryable, aiKey: string, authorizatio
   const r = rows[0];
   if (!r || r.revoked_at || new Date(r.expires_at) <= now) return denied(401, "This key is not valid: it was revoked, has expired, or never existed.", signIn(false));
   if (r.key !== aiKey) return denied(403, "This key belongs to another AI employee. Use the address for that AI employee.");
-  if (!r.enabled) return denied(403, `${r.name} is switched off. The Owner switches AI employees on in Settings → AI Employees.`);
   if (!r.last_used_at || now.getTime() - new Date(r.last_used_at).getTime() > 5 * 60_000) {
     await service.query(`update public.ai_credentials set last_used_at = $2 where id = $1`, [r.credential_id, now.toISOString()]);
   }
@@ -137,7 +136,25 @@ export async function findCaller(service: Queryable, aiKey: string, authorizatio
     dailyLimit: r.daily_limit,
     grants: new Set(r.grants),
     credentialId: r.credential_id,
+    enabled: r.enabled,
   };
+}
+
+/**
+ * What the connector tells Claude up front. A switched-off AI employee, or one with no
+ * tools granted yet, gets a plain explanation instead of a refused connection, so Claude
+ * says what is wrong and where the Owner fixes it.
+ */
+export function instructionsFor(caller: AiCaller): string {
+  if (!caller.enabled) {
+    return `${caller.name} is switched off, so it has no tools. Tell the user: the Owner switches it on in TalloCPA OS → Settings → AI employees → ${caller.name}.`;
+  }
+  const base =
+    `You are ${caller.name}, an AI employee of Tallo CPA. Read tallocpa://ai/house-rules and tallocpa://ai/my-job before you start. ` +
+    "You prepare work for people to review; you never approve, sign, post, file or pay anything.";
+  return usableTools(caller).length
+    ? base
+    : `${base} No tools are granted to you yet: tell the user the Owner grants them in TalloCPA OS → Settings → AI employees → ${caller.name} → Connector → Tools.`;
 }
 
 /** The tools this AI employee may use: for its job, and granted by the Owner. */
@@ -184,11 +201,13 @@ const pgCode = (e: unknown) => (typeof e === "object" && e !== null && "code" in
 export function serverFor(conn: Connector, caller: AiCaller, now: Date): McpServer {
   return {
     info: { name: "tallocpa-os", title: "TalloCPA OS", version: "1.0.0" },
-    instructions:
-      `You are ${caller.name}, an AI employee of Tallo CPA. Read tallocpa://ai/house-rules and tallocpa://ai/my-job before you start. ` +
-      "You prepare work for people to review; you never approve, sign, post, file or pay anything.",
-    listTools: () => usableTools(caller).map(toolInfo),
+    instructions: instructionsFor(caller),
+    listTools: () => (caller.enabled ? usableTools(caller).map(toolInfo) : []),
     async callTool(name, args) {
+      if (!caller.enabled) {
+        await log(conn, caller, now, name, null, "refused", { reason: "switched off" });
+        return toolError(`${caller.name} is switched off. The Owner switches it on in TalloCPA OS → Settings → AI employees → ${caller.name}.`);
+      }
       const tool = toolByName(name);
       if (!tool || !toolFor(tool, caller.key) || !caller.grants.has(name)) {
         await log(conn, caller, now, name, null, "refused", { reason: tool ? "not granted" : "no such tool" });

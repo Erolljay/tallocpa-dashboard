@@ -33,4 +33,6 @@ export interface AiCaller {
   dailyLimit: number;
   grants: Set<string>;
   credentialId: string;
+  /** Switched on by the Owner. A switched-off AI employee is let in but given no tools. */
+  enabled: boolean;
 }

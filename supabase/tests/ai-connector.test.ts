@@ -124,9 +124,16 @@ describe.skipIf(!url)("AI connector: keys, grants, row-level security, limits an
       expect((await rpc("document_clerk", key.writer, "ping")).status).toBe(403);
     });
 
-    it("refuses a switched-off AI employee, and lets it in once switched on", async () => {
+    it("lets a switched-off AI employee in with no tools and a plain explanation, and refuses every call", async () => {
       await setClerk({ enabled: false });
-      expect((await rpc("document_clerk", key.clerk, "ping")).status).toBe(403);
+      const init = await rpc("document_clerk", key.clerk, "initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "1" } });
+      expect(init.status).toBe(200);
+      expect((init.json as { result: { instructions: string } }).result.instructions).toMatch(/Document Clerk is switched off.*Settings → AI employees/);
+      expect((await rpc("document_clerk", key.clerk, "tools/list")).json).toMatchObject({ result: { tools: [] } });
+      const refused = await call("whoami");
+      expect(refused.result?.isError).toBe(true);
+      expect(refused.result?.content[0].text).toMatch(/switched off/);
+      expect(await lastActivity()).toMatchObject({ tool: "whoami", outcome: "refused" });
       await setClerk({ enabled: true });
       expect(await rpc("document_clerk", key.clerk, "ping")).toMatchObject({ status: 200, json: { result: {} } });
     });
@@ -143,6 +150,8 @@ describe.skipIf(!url)("AI connector: keys, grants, row-level security, limits an
   describe("tools", () => {
     it("lists no tools until the Owner grants them, then only those for its job", async () => {
       expect((await rpc("document_clerk", key.clerk, "tools/list")).json).toMatchObject({ result: { tools: [] } });
+      const init = (await rpc("document_clerk", key.clerk, "initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "1" } })).json as { result: { instructions: string } };
+      expect(init.result.instructions).toMatch(/No tools are granted to you yet.*Connector → Tools/);
       expect((await call("whoami")).error?.message).toMatch(/Unknown tool/);
       expect((await lastActivity()).outcome).toBe("refused");
       await grant(CLERK, "whoami", "list_my_clients", "get_client", "upcoming_filings", "trial_balance");
