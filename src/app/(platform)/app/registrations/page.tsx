@@ -9,6 +9,8 @@ import { cx } from "@/utils/cx";
 import { YearRenewalsForm } from "./forms";
 import { daysTone, manilaDate } from "@/lib/registration/slip";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
+import { ListToolbar } from "@/components/application/search/list-search";
+import { byText, matchesSearch, pickParam, searchParam } from "@/lib/search/match";
 
 export default function RegistrationsPage(props: PageProps<"/app/registrations">) {
   return (
@@ -17,6 +19,14 @@ export default function RegistrationsPage(props: PageProps<"/app/registrations">
     </Suspense>
   );
 }
+
+const SORTS = [
+  { value: "here", label: "Longest at current step" },
+  { value: "open", label: "Days open" },
+  { value: "newest", label: "Newest first" },
+  { value: "target", label: "Target date" },
+  { value: "business", label: "Business A–Z" },
+];
 
 interface Row {
   id: string;
@@ -32,7 +42,12 @@ interface Row {
 }
 
 async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrations">, "searchParams">) {
-  const { show, kind } = await searchParams;
+  const sp = await searchParams;
+  const { show, kind } = sp;
+  const search = searchParam(sp.q);
+  const agency = pickParam(sp.agency, Object.keys(AGENCIES) as (keyof typeof AGENCIES)[]);
+  const waiting = pickParam(sp.waiting, ["client", "agency", "us"] as const);
+  const sort = pickParam(sp.sort, SORTS.map((s) => s.value));
   const closed = show === "closed";
   const kindFilter = typeof kind === "string" && kind in CASE_KINDS ? (kind as keyof typeof CASE_KINDS) : null;
   const me = await requireStaff();
@@ -51,18 +66,34 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
     const q = new URLSearchParams();
     if (p.show) q.set("show", p.show);
     if (p.kind) q.set("kind", p.kind);
+    for (const [k, v] of Object.entries({ q: search, agency, waiting, sort })) if (v) q.set(k, v);
     return `/app/registrations${q.size ? `?${q}` : ""}`;
   };
   const pill = (on: boolean) => cx("rounded-full px-3 py-1", on ? "bg-background-tertiary-default text-text-primary" : "text-text-secondary hover:bg-background-secondary-hover");
 
-  const rows = ((data ?? []) as unknown as Row[]).map((r) => {
+  const rows = ((data ?? []) as unknown as Row[])
+    .filter((r) => matchesSearch(search, [r.clients?.name, r.clients?.code, CASE_KINDS[r.kind], r.period_year ? String(r.period_year) : null, r.details.branch_name]))
+    .map((r) => {
     const steps = r.registration_steps.map((s) => ({ ...s, sortOrder: s.sort_order, doneOn: s.done_on }));
     const openedOn = manilaDate(new Date(r.opened_at));
     const here = routingSlip(steps, openedOn, today).find((x) => x.current);
     return { ...r, steps, here, open: daysOpen(steps, openedOn, r.closed_at ? manilaDate(new Date(r.closed_at)) : today), progress: progress(steps), waiting: waitingOn(steps) };
   });
-  // Longest-held files first, so follow-ups are at the top.
-  if (!closed) rows.sort((a, b) => (b.here?.days ?? -1) - (a.here?.days ?? -1));
+  const shown = rows
+    .filter((r) => !agency || r.here?.step.agency === agency)
+    .filter((r) => !waiting || (r.waiting ?? "us") === waiting);
+  const target = (r: (typeof rows)[number]) => r.target_date ?? "9999-12-31";
+  shown.sort((a, b) => {
+    switch (sort) {
+      case "open": return b.open - a.open;
+      case "newest": return b.opened_at.localeCompare(a.opened_at);
+      case "target": return target(a).localeCompare(target(b));
+      case "business": return byText(a.clients?.name, b.clients?.name);
+      // Longest-held files first, so follow-ups are at the top (closed: as loaded, newest first).
+      default: return closed ? 0 : (b.here?.days ?? -1) - (a.here?.days ?? -1);
+    }
+  });
+  const narrowed = Boolean(search || agency || waiting);
 
   return (
     <>
@@ -91,9 +122,18 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
           ))}
         </div>
       </div>
-      {rows.length === 0 ? (
+      <ListToolbar
+        label="Search registrations"
+        placeholder="Search business, code or kind"
+        filters={[
+          { param: "agency", label: "Now at", anyLabel: "At any office", options: Object.entries(AGENCIES).map(([value, label]) => ({ value, label: `At ${label}` })) },
+          { param: "waiting", label: "Waiting on", anyLabel: "Waiting on anyone", options: [{ value: "client", label: "Waiting on client" }, { value: "agency", label: "Waiting on agency" }, { value: "us", label: "With us" }] },
+        ]}
+        sorts={SORTS}
+      />
+      {shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
-          <p className="font-medium text-text-primary">{closed ? "Nothing closed yet" : "Nothing open"}</p>
+          <p className="font-medium text-text-primary">{narrowed ? "Nothing matches" : closed ? "Nothing closed yet" : "Nothing open"}</p>
           <p className="mt-1 text-body-regular text-text-secondary">{isOwner && !closed ? "Open a new business here, a renewal or closure from the client's page, or this year's renewals for every client above." : "Cases for clients assigned to you show here."}</p>
         </div>
       ) : (
@@ -110,7 +150,7 @@ async function RegistrationList({ searchParams }: Pick<PageProps<"/app/registrat
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {shown.map((r) => (
                 <tr key={r.id} className="border-t border-separator-border transition-colors first:border-t-0 hover:bg-background-secondary-hover">
                   <td className="px-4 py-3">
                     <Link href={`/app/registrations/${r.id}`} className="font-medium text-text-primary hover:underline">{r.clients?.name}</Link>

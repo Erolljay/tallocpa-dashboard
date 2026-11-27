@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Badge, Card, Input, PageHeader, Skeleton } from "@/components/ui";
+import { Badge, Card, PageHeader, Skeleton } from "@/components/ui";
+import { ListToolbar } from "@/components/application/search/list-search";
+import { byText, pickParam, searchParam } from "@/lib/search/match";
 import { requireStaff } from "@/lib/auth";
-import { ACCESS_LABEL, ACCESS_TONE } from "@/lib/contacts/access";
+import { ACCESS_LABEL, ACCESS_TONE, CONTACT_ACCESS } from "@/lib/contacts/access";
 import { contactMatches, loadContacts } from "@/lib/contacts/load";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SectionTabs } from "@/app/(platform)/app/nav/section-tabs";
@@ -16,19 +18,44 @@ export default function ContactsPage(props: PageProps<"/app/contacts">) {
   );
 }
 
+const SORTS = [
+  { value: "name", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
+  { value: "business", label: "Business" },
+  { value: "recent", label: "Signed in recently" },
+  { value: "stale", label: "Longest since sign-in" },
+];
+
 const when = new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" });
 
 async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "searchParams">) {
   const me = await requireStaff();
-  const { q } = await searchParams;
-  const search = typeof q === "string" ? q : "";
+  const sp = await searchParams;
+  const search = searchParam(sp.q);
+  const access = pickParam(sp.access, CONTACT_ACCESS);
+  const signin = pickParam(sp.signin, ["yes", "no"] as const);
+  const sort = pickParam(sp.sort, SORTS.map((s) => s.value));
   const isOwner = me.staff.role === "owner";
   const supabase = await supabaseServer();
   const [contacts, { data: clients }] = await Promise.all([
     loadContacts(supabase),
     isOwner ? supabase.from("clients").select("id, name").in("status", ["onboarding", "active"]).order("name") : Promise.resolve({ data: [] as { id: string; name: string }[] }),
   ]);
-  const shown = contacts.filter((c) => contactMatches(c, search));
+  const time = (c: (typeof contacts)[number]) => (c.lastSignInAt ? Date.parse(c.lastSignInAt) : 0);
+  const shown = contacts
+    .filter((c) => contactMatches(c, search))
+    .filter((c) => !access || c.businesses.some((b) => b.access === access))
+    .filter((c) => !signin || (signin === "yes") === Boolean(c.lastSignInAt))
+    .sort((a, b) => {
+      switch (sort) {
+        case "name_desc": return byText(b.fullName, a.fullName);
+        case "recent": return time(b) - time(a) || byText(a.fullName, b.fullName);
+        case "stale": return time(a) - time(b) || byText(a.fullName, b.fullName);
+        case "business": return byText(a.businesses[0]?.clientName, b.businesses[0]?.clientName) || byText(a.fullName, b.fullName);
+        default: return byText(a.fullName, b.fullName);
+      }
+    });
+  const filtered = Boolean(search || access || signin);
 
   return (
     <>
@@ -48,15 +75,21 @@ async function Contacts({ searchParams }: Pick<PageProps<"/app/contacts">, "sear
           </Card>
         )}
 
-        <form role="search" className="max-w-sm">
-          <label htmlFor="contacts_q" className="sr-only">Search contacts</label>
-          <Input id="contacts_q" name="q" type="search" defaultValue={search} placeholder="Search name, email or business" />
-        </form>
+        <ListToolbar
+          label="Search contacts"
+          placeholder="Search name, email or business"
+          className="mb-0"
+          filters={[
+            { param: "access", label: "Access", anyLabel: "Any access", options: CONTACT_ACCESS.map((a) => ({ value: a, label: ACCESS_LABEL[a] })) },
+            { param: "signin", label: "Signed in", anyLabel: "Signed in or not", options: [{ value: "yes", label: "Has signed in" }, { value: "no", label: "Never signed in" }] },
+          ]}
+          sorts={SORTS}
+        />
 
         {shown.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border-button-default bg-background-primary-default p-10 text-center">
-            <p className="text-body-medium text-text-primary">{search ? "No contact matches that search" : "No contacts yet"}</p>
-            <p className="mt-1 text-body-regular text-text-secondary">{search ? "Try a name, an email or a business." : "Add the client's contact person above, or from the client's page."}</p>
+            <p className="text-body-medium text-text-primary">{filtered ? "No contact matches" : "No contacts yet"}</p>
+            <p className="mt-1 text-body-regular text-text-secondary">{filtered ? "Try a name, an email or a business, or clear the filters." : "Add the client's contact person above, or from the client's page."}</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-3xl border border-border-button-default bg-background-primary-default shadow-xs">

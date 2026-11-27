@@ -9,6 +9,7 @@ import { Lockup } from "@/components/brand/lockup";
 import { getIdentity } from "@/lib/auth";
 import { NavLinks, NavLinksFallback, type NavKey } from "./nav/app-nav";
 import { SidebarToggle } from "./nav/sidebar-toggle";
+import { CommandSearch } from "@/components/application/search/command-search";
 
 const nav = ["home", "clients", "inbox", "filings"] as const satisfies readonly NavKey[];
 /** Leads, collections, scores, staff and settings: the Owner's; reviewers see Firm for their leads. */
@@ -44,6 +45,7 @@ export default function AppLayout({ children }: LayoutProps<"/app">) {
             </div>
             <SidebarToggle controls="app-sidebar" className="max-md:hidden" />
           </div>
+          <CommandSearch />
           <nav aria-label="Main" className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] max-md:mask-r-from-85% md:mx-0 md:flex-1 md:flex-col md:overflow-y-auto md:px-0">
             <Suspense fallback={<NavLinksFallback keys={nav} />}>
               <NavLinks keys={nav} />
