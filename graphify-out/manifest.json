@@ -4098,9 +4098,9 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/[id]/page.tsx": {
-    "mtime": 1795773927.0413227,
-    "seen": 1795808181.7007961,
-    "ast_hash": "3146f448ccc80f841ca78b57ff1582c9",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4294608,
+    "ast_hash": "c6aee4511102be0d9b32a05f251ec9ee",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/leads/actions.ts": {
@@ -5586,15 +5586,15 @@
     "semantic_hash": ""
   },
   "src/app/(platform)/app/settings/ai-employees/page.tsx": {
-    "mtime": 1795791888.6059072,
-    "seen": 1795808181.7008498,
-    "ast_hash": "1073139435233fd54df758f950bbceb9",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4304535,
+    "ast_hash": "923dd7474fadd17ca5970c3d55eb7a9f",
     "semantic_hash": ""
   },
   "src/lib/ai/ai.test.ts": {
-    "mtime": 1795829837.5136044,
-    "seen": 1795830359.1205354,
-    "ast_hash": "0433bbcecd0a6ae162a8f0175724bb74",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4361088,
+    "ast_hash": "947bb79ad251ed23838d851bef3028f6",
     "semantic_hash": ""
   },
   "src/lib/ai/credentials.ts": {
@@ -5610,9 +5610,9 @@
     "semantic_hash": ""
   },
   "src/lib/ai/workforce.ts": {
-    "mtime": 1795829837.5136044,
-    "seen": 1795830359.1206071,
-    "ast_hash": "06453bac2f440c8683bc9372ecc3cea7",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4361749,
+    "ast_hash": "f7b10bf989188a8610231ff422fc5355",
     "semantic_hash": ""
   },
   "supabase/tests/ai-employees.test.ts": {
@@ -5622,9 +5622,9 @@
     "semantic_hash": ""
   },
   "docs/AI-WORKFORCE.md": {
-    "mtime": 1795829871.761032,
-    "seen": 1795830359.1317422,
-    "ast_hash": "6761427360452b5debe5ac558d5ac179",
+    "mtime": 1795839848.7468164,
+    "seen": 1795840248.4469118,
+    "ast_hash": "994b17f48b44f7f2789866a0f8935362",
     "semantic_hash": ""
   },
   "src/app/api/mcp/[ai]/route.ts": {
@@ -5658,9 +5658,9 @@
     "semantic_hash": ""
   },
   "src/lib/mcp/handler.ts": {
-    "mtime": 1795797296.1945322,
-    "seen": 1795808181.7042062,
-    "ast_hash": "f7934256e0cd530d2a2ca600b74afe2e",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.440406,
+    "ast_hash": "362c27f22f22caa7993b62ef4fec3030",
     "semantic_hash": ""
   },
   "src/lib/mcp/pool-config.test.ts": {
@@ -5694,21 +5694,21 @@
     "semantic_hash": ""
   },
   "src/lib/mcp/registry.test.ts": {
-    "mtime": 1795792917.709944,
-    "seen": 1795808181.704214,
-    "ast_hash": "b6f1a460d6c436ff7f1814671d710438",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.440502,
+    "ast_hash": "490019dff30a0cb32c622acb645298d6",
     "semantic_hash": ""
   },
   "src/lib/mcp/registry.ts": {
-    "mtime": 1795829843.5371912,
-    "seen": 1795830359.125098,
-    "ast_hash": "886e861da49bfab1b8eb714e5c089091",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4405038,
+    "ast_hash": "210e0febc4dd36bdf23b073af5630038",
     "semantic_hash": ""
   },
   "src/lib/mcp/resources.ts": {
-    "mtime": 1795792802.37794,
-    "seen": 1795808181.7042162,
-    "ast_hash": "4cc0058e96d2c6017d616a64d49ad09c",
+    "mtime": 1795839843.8602002,
+    "seen": 1795840248.4405067,
+    "ast_hash": "4a79c94d6560e24565daecfa67fe6513",
     "semantic_hash": ""
   },
   "src/lib/mcp/tool.ts": {
@@ -5814,9 +5814,9 @@
     "semantic_hash": ""
   },
   "docs/ai-desks/README.md": {
-    "mtime": 1795829837.5089617,
-    "seen": 1795830359.1318393,
-    "ast_hash": "1b0c5a058a5d15a7312dca09ea068f35",
+    "mtime": 1795839843.8522003,
+    "seen": 1795840248.4470167,
+    "ast_hash": "bed2ced6cfec8ab1b29a7c5e5a4468ee",
     "semantic_hash": ""
   },
   "docs/ai-desks/chief-of-staff/README.md": {
@@ -5862,9 +5862,9 @@
     "semantic_hash": ""
   },
   "src/lib/ai/drafts.ts": {
-    "mtime": 1795831679.2489974,
-    "seen": 1795832111.9542258,
-    "ast_hash": "fcc54ee9dd089d02ad51ba7a93049923",
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.436151,
+    "ast_hash": "7ca6e999cd7ab6e1df1e19bb24c03b35",
     "semantic_hash": ""
   },
   "src/lib/documents/ai-tools.ts": {
@@ -6180,9 +6180,9 @@
     "semantic_hash": ""
   },
   "src/lib/registration/ai-tools.ts": {
-    "mtime": 1795831679.2489974,
-    "seen": 1795832111.9649565,
-    "ast_hash": "f5adc7c5de125467fbaa8276fa2e8496",
+    "mtime": 1795832235.482659,
+    "seen": 1795840248.442486,
+    "ast_hash": "10da6be52c78bac6c4a97acfdd958d7b",
     "semantic_hash": ""
   },
   "src/lib/registration/runner.test.ts": {
@@ -6270,9 +6270,9 @@
     "semantic_hash": ""
   },
   "docs/ai-desks/registration-runner/registration-run/SKILL.md": {
-    "mtime": 1795831679.2450712,
-    "seen": 1795832111.973118,
-    "ast_hash": "699c4f860163747249dc30f418c43f64",
+    "mtime": 1795832238.8560326,
+    "seen": 1795840248.4475179,
+    "ast_hash": "17b32a517e48a6ecbf16990cfecce57d",
     "semantic_hash": ""
   },
   "src/app/(platform)/app/registrations/[id]/authority/[draft]/page.tsx": {
@@ -6384,15 +6384,45 @@
     "semantic_hash": ""
   },
   "src/lib/registration/authority-templates.ts": {
-    "mtime": 1795831679.2489974,
-    "seen": 1795832111.964962,
-    "ast_hash": "0d61453c55f4e70f167f7e40b5fc6a5e",
+    "mtime": 1795832235.4830482,
+    "seen": 1795840248.4425101,
+    "ast_hash": "84e831041539f0413ce8ff4e57695a3f",
     "semantic_hash": ""
   },
   "supabase/tests/connected-mailboxes.test.ts": {
     "mtime": 1795831679.357675,
     "seen": 1795832111.969944,
     "ast_hash": "fe97ce5afdb877d363d928e8de7a5197",
+    "semantic_hash": ""
+  },
+  "src/lib/marketing/ai-tools.ts": {
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.440312,
+    "ast_hash": "cf03a5600704e733ed453ea4f756c615",
+    "semantic_hash": ""
+  },
+  "src/lib/marketing/proposal-lines.test.ts": {
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.44038,
+    "ast_hash": "128edd4bd32b4999d2c1e2d62a6f3b31",
+    "semantic_hash": ""
+  },
+  "src/lib/marketing/proposal-lines.ts": {
+    "mtime": 1795839843.8562002,
+    "seen": 1795840248.4403818,
+    "ast_hash": "7e4e2cba90086368b9e1cdcc7f0f3c63",
+    "semantic_hash": ""
+  },
+  "supabase/tests/ai-marketing-team.test.ts": {
+    "mtime": 1795839843.8602002,
+    "seen": 1795840248.445124,
+    "ast_hash": "5c7dd5e15bfc75b32278dfbba478fa91",
+    "semantic_hash": ""
+  },
+  "docs/ai-desks/marketing-team/README.md": {
+    "mtime": 1795839843.8522003,
+    "seen": 1795840248.447287,
+    "ast_hash": "849db14b67e72641079bb345e4ee2184",
     "semantic_hash": ""
   },
   "pnpm-lock.yaml": {

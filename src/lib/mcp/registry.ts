@@ -11,6 +11,7 @@ import * as collections from "@/lib/collections/ai-tools";
 import * as documents from "@/lib/documents/ai-tools";
 import * as filings from "@/lib/filings/ai-tools";
 import * as ledger from "@/lib/ledger/ai-tools";
+import * as marketing from "@/lib/marketing/ai-tools";
 import * as onboarding from "@/lib/onboarding/ai-tools";
 import * as paymentProof from "@/lib/payment-proof/ai-tools";
 import * as registration from "@/lib/registration/ai-tools";
@@ -19,6 +20,6 @@ import type { AiTool } from "./tool";
 
 const isTool = (v: unknown): v is AiTool => typeof v === "object" && v !== null && "name" in v && "run" in v && "input" in v;
 
-export const TOOLS: AiTool[] = [mcp, clients, filings, ledger, documents, onboarding, collections, birMail, registration, calendar, paymentProof].flatMap((m) => Object.values(m).filter(isTool));
+export const TOOLS: AiTool[] = [mcp, clients, filings, ledger, documents, onboarding, collections, birMail, registration, calendar, paymentProof, marketing].flatMap((m) => Object.values(m).filter(isTool));
 
 export const toolByName = (name: string) => TOOLS.find((t) => t.name === name);

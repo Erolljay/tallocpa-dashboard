@@ -42,7 +42,7 @@ app on the Qwen API.
 
 ## 3. The AI employees
 
-16 AI employees in 6 departments. Org chart:
+17 AI employees in 6 departments. Org chart:
 <https://claude.ai/artifact/2Nj7saPXTEJe1QAJ1KBgrc> (private to the Owner).
 
 | Department | AI employee | Job | Supervisor | Runs on |
@@ -374,7 +374,7 @@ granted draft tool that a person confirms.
    then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
    Annual Reviewer's tools and desk.
 6. **Pre-Review Assistant** (built): returns waiting for review, prior periods, the app's tie-outs, 2307s, the ₱3M VAT threshold; review memos as drafts on the return's page. **Collections Clerk** (built): receivables aging, payment history, ready to bill, billed vs collected split by tax dues (UnionBank), SSS / PhilHealth / Pag-IBIG remittances (Security Bank), retainers and others (BPI); payment reminders as Owner-only drafts. Billing stays Owner-only: the Clerk reads it through narrow functions only it may call. **BIR Mail Clerk** (built): the app stores the BIR's emails (filing confirmations, notices) in *BIR mail*; the Clerk proposes the client and return, flags LOA / PAN / FAN / FLD with the respond-by date (Owner notified); staff accept and link. **Registration Runner** (built): open cases by days held, Form 1901 / 1903 / 1905 fields from what the app holds, missing documents as client requests (staff send). **Chief of Staff `my_schedule`** (built): the Owner's meetings, discovery calls, returns due, tasks, requests and registration targets in one list; Google Calendar stays through Cowork. **Payment Proof Clerk** (built, added at the Owner's request): the app collects bank payment confirmations and writes a PDF; the Clerk matches them by TIN, form, period and amount; staff click Attach proof.
-7. Marketing & Growth.
+7. **Marketing & Growth** (built): one **Marketing Team** connector for the whole department (Owner's choice), used from Claude Code with marketing skill packs; firm profile, fee schedule, website pages, leads pipeline and reports, proposal and follow-up drafts (Owner only). No client data; the advertising rules of the Code of Ethics are in its house rules. The five role rows remain and work through it.
 
 Each step ships with its tests and goes live switched off until the Owner turns it on.
 
