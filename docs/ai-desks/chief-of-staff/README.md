@@ -1,6 +1,6 @@
 # Chief of Staff's desk
 
-The Owner's morning brief: today's schedule, and on BIR returns what is overdue, what is
+The Owner's morning brief: today's schedule (from TalloCPA OS's `my_schedule` and the Owner's Google Calendar), and on BIR returns what is overdue, what is
 due soon, and what is waiting for the Owner's approval. Prepared by the Chief of Staff, read by the Owner; it
 changes nothing in TalloCPA OS.
 
@@ -9,7 +9,8 @@ changes nothing in TalloCPA OS.
 Settings → AI employees → **Chief of Staff**:
 
 - **On**; Books access **Summary**; **Every client** ticked.
-- Connector → Tools: **Grant all** (who am I, my clients, a client, upcoming returns, trial balance).
+- Connector → Tools: **Grant all** (who am I, my clients, a client, upcoming returns, trial balance, **my schedule**). If the Chief of Staff was set up before `my_schedule` existed, grant **my_schedule** now and replace the `morning-brief` skill with the new version.
+- `my_schedule` is always the **Owner's** schedule: client meetings and discovery calls booked with you in the app, returns due, your tasks and requests due, and registration target dates. It does not include Google Calendar events; the desk reads those through Cowork's Google Calendar connector (step 2 below) and lists each meeting once.
 
 ## Set up the desk (Cowork, once)
 
