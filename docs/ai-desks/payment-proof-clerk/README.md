@@ -10,10 +10,11 @@ Attaching keeps the PDF on the return (staff only; the scanned copy stays the on
 
 The app needs read-only access to the Gmail mailbox where the banks' confirmations arrive (for UnionBank Business Banking: the email of the user who creates the payments, or a forwarding rule to a firm mailbox).
 
-- Easiest: forward the banks' confirmations to the eSubmission mailbox (attachments@tallocpa.com). The app reads it already; nothing more to set.
+- Easiest: Settings → **Mailboxes** → *Connect a Gmail mailbox*: connect the inbox where the confirmations arrive (your own; also support@tallocpa.com if they go there), read only, with *Payment confirmations* ticked (docs/SETUP.md → *Connected mailboxes*).
+- Or forward the banks' confirmations to the eSubmission mailbox (attachments@tallocpa.com). The app reads it already; nothing more to set.
 - Or give the app its own read-only token for another mailbox: set `PAYMENT_MAIL_GMAIL_REFRESH_TOKEN` (scope `gmail.readonly`) and `PAYMENT_MAILBOX` in Vercel.
 
-The app checks the mailbox at **9:30 AM** (`/api/cron/payment-mail`) and again at **11:40 AM** (with the eSubmission check) Manila time, looking back 14 days (`PAYMENT_MAIL_DAYS`).
+The app checks every payment mailbox at **9:30 AM** (`/api/cron/payment-mail`) and again at **11:40 AM** (with the eSubmission check) Manila time, looking back 14 days (`PAYMENT_MAIL_DAYS`).
 
 **Which emails:** the senders and subjects in `src/lib/payment-proof/parse.ts` (`PAYMENT_SENDERS`): UnionBank (*Successful Bills Payment*), LANDBANK Link.BizPortal, DBP PayTax, GCash, Maya. Add a channel there. Mail from the BIR itself goes to the BIR Mail Clerk.
 

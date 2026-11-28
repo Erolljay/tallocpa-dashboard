@@ -13,7 +13,7 @@ export default function BirMailPage() {
     <>
       <PageHeader
         title="BIR mail"
-        description="Emails from the BIR in the firm's eSubmission mailbox: filing confirmations, replies and notices. The BIR Mail Clerk proposes which client and return each is about; a person links it."
+        description="Emails from the BIR in the firm's mailboxes (Settings → Mailboxes), checked every two days: filing confirmations, replies and notices. The BIR Mail Clerk proposes which client and return each is about; a person links it, and attaches a filing confirmation to its return to print with the form."
       />
       <FilingsTabs active="bir_mail" />
       <Suspense fallback={<Skeleton rows={8} />}>

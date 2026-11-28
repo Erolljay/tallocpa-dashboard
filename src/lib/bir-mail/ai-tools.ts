@@ -17,6 +17,7 @@ import { addDays } from "@/lib/deadlines/dates";
 import { defineTool, ToolRefusal } from "@/lib/mcp/tool";
 import type { Queryable } from "@/lib/mcp/types";
 import { BIR_MAIL_KINDS, NOTICE_LABELS, URGENT_NOTICES, respondBy, type BirMailKind, type NoticeType } from "./classify";
+import { readFilingConfirmation, sameForm } from "./confirmation";
 
 const CLERK = ["bir_mail_clerk"] as const;
 export const BIR_MAIL_DRAFT = "bir_mail_match";
@@ -87,7 +88,7 @@ export const readBirMail = defineTool({
   name: "read_bir_mail",
   title: "Read a BIR email",
   description:
-    "One BIR email: its full text, its attachments (name, type, size), what the app thinks it is, and for a notice the deadline to answer worked out from its text. Also the clients of yours whose TIN it names, and their returns due within four months either side of when it arrived (marking the ones whose form the email mentions), to propose the match.",
+    "One BIR email: its full text, its attachments (name, type, size), what the app thinks it is, and for a notice the deadline to answer worked out from its text. Also the clients of yours whose TIN it names, and their returns due within four months either side of when it arrived (marking the ones whose form the email mentions). For a filing confirmation, also what it confirms (TIN, form, period end, reference, from eBIRForms' file name or the labelled fields) and, per candidate return, whether its form and period match.",
   input: z.object({ mail_id: mailId }),
   employees: CLERK,
   effect: "read",
@@ -101,8 +102,8 @@ export const readBirMail = defineTool({
     );
     for (const c of clients) noteClient(c.id);
     const { rows: filings } = clients.length
-      ? await db.query<{ id: string; client_code: string; form: string; period_label: string; due_date: string; status: string }>(
-          `select f.id, c.code as client_code, f.form, f.period_label, f.due_date::text, f.status
+      ? await db.query<{ id: string; client_code: string; form: string; period_label: string; period_end: string; due_date: string; status: string }>(
+          `select f.id, c.code as client_code, f.form, f.period_label, f.period_end::text, f.due_date::text, f.status
            from public.filing_instances f join public.clients c on c.id = f.client_id
            where f.client_id = any ($1::uuid[]) and f.due_date between $2::date and $3::date
            order by abs(f.due_date - $4::date), c.code, f.form
@@ -111,6 +112,8 @@ export const readBirMail = defineTool({
         )
       : { rows: [] };
     const lower = text.toLowerCase();
+    // A filing confirmation says which form and period it confirms (eBIRForms' file name or labelled fields).
+    const confirmation = m.kind === "filing_confirmation" ? readFilingConfirmation(m.subject, m.body_text) : null;
     return {
       mail: {
         id: m.id,
@@ -127,7 +130,12 @@ export const readBirMail = defineTool({
       },
       tins: m.tins,
       candidate_clients: clients.map((c) => ({ id: c.id, code: c.code, name: c.name, tin: c.tin })),
-      candidate_returns: filings.map((f) => ({ ...f, form_mentioned: lower.includes(f.form.toLowerCase()) })),
+      confirmation,
+      candidate_returns: filings.map((f) => ({
+        ...f,
+        form_mentioned: lower.includes(f.form.toLowerCase()),
+        ...(confirmation ? { form_matches: sameForm(confirmation.form, f.form), period_matches: Boolean(confirmation.period_end && confirmation.period_end === f.period_end) } : {}),
+      })),
       note: clients.length ? undefined : "None of your clients has a TIN named in this email. Match by the name in the text, or leave it for the Owner.",
     };
   },
@@ -140,7 +148,7 @@ export const proposeBirMailMatch = defineTool({
   name: "propose_bir_mail_match",
   title: "Propose a match for a BIR email",
   description:
-    "Save your proposal for one BIR email as a draft for the Owner and the client's staff: the client it is about, the return (if it is about one), what it is, and for a notice its type, date and deadline to answer (worked out from the text when you leave it out). LOA, PAN, FAN, FLD and subpoena are urgent: the Owner is told at once. A person accepts it, which links the email; nothing changes until then. A new proposal for the same email and client replaces your earlier one. Give your reason.",
+    "Save your proposal for one BIR email as a draft for the Owner and the client's staff: the client it is about, the return (if it is about one), what it is, and for a notice its type, date and deadline to answer (worked out from the text when you leave it out). LOA, PAN, FAN, FLD and subpoena are urgent: the Owner is told at once. For a filing confirmation, name the return (filing_id): staff then attach the confirmation to it in one click. A person accepts it, which links the email; nothing changes until then. A new proposal for the same email and client replaces your earlier one. Give your reason.",
   input: z.object({
     mail_id: mailId,
     client: clientRef.describe("The client the email is about (id or code)"),

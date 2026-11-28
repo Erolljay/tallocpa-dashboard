@@ -31,6 +31,8 @@ interface Mail {
   status: string;
   client_id: string | null;
   filing_instance_id: string | null;
+  mailbox: string | null;
+  pdf_path: string | null;
   clients: { name: string; code: string } | null;
   filing_instances: { form: string; period_label: string } | null;
 }
@@ -44,17 +46,19 @@ async function Message({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("bir_mail")
-    .select("id, received_at, from_address, subject, body_text, kind, notice_type, tins, attachments, status, client_id, filing_instance_id, clients(name, code), filing_instances(form, period_label)")
+    .select("id, received_at, from_address, subject, body_text, kind, notice_type, tins, attachments, status, client_id, filing_instance_id, mailbox, pdf_path, clients(name, code), filing_instances(form, period_label)")
     .eq("id", id)
     .maybeSingle();
   const m = data as unknown as Mail | null;
   if (!m) notFound();
 
   const path = `/app/bir-mail/${m.id}`;
-  const [proposals, files, clients] = await Promise.all([
+  const [proposals, files, clients, pdf] = await Promise.all([
     supabase.from("ai_drafts").select("id, note, payload, created_at, subject_id, ai_employees(name)").eq("kind", "bir_mail_match").eq("status", "open").eq("subject_table", "bir_mail").eq("subject_id", m.id).order("created_at", { ascending: false }),
     m.attachments.length ? supabase.storage.from("bir-mail").createSignedUrls(m.attachments.map((a) => a.path), 600) : Promise.resolve({ data: [] as { signedUrl: string }[] }),
     owner && m.status === "unmatched" ? supabase.from("clients").select("id, code, name, tin").in("status", currentClientStatuses).order("name") : Promise.resolve({ data: [] }),
+    // The PDF the app keeps to attach to a return (the BIR's own, or one written from the email).
+    m.pdf_path ? supabase.storage.from("filing-files").createSignedUrl(m.pdf_path, 600) : Promise.resolve({ data: null as { signedUrl: string } | null }),
   ]);
   const clientRows = (clients.data ?? []) as { id: string; code: string; name: string; tin: string | null }[];
   const named = clientRows.filter((c) => c.tin && m.tins.includes(c.tin.slice(0, 11)));
@@ -132,6 +136,20 @@ async function Message({ params }: { params: Promise<{ id: string }> }) {
                 <>
                   <dt className="text-text-tertiary">TINs named</dt>
                   <dd className="text-text-primary">{m.tins.join(", ")}</dd>
+                </>
+              )}
+              {m.mailbox && (
+                <>
+                  <dt className="text-text-tertiary">Mailbox</dt>
+                  <dd className="min-w-0 break-words text-text-primary" dir="ltr">{m.mailbox}</dd>
+                </>
+              )}
+              {pdf.data?.signedUrl && (
+                <>
+                  <dt className="text-text-tertiary">PDF</dt>
+                  <dd>
+                    <a href={pdf.data.signedUrl} target="_blank" rel="noreferrer" className="text-body-regular text-button-ghost-foreground hover:underline">Open to print</a>
+                  </dd>
                 </>
               )}
             </dl>

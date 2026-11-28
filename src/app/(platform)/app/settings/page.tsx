@@ -32,6 +32,9 @@ export default function SettingsPage() {
         <Card title="AI employees" actions={<Link href="/app/settings/ai-employees" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
           <p className="text-body-regular text-text-secondary">Switch AI employees on or off, assign their clients, set their books access and limits, create and revoke their keys, and see what they did.</p>
         </Card>
+        <Card title="Mailboxes" actions={<Link href="/app/settings/mailboxes" className="text-body-regular text-button-ghost-foreground hover:underline">Open</Link>}>
+          <p className="text-body-regular text-text-secondary">Connect your inbox and support@, read only, for BIR mail and the banks&apos; payment confirmations.</p>
+        </Card>
       </div>
       <Suspense fallback={<Skeleton rows={4} />}>
         <PaymentSettings />

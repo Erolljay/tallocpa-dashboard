@@ -15,7 +15,7 @@ export const birMailLabel = (kind: string, notice: string | null) =>
 export interface ProposalRow {
   id: string;
   note: string;
-  payload: { urgency?: string; filing_id?: string | null; summary?: unknown } & Record<string, unknown>;
+  payload: { urgency?: string; filing_id?: string | null; message_kind?: string; summary?: unknown } & Record<string, unknown>;
   created_at: string;
   subject_id: string;
   ai_employees: { name: string } | null;
@@ -43,7 +43,7 @@ export function BirMailProposals({ proposals, path }: { proposals: ProposalRow[]
             ))}
           </dl>
           {d.note && <p className="text-body-regular text-text-secondary">{d.note}</p>}
-          <BirMailProposalButtons draftId={d.id} path={path} />
+          <BirMailProposalButtons draftId={d.id} path={path} confirmation={d.payload.message_kind === "filing_confirmation" && Boolean(d.payload.filing_id)} />
         </li>
       ))}
     </ul>
@@ -58,16 +58,33 @@ const PROPOSAL_SELECT = "id, note, payload, created_at, subject_id, ai_employees
  */
 export async function BirMailForFiling({ filingId }: { filingId: string }) {
   const supabase = await supabaseServer();
-  const [linked, proposed] = await Promise.all([
+  const [linked, proposed, attached] = await Promise.all([
     supabase.from("bir_mail").select("id, received_at, subject, kind, notice_type").eq("filing_instance_id", filingId).order("received_at", { ascending: false }).limit(20),
     supabase.from("ai_drafts").select(PROPOSAL_SELECT).eq("kind", "bir_mail_match").eq("status", "open").eq("payload->>filing_id", filingId).order("created_at", { ascending: false }).limit(10),
+    supabase.from("filing_files").select("id, file_name").eq("filing_instance_id", filingId).eq("kind", "bir_confirmation").is("replaced_at", null).order("created_at", { ascending: false }).limit(5),
   ]);
   const mail = (linked.data ?? []) as { id: string; received_at: string; subject: string; kind: string; notice_type: string | null }[];
   const proposals = (proposed.data ?? []) as unknown as ProposalRow[];
+  const confirmations = (attached.data ?? []) as { id: string; file_name: string }[];
   if (!mail.length && !proposals.length) return null;
   return (
     <Card title="BIR mail">
       <div className="flex flex-col gap-4">
+        {confirmations.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <p className="text-body-medium text-text-primary">BIR confirmation attached</p>
+            <p className="text-body-regular text-text-secondary">Print it with the return form for the scanned copy, then mark the return filed at Filed &amp; paid.</p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1">
+              {confirmations.map((c) => (
+                <li key={c.id}>
+                  <a href={`/filing-files/${c.id}`} target="_blank" rel="noreferrer" className="text-body-regular text-button-ghost-foreground hover:underline">
+                    Open {c.file_name} to print
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {mail.length > 0 && (
           <ul className="flex flex-col gap-2">
             {mail.map((m) => (
