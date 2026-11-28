@@ -35,10 +35,12 @@ const BOOKS = [
   "client_books", "ledger_accounts", "journal_entries", "journal_lines", "client_party_accounts",
   "open_items", "open_item_applications", "arap_updates", "book_invoices", "book_invoice_lines",
   "book_settlements", "book_settlement_allocations", "books_month_locks", "book_invoice_list",
+  // The Pre-Review Assistant's tie-outs (migration 20270109000001): registers and explanations, Full only.
+  "register_lines", "workpaper_explanations",
 ];
 const OWN = ["ai_employees", "ai_assignments", "ai_tool_grants", "ai_drafts"];
 /** Client records granted with the client (step 2, migration 20270107000002). */
-const CLIENT_RECORDS = ["clients", "obligations", "filing_instances"];
+const CLIENT_RECORDS = ["clients", "obligations", "filing_instances", "return_worksheets"];
 /** The Document Clerk's reading (step 3, migration 20270108000002): documents, OCR readings, its clients' suppliers. */
 const DOCUMENT_RECORDS = ["documents", "extractions", "client_parties", "parties"];
 
