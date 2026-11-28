@@ -54,6 +54,7 @@ export const DRAFT_KIND_LABELS: Record<string, string> = {
   // Registration Runner (src/lib/registration/ai-tools.ts).
   bir_registration_form: "BIR registration form",
   registration_requests: "Requests to the client",
+  authority_document: "Authority document (Secretary's Certificate / SPA)",
 };
 
 /** A kind's label for people: registered by the feature that uses it, else from its name. */

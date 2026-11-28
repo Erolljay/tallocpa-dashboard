@@ -18,6 +18,7 @@ import type { Queryable } from "@/lib/mcp/types";
 import { manilaDate } from "./slip";
 import { AGENCIES, CASE_KINDS, STEP_STATUSES, type Agency, type CaseKind, type StepStatus } from "./steps";
 import { birFormFields, caseTitle, formsFor, whereIsTheFile, type BirRegistrationForm, type FormFacts, type RunnerStep } from "./runner";
+import { AUTHORITY_DOCUMENTS, authorityRequirement, buildAuthority, type AuthorityFacts } from "./authority-templates";
 
 const RUNNER = ["registration_runner"] as const;
 
@@ -61,6 +62,8 @@ interface CaseDetail {
   notes: string | null;
   client: FormFacts["client"] & { id: string; code: string; status: string };
   steps: CaseStepDetail[];
+  contacts: { full_name: string; position: string | null; is_primary: boolean }[];
+  firm: AuthorityFacts["firm"] | null;
 }
 
 const caseId = z.string().uuid("Give the case's id (from registration_cases).");
@@ -78,6 +81,41 @@ async function readCase(db: Queryable, id: string): Promise<CaseDetail> {
 
 /** Steps still needed (not done, not marked not needed). */
 const stillNeeded = (s: { status: StepStatus }) => s.status !== "done" && s.status !== "not_applicable";
+
+/** A step file that looks like the signed authority (by its name only; a person checks it). */
+const AUTHORITY_FILE = /secretar|special.?power|\bspa\b|power.?of.?attorney|partners.?cert|authori[sz]/i;
+
+/**
+ * What the case still needs from the client before the firm can file: the BIR form(s) the
+ * case files and the notarized authority (Secretary's Certificate, Partners' Certificate
+ * or SPA) whenever the firm still has steps to do for the client. `step_code` is the step
+ * to attach a request for it to (the first BIR step still needed, else the first step).
+ */
+function requirementsOf(k: CaseDetail) {
+  const needed = k.steps.filter(stillNeeded);
+  const forms = formsFor(k.kind, k.client.taxpayer_type);
+  const auth = authorityRequirement(k.client.taxpayer_type);
+  const onFile = k.steps.flatMap((s) => s.files).find((f) => AUTHORITY_FILE.test(f.file_name)) ?? null;
+  const attachTo = needed.find((s) => s.agency === "bir") ?? needed[0] ?? null;
+  return {
+    bir_forms: forms,
+    authority_document:
+      needed.length === 0
+        ? null
+        : {
+            document: auth.document,
+            title: AUTHORITY_DOCUMENTS[auth.document],
+            requirement: auth.requirement,
+            signed_by: auth.signed_by,
+            possibly_on_file: onFile ? onFile.file_name : null,
+            step_code: attachTo?.code ?? null,
+          },
+    requirements: [
+      ...forms.map((f) => `BIR Form ${f}, signed by the client`),
+      ...(needed.length && !onFile ? [auth.requirement] : []),
+    ],
+  };
+}
 
 export const registrationCases = defineTool({
   name: "registration_cases",
@@ -122,7 +160,7 @@ export const registrationCase = defineTool({
   name: "registration_case",
   title: "A registration case",
   description:
-    "One of your clients' registration cases: the client facts a BIR form needs, every step in order (office, status, reference number, the day done, notes, days held, the names of the proof files on hand, requests already sent to the client on it), the steps still needed, and which BIR registration form the case files (1901, 1903, 1905 or none).",
+    "One of your clients' registration cases: the client facts a BIR form needs, every step in order (office, status, reference number, the day done, notes, days held, the names of the proof files on hand, requests already sent to the client on it), the steps still needed, which BIR registration form the case files (1901, 1903, 1905 or none), the notarized authority the firm needs to act for the client (Secretary's Certificate for a corporation, Partners' Certificate for a partnership, Special Power of Attorney for an individual) and the full list of requirements still to get from the client.",
   input: z.object({ case_id: caseId }),
   employees: RUNNER,
   effect: "read",
@@ -167,7 +205,7 @@ export const registrationCase = defineTool({
         requests_to_client: s.requests.filter((r) => r.direction === "to_client").map((r) => ({ subject: r.subject, status: r.status })),
       })),
       still_needed: k.steps.filter(stillNeeded).map((s) => ({ code: s.code, office: AGENCIES[s.agency as Agency], step: s.label, status: STEP_STATUSES[s.status], files_on_hand: s.files.length })),
-      bir_forms: formsFor(k.kind, k.client.taxpayer_type),
+      ...requirementsOf(k),
     };
   },
 });
@@ -256,5 +294,50 @@ export const draftClientRequests = defineTool({
       note,
     });
     return { draft_id: draft.id, status: draft.status, requests: items.length };
+  },
+});
+
+export const draftAuthorityDocument = defineTool({
+  name: "draft_authority_document",
+  title: "Draft the authority document",
+  description:
+    "Draft the notarized document that authorizes the firm to transact for the client on a case: a Secretary's Certificate (board resolution) for a corporation, one person corporation or non-stock; a Partners' Certificate for a partnership; a Special Power of Attorney for an individual. Filled only from what the app holds (client record, the case's steps and offices, the client's contacts by position, the firm in Settings → Brand); anything else is a blank listed in `missing`. The firm's representative (name, position, ID) is always left blank for staff (`to_fill_by_staff`). Saved as a draft on the case; staff print it for the client to sign and notarize. Nothing is sent.",
+  input: z.object({
+    case_id: caseId,
+    note: z.string().trim().min(10, "Say in a sentence or two what the preparer should check or get.").max(1000).describe("For the preparer: what to check, what to get from the client"),
+  }),
+  employees: RUNNER,
+  effect: "draft",
+  async run({ db, noteClient }, { case_id, note }) {
+    const k = await readCase(db, case_id);
+    noteClient(k.client.id);
+    if (k.status !== "open") throw new ToolRefusal(`This case is ${k.status}; only open cases take drafts.`);
+    const needed = k.steps.filter(stillNeeded);
+    const ref = (code: string) => k.steps.find((s) => s.code === code && s.status === "done")?.reference_no ?? null;
+    const doc = buildAuthority({
+      kind: k.kind,
+      branch_name: (k.details as { branch_name?: string }).branch_name ?? null,
+      lgu: k.lgu,
+      agencies: (needed.length ? needed : k.steps).map((s) => s.agency as Agency),
+      client: { name: k.client.name, taxpayer_type: k.client.taxpayer_type, tin: k.client.tin, rdo_code: k.client.rdo_code, registered_address: k.client.registered_address },
+      sec_no: ref("sec_registration"),
+      dti_no: ref("dti_business_name"),
+      contacts: k.contacts ?? [],
+      firm: k.firm ?? { legal_name: null, display_name: null, business_address: null, registered_address: null },
+    });
+    const draft = await saveDraft(db, {
+      kind: "authority_document",
+      clientId: k.client.id,
+      subject: { table: "registration_cases", id: k.id },
+      summary: [
+        { label: "Document", value: doc.title },
+        { label: "To sign", value: authorityRequirement(k.client.taxpayer_type).signed_by },
+        { label: "Missing", value: doc.missing.length ? `Missing (${doc.missing.join("; ")})` : "Nothing" },
+        { label: "Staff fill in", value: doc.to_fill_by_staff.join("; ") },
+      ],
+      data: { document: doc.document, title: doc.title, text: doc.text, marked: doc.marked, fields: doc.fields, missing: doc.missing, to_fill_by_staff: doc.to_fill_by_staff },
+      note,
+    });
+    return { draft_id: draft.id, status: draft.status, document: doc.title, missing: doc.missing, to_fill_by_staff: doc.to_fill_by_staff };
   },
 });

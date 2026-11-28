@@ -1,0 +1,19 @@
+/* An authority document (Secretary's Certificate, Partners' Certificate, SPA) on A4. */
+@page authority { size: A4 portrait; margin: 1in; }
+
+.sheet {
+  page: authority;
+  max-width: 8.27in;
+  margin-inline: auto;
+}
+
+.text {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-align: justify;
+}
+
+@media print {
+  .sheet { max-width: none; box-shadow: none; }
+}

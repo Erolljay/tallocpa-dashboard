@@ -1,6 +1,7 @@
 import { RiRobot2Line } from "@remixicon/react";
 import { DecideDraftButtons } from "@/components/ai/decide-draft";
-import { Card } from "@/components/ui";
+import { AuthorityText } from "@/components/registration/authority-text";
+import { Card, LinkButton } from "@/components/ui";
 import { draftKindLabel, draftLines } from "@/lib/ai/drafts";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SendRunnerRequestsButtons } from "./runner-send";
@@ -29,7 +30,7 @@ export async function RunnerDrafts({ caseId, open }: { caseId: string; open: boo
     .eq("status", "open")
     .eq("subject_table", "registration_cases")
     .eq("subject_id", caseId)
-    .in("kind", ["bir_registration_form", "registration_requests"])
+    .in("kind", ["bir_registration_form", "registration_requests", "authority_document"])
     .order("created_at", { ascending: false })
     .limit(10);
   const drafts = (data ?? []) as unknown as DraftRow[];
@@ -48,6 +49,20 @@ export async function RunnerDrafts({ caseId, open }: { caseId: string; open: boo
                   {d.ai_employees?.name ?? "AI employee"} · {when.format(new Date(d.created_at))}
                 </p>
               </div>
+              {d.kind === "authority_document" && typeof (d.payload as { marked?: unknown }).marked === "string" ? (
+                <>
+                  <AuthorityText
+                    marked={(d.payload as { marked: string }).marked}
+                    className="rounded-xl border border-separator-border p-4"
+                  />
+                  <p className="text-caption-1-regular text-text-tertiary">
+                    Highlighted blanks: what the app does not hold, and the firm&rsquo;s representative, which staff fill for each client.
+                  </p>
+                  <div>
+                    <LinkButton href={`/app/registrations/${caseId}/authority/${d.id}`} size="sm" variant="secondary">Print / download</LinkButton>
+                  </div>
+                </>
+              ) : (
               <dl className="grid grid-cols-[minmax(0,12rem)_1fr] gap-x-4 gap-y-1 text-body-regular">
                 {draftLines(d.payload).map((l, i) => (
                   <div key={i} className="contents">
@@ -56,6 +71,7 @@ export async function RunnerDrafts({ caseId, open }: { caseId: string; open: boo
                   </div>
                 ))}
               </dl>
+              )}
               {d.note && <p className="text-body-regular text-text-secondary">{d.note}</p>}
               {d.kind === "registration_requests" && open ? (
                 <SendRunnerRequestsButtons draftId={d.id} caseId={caseId} path={path} />
@@ -66,7 +82,7 @@ export async function RunnerDrafts({ caseId, open }: { caseId: string; open: boo
           ))}
         </ul>
         <p className="mt-4 text-caption-1-regular text-text-tertiary">
-          The form is for the preparer to check and file; nothing was submitted. Requests reach the client only when you send them. AI employees never change anything themselves.
+          The form and the authority document are for the preparer to check, print and have the client sign; nothing was submitted. Requests reach the client only when you send them. AI employees never change anything themselves.
         </p>
       </Card>
     </div>

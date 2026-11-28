@@ -10,6 +10,8 @@
  *     case for staff on the client; refused for a case that files no form;
  *   - requests to the client are a draft too: only for steps still needed, never a
  *     duplicate of an open request; staff send them as themselves;
+ *   - the authority document (Secretary's Certificate / SPA) is a draft too, filled only
+ *     from the app, the firm's representative always left blank for staff;
  *   - another AI employee, or the Runner switched off, reads nothing;
  *   - it still cannot move a step, send a request or read the tables directly.
  *
@@ -138,12 +140,12 @@ describe.skipIf(!url)("AI Registration Runner: open cases, days held, BIR form a
   it("lists its tools only once the Owner grants them", async () => {
     expect((await call("registration_cases")).error?.message).toMatch(/Unknown tool/);
     await db.query(
-      `insert into public.ai_tool_grants (ai_user_id, tool) values ($1, 'registration_cases'), ($1, 'registration_case'), ($1, 'draft_bir_registration_form'), ($1, 'draft_client_requests')`,
+      `insert into public.ai_tool_grants (ai_user_id, tool) values ($1, 'registration_cases'), ($1, 'registration_case'), ($1, 'draft_bir_registration_form'), ($1, 'draft_client_requests'), ($1, 'draft_authority_document')`,
       [RUNNER],
     );
     const r = await handleMcp(conn, { aiKey: "registration_runner", authorization: `Bearer ${key}`, body: { jsonrpc: "2.0", id: ++id, method: "tools/list" }, now: NOW });
     const tools = (r.json as { result: { tools: { name: string; annotations: { readOnlyHint: boolean } }[] } }).result.tools;
-    expect(tools.map((t) => t.name).sort()).toEqual(["draft_bir_registration_form", "draft_client_requests", "registration_case", "registration_cases"]);
+    expect(tools.map((t) => t.name).sort()).toEqual(["draft_authority_document", "draft_bir_registration_form", "draft_client_requests", "registration_case", "registration_cases"]);
     expect(tools.find((t) => t.name === "draft_client_requests")?.annotations.readOnlyHint).toBe(false);
   });
 
@@ -166,6 +168,8 @@ describe.skipIf(!url)("AI Registration Runner: open cases, days held, BIR form a
     expect(steps.find((s) => s.code === "barangay_clearance")?.requests_to_client).toEqual([{ subject: "Lease contract", status: "open" }]);
     expect((r.still_needed as { code: string }[]).map((s) => s.code)).toEqual(["barangay_clearance", "mayors_permit", "bir_registration"]);
     expect(r.bir_forms).toEqual(["1901"]);
+    expect(r.authority_document).toMatchObject({ title: "Special Power of Attorney", step_code: "bir_registration", possibly_on_file: null });
+    expect(r.requirements).toEqual(["BIR Form 1901, signed by the client", "Notarized Special Power of Attorney authorizing the firm"]);
     expect(JSON.stringify(r)).not.toContain("secret-path");
     expect(await refusal("registration_case", { case_id: kase.molo })).toMatch(/No registration case/);
   });
@@ -183,6 +187,44 @@ describe.skipIf(!url)("AI Registration Runner: open cases, days held, BIR form a
     expect(staff.rows).toEqual([{ v: "BN-1234567" }]);
     expect(await refusal("draft_bir_registration_form", { case_id: kase.renewal, note: "Testing a case with no form." })).toMatch(/files no BIR registration form/);
     expect(await refusal("draft_bir_registration_form", { case_id: kase.jaro, form: "1903", note: "Testing the wrong form." })).toMatch(/files Form 1901, not 1903/);
+  });
+
+  it("drafts the SPA for an individual from the app only, the firm's representative left blank for staff", async () => {
+    const r = (await call("draft_authority_document", { case_id: kase.jaro, note: "Get the owner's full name and address from the ID." })).result?.structuredContent as {
+      document: string;
+      missing: string[];
+      to_fill_by_staff: string[];
+    };
+    expect(r.document).toBe("Special Power of Attorney");
+    expect(r.missing).toEqual(expect.arrayContaining(["Owner's full name", "Civil status", "Citizenship", "Client's TIN"]));
+    expect(r.missing).not.toContain("Representative's full name");
+    expect(r.to_fill_by_staff).toEqual(["Representative's full name", "Representative's position", "Representative's valid ID no."]);
+    const text = (await db.query(`select payload->>'text' as t from public.ai_drafts where kind = 'authority_document'`)).rows[0].t as string;
+    expect(text).toContain("doing business under the name Jaro Bakeshop (DTI Business Name Certificate No. BN-1234567)");
+    expect(text).toContain("EJ Tallo Cloud Accounting and Auditing Services (Tallo CPA)");
+    expect(text).toContain("acting through its representative [__________], [__________], with valid ID no. [__________]");
+    expect(text).not.toContain("Preparer");
+    const staff = await as<{ n: number }>(PREPARER, `select count(*)::int as n from public.ai_drafts where kind = 'authority_document'`);
+    expect(staff.rows[0].n).toBe(1);
+  });
+
+  it("drafts a Secretary's Certificate for a corporation, naming its Corporate Secretary from the contacts", async () => {
+    await db.query(`insert into public.ai_assignments (ai_user_id, client_id) values ($1, $2)`, [RUNNER, molo]);
+    await db.query(`insert into auth.users (id) values ('00000000-0000-0000-0000-00000000b204')`);
+    await db.query(`insert into public.client_users (user_id, client_id, full_name, position) values ('00000000-0000-0000-0000-00000000b204', $1, 'Ana Reyes', 'Corporate Secretary')`, [molo]);
+    const c = (await call("registration_case", { case_id: kase.molo })).result?.structuredContent as { authority_document: { title: string }; requirements: string[] };
+    expect(c.authority_document.title).toBe("Secretary's Certificate");
+    expect(c.requirements).toEqual(["BIR Form 1903, signed by the client", "Notarized Secretary's Certificate authorizing the firm"]);
+    const r = (await call("draft_authority_document", { case_id: kase.molo, note: "Ask for the board meeting date and SEC number." })).result?.structuredContent as { document: string; missing: string[] };
+    expect(r.document).toBe("Secretary's Certificate");
+    expect(r.missing).toEqual(expect.arrayContaining(["SEC registration no.", "Date of the board / partners' meeting"]));
+    expect(r.missing).not.toContain("Corporate Secretary's full name");
+    const text = (await db.query(`select payload->>'text' as t from public.ai_drafts where kind = 'authority_document' and client_id = $1`, [molo])).rows[0].t as string;
+    expect(text).toContain("I, Ana Reyes, of legal age");
+    const caseRead = await asAi(conn, RUNNER, true, async (q) => (await q.query<{ k: { contacts: object[] } }>(`select public.ai_registration_case($1) as k`, [kase.molo])).rows[0].k);
+    expect(JSON.stringify(caseRead.contacts)).not.toMatch(/@|user_id/);
+    await db.query(`delete from public.ai_assignments where ai_user_id = $1 and client_id = $2`, [RUNNER, molo]);
+    expect(await refusal("draft_authority_document", { case_id: kase.molo, note: "Testing another client's case." })).toMatch(/No registration case/);
   });
 
   it("drafts requests to the client only for steps still needed, never repeating an open one; a newer draft replaces the earlier", async () => {
