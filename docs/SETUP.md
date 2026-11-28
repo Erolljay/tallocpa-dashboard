@@ -97,7 +97,7 @@ The banks' confirmations of the taxes the firm pays (UnionBank Business Banking'
    - In the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) with the same OAuth client as eSubmission, authorize only the scope `https://www.googleapis.com/auth/gmail.readonly`, **signed in as that mailbox**, and copy the refresh token.
    - Set in Vercel (server only): `PAYMENT_MAIL_GMAIL_REFRESH_TOKEN` (the token) and `PAYMENT_MAILBOX` (its address, for the record).
 2. Optional: `PAYMENT_MAIL_DAYS`, how many days back each check looks (default 14, at most 90).
-3. The check runs at 9:30 AM and 3:30 PM Manila (`/api/cron/payment-mail` in `vercel.json`, with `CRON_SECRET`). Each new confirmation is kept with what was read from it and a PDF: the email's own PDF attachment, or one the app writes from the email (UnionBank's has none). Bank account numbers are masked to the last 4 digits before anything is kept.
+3. The check runs at 9:30 AM Manila (`/api/cron/payment-mail` in `vercel.json`, with `CRON_SECRET`) and again at 11:40 AM with the eSubmission check. Each new confirmation is kept with what was read from it and a PDF: the email's own PDF attachment, or one the app writes from the email (UnionBank's has none). Bank account numbers are masked to the last 4 digits before anything is kept.
 
 ### Google Calendar (optional, docs/REWORK.md decisions 18, 20 and 22)
 

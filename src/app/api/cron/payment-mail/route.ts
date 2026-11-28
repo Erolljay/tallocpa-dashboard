@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  * Payment confirmations (vercel.json; docs/ai-desks/payment-proof-clerk/): collects the
  * banks' confirmations of the taxes the firm paid from the payment mailbox, for the
  * Payment Proof Clerk to match and staff to attach. Does nothing until the mailbox is
- * configured (docs/SETUP.md). Runs mornings and afternoons, before the Clerk's runs.
+ * configured (docs/SETUP.md). Runs at 9:30 AM Manila; the eSubmission cron checks again at 11:40 AM.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;

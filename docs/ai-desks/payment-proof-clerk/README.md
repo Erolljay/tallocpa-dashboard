@@ -13,7 +13,7 @@ The app needs read-only access to the Gmail mailbox where the banks' confirmatio
 - Easiest: forward the banks' confirmations to the eSubmission mailbox (attachments@tallocpa.com). The app reads it already; nothing more to set.
 - Or give the app its own read-only token for another mailbox: set `PAYMENT_MAIL_GMAIL_REFRESH_TOKEN` (scope `gmail.readonly`) and `PAYMENT_MAILBOX` in Vercel.
 
-The app checks the mailbox at **9:30 AM** and **3:30 PM** Manila time (`/api/cron/payment-mail`), looking back 14 days (`PAYMENT_MAIL_DAYS`).
+The app checks the mailbox at **9:30 AM** (`/api/cron/payment-mail`) and again at **11:40 AM** (with the eSubmission check) Manila time, looking back 14 days (`PAYMENT_MAIL_DAYS`).
 
 **Which emails:** the senders and subjects in `src/lib/payment-proof/parse.ts` (`PAYMENT_SENDERS`): UnionBank (*Successful Bills Payment*), LANDBANK Link.BizPortal, DBP PayTax, GCash, Maya. Add a channel there. Mail from the BIR itself goes to the BIR Mail Clerk.
 
@@ -33,7 +33,7 @@ The app checks the mailbox at **9:30 AM** and **3:30 PM** Manila time (`/api/cro
 4. **Skill.** Add the [`payment-proofs`](payment-proofs/SKILL.md) skill (Customize → Skills; after an update here, replace the old version).
 5. **Try it.** In the project: *Match today's payment emails.*
 6. **Permissions.** If you schedule it, set its tools to **Always allow** (Customize → Connectors → Tallo Payment Proof Clerk), or the run waits for a click.
-7. **Schedule (optional).** A scheduled task, **weekdays at 10:00 AM and 4:00 PM** Manila time (after the mailbox checks), prompt: *Match the payment emails using the payment-proofs steps. Suggest only; never attach. Tell me in one line how many you matched and anything that failed.*
+7. **Schedule (optional).** A scheduled task, **weekdays at 10:00 AM and 12:00 noon** Manila time (after the mailbox checks), prompt: *Match the payment emails using the payment-proofs steps. Suggest only; never attach. Tell me in one line how many you matched and anything that failed.*
 
 ## How it matches
 
