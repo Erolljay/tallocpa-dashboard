@@ -301,7 +301,7 @@ export const draftAuthorityDocument = defineTool({
   name: "draft_authority_document",
   title: "Draft the authority document",
   description:
-    "Draft the notarized document that authorizes the firm to transact for the client on a case: a Secretary's Certificate (board resolution) for a corporation, one person corporation or non-stock; a Partners' Certificate for a partnership; a Special Power of Attorney for an individual. Filled only from what the app holds (client record, the case's steps and offices, the client's contacts by position, the firm in Settings → Brand); anything else is a blank listed in `missing`. The firm's representative (name, position, ID) is always left blank for staff (`to_fill_by_staff`). Saved as a draft on the case; staff print it for the client to sign and notarize. Nothing is sent.",
+    "Draft the notarized document that authorizes the firm to transact for the client on a case: a Secretary's Certificate (board resolution) for a corporation, one person corporation or non-stock; a Special Power of Attorney for an individual (a partnership's is prepared by staff; refused). Filled only from what the app holds (client record, the case's steps and offices, the client's contacts by position, the firm in Settings → Brand); anything else is a blank listed in `missing`. The firm's representative (name, position, ID) is always left blank for staff (`to_fill_by_staff`). Saved as a draft on the case; staff print it for the client to sign and notarize. Nothing is sent.",
   input: z.object({
     case_id: caseId,
     note: z.string().trim().min(10, "Say in a sentence or two what the preparer should check or get.").max(1000).describe("For the preparer: what to check, what to get from the client"),
@@ -312,6 +312,9 @@ export const draftAuthorityDocument = defineTool({
     const k = await readCase(db, case_id);
     noteClient(k.client.id);
     if (k.status !== "open") throw new ToolRefusal(`This case is ${k.status}; only open cases take drafts.`);
+    // Owner's instruction: a partnership's authority document is left to staff (no template).
+    if (k.client.taxpayer_type === "partnership")
+      throw new ToolRefusal("For a partnership the firm prepares the authority document itself; nothing to draft. Mention it in your report so the preparer prepares it.");
     const needed = k.steps.filter(stillNeeded);
     const ref = (code: string) => k.steps.find((s) => s.code === code && s.status === "done")?.reference_no ?? null;
     const doc = buildAuthority({

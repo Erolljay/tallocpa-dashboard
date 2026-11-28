@@ -313,7 +313,7 @@ export function buildAuthority(f: AuthorityFacts): FilledAuthority {
     if (document === "partners_certificate") {
       fields.push(v("partners", partners.length ? partners.join(", ") : null, "Client contacts with the position Partner", "No contact with the position Partner"));
     } else {
-      fields.push(v("secretary_name", secretary?.full_name, `Client contact (position: ${secretary?.position ?? ""})`, "No contact with the position Corporate Secretary"));
+      fields.push(v("secretary_name", secretary?.full_name, `Client contact (position: ${secretary?.position ?? ""})`, "Not in the app: the Corporate Secretary named in the client's latest GIS (General Information Sheet)"));
     }
   }
   const values = Object.fromEntries(fields.map((x) => [x.placeholder, x.value])) as Partial<Record<Placeholder, string | null>>;
@@ -325,5 +325,5 @@ export function buildAuthority(f: AuthorityFacts): FilledAuthority {
 /** The notarized authority a case needs listed as a requirement (with the BIR form). */
 export function authorityRequirement(t: TaxpayerType) {
   const d = authorityDocumentFor(t);
-  return { document: d, requirement: `Notarized ${AUTHORITY_DOCUMENTS[d]} authorizing the firm`, signed_by: d === "special_power_of_attorney" ? "The owner (principal), before a notary" : d === "partners_certificate" ? "All partners, before a notary" : "The Corporate Secretary, before a notary" };
+  return { document: d, requirement: `Notarized ${AUTHORITY_DOCUMENTS[d]} authorizing the firm`, signed_by: d === "special_power_of_attorney" ? "The owner (principal), before a notary" : d === "partners_certificate" ? "Prepared by staff for the partnership (no template)" : "The Corporate Secretary, before a notary" };
 }
