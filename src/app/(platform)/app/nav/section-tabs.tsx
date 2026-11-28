@@ -27,6 +27,7 @@ export const SECTIONS = {
     { key: "deadlines", label: "Deadlines", href: "/app/deadlines" },
     { key: "review", label: "To review", href: "/app/review" },
     { key: "remittances", label: "SSS · PhilHealth · Pag-IBIG", href: "/app/remittances" },
+    { key: "bir_mail", label: "BIR mail", href: "/app/bir-mail" },
   ],
   inbox: [
     { key: "documents", label: "Waiting for approval", href: "/app/documents" },

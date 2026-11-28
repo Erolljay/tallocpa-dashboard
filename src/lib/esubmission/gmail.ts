@@ -75,6 +75,19 @@ export async function findReplies(env: EsubmissionMailEnv, token: string, subjec
   return full.filter((m) => `${headerOf(m, "In-Reply-To")} ${headerOf(m, "References")}`.includes(id));
 }
 
+/** A signed-in token for the mailbox, for several reads in a row. */
+export const mailboxToken = (env: EsubmissionMailEnv) => accessToken(env);
+
+/** The ids of messages matching a Gmail search, newest first (read only). */
+export async function searchMessageIds(env: EsubmissionMailEnv, token: string, q: string, max = 50): Promise<{ id: string; threadId: string }[]> {
+  const list = await call<{ messages?: { id: string; threadId: string }[] }>(env, token, `/messages?maxResults=${Math.min(Math.max(max, 1), 100)}&q=${encodeURIComponent(q)}`);
+  return list.messages ?? [];
+}
+
+/** One message with its parts (read only). */
+export const readMessage = (env: EsubmissionMailEnv, token: string, id: string) =>
+  call<MailMessage>(env, token, `/messages/${encodeURIComponent(id)}?format=full`);
+
 /** An attachment's bytes. */
 export async function readAttachment(env: EsubmissionMailEnv, token: string, messageId: string, attachmentId: string): Promise<Buffer> {
   const a = await call<{ data?: string }>(env, token, `/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`);

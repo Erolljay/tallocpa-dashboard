@@ -21,6 +21,8 @@ import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 import { CatchUpConfirmForms, CatchUpRecordForm } from "../catch-up-forms";
 import { AmendFilingForm } from "../amend-form";
 import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
+import { BirMailForFiling } from "@/components/bir-mail/panels";
+import { PaymentProofSuggestions } from "./payment-proof";
 import { ApprovalMemo } from "./approval-memo";
 import { EsubmissionControls, ReturnFileUpload, RetryBookEntry } from "./return-files";
 
@@ -124,7 +126,15 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
   const filedCopy = allFiles.find((x) => x.kind === "filed_copy" && !x.replaced_at) ?? null;
   const reports = allFiles.filter((x) => x.kind === "validation_report");
   const dats = allFiles.filter((x) => x.kind === "esubmission_dat");
-  const esub = (esubState ?? "not_required") as EsubmissionState;
+  const proofs = allFiles.filter((x) => x.kind === "payment_proof" && !x.replaced_at);
+  // The payment the staff attached from the Payment Proof Clerk's suggestion: Filed & paid offers its references and date.
+  const { data: paidMail } = proofs.length
+    ? await supabase.from("payment_mail").select("payment_reference, bir_reference, paid_on").eq("filing_instance_id", f.id).eq("status", "attached").order("attached_at", { ascending: false }).limit(1).maybeSingle()
+    : { data: null };
+  const paymentPrefill = paidMail?.payment_reference
+    ? { reference: paidMail.bir_reference ? `${paidMail.payment_reference} · BIR ${paidMail.bir_reference}` : paidMail.payment_reference, paidOn: paidMail.paid_on as string | null }
+    : null;
+  const esub =(esubState ?? "not_required") as EsubmissionState;
   const send = sends as { id: string; method: string; files: string[]; status: string; sent_at: string; result_at: string | null; result_note: string | null } | null;
   const books = (bookRows ?? []) as BookRow[];
   const nil = isNilReturn(f.tax_due == null ? null : Number(f.tax_due));
@@ -197,7 +207,15 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
         <div className="min-w-0 space-y-6">
           {/* The Pre-Review Assistant's memo, for the Reviewer to accept or reject (renders nothing without one). */}
           <Suspense fallback={null}>
-            <AiDraftsPanel subject={{ table: "filing_instances", id: f.id }} path={`/app/filings/${f.id}`} title="Suggested by the Pre-Review Assistant" />
+            <AiDraftsPanel subject={{ table: "filing_instances", id: f.id }} kinds={["review_memo"]} path={`/app/filings/${f.id}`} title="Suggested by the Pre-Review Assistant" />
+          </Suspense>
+          {/* The Payment Proof Clerk's match of a payment email to this return, for staff to attach. */}
+          <Suspense fallback={null}>
+            <PaymentProofSuggestions filingId={f.id} canAttach={canAttach} />
+          </Suspense>
+          {/* BIR emails linked to this return, and the BIR Mail Clerk's proposals naming it (nothing when neither). */}
+          <Suspense fallback={null}>
+            <BirMailForFiling filingId={f.id} />
           </Suspense>
           {/* W4: the approval memo, for the reviewer and the Owner once the return is reviewed. */}
           {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "filed" && (
@@ -277,7 +295,7 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
             )}
             <div className="mt-4">
               {actions.length > 0 ? (
-                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} amended={f.amendment_no > 0} hasFiledCopy={Boolean(filedCopy)} worksheetTaxDue={worksheetTaxDue} worksheetHref={`/app/filings/${f.id}/worksheet`} />
+                <SignOffActions filingId={f.id} actions={actions} taxDue={f.tax_due == null ? null : Number(f.tax_due)} paymentMode={client.payment_mode} paymentCheck={paymentCheck} clientId={client.id} actingLimit={me.staff.role === "owner" || !acting ? null : Number(acting.max_tax_due)} amended={f.amendment_no > 0} hasFiledCopy={Boolean(filedCopy)} worksheetTaxDue={worksheetTaxDue} worksheetHref={`/app/filings/${f.id}/worksheet`} paymentPrefill={paymentPrefill} />
               ) : (
                 <p className="text-body-regular text-text-secondary">
                   {complete ? "This return is done." : status === "filed" ? "Filed & paid. It is complete once the BIR validates its DAT files (eSubmission below)." : "Nothing for you to do on this return right now."}
@@ -394,6 +412,20 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {proofs.length > 0 && (
+            <div className="mt-4 space-y-2 border-t border-separator-border pt-4">
+              <p className="text-body-medium text-text-primary">Proof of payment</p>
+              <ul className="space-y-1 text-body-regular">
+                {proofs.map((x) => (
+                  <li key={x.id}>
+                    <a href={`/filing-files/${x.id}`} target="_blank" rel="noopener" className="text-button-ghost-foreground hover:underline">{x.file_name}</a>
+                    <span className="text-caption-1-regular text-text-tertiary"> · from the payment email · {when(x.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-caption-1-regular text-text-tertiary">Staff only. The scanned copy below stays the one file the client sees.</p>
             </div>
           )}
           <div className="mt-4 space-y-3 border-t border-separator-border pt-4">

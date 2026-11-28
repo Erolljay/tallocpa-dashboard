@@ -89,6 +89,28 @@ After the Owner approves a return with DAT attachments (SLS, SLP, SAWT, QAP, alp
    - `ESUBMISSION_TO` (optional) — default `esubmission@bir.gov.ph`; point it at an internal address to try the flow first.
 4. The reply check runs once a day (`/api/cron/esubmission` in `vercel.json`, 11:40 Manila, with `CRON_SECRET`); staff can also press **Check the mailbox for the reply** on the return. It reads the thread of each send still waiting: the BIR's attachment (or its message, as a text file) becomes the validation report, and the send is marked **Validated** or **Errors**. A reply the app cannot read is marked Errors with a note; staff open it and correct the result.
 
+### Connected mailboxes: your inbox and support@ (Settings → Mailboxes)
+
+BIR mail (eBIRForms / eFPS filing confirmations, notices) and the banks' payment confirmations arrive in the Owner's own inbox and in the shared **support@tallocpa.com**. The Owner connects those mailboxes **read only** in **Settings → Mailboxes**; the app then reads each for what it is ticked for (*BIR mail*, *Payment confirmations*, both by default), as well as the eSubmission mailbox. It only lists, reads and downloads: it never sends, moves, labels or deletes. A message that reached both inboxes is kept once. The refresh tokens are kept encrypted (`GOOGLE_TOKEN_KEY`) and only the server reads them; staff and AI employees cannot see which mailboxes are connected.
+
+1. In the Google Cloud project of the OAuth client (the same one as eSubmission and the calendar): **APIs & Services → OAuth consent screen → Data access → Add or remove scopes**, add `https://www.googleapis.com/auth/gmail.readonly` (with `openid` and `email`). The **Gmail API** must be turned on (it already is for eSubmission).
+2. On the same OAuth client (**Credentials → the Web client**), add the redirect URI `https://app.tallocpa.com/app/settings/mailboxes/callback` (and the preview address if you try it there).
+3. `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_TOKEN_KEY` must be set (see Google Calendar below).
+4. In the app: **Settings → Mailboxes → Connect a Gmail mailbox**, sign in as yourself and allow. Then **Connect a Gmail mailbox** again, choose **support@tallocpa.com** (sign in to it in the Google account chooser) and allow. Only accounts of `GOOGLE_WORKSPACE_DOMAIN` (default tallocpa.com) can be connected.
+5. When Google stops accepting a mailbox (password changed, access removed), its row says **Needs reconnecting**: connect it again. **Disconnect** tells Google to forget the token and removes it.
+
+BIR mail is checked **every two days** at 12:15 PM Manila (`/api/cron/bir-mail` in `vercel.json`, with `CRON_SECRET`); the Owner can check at once from **BIR mail → Check the mailboxes now** or **Settings → Mailboxes → Check all mailboxes now**. Each BIR email gets a PDF the return can keep: the BIR's own attachment, or one the app writes from the email (eBIRForms' confirmation has none), headed *BIR filing confirmation* with the TIN, form, period and time received.
+
+### Payment confirmations mailbox (optional; the Payment Proof Clerk)
+
+The banks' confirmations of the taxes the firm pays (UnionBank Business Banking's *Successful Bills Payment (CLIENT)* email to the BIR biller; LANDBANK Link.BizPortal, DBP, GCash and Maya are listed too, in `src/lib/payment-proof/parse.ts`) are collected so the Payment Proof Clerk can match each to its return and staff can attach it as the proof of payment (docs/ai-desks/payment-proof-clerk/README.md). The app only lists, reads and downloads messages: it never sends, labels or deletes.
+
+1. Choose the mailbox. The simplest: connect the inbox where they arrive in **Settings → Mailboxes** (above) with *Payment confirmations* ticked. Or forward the banks' confirmations to the eSubmission mailbox (above): the app reads it with the token it already has. Or, the older way, set a token for one mailbox in the environment:
+   - In the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) with the same OAuth client as eSubmission, authorize only the scope `https://www.googleapis.com/auth/gmail.readonly`, **signed in as that mailbox**, and copy the refresh token.
+   - Set in Vercel (server only): `PAYMENT_MAIL_GMAIL_REFRESH_TOKEN` (the token) and `PAYMENT_MAILBOX` (its address, for the record).
+2. Optional: `PAYMENT_MAIL_DAYS`, how many days back each check looks (default 14, at most 90).
+3. The check runs at 9:30 AM Manila (`/api/cron/payment-mail` in `vercel.json`, with `CRON_SECRET`) and again at 11:40 AM with the eSubmission check. Each new confirmation is kept with what was read from it and a PDF: the email's own PDF attachment, or one the app writes from the email (UnionBank's has none). Bank account numbers are masked to the last 4 digits before anything is kept.
+
 ### Google Calendar (optional, docs/REWORK.md decisions 18, 20 and 22)
 
 The team calendar (Home → Team calendar), the lead's booking page (`/book/…`, link on the lead) and the portal's **Book a meeting** read each staff member's own Google Calendar and create events with a Meet link. Each staff member connects their own calendar once from Home → Team calendar. Until this is set, those pages say Google Calendar is not set up and the booking pages ask the person to email instead.

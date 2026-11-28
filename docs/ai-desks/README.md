@@ -7,10 +7,13 @@ data (clients, returns, books) stays in TalloCPA OS; a desk only holds instructi
 
 | Desk | Files |
 |---|---|
+| BIR Mail Clerk | [`bir-mail-clerk/`](bir-mail-clerk/README.md) |
 | Chief of Staff | [`chief-of-staff/`](chief-of-staff/README.md) |
 | Collections Clerk | [`collections-clerk/`](collections-clerk/README.md) |
 | Document Clerk | [`document-clerk/`](document-clerk/README.md) |
 | Onboarding Officer | [`onboarding-officer/`](onboarding-officer/README.md) |
+| Payment Proof Clerk | [`payment-proof-clerk/`](payment-proof-clerk/README.md) |
 | Pre-Review Assistant | [`pre-review-assistant/`](pre-review-assistant/README.md) |
+| Registration Runner | [`registration-runner/`](registration-runner/README.md) |
 
 More desks come with the AI employees' tools (build step 3 onwards).

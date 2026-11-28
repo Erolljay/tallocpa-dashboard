@@ -42,7 +42,7 @@ app on the Qwen API.
 
 ## 3. The AI employees
 
-15 AI employees in 6 departments. Org chart:
+16 AI employees in 6 departments. Org chart:
 <https://claude.ai/artifact/2Nj7saPXTEJe1QAJ1KBgrc> (private to the Owner).
 
 | Department | AI employee | Job | Supervisor | Runs on |
@@ -53,6 +53,7 @@ app on the Qwen API.
 | Tax Compliance & Bookkeeping | Document Clerk | After OCR: document type, period, account title, duplicates, odd amounts, the return note to the client | Preparer | App (Qwen) first pass; Cowork catch-up |
 | Tax Compliance & Bookkeeping | Pre-Review Assistant | Compares a return with prior periods, 2307s with sales, the VAT threshold, books with return lines; drafts the review memo | Reviewer | Cowork |
 | Tax Compliance & Bookkeeping | BIR Mail Clerk | Matches BIR confirmations and notices to filings, attaches proof as a draft, flags LOA / PAN / FAN | Preparer | Cowork |
+| Tax Compliance & Bookkeeping | Payment Proof Clerk | Matches the banks' tax payment confirmations (e.g. UnionBank Bills Payment to the BIR) to the return by TIN, form, period and amount; staff click Attach proof to file the PDF and record the payment | Preparer | Cowork |
 | Tax Compliance & Bookkeeping | FS Preparer | Assembles the full financial statements in the firm's design (§8) | Reviewer; Owner releases | Cowork |
 | Tax Compliance & Bookkeeping | Annual Reviewer | Checks that the whole year adds up: the books against every return filed (§8a) | Reviewer; Owner approves amendments | Cowork |
 | Business Registration | Registration Runner | Drafts Form 1901 / 1903 / 1905 fields, lists missing requirements as client requests, watches days held at each office | Preparer | Cowork |
@@ -164,7 +165,7 @@ Read-only at every level. Proposed defaults:
 | Chief of Staff | Summary, all clients |
 | Client Concierge | What the client sees in its own portal, for the businesses that contact can access |
 | Collections Clerk | None (reads the firm's receivables, not the client's books) |
-| Registration Runner, BIR Mail Clerk | None |
+| Registration Runner, BIR Mail Clerk, Payment Proof Clerk | None |
 | All marketing employees | None, and no client-data tools at all |
 
 The books policies (`books_read` and the ledger tables) gain a check on this level for
@@ -205,6 +206,7 @@ it in the app.
 | Client Concierge | client status (deadlines, missing documents, open requests); 2307 list; registration status |
 | Pre-Review Assistant | a filing with its prior periods; ledger summary; 2307s against sales; save a draft review memo |
 | BIR Mail Clerk | unmatched BIR emails; propose a match to a filing; attach proof as a draft |
+| Payment Proof Clerk | unmatched payment confirmations; candidate returns; propose a payment proof (staff attach) |
 | FS Preparer | statements and notes data for a period; notes library; save an FS draft; run the FS validator |
 | Annual Reviewer | the annual reconciliation for a client and year; the entries and filings behind a difference; filed-return files; draft figures for a return filed elsewhere; save the annual review memo; propose an amendment |
 | Registration Runner | a registration case; draft 1901 / 1903 / 1905 fields; create client requests |
@@ -371,7 +373,7 @@ granted draft tool that a person confirms.
 5. **FS template, notes library and release validator** (useful to staff without AI);
    then the FS Preparer's tools and desk. **Annual reconciliation workpaper**, then the
    Annual Reviewer's tools and desk.
-6. **Pre-Review Assistant** (built): returns waiting for review, prior periods, the app's tie-outs, 2307s, the ₱3M VAT threshold; review memos as drafts on the return's page. **Collections Clerk** (built): receivables aging, payment history, ready to bill, billed vs collected split by tax dues (UnionBank), SSS / PhilHealth / Pag-IBIG remittances (Security Bank), retainers and others (BPI); payment reminders as Owner-only drafts. Billing stays Owner-only: the Clerk reads it through narrow functions only it may call. Then Registration Runner, BIR Mail Clerk, Chief of Staff (including `my_schedule`, §8b).
+6. **Pre-Review Assistant** (built): returns waiting for review, prior periods, the app's tie-outs, 2307s, the ₱3M VAT threshold; review memos as drafts on the return's page. **Collections Clerk** (built): receivables aging, payment history, ready to bill, billed vs collected split by tax dues (UnionBank), SSS / PhilHealth / Pag-IBIG remittances (Security Bank), retainers and others (BPI); payment reminders as Owner-only drafts. Billing stays Owner-only: the Clerk reads it through narrow functions only it may call. **BIR Mail Clerk** (built): the app stores the BIR's emails (filing confirmations, notices) in *BIR mail*; the Clerk proposes the client and return, flags LOA / PAN / FAN / FLD with the respond-by date (Owner notified); staff accept and link. **Registration Runner** (built): open cases by days held, Form 1901 / 1903 / 1905 fields from what the app holds, missing documents as client requests (staff send). **Chief of Staff `my_schedule`** (built): the Owner's meetings, discovery calls, returns due, tasks, requests and registration targets in one list; Google Calendar stays through Cowork. **Payment Proof Clerk** (built, added at the Owner's request): the app collects bank payment confirmations and writes a PDF; the Clerk matches them by TIN, form, period and amount; staff click Attach proof.
 7. Marketing & Growth.
 
 Each step ships with its tests and goes live switched off until the Owner turns it on.
