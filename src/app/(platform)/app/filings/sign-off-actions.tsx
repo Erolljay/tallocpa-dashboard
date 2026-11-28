@@ -38,6 +38,8 @@ export function SignOffActions(props: {
   /** Prepared: the tax due from the saved worksheet (pesos); "missing" until it is saved; null/absent when the form has no worksheet (typed). */
   worksheetTaxDue?: number | "missing" | null;
   worksheetHref?: string;
+  /** From the proof of payment attached to this return: Filed & paid offers its reference and date. */
+  paymentPrefill?: { reference: string; paidOn: string | null } | null;
 }) {
   if (props.actions.length === 0) return null;
   return (
@@ -49,7 +51,7 @@ export function SignOffActions(props: {
   );
 }
 
-function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit, amended = false, hasFiledCopy = true, worksheetTaxDue = null, worksheetHref }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null; amended?: boolean; hasFiledCopy?: boolean; worksheetTaxDue?: number | "missing" | null; worksheetHref?: string }) {
+function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", paymentCheck, clientId, actingLimit, amended = false, hasFiledCopy = true, worksheetTaxDue = null, worksheetHref, paymentPrefill = null }: { filingId: string; action: SignOffAction; taxDue: number | null; paymentMode: string; audience?: "staff" | "client"; paymentCheck?: PaymentCheck | null; clientId?: string; actingLimit?: number | null; amended?: boolean; hasFiledCopy?: boolean; worksheetTaxDue?: number | "missing" | null; worksheetHref?: string; paymentPrefill?: { reference: string; paidOn: string | null } | null }) {
   const [state, run, pending] = useActionState(advanceFilingAction.bind(null, filingId, action), {} as SignOffState);
   const id = (n: string) => `${action}-${n}`;
   const secondary = action === "kick_back" || action === "client_query";
@@ -90,10 +92,10 @@ function StepForm({ filingId, action, taxDue, paymentMode, audience = "staff", p
               <Input id={id("filed_on")} name="filed_on" type="date" required defaultValue={today()} />
             </Field>
             <Field label="Payment reference" htmlFor={id("payment_reference")} hint={taxDue ? "Bank or eFPS confirmation number." : "Leave blank: nothing was payable."}>
-              <Input id={id("payment_reference")} name="payment_reference" required={Boolean(taxDue)} />
+              <Input id={id("payment_reference")} name="payment_reference" required={Boolean(taxDue)} defaultValue={paymentPrefill?.reference ?? undefined} />
             </Field>
-            <Field label="Paid on" htmlFor={id("paid_on")}>
-              <Input id={id("paid_on")} name="paid_on" type="date" required={Boolean(taxDue)} defaultValue={taxDue ? today() : undefined} />
+            <Field label="Paid on" htmlFor={id("paid_on")} hint={paymentPrefill ? "From the proof of payment attached." : undefined}>
+              <Input id={id("paid_on")} name="paid_on" type="date" required={Boolean(taxDue)} defaultValue={paymentPrefill?.paidOn ?? (taxDue ? today() : undefined)} />
             </Field>
           </div>
           {!hasFiledCopy && <Notice tone="waiting">Attach the scanned copy (the return, the proof of payment and the attachments, in one file) under Return first.</Notice>}

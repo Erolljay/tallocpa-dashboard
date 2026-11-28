@@ -42,6 +42,44 @@ export function esubmissionMailEnv(): EsubmissionMailEnv | null {
 }
 
 /**
+ * The mailbox the Payment Proof Clerk's job reads payment confirmations from (UnionBank
+ * bills payment to the BIR and other channels; docs/SETUP.md, docs/ai-desks/payment-proof-clerk/).
+ * Read only: the job lists, reads and downloads messages, never sends, labels or deletes.
+ * Optional: null until set.
+ *
+ *   PAYMENT_MAIL_GMAIL_REFRESH_TOKEN   optional; refresh token of the mailbox that receives the
+ *                                      banks' confirmations (scope gmail.readonly), e.g. the Owner's
+ *   PAYMENT_MAILBOX                    optional; that mailbox's address, for the record
+ *   PAYMENT_MAIL_DAYS                  optional; how many days back to look (default 14, at most 90)
+ *
+ * Without PAYMENT_MAIL_GMAIL_REFRESH_TOKEN, the eSubmission mailbox's token is used
+ * (ESUBMISSION_GMAIL_REFRESH_TOKEN), for a firm whose bank sends confirmations there.
+ */
+export interface PaymentMailEnv {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  mailbox: string;
+  days: number;
+}
+
+export function paymentMailEnv(): PaymentMailEnv | null {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const own = process.env.PAYMENT_MAIL_GMAIL_REFRESH_TOKEN;
+  const refreshToken = own || process.env.ESUBMISSION_GMAIL_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) return null;
+  const days = Number(process.env.PAYMENT_MAIL_DAYS || 14);
+  return {
+    clientId,
+    clientSecret,
+    refreshToken,
+    mailbox: (own ? process.env.PAYMENT_MAILBOX : process.env.ESUBMISSION_MAILBOX) || (own ? "payment mailbox" : "attachments@tallocpa.com"),
+    days: Number.isFinite(days) ? Math.min(Math.max(Math.round(days), 1), 90) : 14,
+  };
+}
+
+/**
  * Google Calendar for the team calendar and the booking pages (docs/REWORK.md, decision 22;
  * docs/SETUP.md). Optional: null until set, and the calendar pages say so.
  *

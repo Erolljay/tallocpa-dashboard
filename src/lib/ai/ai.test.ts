@@ -4,9 +4,9 @@ import { aiSettingsSchema, keySchema, settingsFor } from "./schema";
 import { aiLoginEmail, DEPARTMENT_ORDER, STANDARD_WORKFORCE } from "./workforce";
 
 describe("standard workforce", () => {
-  it("has the 15 AI employees of the design note, each with a unique key in a known department", () => {
-    expect(STANDARD_WORKFORCE).toHaveLength(15);
-    expect(new Set(STANDARD_WORKFORCE.map((e) => e.key)).size).toBe(15);
+  it("has the 16 AI employees of the design note, each with a unique key in a known department", () => {
+    expect(STANDARD_WORKFORCE).toHaveLength(16);
+    expect(new Set(STANDARD_WORKFORCE.map((e) => e.key)).size).toBe(16);
     for (const e of STANDARD_WORKFORCE) {
       expect(DEPARTMENT_ORDER).toContain(e.department);
       expect(e.key).toMatch(/^[a-z][a-z0-9_]{1,40}$/);
