@@ -1,7 +1,7 @@
-# Graph Report - tallocpa-dashboard  (2026-11-27)
+# Graph Report - tallocpa-dashboard  (2026-11-28)
 
 ## Corpus Check
-- 1111 files · ~915,718 words
+- 1111 files · ~915,960 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: .css 10, (none) 4, .woff2 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 240,974 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4b1a20bd`
+- Built from commit: `afce4c71`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1010,7 +1010,7 @@ Cohesion: 0.16
 Nodes (24): ExplainState, explainTieAction(), noteAction(), raiseNoteAction(), SIGNED, signWorkpaperAction(), tickAdjustmentAction(), ExplainForm() (+16 more)
 
 ## Knowledge Gaps
-- **31 isolated node(s):** `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx`, `RFC-4180`, `RFC-2047` (+26 more)
+- **31 isolated node(s):** `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx`, `RFC-2047`, `RFC-2822` (+26 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1855 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -1018,16 +1018,16 @@ Nodes (24): ExplainState, explainTieAction(), noteAction(), raiseNoteAction(), S
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `vitest` connect `testing.ts` to `form-2307.ts`, `december-rehearsal.test.ts`, `ui.ts`, `fees/types.ts`, `Card`, `money.ts`, `PageHeader`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `returns/types.ts`, `ocr/run.ts`, `registrations/actions.ts`, `public.ts`, `remittances/forms.tsx`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `quote/page.tsx`, `returns/load.ts`, `authorize/page.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `year-end/page.tsx`, `generate.ts`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `formatAmount`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `settings/actions.ts`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `site/brand.ts`, `calendar/page.tsx`, `layout.ts`, `leads/actions.ts`, `portal/page.tsx`, `opening.ts`, `requireOwner`, `fees/schedule.ts`, `devDependencies`, `tieouts.ts`, `batch/register.ts`, `filed-returns.ts`, `read.test.ts`, `return-file-actions.ts`, `tax-codes.ts`, `ocr/run.ts`, `supabaseServer`, `collections/summary.ts`, `invoice-pages.tsx`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `vitest`, `onboarding/ai-tools.ts`, `documents/[id]/page.tsx`, `notifications/format.ts`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `index.ts`, `book/actions.ts`, `portal-billing.test.ts`, `protocol.ts`, `register/page.tsx`, `ledger.test.ts`, `ai-employees.test.ts`, `memo.ts`, `filters.tsx`, `ticked-allocation.test.ts`, `acting-approver.test.ts`, `books/periods.ts`, `register-books.test.ts`, `site/calendar.ts`, `db.test.ts`, `morning.ts`, `books/reports/cwt-2307/page.tsx`, `rates.ts`, `lead-attribution.test.ts`, `ledger-lock.test.ts`, `social-button.tsx`, `contribution-remittances.test.ts`, `funnel.test.ts`, `profile.ts`, `books-migration.test.ts`, `tests/books.test.ts`, `fixed-assets.test.ts`, `ledger-closing.test.ts`, `fields.ts`, `returns-books.test.ts`, `parallel-run.test.ts`, `returns-sign-off.test.ts`?**
-  _High betweenness centrality (0.168) - this node is a cross-community bridge._
+  _High betweenness centrality (0.149) - this node is a cross-community bridge._
 - **What connects `DO_NOT_TRACK`, `NODE_USE_ENV_PROXY`, `npx` to the rest of the system?**
   _31 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `form-2307.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.08717948717948718 - nodes in this community are weakly interconnected._
 - **Why does `next` connect `remittances/forms.tsx` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `cwt-tracker.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `public.ts`, `webhook.ts`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `[month]/page.tsx`, `quote/page.tsx`, `authorize/page.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `requireStaff`, `payroll/data.ts`, `books/forms.tsx`, `work/load.ts`, `report-periods.ts`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `portalContext`, `settings/actions.ts`, `theme-toggle.tsx`, `intake-picker.tsx`, `LinkButton`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `site/brand.ts`, `calendar/page.tsx`, `remittances/forms.tsx`, `chrome.tsx`, `leads/actions.ts`, `lib/books/actions.ts`, `tin.ts`, `portal/page.tsx`, `requireOwner`, `(site)/page.tsx`, `fees/schedule.ts`, `notification-bell.tsx`, `onboarding/forms.tsx`, `batch/register.ts`, `brand/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `portal/reports/cwt-2307/page.tsx`, `blocks.tsx`, `supabaseServer`, `sign-off-actions.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `server-only`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `book/actions.ts`, `getSiteBrand`, `register/page.tsx`, `opengraph-image.tsx`, `deadlines/actions.ts`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `profile.ts`, `site-document.tsx`, `react`, `filings/actions.ts`, `workpapers/page.tsx`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
+  _High betweenness centrality (0.129) - this node is a cross-community bridge._
 - **Should `december-rehearsal.test.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.03771043771043771 - nodes in this community are weakly interconnected._
 - **Why does `react` connect `react` to `form-2307.ts`, `ui.ts`, `fees/types.ts`, `dependencies`, `Card`, `PageHeader`, `documents/[id]/page.tsx`, `statements.ts`, `scores/page.tsx`, `compare.ts`, `form.tsx`, `command-search.tsx`, `registrations/actions.ts`, `cx`, `remittances/forms.tsx`, `leads/[id]/page.tsx`, `lock-bar.tsx`, `[month]/page.tsx`, `quote/page.tsx`, `authorize/page.tsx`, `dropdown.tsx`, `ledger/data.ts`, `contacts/forms.tsx`, `theme-toggle.tsx`, `year-end/page.tsx`, `marketing/page.tsx`, `requireStaff`, `books/forms.tsx`, `work/load.ts`, `stat-cards.tsx`, `money.ts`, `formatAmount`, `step-files.tsx`, `parties/[id]/page.tsx`, `how-we-work/page.tsx`, `clients/[id]/page.tsx`, `modal.tsx`, `modal.tsx`, `button.tsx`, `portalContext`, `theme-toggle.tsx`, `document-scanner.tsx`, `intake-picker.tsx`, `manilaToday`, `toCentavos`, `ledger/books.ts`, `combobox.tsx`, `calendar/page.tsx`, `remittances/forms.tsx`, `chrome.tsx`, `leads/actions.ts`, `Notice`, `lib/books/actions.ts`, `portal/page.tsx`, `requireOwner`, `fees/schedule.ts`, `notification-bell.tsx`, `onboarding/forms.tsx`, `batch/register.ts`, `brand/forms.tsx`, `sign-in-form.tsx`, `return-file-actions.ts`, `module-pages.tsx`, `portal/reports/cwt-2307/page.tsx`, `blocks.tsx`, `supabaseServer`, `sign-off-actions.tsx`, `invoice-pages.tsx`, `payroll/forms.tsx`, `workpapers/load.ts`, `deadlines/page.tsx`, `slots.ts`, `documents/[id]/page.tsx`, `filings/[id]/page.tsx`, `pending-review.tsx`, `cycle/page.tsx`, `requireOwner`, `idle-watcher.tsx`, `package.json`, `getSiteBrand`, `register/page.tsx`, `cycle-forms.tsx`, `deadlines/actions.ts`, `filters.tsx`, `cwt-forms.tsx`, `app/settings/page.tsx`, `books/reports/cwt-2307/page.tsx`, `social-button.tsx`, `[id]/books/page.tsx`, `site-document.tsx`, `workpapers/page.tsx`?**
-  _High betweenness centrality (0.099) - this node is a cross-community bridge._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Should `migrate.yml` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._

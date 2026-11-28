@@ -5868,9 +5868,9 @@
     "semantic_hash": ""
   },
   "src/lib/documents/ai-tools.ts": {
-    "mtime": 1795802927.3524618,
-    "seen": 1795808181.7033234,
-    "ast_hash": "7c1259500ea9af6979d357fdf770319e",
+    "mtime": 1795827682.7824216,
+    "seen": 1795827898.5653741,
+    "ast_hash": "a1cc4833c965d78c4d78dfda6b2ba27c",
     "semantic_hash": ""
   },
   "src/lib/onboarding/ai-tools.test.ts": {
@@ -5886,9 +5886,9 @@
     "semantic_hash": ""
   },
   "supabase/tests/ai-document-clerk.test.ts": {
-    "mtime": 1795802935.7589881,
-    "seen": 1795808181.705892,
-    "ast_hash": "045faf9da03d6cc818be10cf3e72f67c",
+    "mtime": 1795827705.7328348,
+    "seen": 1795827898.5727963,
+    "ast_hash": "cb783a974c234d546e61a0b798be92f1",
     "semantic_hash": ""
   },
   "supabase/tests/ai-drafts.test.ts": {
