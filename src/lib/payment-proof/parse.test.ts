@@ -13,7 +13,7 @@ import {
   readPaymentMail,
   tinMatches,
 } from "./parse";
-import { pdfText, textPdf, wrap } from "./pdf";
+import { pdfText, textPdf, wrap } from "@/lib/pdf/text";
 
 import { UNIONBANK_FROM, UNIONBANK_HTML, UNIONBANK_RECEIVED, UNIONBANK_SUBJECT } from "./fixtures";
 

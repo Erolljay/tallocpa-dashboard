@@ -211,8 +211,61 @@ describe.skipIf(!url)("AI BIR Mail Clerk: BIR mail matched to returns, notices f
     await expect(as(PREPARER, `select public.accept_bir_mail_match($1)`, [draft])).rejects.toThrow(/already accepted/);
   });
 
+  it("reads an eBIRForms confirmation's form and period; staff attach it to the return (the AI cannot)", async () => {
+    const ob = (await db.query(`select obligation_id from public.filing_instances where id = $1`, [filing.jaro])).rows[0].obligation_id;
+    filing.jaroQ4 = (await db.query(
+      `insert into public.filing_instances (obligation_id, client_id, form, period_label, period_start, period_end, rule_id, statutory_due_date, due_date, status)
+       values ($1, $2, '1601EQ', 'Q4 2026', '2026-10-01', '2026-12-31', '1601EQ', '2027-01-31', '2027-01-31', 'owner_approved') returning id`,
+      [ob, jaro],
+    )).rows[0].id;
+    mail.ebir = (await db.query(
+      `insert into public.bir_mail (gmail_message_id, received_at, from_address, subject, body_text, kind, tins, attachments, pdf_path, pdf_name, pdf_size, mailbox)
+       values ('ebir-1', '2027-01-20T02:00:00Z', 'eBIRForms <ebirforms-noreply@bir.gov.ph>', 'Tax Return Receipt Confirmation',
+               'This confirms receipt of your submission with the following details subject to validation by BIR:' || chr(10) || 'File name: 123456789000-1601EQv2018-122026.xml' || chr(10) || 'Date received by BIR: 20 Jan 2027' || chr(10) || 'Time received by BIR: 10:00 AM',
+               'filing_confirmation', '{123-456-789}', '[]', '_bir-mail/ebir-1.pdf', 'bir-confirmation-1601EQ-2026-12.pdf', 1500, 'owner@tallocpa.com') returning id`,
+    )).rows[0].id;
+
+    const r = await data("read_bir_mail", { mail_id: mail.ebir });
+    expect(r.confirmation).toMatchObject({ tin: "123-456-789-00000", form: "1601EQ", period_end: "2026-12-31", received: "20 Jan 2027 10:00 AM" });
+    const candidates = r.candidate_returns as { id: string; form_matches: boolean; period_matches: boolean }[];
+    expect(candidates.find((c) => c.id === filing.jaroQ4)).toMatchObject({ form_matches: true, period_matches: true });
+    expect(candidates.find((c) => c.id === filing.jaro)).toMatchObject({ form_matches: true, period_matches: false });
+    await data("propose_bir_mail_match", { mail_id: mail.ebir, client: "TC-9911", filing_id: filing.jaroQ4, message_kind: "filing_confirmation", reason: "eBIRForms confirms Jaro's 1601EQ for the quarter ending 2026-12-31." });
+    const draft = (await db.query(`select id from public.ai_drafts where subject_id = $1 and status = 'open'`, [mail.ebir])).rows[0].id;
+
+    // The AI employee cannot attach; nor can staff not on the client.
+    await expect(as(CLERK, `select public.attach_bir_confirmation($1)`, [draft])).rejects.toThrow(/Return not found/);
+    await expect(as(OTHER_STAFF, `select public.attach_bir_confirmation($1)`, [draft])).rejects.toThrow(/Return not found/);
+
+    // The Owner attaches: the mail is linked to the return and its PDF becomes a file of the return.
+    const fileId = (await as<{ id: string }>(OWNER, `select public.attach_bir_confirmation($1) as id`, [draft]))[0].id;
+    expect((await db.query(`select filing_instance_id, client_id, kind, storage_path, file_name, size_bytes::int as size, source from public.filing_files where id = $1`, [fileId])).rows[0]).toEqual({
+      filing_instance_id: filing.jaroQ4, client_id: jaro, kind: "bir_confirmation", storage_path: "_bir-mail/ebir-1.pdf", file_name: "bir-confirmation-1601EQ-2026-12.pdf", size: 1500, source: "mailbox",
+    });
+    expect((await db.query(`select status, client_id, filing_instance_id, linked_by from public.bir_mail where id = $1`, [mail.ebir])).rows[0]).toEqual({ status: "matched", client_id: jaro, filing_instance_id: filing.jaroQ4, linked_by: OWNER });
+    expect((await db.query(`select status, decided_by from public.ai_drafts where id = $1`, [draft])).rows[0]).toEqual({ status: "accepted", decided_by: OWNER });
+    // Staff on the client see the confirmation on the return; the return is not marked filed by it.
+    expect(await as(PREPARER, `select kind from public.filing_files where filing_instance_id = $1`, [filing.jaroQ4])).toEqual([{ kind: "bir_confirmation" }]);
+    expect((await db.query(`select status from public.filing_instances where id = $1`, [filing.jaroQ4])).rows[0].status).toBe("owner_approved");
+    await expect(as(OWNER, `select public.attach_bir_confirmation($1)`, [draft])).rejects.toThrow(/already accepted/);
+  });
+
+  it("refuses to attach mail already linked, or a proposal that names no return", async () => {
+    const linked = (await db.query(
+      `insert into public.ai_drafts (ai_user_id, client_id, kind, subject_table, subject_id, payload) values ($1, $2, 'bir_mail_match', 'bir_mail', $3, $4) returning id`,
+      [CLERK, jaro, mail.ebir, JSON.stringify({ filing_id: filing.jaroQ4 })],
+    )).rows[0].id;
+    await expect(as(OWNER, `select public.attach_bir_confirmation($1)`, [linked])).rejects.toThrow(/already linked/);
+    const noReturn = (await db.query(
+      `insert into public.ai_drafts (ai_user_id, client_id, kind, subject_table, subject_id, payload) values ($1, $2, 'bir_mail_match', 'bir_mail', $3, '{}') returning id`,
+      [CLERK, jaro, mail.loa],
+    )).rows[0].id;
+    await expect(as(OWNER, `select public.attach_bir_confirmation($1)`, [noReturn])).rejects.toThrow(/names no return/);
+    await db.query(`delete from public.ai_drafts where id = any ($1::uuid[])`, [[linked, noReturn]]);
+  });
+
   it("the Owner sees all BIR mail and sets aside what is no client's", async () => {
-    expect(await as(OWNER, `select id from public.bir_mail`)).toHaveLength(3);
+    expect(await as(OWNER, `select id from public.bir_mail`)).toHaveLength(4);
     await expect(as(PREPARER, `select public.dismiss_bir_mail($1)`, [mail.loa])).rejects.toThrow(/Only the Owner/);
     await as(OWNER, `select public.dismiss_bir_mail($1)`, [mail.loa]);
     expect((await db.query(`select status from public.bir_mail where id = $1`, [mail.loa])).rows[0].status).toBe("dismissed");

@@ -1,6 +1,6 @@
 /**
- * A plain text PDF (A4, Helvetica), for a payment confirmation email that came without a
- * PDF of its own (UnionBank's bills payment email is HTML only). Written by hand to keep
+ * A plain text PDF (A4, Helvetica), for an email that came without a PDF of its own (a
+ * payment confirmation, a BIR filing confirmation: both are HTML only). Written by hand to keep
  * the app free of a PDF dependency: lines starting with "# " are headings in bold, long
  * lines wrap, pages break as needed. Characters outside Latin-1 are replaced ("₱" → "PHP").
  */

@@ -29,6 +29,23 @@ export async function acceptBirMailMatchAction(draftId: string, path: string, _:
   return { ok: "Linked. The email now shows on the client's return." };
 }
 
+/**
+ * Attach a BIR filing confirmation to the return the Clerk named: links the email and
+ * adds its PDF to the return's files (attach_bir_confirmation, migration 20270111000002).
+ * The person then prints it with the form and marks the return filed at Filed & paid.
+ */
+export async function attachBirConfirmationAction(draftId: string, path: string, _: BirMailState, form: FormData): Promise<BirMailState> {
+  await requireStaff();
+  if (!uuid.safeParse(draftId).success) return { error: "Unknown proposal." };
+  const note = String(form.get("note") ?? "").slice(0, 1000);
+  const supabase = await supabaseServer();
+  const { error } = await supabase.rpc("attach_bir_confirmation", { p_draft: draftId, p_note: note || null });
+  if (error) return { error: error.message };
+  revalidatePath(safeNextPath(path));
+  revalidatePath("/app/bir-mail");
+  return { ok: "Attached. Print it with the form for the scanned copy, then mark the return filed." };
+}
+
 /** The Owner links an email himself. */
 export async function linkBirMailAction(mailId: string, _: BirMailState, form: FormData): Promise<BirMailState> {
   await requireOwner();
@@ -56,12 +73,13 @@ export async function dismissBirMailAction(mailId: string): Promise<BirMailState
   return { ok: "Set aside." };
 }
 
-/** The Owner checks the mailbox now instead of waiting for the nightly job. */
+/** The Owner checks the mailboxes now instead of waiting for the job (every two days). */
 export async function checkBirMailboxAction(): Promise<BirMailState> {
   await requireOwner();
   const r = await ingestBirMail(supabaseAdmin()).catch((e: Error) => ({ error: e.message }));
   if ("error" in r) return { error: r.error };
   revalidatePath("/app/bir-mail");
   const failed = r.errors.length ? ` ${r.errors.length} could not be read.` : "";
-  return { ok: r.stored ? `${r.stored} new BIR email${r.stored === 1 ? "" : "s"}.${failed}` : `No new BIR email.${failed}` };
+  const where = ` (${r.mailboxes} mailbox${r.mailboxes === 1 ? "" : "es"} checked)`;
+  return { ok: r.stored ? `${r.stored} new BIR email${r.stored === 1 ? "" : "s"}${where}.${failed}` : `No new BIR email${where}.${failed}` };
 }
