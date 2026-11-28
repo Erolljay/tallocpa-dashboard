@@ -29,6 +29,7 @@ export const NOTIFICATION_KINDS = {
   esubmission_result: { group: "returns", audience: "staff", label: "eSubmission validated or came back with errors", action: "Open the return" },
   unlock_requested: { group: "returns", audience: "staff", label: "Someone asked to lock or unlock a month", action: "Decide the request", ownerOnly: true, approver: true },
   unlock_decided: { group: "returns", audience: "staff", label: "My lock or unlock request was decided", action: "Open the books" },
+  bir_notice_flagged: { group: "returns", audience: "staff", label: "The BIR Mail Clerk found an urgent BIR notice (LOA, PAN, FAN, FLD, subpoena)", action: "Open the notice", ownerOnly: true },
   return_filed: { group: "returns", audience: "client", label: "A return was filed", action: "See your returns" },
   return_for_client_approval: { group: "returns", audience: "client", label: "A return is ready for my approval", action: "Review and approve" },
   return_query_answered: { group: "returns", audience: "client", label: "My question on a return was answered", action: "Read the answer" },

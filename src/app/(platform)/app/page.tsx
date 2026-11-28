@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { Chip } from "@/components/base/badges/chip";
+import { BirMailAlert } from "@/components/bir-mail/panels";
 import { Card, LinkButton, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
 import { delegationState, lastDay, type Delegation } from "@/lib/acting/period";
 import { requireStaff } from "@/lib/auth";
@@ -26,6 +27,9 @@ export default function DashboardPage() {
       <SectionTabs section="home" active="overview" />
       <Suspense fallback={null}>
         <ActingNotice />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OwnerBirMail />
       </Suspense>
       <Suspense fallback={null}>
         <AmendmentNotice />
@@ -82,6 +86,13 @@ async function ActingNotice() {
       </Notice>
     </div>
   );
+}
+
+/** Urgent BIR notices the BIR Mail Clerk found, and BIR mail not linked yet: the Owner only. */
+async function OwnerBirMail() {
+  const me = await requireStaff();
+  if (me.staff.role !== "owner") return null;
+  return <BirMailAlert />;
 }
 
 /** Book amendments waiting for the Owner's approval (spec §4.3, Q30). */

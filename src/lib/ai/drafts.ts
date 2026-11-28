@@ -49,7 +49,9 @@ export function draftLines(payload: unknown): DraftLine[] {
     .map(([k, v]) => ({ label: k.replace(/_/g, " "), value: String(v) }));
 }
 
-export const DRAFT_KIND_LABELS: Record<string, string> = {};
+export const DRAFT_KIND_LABELS: Record<string, string> = {
+  bir_mail_match: "BIR email: proposed match",
+};
 
 /** A kind's label for people: registered by the feature that uses it, else from its name. */
 export const draftKindLabel = (kind: string) => DRAFT_KIND_LABELS[kind] ?? kind.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());

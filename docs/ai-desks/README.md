@@ -7,6 +7,7 @@ data (clients, returns, books) stays in TalloCPA OS; a desk only holds instructi
 
 | Desk | Files |
 |---|---|
+| BIR Mail Clerk | [`bir-mail-clerk/`](bir-mail-clerk/README.md) |
 | Chief of Staff | [`chief-of-staff/`](chief-of-staff/README.md) |
 | Collections Clerk | [`collections-clerk/`](collections-clerk/README.md) |
 | Document Clerk | [`document-clerk/`](document-clerk/README.md) |

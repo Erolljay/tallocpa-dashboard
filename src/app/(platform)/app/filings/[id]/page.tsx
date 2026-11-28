@@ -21,6 +21,7 @@ import { SignOffActions, type PaymentCheck } from "../sign-off-actions";
 import { CatchUpConfirmForms, CatchUpRecordForm } from "../catch-up-forms";
 import { AmendFilingForm } from "../amend-form";
 import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
+import { BirMailForFiling } from "@/components/bir-mail/panels";
 import { ApprovalMemo } from "./approval-memo";
 import { EsubmissionControls, ReturnFileUpload, RetryBookEntry } from "./return-files";
 
@@ -198,6 +199,10 @@ async function Filing({ params }: { params: PageProps<"/app/filings/[id]">["para
           {/* The Pre-Review Assistant's memo, for the Reviewer to accept or reject (renders nothing without one). */}
           <Suspense fallback={null}>
             <AiDraftsPanel subject={{ table: "filing_instances", id: f.id }} path={`/app/filings/${f.id}`} title="Suggested by the Pre-Review Assistant" />
+          </Suspense>
+          {/* BIR emails linked to this return, and the BIR Mail Clerk's proposals naming it (nothing when neither). */}
+          <Suspense fallback={null}>
+            <BirMailForFiling filingId={f.id} />
           </Suspense>
           {/* W4: the approval memo, for the reviewer and the Owner once the return is reviewed. */}
           {(me.staff.role === "owner" || me.staff.role === "reviewer") && done >= stepIndex("reviewed") && status !== "filed" && (
