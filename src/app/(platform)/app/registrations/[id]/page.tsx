@@ -10,6 +10,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { cx } from "@/utils/cx";
 import { CancelForm, CompleteButton, StepBadge, StepForm, type StepRow } from "../forms";
 import { StepFileList, StepFileUpload, type StepFile } from "../step-files";
+import { RunnerDrafts } from "../runner-drafts";
 import { daysTone, manilaDate } from "@/lib/registration/slip";
 import { NewRequestForm } from "../../requests/new-request-form";
 import { statusFor, type Direction, type RequestStatus } from "@/lib/requests/labels";
@@ -140,6 +141,8 @@ async function Registration({ params, searchParams }: Pick<PageProps<"/app/regis
           </div>
         )}
       </section>
+
+      <RunnerDrafts caseId={id} open={isOpen} />
 
       <Card title="Routing slip" actions={<span className="text-body-regular tabular-nums text-text-secondary">Gov&rsquo;t fees {peso.format(fees)}</span>}>
         <ol className="-mx-2">

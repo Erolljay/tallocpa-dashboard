@@ -51,6 +51,9 @@ export function draftLines(payload: unknown): DraftLine[] {
 
 export const DRAFT_KIND_LABELS: Record<string, string> = {
   bir_mail_match: "BIR email: proposed match",
+  // Registration Runner (src/lib/registration/ai-tools.ts).
+  bir_registration_form: "BIR registration form",
+  registration_requests: "Requests to the client",
 };
 
 /** A kind's label for people: registered by the feature that uses it, else from its name. */
