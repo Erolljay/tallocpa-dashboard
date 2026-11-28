@@ -143,6 +143,22 @@ describe.skipIf(!url)("AI Document Clerk: review queue, readings, duplicates, su
     expect(Array.isArray(r.chart_of_accounts)).toBe(true);
   });
 
+  it("with no TIN read, matches the account history by supplier name; with neither, says so (not 'Needs Full books access')", async () => {
+    const byName = await addDoc(jaro, "received", { date: "2026-01-20", number: "9", party_name: " iloilo office supply ", total: "50" });
+    const bare = await addDoc(jaro, "received", { date: "2026-01-21", number: "10", total: "40" });
+    try {
+      const a = (await call("read_document", { document_id: byName })).result?.structuredContent as Record<string, unknown>;
+      expect(a.account_history).toEqual([{ code: expense.code, name: expect.any(String), times: 1, last_period: "2026-01-01" }]);
+      expect(a.account_history_matched_by).toBe("supplier name (no TIN read)");
+      const b = (await call("read_document", { document_id: bare })).result?.structuredContent as Record<string, unknown>;
+      expect(b.account_history).toMatch(/no supplier TIN or name/);
+      expect(Array.isArray(b.chart_of_accounts)).toBe(true);
+    } finally {
+      await db.query(`delete from public.extractions where document_id = any ($1::uuid[])`, [[byName, bare]]);
+      await db.query(`delete from public.documents where id = any ($1::uuid[])`, [[byName, bare]]);
+    }
+  });
+
   it("without Full books access, reads the document but not the accounts", async () => {
     await setClerk({ books_level: "summary" });
     const r = (await call("read_document", { document_id: doc.waiting })).result?.structuredContent as Record<string, unknown>;

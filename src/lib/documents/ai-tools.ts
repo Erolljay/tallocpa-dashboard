@@ -202,22 +202,32 @@ export const readDocument = defineTool({
       : null;
 
     // Account history and the chart: readable only at Full books access (row-level security).
+    // The supplier is matched by TIN; when OCR read no TIN, by the supplier's name.
     const full = caller.booksLevel === "full";
+    const name = (fields.party_name ?? "").trim() || null;
+    const matchBy: "tin" | "name" | null = tin ? "tin" : name ? "name" : null;
     const history =
-      full && tin
+      full && matchBy
         ? (
             await db.query<{ code: string; name: string; times: number; last_period: string }>(
               `select la.code, la.name, count(*)::int as times, max(d.period)::text as last_period
                from public.documents d
                join public.extractions x on x.document_id = d.id
                join public.ledger_accounts la on la.id = d.ledger_account_id
-               where d.client_id = $1 and d.id <> $2 and x.approved_fields->>'party_tin' = $3
+               where d.client_id = $1 and d.id <> $2
+                 and case when $4 = 'tin' then x.approved_fields->>'party_tin' = $3
+                          else lower(btrim(x.approved_fields->>'party_name')) = lower($3) end
                group by la.code, la.name
                order by times desc, last_period desc
                limit 5`,
-              [d.client_id, d.id, tin],
+              [d.client_id, d.id, matchBy === "tin" ? tin : name, matchBy],
             )
           ).rows
+        : null;
+    const historyNote = !full
+      ? "Needs Full books access."
+      : !matchBy
+        ? "OCR read no supplier TIN or name on this document, so there is no history to match. Suggest from the chart."
         : null;
     const chart = full
       ? (
@@ -256,7 +266,8 @@ export const readDocument = defineTool({
       checks: issues.map((i) => ({ field: i.field, label: fieldLabel(i.field), message: i.message })),
       possible_duplicates: dupes,
       supplier_in_directory: party,
-      account_history: history ?? "Needs Full books access.",
+      account_history: history ?? historyNote,
+      account_history_matched_by: matchBy === "tin" ? "supplier TIN" : matchBy === "name" ? "supplier name (no TIN read)" : null,
       chart_of_accounts: chart ?? "Needs Full books access.",
     };
   },
