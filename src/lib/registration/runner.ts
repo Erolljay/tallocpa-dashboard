@@ -76,10 +76,9 @@ export type BirRegistrationForm = "1901" | "1903" | "1905";
  * kinds (renewal, SEC filings, certificates, employer registration) file none.
  */
 export function formsFor(kind: CaseKind, t: TaxpayerType): BirRegistrationForm[] {
-  if (kind === "new_business") return [birForm(t) as BirRegistrationForm];
-  // The firm registers a new branch on Form 1903, sole proprietors included (Owner's
-  // practice; a new business, even the owner's second, is a new_business case).
-  if (kind === "branch") return ["1903"];
+  // A new business or a new branch: Form 1901 for an individual, 1903 for a corporation
+  // or partnership (Owner's practice). Updates and closures go on 1905.
+  if (kind === "new_business" || kind === "branch") return [birForm(t) as BirRegistrationForm];
   if (kind === "bir_update" || kind === "closure") return ["1905"];
   return [];
 }

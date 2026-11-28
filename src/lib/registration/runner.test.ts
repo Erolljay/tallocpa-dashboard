@@ -68,7 +68,7 @@ describe("formsFor", () => {
     expect(formsFor("new_business", "individual")).toEqual(["1901"]);
     expect(formsFor("new_business", "corporation")).toEqual(["1903"]);
     expect(formsFor("branch", "partnership")).toEqual(["1903"]);
-    expect(formsFor("branch", "individual")).toEqual(["1903"]);
+    expect(formsFor("branch", "individual")).toEqual(["1901"]);
     expect(formsFor("bir_update", "corporation")).toEqual(["1905"]);
     expect(formsFor("closure", "individual")).toEqual(["1905"]);
     expect(formsFor("renewal", "individual")).toEqual([]);
