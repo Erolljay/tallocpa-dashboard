@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Fragment, Suspense, type ReactNode } from "react";
 import { RiCalendarScheduleLine } from "@remixicon/react";
 import { CancelBooking } from "@/components/booking/cancel-booking";
+import { AiDraftsPanel } from "@/components/ai/ai-drafts-panel";
 import { ProposalView, type ProposalData } from "@/components/funnel/proposal-view";
 import { NotesTimeline } from "@/components/leads/notes-timeline";
 import { Badge, Card, Notice, PageHeader, peso, Skeleton } from "@/components/ui";
@@ -78,6 +79,14 @@ async function Lead({ params }: Pick<PageProps<"/app/leads/[id]">, "params">) {
         description={<><Link href="/app/leads" className="text-button-ghost-foreground hover:underline">Leads</Link> · received {String(lead.created_at).slice(0, 10)} from the {lead.source === "staff" ? "staff" : "website"}</>}
         actions={<span className="inline-flex gap-1"><Badge tone={tone}>{label}</Badge>{lead.test && <Badge tone="neutral">Test</Badge>}</span>}
       />
+      {/* The Marketing Team's proposal and follow-up drafts: saved with no client, so only the Owner sees them. */}
+      {isOwner && (
+        <div className="mb-6">
+          <Suspense fallback={null}>
+            <AiDraftsPanel subject={{ table: "leads", id: lead.id }} kinds={["proposal", "lead_follow_up"]} path={`/app/leads/${lead.id}`} title="Suggested by the Marketing Team" />
+          </Suspense>
+        </div>
+      )}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,24rem)_1fr] xl:items-start">
         <div className="space-y-6">
           <Card title="Contact">

@@ -151,7 +151,10 @@ export function instructionsFor(caller: AiCaller): string {
   }
   const base =
     `You are ${caller.name}, an AI employee of Tallo CPA. Read tallocpa://ai/house-rules and tallocpa://ai/my-job before you start. ` +
-    "You prepare work for people to review; you never approve, sign, post, file or pay anything.";
+    "You prepare work for people to review; you never approve, sign, post, file or pay anything." +
+    (caller.department === "marketing"
+      ? " You are in Marketing: you never see client data, you never send, post or publish anything, and all copy follows the advertising rules for CPAs in public practice in tallocpa://ai/house-rules (factual, no guaranteed tax results, no client names without written consent, fees only from the fee schedule)."
+      : "");
   return usableTools(caller).length
     ? base
     : `${base} No tools are granted to you yet: tell the user the Owner grants them in TalloCPA OS → Settings → AI employees → ${caller.name} → Connector → Tools.`;

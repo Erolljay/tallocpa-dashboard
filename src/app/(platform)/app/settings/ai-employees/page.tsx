@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge, Card, Notice, PageHeader, Skeleton } from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { BOOKS_LEVELS, DEPARTMENT_ORDER, DEPARTMENTS, RUNS_ON, STANDARD_WORKFORCE, type BooksLevel, type Department, type RunsOn } from "@/lib/ai/workforce";
+import { BOOKS_LEVELS, DEPARTMENT_ORDER, DEPARTMENTS, MARKETING_ROLES_VIA_TEAM, RUNS_ON, STANDARD_WORKFORCE, type BooksLevel, type Department, type RunsOn } from "@/lib/ai/workforce";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ActivityList, type ActivityRow } from "./activity";
 import { AddWorkforceButton, EnabledSwitch } from "./forms";
@@ -104,6 +104,7 @@ async function Workforce() {
                         ) : (
                           "no client data"
                         )}
+                        {(MARKETING_ROLES_VIA_TEAM as readonly string[]).includes(r.key) && " · works through the Marketing Team connector"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

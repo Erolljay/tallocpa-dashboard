@@ -52,6 +52,20 @@ describe("connector tool registry", () => {
     }
   });
 
+  it("keeps marketing's tools apart: a tool for a marketing employee is for marketing only, and tools for everyone touch no client data", () => {
+    for (const t of TOOLS) {
+      if (t.employees === "all") {
+        expect(t.name, t.name).not.toMatch(/client|filing|trial|ledger|books|document|receivable|return/);
+        continue;
+      }
+      if (t.employees.some((k) => MARKETING.has(k))) {
+        for (const k of t.employees) expect(MARKETING.has(k), `${t.name} shared between marketing and ${k}`).toBe(true);
+      }
+    }
+    const team = TOOLS.filter((t) => t.employees !== "all" && t.employees.includes("marketing_team")).map((t) => t.name).sort();
+    expect(team).toEqual(["draft_follow_up", "draft_proposal", "fee_schedule", "firm_profile", "lead", "leads_pipeline", "marketing_report", "website_pages"]);
+  });
+
   it("only reads or drafts, and never signs anything off", () => {
     for (const t of TOOLS) {
       expect(["read", "draft"]).toContain(t.effect);

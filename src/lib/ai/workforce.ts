@@ -8,7 +8,7 @@
  */
 
 export type Department = "managing_partner" | "client_services" | "compliance" | "registration" | "collections" | "marketing";
-export type RunsOn = "cowork" | "app" | "both";
+export type RunsOn = "cowork" | "app" | "both" | "claude_code";
 export type BooksLevel = "none" | "summary" | "full";
 
 export const DEPARTMENTS: Record<Department, string> = {
@@ -26,6 +26,7 @@ export const RUNS_ON: Record<RunsOn, string> = {
   cowork: "Cowork",
   app: "In the app",
   both: "Cowork and the app",
+  claude_code: "Claude Code",
 };
 
 export const BOOKS_LEVELS: Record<BooksLevel, { label: string; detail: string }> = {
@@ -72,10 +73,23 @@ export const STANDARD_WORKFORCE: StandardEmployee[] = [
   role("seo_specialist", "SEO Specialist", "marketing", "cowork", "none", "Local search, Google Business Profile, page titles and FAQs. Site changes go in as pull requests for the Owner."),
   role("sales_assistant", "Sales Assistant", "marketing", "cowork", "none", "Proposal drafts from leads and the fee schedule, and follow-ups. Hands accepted clients to the Onboarding Officer."),
   role("marketing_analyst", "Marketing Analyst", "marketing", "cowork", "none", "Monthly report from Firm → Marketing: leads by channel and what brought in proposals."),
+  // The Owner's choice: the five marketing roles work from Claude Code through this one
+  // connector, each role a skill there. It never sees client data.
+  role(
+    "marketing_team",
+    "Marketing Team",
+    "marketing",
+    "claude_code",
+    "none",
+    "The Marketing & Growth department's one connector, used from Claude Code: the firm's public facts, the fee schedule, the leads and the Firm → Marketing report, for articles, social posts, SEO, proposals and follow-ups. Proposals and follow-ups are drafts for the Owner; nothing is sent, posted or published by it.",
+  ),
 ];
 
+/** The marketing roles served through the Marketing Team connector (one connector for the department). */
+export const MARKETING_ROLES_VIA_TEAM = ["content_writer", "social_media_manager", "seo_specialist", "sales_assistant", "marketing_analyst"] as const;
+
 /** Whether an AI employee calls a paid API, so its monthly cap matters. */
-export const spendsOnApi = (runsOn: RunsOn) => runsOn !== "cowork";
+export const spendsOnApi = (runsOn: RunsOn) => runsOn === "app" || runsOn === "both";
 
 /**
  * The login email of an AI employee: on a reserved domain (RFC 2606 `.invalid`), so no

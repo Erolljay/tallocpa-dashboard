@@ -51,6 +51,9 @@ export function draftLines(payload: unknown): DraftLine[] {
 
 export const DRAFT_KIND_LABELS: Record<string, string> = {
   bir_mail_match: "BIR email: proposed match",
+  // Marketing Team (src/lib/marketing/ai-tools.ts).
+  proposal: "Proposal",
+  lead_follow_up: "Follow-up to the lead",
   // Registration Runner (src/lib/registration/ai-tools.ts).
   bir_registration_form: "BIR registration form",
   registration_requests: "Requests to the client",
