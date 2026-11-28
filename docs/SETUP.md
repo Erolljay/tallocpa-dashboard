@@ -89,6 +89,16 @@ After the Owner approves a return with DAT attachments (SLS, SLP, SAWT, QAP, alp
    - `ESUBMISSION_TO` (optional) — default `esubmission@bir.gov.ph`; point it at an internal address to try the flow first.
 4. The reply check runs once a day (`/api/cron/esubmission` in `vercel.json`, 11:40 Manila, with `CRON_SECRET`); staff can also press **Check the mailbox for the reply** on the return. It reads the thread of each send still waiting: the BIR's attachment (or its message, as a text file) becomes the validation report, and the send is marked **Validated** or **Errors**. A reply the app cannot read is marked Errors with a note; staff open it and correct the result.
 
+### Payment confirmations mailbox (optional; the Payment Proof Clerk)
+
+The banks' confirmations of the taxes the firm pays (UnionBank Business Banking's *Successful Bills Payment (CLIENT)* email to the BIR biller; LANDBANK Link.BizPortal, DBP, GCash and Maya are listed too, in `src/lib/payment-proof/parse.ts`) are collected so the Payment Proof Clerk can match each to its return and staff can attach it as the proof of payment (docs/ai-desks/payment-proof-clerk/README.md). The app only lists, reads and downloads messages: it never sends, labels or deletes.
+
+1. Choose the mailbox. Either forward the banks' confirmations to the eSubmission mailbox (above): the app reads it with the token it already has, and nothing more is needed. Or let the app read the mailbox where they arrive (e.g. the Owner's):
+   - In the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) with the same OAuth client as eSubmission, authorize only the scope `https://www.googleapis.com/auth/gmail.readonly`, **signed in as that mailbox**, and copy the refresh token.
+   - Set in Vercel (server only): `PAYMENT_MAIL_GMAIL_REFRESH_TOKEN` (the token) and `PAYMENT_MAILBOX` (its address, for the record).
+2. Optional: `PAYMENT_MAIL_DAYS`, how many days back each check looks (default 14, at most 90).
+3. The check runs at 9:30 AM and 3:30 PM Manila (`/api/cron/payment-mail` in `vercel.json`, with `CRON_SECRET`). Each new confirmation is kept with what was read from it and a PDF: the email's own PDF attachment, or one the app writes from the email (UnionBank's has none). Bank account numbers are masked to the last 4 digits before anything is kept.
+
 ### Google Calendar (optional, docs/REWORK.md decisions 18, 20 and 22)
 
 The team calendar (Home → Team calendar), the lead's booking page (`/book/…`, link on the lead) and the portal's **Book a meeting** read each staff member's own Google Calendar and create events with a Meet link. Each staff member connects their own calendar once from Home → Team calendar. Until this is set, those pages say Google Calendar is not set up and the booking pages ask the person to email instead.
